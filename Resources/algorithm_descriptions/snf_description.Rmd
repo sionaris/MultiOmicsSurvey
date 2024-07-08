@@ -1,0 +1,50 @@
+<!-- # Similarity Network Fusion (SNF)
+
+## Algorithm
+<u>**In a nutshell (a.k.a. TL;DR)**:</u>
+
+[SNF](`r cite_SNF`) approaches the multi-omic problem by constructing networks of samples (e.g., patients) for each available data type and then efficiently fusing these into one network that represents the full spectrum of underlying data. -->
+
+<u>**In detail**:</u>
+<ol>
+  <li>For $n$ samples, the graph $G = (V,E)$ is constructed, where $V$ are the vertices which correspond to patients $\{x_1, x_2, \ldots , x_n\}$ and $E$ are the edges, i.e. the connections between patients (vertices) which are weighted by the magnitude of each pair's similarity. Therefore, matrix $W$ is defined:
+  
+  $$W_{ij} = \exp\left(\frac{-\rho^2(x_i, x_j)}{\mu\epsilon_{ij}}\right)$$
+  where $\rho^2$ represents the squared euclidean distance between samples $x_i$ and $x_j$, $\mu$ is a hyperparameter that can be empirically set (usually somewhere in $[0.3, 0.8]$) and $\epsilon_{ij}$ is used to eliminate the scaling problem:
+  
+$$\epsilon_{ij} = \frac{\text{mean}(\rho(x_i,N_i)) + \text{mean}(\rho(x_j,N_j)) + \rho(x_i, x_j)}{3}$$
+
+In the case of non-continuous variables, distance metrics based on agreement or Chi-square distances can be used.</li>
+  <li>To compute the fused matrix from multiple types of measurements, a full and sparse kernel on the vertex set $V$ is defined. The full kernel is a normalized weight matrix $P = D^{-1}W$, where $D$ is the diagonal matrix whose entries $D_{ii} = \sum_{j}W_{ij}$ , so that $\sum_{j}P_{ij} = 1$. <u>However, this normalization may suffer from numerical instability</u> since it involves self-similarities on the diagonal entries of $W$. One way to perform a **better normalization** is as follows:
+  
+$$ P_{ij} = \begin{cases}
+    \frac{W_{ij}}{2\sum_{k \neq i} W_{ik}} & \text{if } j \neq i, \\
+    0.5 & \text{if } j = i.
+\end{cases}$$
+
+This normalization is free of the scale of self-similarity in the diagonal entries and $\sum_jP_{ij}$ still holds.</li>
+  <li>Now, let $N_i$ represent a set of $x_i$'s neighbors <u>including</u> in $G$. Given a graph $G$, local affinity using the $K$ nearest neighbors ($KNN$) is defined as:
+
+$$ S_{ij} = \begin{cases}
+    \frac{W_{ij}}{\sum_{k \in N_i} W_{ik}} & \text{if } j \in i, \\
+    0 & \text{otherwise}
+\end{cases}$$
+
+Essentially, the assumption that local similarities are more important is made here. $P$ carries the full normalized similarity information, while $S$ (used in the fusion process and also called <i>kernel matrix</i>) only encodes the similarity to the $K$ most similar patients for each patient.</li>
+  <li>Given $m$ different data types, simalarity matrices $W^{(\nu)}$ can be constructed for $\nu = 1,2,\ldots,m$. Similarly, $P^{(\nu)}$ and $S^{(\nu)}$ are derived.
+
+  **Update iterations**:
+    <ul>
+      <li><b>m = 2</b>:<br>Calculate $P^{(1)}, P^{(2)}, S^{(1)}, S^{(2)}$ and set $t=0$ (iteration index).<br> Updates in each iteration are as follows:
+      $$P^{(1)}_{t+1} = S^{(1)} \times P^{(2)} \times (S^{(1)})^T$$
+      $$P^{(2)}_{t+1} = S^{(2)} \times P^{(1)} \times (S^{(2)})^T$$
+      This procedure updates the status matrices in each modality, based on neighborhoods in the other modality (<u>diffusion process</u>). After $t$ steps, the overall status matrix is the aggregate of individual status matrices:
+      $$ P^{(c)} = \frac{P^{(1)}_t + P^{(2)}_t}{2}$$
+      Thus if $x_i$ and $x_j$ have common neighbors in both modalities, they belong to the same cluster.
+      In each iteration $P^{(1)}_{t+1}$ and $P^{(2)}_{t+1}$ are normalized as described previously. Thus, it is ensured that a patient will always be most similar to oneself and the final network is full rank.</li>
+      <li><b>m > 2</b>:<br>
+      $$P^{(\nu)} = S^{(\nu)} \times \left( \frac{\sum_{k \neq \nu}P^{(k)}}{m-1} \right) \times (S^{(\nu)})^T, \quad \nu = 1,2, \ldots, m$$</li>
+    </ul></li>
+</ol>
+
+The final diffused graph can be used as input for clustering, classification and survival analysis. For example, spectral clustering can be performed on the graph by minimizing the [RatioCut](https://www.computer.org/csdl/proceedings-article/iccad/1989/00076957/12OmNrHSD1Q) objective.
