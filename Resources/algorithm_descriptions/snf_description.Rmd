@@ -14,7 +14,7 @@
   
 $$\epsilon_{ij} = \frac{\text{mean}(\rho(x_i,N_i)) + \text{mean}(\rho(x_j,N_j)) + \rho(x_i, x_j)}{3}$$
 
-In the case of non-continuous variables, distance metrics based on agreement or Chi-square distances can be used.</li>
+where $N_i$ represents a set of $x_i$'s neighbors <u>including</u> $x_i$ in $G$. In the case of non-continuous variables, distance metrics based on agreement or Chi-square distances can be used.</li>
   <li>To compute the fused matrix from multiple types of measurements, a full and sparse kernel on the vertex set $V$ is defined. The full kernel is a normalized weight matrix $P = D^{-1}W$, where $D$ is the diagonal matrix whose entries $D_{ii} = \sum_{j}W_{ij}$ , so that $\sum_{j}P_{ij} = 1$. <u>However, this normalization may suffer from numerical instability</u> since it involves self-similarities on the diagonal entries of $W$. One way to perform a **better normalization** is as follows:
   
 $$ P_{ij} = \begin{cases}
@@ -23,7 +23,7 @@ $$ P_{ij} = \begin{cases}
 \end{cases}$$
 
 This normalization is free of the scale of self-similarity in the diagonal entries and $\sum_jP_{ij}$ still holds.</li>
-  <li>Now, let $N_i$ represent a set of $x_i$'s neighbors <u>including</u> in $G$. Given a graph $G$, local affinity using the $K$ nearest neighbors ($KNN$) is defined as:
+  <li>Now, let $N_i$ represent a set of $x_i$'s neighbors <u>including</u> $x_i$ in $G$. Given a graph $G$, local affinity using the $K$ nearest neighbors ($KNN$) is defined as:
 
 $$ S_{ij} = \begin{cases}
     \frac{W_{ij}}{\sum_{k \in N_i} W_{ik}} & \text{if } j \in i, \\
