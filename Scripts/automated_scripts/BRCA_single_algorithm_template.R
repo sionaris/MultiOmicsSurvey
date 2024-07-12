@@ -31,6 +31,30 @@ optk_text = ifelse(optk_boolean == TRUE,
 description = paste(readLines("Resources/algorithm_descriptions/.....Rmd"),
                     collapse = "\n") # File path to .Rmd file within Resources/algorithm_descriptions
 
+# Preprocessing flags and code #####
+library(stringr)
+
+# Extract the names of the modalities that will be used
+modalities = unlist(strsplit(data_types, "-"))
+
+# The standardization boolean gets the names from the modalities vector
+standardization_booleans = rep(NULL, length(modalities))
+
+# Replace with TRUE wherever standardization is required or FALSE otherwise
+standardization_booleans = c()
+
+# The same logic follows for features in rows
+features_in_rows = rep(NULL, length(modalities))
+
+# Replace with TRUE wherever features are in rows
+features_in_rows = c()
+
+# The feature column vector is TRUE when features are not rownames, but a column
+feature_column = rep(NULL, length(modalities))
+
+# Replace with either a numeric value or a column name where applicable
+feature_column = c()
+
 # Run algorithm #####
 
 
