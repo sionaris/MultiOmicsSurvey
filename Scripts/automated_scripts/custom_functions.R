@@ -19,3 +19,25 @@ generate_hyperparams_text = function (algorithm, hyperparameters) {
   source("Resources/algorithm_descriptions/hyperparameter_texts.R")
   return(hyperparameters_text)
 }
+
+# Function to compute Frobenius norm between two matrices
+frobenius_norm <- function(mat1, mat2) {
+  return(sqrt(sum((mat1 - mat2)^2)))
+}
+
+# Function to compute Pearson correlation between two matrices
+pearson_correlation <- function(mat1, mat2) {
+  cor(as.vector(mat1), as.vector(mat2))
+}
+
+# Function to reshape Pearson similarity values for ANOVA
+reshape_SNF_Pearson_for_anova <- function(similarities) {
+  data <- data.frame()
+  for (key in names(similarities)) {
+    pearson_matrix <- similarities[[key]]$Pearson
+    values <- pearson_matrix[upper.tri(pearson_matrix)]
+    factor <- rep(key, length(values))
+    data <- rbind(data, data.frame(Value = values, Factor = factor))
+  }
+  return(data)
+}
