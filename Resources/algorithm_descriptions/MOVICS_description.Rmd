@@ -1,0 +1,103 @@
+# GET modules
+The first part of this pipeline is to identify the ideal number of multi-omic clusters in our data. For this, we use the ``getClustNum()`` function. Each dataset is normalized to ensure that data values are on the same scale. This involves setting negative values to zero (by adjusting them based on the minimum value), and scaling all values to a maximum of one. The function uses the ``IntNMF::nmf.opt.k`` method from the <u>IntNMF</u> package to compute the cluster prediction index for a range of cluster numbers (``try.N.clust``). This method performs NMF, which is used to reduce dimensionality and detect patterns in multi-omics data, and estimates the quality of clustering for each possible number of clusters by assessing the stability of clusters across multiple runs. This way, the Cluster Prediction Index (CPI) is estimated.
+
+For each modality $i$ the NMF equation is:
+$$ X_{n \times p_{i}}^i \approx W_{n \times k} H_{k \times p_{i}}^i $$
+
+where $n$ is the number of samples, $p_i$ is the dimensionality of modality $i$ and $k$ a pre-defined number of clusters. The idea is that $W$ is the same for all modalities (matrix of basis vectors) and $H$ is varying (matrix of coefficients) - [link for paper](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0176278).
+
+The objective function is:
+
+$$Q = \min_{W, H} \sum_{i=1}^m \theta_{i} ||X^i - WH^i||_2$$
+
+where $\theta_{i}$ is the user specified weight for $i-$th data. For example, the weights can be calculated as the maximum of the mean sums of squares among all data divided by the mean sums of squares of each data:
+
+$$ \theta_i = \frac{Max\{mean\{||X^i||_2\}\}}{mean\{||X^i||_2\}}, \quad i = 1, \ldots, m\ $$
+Thus, the use of $\theta$ ensures that the factorization process is more equitable, i.e. no single dataset with large scale or high variability unduly dominates the factorization process.
+
+The function $Q$ is convex with respect to W; however, the function is not convex when $W$ and all $H^i$ are considered together. Therefore, there is no unique global minimum of the NMF problem. However, a local optimum can be achieved by minimizing the objective function Q using numerical optimization methods.
+
+Overview of the algorithm:
+<ol>
+  <li>$W$ is initialized from a random uniform distribution ($U$[0,1]) and/or using non-negative double singular value decomposition ([NNDSVD](https://www.sciencedirect.com/science/article/pii/S0031320307004359?via%3Dihub))</li>
+  <li>Solve for each $H^i$ using the [non-negativity constrained alternating least square (NNALS) algorithm was first proposed by Lawson & Hanson](https://www.semanticscholar.org/paper/Solving-least-squares-problems-Lawson-Hanson/b35e036e0226d923d03c06ae393084b40c9dec7e) and the current value for $W$:
+  $$Q_{H^i} = \text{arg}\min_{H^i} ||X^i - WH^i||_2 $$</li>
+  <li> SSolve for $W$ using $X^i$ and current values for $H^i$ $i = 1, \ldots , m$ using NNALS:
+  $$Q_W = \text{arg}\min_{W} \sum_{i=1}^m \theta_{i} ||X^i - WH^i||_2$$ </li>
+  <li>Repeat Step 2 and 3 until convergence</li>
+</ol>
+
+Using the solution for $W$, the cluster membership for each sample is then determined by the highest entry in each column (i.e., sample $j$ is assigned in cluster $c$ if $W[j, c]$ is the largest element in $W[j,]$ where $j$ represents rows, $j = 1,\ldots,n$, and $c$ represents columns in $W, c = 1,\ldots,k$.
+
+The stopping criterion in the algorithm is based on the stability in connectivity matrix. For each run of the algorithm, a $n \times n$ connectivity matrix $C$ with all the entries either 0 or 1 is defined based on the sample assignment to the clusters. If two samples $i$ and $j$ belong to the same cluster then the corresponding entry of the connectivity matrix is 1 ($c_{ij} = 1$) otherwise it is 0 ($c_{ij} = 0$). The algorithm stops when $C$ does not change for a pre-set number of consecutive iterations (100 in MOVICS).
+
+The optimal $k$ is determined based on the CPI using a resampling-based cross-validation technique.
+
+<details>
+  <summary> More on CPI </summary>
+  Τhe idea is to partition the data into training ($Χ^i_{n1 \times p_i}$, for $i = 1,\ldots,m$) and testing ($Χ^i_{n2 \times p_i}$, for $i = 1,\ldots,m$) sets repeatedly. At each repetition, the intNMF algorithm is applied to the training data in order to estimate coefficient matrices $H^i_{k \times p_i{\text{(train)}}}$} ($i = 1,\ldots, m$). The coefficient matrices are then used to estimate the common basis matrix ($W_{n2 \times k}$) using the test data and solving the following optimization problem:
+
+$$Q_{W_{n2 \times k}} = \text{arg}\min_{W_{n2 \times k}} \sum_{i=1}^m \theta_{i} ||X^i_{n2 \times p_i} - W_{n2 \times k}H^i_{k \times p_i{\text{(train)}}}||_2$$
+
+Cluster memberships of the samples in the test data are predicted using the matrix as mentioned before. In parallel, intNMF algorithm is used in the test data independently to compute the clustering assignments (“observed”) of the samples in test data. Under the true model, there should be a good consensus between the predicted and the observed clustering assignments as measured by the adjusted rand index. The process is repeated several times and average of the adjusted rand indices is computed which is called “Cluster Prediction Index”. The value of k that results in maximum value of Cluster Prediction Index (CPI) is chosen as optimum number of clusters for the data.
+</details>
+
+
+The function also computes gap statistics using the ``mogsa::moGap()`` method after performing Multiple Omics data integrative Cluster Analysis (MOCA) with ``mogsa::mbpca()``. 
+
+The function ``mogsa::mbpca()`` is called with the following parameters on a set of matrics $x$:
+
+1. **Normalization**  
+   Each matrix $X$ in $x$ is transposed and then processed according to the specified options for centering and scaling. For ``center = TRUE`` and ``scale = TRUE``, the transformation is: $$X'_{ij} = \frac{X_{ij} - \mu_j}{\sigma_j}$$where $\mu_j$ is the mean of the $j^{th}$ column, and $\sigma_j$ is the standard deviation of the $j^{th}$ column of matrix $X$.
+
+2. **SVD Solver Configuration**  
+   The SVD of a matrix $X'$ is computed as: $$X' = U \Sigma V^T$$
+where $U$ and $V$ are orthogonal matrices containing the left and right singular vectors, respectively, and $\Sigma$ is a diagonal matrix containing the singular values. <u>Principal components are calculated on the concatenated matrices from different modalities</u> (``method = 'globalScore'`` in ``mbpca()`` -> can be switched to ``'blockScore'`` or ``'blockLoading'`` for computing principal components for each block independently but using information from other blocks to refine these calculations OR calculating loadings for each block that are influenced by the structure of the entire dataset, respectively).
+
+3. **Weight Initialization (weights for different modalities)**  
+   Since weights are not provided and are initialized as NA, they default to 1:$$w = 1, \quad w_{\text{obs}} = 1$$
+
+4. **Component Calculation**  
+   For ``ncomp = 2``, two components are calculated using the SVD function. <u>Deflation</u> is applied at each step (twice in this case in order to ensure components are orthogonal) using the method "globalScore", which adjusts each block matrix $x_b$ in $x$ as follows: $$x_b' = x_b - \frac{tt^Tx_b}{t^Tt}$$where $t$ is the score matrix from the SVD, and $t^T$ is its transpose.
+
+
+5. **Multi-Omics Analysis**  
+  If ``moa = TRUE``, the function integrates results across different types of omics data. This integration involves the computation of various diagnostics such as eigenvalues, factor scores, and contributions, as well as the RV coefficient for dataset similarity: 
+
+<details>
+  <summary>More on RV</summary>
+    <ul>
+      <li>For each matrix $X$ in the data list, calculate the normalized cross-product matrix: $$M_X = \frac{X^TX}{\sqrt{\sum(X^TX)^2}}$$where $X^TX$ computes the cross-product of matrix $X$, representing the correlation matrix for the variables. The division by $\sqrt{\sum(X^TX)^2}$ normalizes the matrix to unit scale, which aids in comparing matrices of different scales or units. </li>
+      <li>Compute the RV matrix, which is the cross-product of the normalized matrices for each dataset:$$RV = M_{s1}^T M_{s2}$$where $M_{s1}$ and $M_{s2}$ are the normalized cross-product matrices from datasets 1 and 2 ($X_1$ and $X_2$). The RV matrix elements represent the correlation between datasets, with each element measuring the similarity between pairs of datasets based on their variables. More specifically:
+    Let $X$, $Y$ be two matrices corresponding to two datasets. The RV coefficient between these two datasets is calculated as:$$RV_{XY} = \frac{\text{trace}(X X^T Y Y^T)}{\sqrt{\text{trace}(X X^T X X^T) \times \text{trace}(Y Y^T Y Y^T)}}$$</li>
+    <li>Extending this to four datasets, let's denote them as $X_1$, $X_2$, $X_3$, and $X_4$. The resulting $RV$ matrix \textbf{R} would be a 4x4 matrix, where each element $R_{ij}$ is the RV coefficient between $X_i$ and $X_j$:
+  $$
+\textbf{R} = \begin{bmatrix}
+    1 & \text{RV}_{X_1X_2} & \text{RV}_{X_1X_3} & \text{RV}_{X_1X_4} \\
+    \text{RV}_{X_2X_1} & 1 & \text{RV}_{X_2X_3} & \text{RV}_{X_2X_4} \\
+    \text{RV}_{X_3X_1} & \text{RV}_{X_3X_2} & 1 & \text{RV}_{X_3X_4} \\
+    \text{RV}_{X_4X_1} & \text{RV}_{X_4X_2} & \text{RV}_{X_4X_3} & 1
+\end{bmatrix}
+  $$ Each non-diagonal element $R_{ij}$ is computed by the given $RV$ formula, and each diagonal element is 1, reflecting the perfect similarity of a dataset with itself.</li>
+  </ul>
+</details>
+
+Gap statistics compare the total within-cluster variation for different numbers of clusters against the expected variation under a reference null distribution that is generated using Monte Carlo simulations. This helps in identifying a clustering structure that has a significantly lower within-cluster variation compared to the null model.
+
+<details>
+- **Within-cluster sum of squares**:
+$$ W_k(X, k) = 0.5 \times \sum_{j=1}^{k}\sum_{i\in C_{j}}{\left( \frac{d(x_i, \mu_j)^d}{|C_j|} \right)} $$
+where $C_j$ is the set of indices belonging to cluster $j$, $x_i$ are the data points, $\mu_j$ is the centroid of cluster $j$, $d = 1$ by default.
+- The logarithm of $W_k(X, k)$ is computed for each $$k \in \{2, 3, \ldots, 10\}, k \in \mathbb{N}
+$$:
+$$\log W[k] = \log W_k(X,k)$$
+- **Bootstrapping for Null distribution**:
+By default, $B=100$ bootstrap samples $z$ are generated to create a reference distribution in order to estimate $E[\log W[k]]$. The process takes into account the range of features in $X$ and uses principal component information to preserve the structure of $X$ in the bootstrap samples.
+$$ \log W_{bk}(b, k) = \log W(z, k) $$
+$$ E[\log W[k]] = \frac{1}{B} \sum_{b=1}^B{\log W_{bk}}$$ for a specific value of $k$.
+
+- Calculation of the gap statistic:
+$$ Gap[k] = E[\log W[k]] - \log W_k $$
+</details>
+
+The function identifies the optimal number of clusters <u>by combining the results from the CPI and the gap statistics</u>. It computes the sum of the normalized values from both metrics for each cluster number and identifies the number where this sum is maximized.
