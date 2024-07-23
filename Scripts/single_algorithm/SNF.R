@@ -29,13 +29,14 @@ evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER
 title = paste0("Results from ", algorithm)
 subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types, " | <b>Evaluation</b>: ", evaluation_source)
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
-optk_boolean = "TRUE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
+optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
                    "<u>does not suggest</u> an optimal number of multi-omic clusters $k$")
 
 # Detailed description of the algorithm
-description = paste(readLines("Resources/algorithm_descriptions/snf_description.Rmd"),
+description = paste(readLines(paste0("Resources/algorithm_descriptions/", algorithm,
+                                     "_description.Rmd")),
                     collapse = "\n") # File path to .Rmd file within Resources/algorithm_descriptions
 
 # Preprocessing flags and code #####
