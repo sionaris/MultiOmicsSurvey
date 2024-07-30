@@ -639,6 +639,116 @@ clin_comp = compClinvar(moic.res = consensus,
                         tab.name = "Summary_of_clinical_variables",
                         res.path = paste0(home, "/Results/MOVICS_baseline/"))
 
+# Color annotation #####
+# set color for each omics data
+# if no color list specified all subheatmaps will be unified to green and red color pattern
+mRNA.col   <- c("#00ff00", "#000000", "#ff0000")
+CNV.col <- c("#6699CC", "white", "#FF3C38")
+mut.col   <- c("#EFE5AF", "white", "#780A43")
+methylation.col    <- c("#57087C", "#000000", "#FF3C38")
+miRNA.col <- c("#D3ACEF", "#000000", "#FA076B")
+col.list   <- list(CNV.col, methylation.col, mRNA.col, miRNA.col, mut.col)
+
+# Create annCol object that will be used for plot annotation and colors
+library(forcats)
+library(tidyr)
+
+# Select and rename columns
+annCol = var2comp %>%
+  dplyr::select(`Vital status` = vital_status,
+                Ethnicity = ethnicity,
+                Race = race_list,
+                `Lymph node status` = primary_lymph_node_presentation_assessment,
+                Histology = histological_type,
+                `Menopausal status` = menopause_status,
+                `PR status` = breast_carcinoma_progesterone_receptor_status,
+                `ER status` = breast_carcinoma_estrogen_receptor_status,
+                `HER2 status` = lab_proc_her2_neu_immunohistochemistry_receptor_status,
+                Metastasis = distant_metastasis_present_ind2,
+                Stage = stage_event_pathologic_stage)
+rownames(annCol) = rownames(var2comp)
+
+# Replace empty strings with NA
+annCol[annCol == ""] <- NA
+
+# Replace NA values with "Unknown"
+annCol <- annCol %>%
+  mutate(across(everything(), ~ifelse(is.na(.), "Unknown", as.character(.)))) %>%
+  mutate(across(everything(), as.factor))
+
+# Relabel factors where necessary
+annCol$Ethnicity = factor(str_to_sentence(annCol$Ethnicity))
+annCol$Race = factor(str_to_sentence(annCol$Race))
+annCol$`Lymph node status` = factor(str_to_sentence(annCol$`Lymph node status`))
+levels(annCol$Histology)[levels(annCol$Histology) == "Mixed Histology (please specify)"] <- "Mixed"
+levels(annCol$Histology)[levels(annCol$Histology) == "Other, specify"] <- "Other"
+levels(annCol$`Menopausal status`)[levels(annCol$`Menopausal status`) == "Indeterminate (neither Pre or Postmenopausal)"] = "Indeterminate"
+levels(annCol$`Menopausal status`)[levels(annCol$`Menopausal status`) == "Peri (6-12 months since last menstrual period)"] = "Perimenopausal"
+levels(annCol$`Menopausal status`)[levels(annCol$`Menopausal status`) == "Post (prior bilateral ovariectomy OR >12 mo since LMP with no prior hysterectomy)"] = "Post-menopausal"
+levels(annCol$`Menopausal status`)[levels(annCol$`Menopausal status`) == "Pre (<6 months since LMP AND no prior bilateral ovariectomy AND not on estrogen replacement)"] = "Pre-menopausal"
+annCol$Metastasis = factor(str_to_sentence(annCol$Metastasis))
+
+# Relabel stage
+stage1 = c("Stage I", "Stage IA", "Stage IB")
+stage2 = c("Stage II", "Stage IIA", "Stage IIB")
+stage3 = c("Stage III", "Stage IIIA", "Stage IIIB", "Stage IIIC")
+stage4 = c("Stage IV")
+
+levels(annCol$Stage)[levels(annCol$Stage) == "Stage X"] = "Unknown"
+levels(annCol$Stage)[levels(annCol$Stage) %in% stage1] = "Stage I"
+levels(annCol$Stage)[levels(annCol$Stage) %in% stage2] = "Stage II"
+levels(annCol$Stage)[levels(annCol$Stage) %in% stage3] = "Stage III"
+levels(annCol$Stage)[levels(annCol$Stage) %in% stage4] = "Stage IV"
+
+# Generate corresponding colors for sample annotation
+histol_colors = rcartocolor::carto_pal(n = 9, "Safe")
+names(histol_colors) = levels(annCol$Histology)
+histol_colors[["Unknown"]] = "grey40"
+
+annColors = list(
+  Stage = c(`Stage I` = "#00C9FF", `Stage II` = "#099CF5", 
+            `Stage III` = "#097BF5", `Stage IV` = "#0B5684", `Unknown` = "grey40"),
+  `Lymph node status` = c(No = "grey75", Yes = "#4A0558", `Unknown` = "grey40"),
+  `ER status` = c(Negative = "#C11D9C", Positive = "#0F1682", `Unknown` = "grey40"),
+  `PR status` = c(Indeterminate = "aliceblue", Positive = "dodgerblue4", 
+                  Negative = rcartocolor::carto_pal(n = 7, "ArmyRose")[5], `Unknown` = "grey40"),
+  `HER2 status` = c(Negative = "#0B9EF8", Positive = "#560DA7",
+                    Indeterminate = "mistyrose1", Equivocal = "hotpink4", `Unknown` = "grey40"),
+  `Vital status` = c(Alive = "lightpink1", Dead = "black", `Unknown` = "grey40"),
+  Ethnicity = c(`Hispanic or latino` = rcartocolor::carto_pal(n = 12, "Vivid")[1],
+                `Not hispanic or latino` = rcartocolor::carto_pal(n = 12, "Vivid")[6], 
+                `Unknown` = "grey40"),
+  Race = c(`American indian or alaska native` = rcartocolor::carto_pal(n = 12, "Bold")[5],
+           Asian = rcartocolor::carto_pal(n = 12, "Bold")[3],
+           `Black or african american` = rcartocolor::carto_pal(n = 12, "Prism")[12],
+           White = "beige", `Unknown` = "grey40"),
+  Metastasis = c(Yes = "deeppink4", No = "cadetblue2", `Unknown` = "grey40"),
+  Histology = histol_colors,
+  `Menopausal status` = c(Indeterminate = "mistyrose2",
+                          `Pre-menopausal` = rcartocolor::carto_pal(n = 7, "SunsetDark")[2],
+                          `Perimenopausal` = rcartocolor::carto_pal(n = 7, "SunsetDark")[5],
+                          `Post-menopausal` = rcartocolor::carto_pal(n = 7, "SunsetDark")[7],
+                          `Unknown` = "grey40")
+)
+
+# Plotting using the MOVICS package, which uses pheatmap underneath
+oncoprint <- compMut(moic.res  = consensus,
+                     mut.matrix   = input$SNPs, # binary somatic mutation matrix
+                     doWord       = TRUE, # generate table in .docx format
+                     doPlot       = TRUE, # draw OncoPrint
+                     freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
+                     p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
+                     innerclust   = TRUE, # perform clustering within each subtype
+                     annCol       = annCol, # same annotation for heatmap
+                     annColors    = annColors, # same annotation color for heatmap
+                     width        = 12, 
+                     height       = 6,
+                     fig.name     = paste0(algorithm, "_", data_source, "_",
+                                           data_types, "_eval_on_", evaluation_source,
+                                           "_oncoprint"),
+                     tab.name     = "Independent test between subtype and mutation",
+                     fig.path     = paste0(home, "/Results/MOVICS_baseline"),
+                     res.path     = paste0(home, "/Results/MOVICS_baseline"))
 # Save environment
 save.image(paste0(home, "/Results/MOVICS_baseline/", 
                   algorithm, "_", data_source, "_",
