@@ -41,3 +41,15 @@ reshape_SNF_Pearson_for_anova <- function(similarities) {
   }
   return(data)
 }
+
+# Function to calculate Jaccard index between two clusterings (MOVICS)
+MOVICS_jaccard_index <- function(clust1, clust2) {
+  clust = as.data.frame(clust1) %>% 
+    dplyr::rename(clust1 = clust) %>%
+    inner_join(as.data.frame(clust2) %>% dplyr::rename(clust2 = clust),
+               by = "samID")
+  clust$agree = ifelse(clust$clust1 == clust$clust2, 1, 0)
+  intersection <- sum(clust$agree)
+  jaccard <- intersection/nrow(clust)
+  return(jaccard)
+}
