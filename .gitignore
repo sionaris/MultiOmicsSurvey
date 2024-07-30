@@ -2,6 +2,7 @@
 .Rhistory
 *.RData
 *.rda
+*.tar.gz
 .Ruserdata
 /Resources/BRCA complete/
 /GDCdata/
