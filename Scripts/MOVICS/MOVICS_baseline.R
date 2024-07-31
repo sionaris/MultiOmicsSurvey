@@ -912,11 +912,13 @@ gsva.res = runGSVA_mod_4.4(moic.res      = consensus,
 
 # Load transNEO data
 transNEO_mm_inputs = readRDS("Resources/transNEO/transNEO_multimodal_inputs.rds")
+transcr = transNEO_mm_inputs$`RNAseq log2(TPM+1)`[, 1:153]
+rownames(transcr) = transNEO_mm_inputs$`RNAseq log2(TPM+1)`$Hugo
 
 # Up-regulated expression features
 RNGversion("4.2.2")
 transNEO_ntp_expr_up = runNTP(
-  expr = transNEO_mm_inputs$`RNAseq log2(TPM+1)`,
+  expr = as.matrix(transcr),
   templates = dgea.marker.up$templates,
   scaleFlag = TRUE, # already standardised
   centerFlag = TRUE, # -//-
@@ -931,10 +933,10 @@ transNEO_ntp_expr_up = runNTP(
 
 RNGversion("4.2.2")
 transNEO_ntp_expr_down = runNTP(
-  expr = transNEO_mm_inputs[["RNAseq norm. logTPM"]],
+  expr = as.matrix(transcr),
   templates = dgea.marker.down$templates,
-  scaleFlag = FALSE, # already standardised
-  centerFlag = FALSE, # -//-
+  scaleFlag = TRUE, # already standardised
+  centerFlag = TRUE, # -//-
   nPerm = 10000,
   seed = 123,
   distance = "cosine", # default
@@ -959,12 +961,12 @@ paste("Agremeent of NTP subtypes with respect to expression data from the extern
       " samples).")
 
 # Compare clinical variables of interest across clusters
-transNEO_var2comp = transNEO_mm_inputs$Pheno %>%
-  dplyr::select(LN.status.at.diagnosis = LN.at.diagnosis, ER.status, HER2.status,
-                Grade.pre.NAT = Grade.pre.chemotherapy, pCR.RD, Age = Age.at.diagnosis,
-                NAT.regimen = Chemo.Classification, Chemo.cycles = Chemo.NumCycles,
-                aHER2.cycles = Trast.NumCycles, RCB.score, STAT1.gsva,
-                GGI.gsva, ESC.gsva, TMB = All.TMB, HRD.sum, Donor.ID = Trial.ID) %>%
+transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
+  dplyr::select(LN.status.at.diagnosis, ER.status, HER2.status,
+                Grade.pre.NAT, pCR.RD, Age, T.stage, PAM50, iC10,
+                NAT.regimen, Chemo.cycles,
+                aHER2.cycles, RCB.score, STAT1.gsva,
+                GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
   inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, `Consensus Subtype` = clust_up),
              by = "Donor.ID")
 rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
@@ -972,21 +974,28 @@ transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
 
 # Convert to factors
 transNEO_var2comp$LN.status.at.diagnosis = factor(transNEO_var2comp$LN.status.at.diagnosis,
-                                                  labels = c("Positive", "Negative"),
-                                                  levels = c(1, -1))
+                                                  levels = c("NEG", "POS"),
+                                                  labels = c("Negative", "Positive"))
 transNEO_var2comp$ER.status = factor(transNEO_var2comp$ER.status,
-                                     labels = c("Positive", "Negative"),
-                                     levels = c(1, -1))
+                                     levels = c("NEG", "POS"),
+                                     labels = c("Negative", "Positive"))
 transNEO_var2comp$HER2.status = factor(transNEO_var2comp$HER2.status,
-                                       labels = c("Positive", "Negative"),
-                                       levels = c(1, -1))
+                                       levels = c("NEG", "POS"),
+                                       labels = c("Negative", "Positive"))
 transNEO_var2comp$Grade.pre.NAT = factor(transNEO_var2comp$Grade.pre.NAT,
-                                         labels = c(1, 2, 3),
-                                         levels = c(1, 2, 3))
-transNEO_var2comp$NAT.regimen = factor(transNEO_var2comp$NAT.regimen)
+                                         levels = c(1, 2, 3, 4),
+                                         labels = c("Grade 1", "Grade 2", "Grade 3", "Grade 4"))
 transNEO_var2comp$pCR.RD = factor(transNEO_var2comp$pCR.RD,
-                                  labels = c("pCR", "RD"),
-                                  levels = c(1, 0))
+                                  levels = c("pCR", "RD"),
+                                  labels = c("pCR", "Residual Disease"))
+transNEO_var2comp$PAM50 = factor(transNEO_var2comp$PAM50,
+                                 levels = c("Basal", "Her2", "LumB", "LumA", "Normal", "Unk"),
+                                 labels = c("Basal-like", "HER2+", "Luminal B", "Luminal A",
+                                            "Normal-like", "Unknown"))
+transNEO_var2comp$iC10 = factor(transNEO_var2comp$iC10,
+                                levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                                labels = paste("iC", seq(1, 10, 1), sep = ""))
+
 
 transNEO_clincomp = compClinvar2(moic.res = transNEO_ntp_expr_up,
                                  var2comp = transNEO_var2comp,
@@ -1002,24 +1011,24 @@ transNEO_clincomp = compClinvar2(moic.res = transNEO_ntp_expr_up,
 # Run PAM
 RNGversion("4.2.2.")
 set.seed(123)
-transNEO_pam = runPAM(train.expr = tpm_filt,
+transNEO_pam = runPAM(train.expr = input$RNAseq,
                       moic.res   = consensus,
-                      test.expr  = transNEO_mm_inputs$`RNAseq TPM`[transNEO_mm_inputs$transcriptomic_features, ])
+                      test.expr  = as.matrix(transcr))
 
 # Check consistency across methods
 
 # Get predictions for TCGA (discovery cohort)
 RNGversion("4.2.2.")
 set.seed(123)
-TCGA.ntp.pred = runNTP(expr = tpm_filt[, consensus$clust.res$samID],
+TCGA.ntp.pred = runNTP(expr = input$RNAseq[, consensus$clust.res$samID],
                        templates = dgea.marker.up$templates,
                        doPlot = F)
 
-TCGA.pam.pred = runPAM(train.expr = tpm_filt[, consensus$clust.res$samID],
+TCGA.pam.pred = runPAM(train.expr = input$RNAseq[, consensus$clust.res$samID],
                        moic.res = consensus,
-                       test.expr = tpm_filt[, consensus$clust.res$samID])
+                       test.expr = input$RNAseq[, consensus$clust.res$samID])
 
-# consensus TCGA vs NTP TCGA
+# consensus TCGA vs NTP TCGA # FAILS
 runKappa(subt1 = consensus$clust.res$clust,
          subt2 = as.numeric(TCGA.ntp.pred$clust.res$clust),
          subt1.lab = "Consensus",
@@ -1039,7 +1048,7 @@ runKappa(subt1 = consensus$clust.res$clust,
          fig.path = paste0(home, "/Results/MOVICS_baseline"),
          fig.name = "kappa_consensus_vs_PAM_TCGA")
 
-# NTP transNEO vs PAM transNEO
+# NTP transNEO vs PAM transNEO # FAILS
 runKappa(subt1 = as.numeric(transNEO_ntp_expr_up$clust.res$clust),
          subt2 = as.numeric(transNEO_pam$clust.res$clust),
          subt1.lab = "transNEO NTP",
