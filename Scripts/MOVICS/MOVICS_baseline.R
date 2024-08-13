@@ -642,11 +642,11 @@ clin_comp = compClinvar(moic.res = consensus,
 # Color annotation #####
 # set color for each omics data
 # if no color list specified all subheatmaps will be unified to green and red color pattern
-mRNA.col   <- c("#00ff00", "#000000", "#ff0000")
+mRNA.col   <- c("#00ff00", "white", "#ff0000")
 CNV.col <- c("#6699CC", "white", "#FF3C38")
-mut.col   <- c("#EFE5AF", "white", "#780A43")
-methylation.col    <- c("#57087C", "#000000", "#FF3C38")
-miRNA.col <- c("#D3ACEF", "#000000", "#FA076B")
+mut.col   <- c("#EFE5AF", "#780A43")
+methylation.col    <- c("#57087C", "white", "#FF3C38")
+miRNA.col <- c("#D3ACEF", "white", "#FA076B")
 col.list   <- list(CNV.col, methylation.col, mRNA.col, miRNA.col, mut.col)
 
 # Create annCol object that will be used for plot annotation and colors
@@ -730,6 +730,68 @@ annColors = list(
                           `Post-menopausal` = rcartocolor::carto_pal(n = 7, "SunsetDark")[7],
                           `Unknown` = "grey40")
 )
+
+plotdata <- lapply(lapply(input, as.matrix), 
+                   function(mat) mat[rowSums(mat != 0) > 0, ])
+
+# comprehensive heatmap (may take a while)
+getMoHeatmap(data          = plotdata,
+             row.title     = names(plotdata),
+             is.binary     = c(F,F,F,F,T), 
+             legend.name   = c("Normalised CNV",
+                               "Normalised Methylation",
+                               "Normalised RNAseq FPKM",
+                               "Normalised miRNA FPKM",
+                               "SNPs"
+                               #bquote(bold("Normalised" ~ log[2]("TPM + 1")))
+             ),
+             clust.res     = consensus$clust.res, # consensusMOIC results
+             clust.dend    = NULL, # show no dendrogram for samples
+             show.rownames = c(F,F,F,F,F), # specify for each omics data
+             show.colnames = FALSE, # show no sample names
+             show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
+             annRow        = NULL, # no selected features
+             color         = col.list,
+             annCol        = annCol, # annotation for samples
+             annColors     = annColors, # annotation color
+             width         = 15, # width of each subheatmap
+             height        = 10, # height of each subheatmap
+             fig.path      = paste0(home, "/Results/MOVICS_baseline"),
+             fig.name      = "default_Comprehensive_heatmap")
+gc()
+
+# # Comparison of survival curves
+# surv.info = clinical_data %>% 
+#   dplyr::select(bcr_patient_barcode, vital_status, days_to_death, days_to_last_followup) %>%
+#   mutate(samID = paste0(bcr_patient_barcode, "-01")) %>%
+#   inner_join(consensus$clust.res, by = "samID") %>%
+#   dplyr::select(-bcr_patient_barcode) %>%
+#   dplyr::rename(fustat = vital_status, futime = days_to_death, Subtype = clust) %>%
+#   dplyr::filter(Subtype != 3) # Only Alive
+# surv.info$fustat[which(surv.info$fustat == "")] = NA
+# 
+# # Use days_to_last_followup to impute missing values in futime, if days_to_death = NA
+# for (i in 1:nrow(surv.info)) {
+#   if (is.na(surv.info$futime[i])) {
+#     surv.info$futime[i] = surv.info$days_to_last_followup[i]
+#   }
+# }
+# 
+# # Remove all NAs
+# surv.info = na.omit(surv.info)
+# surv.info$fustat = factor(surv.info$fustat, labels = c(0, 1),
+#                           levels = c("Alive", "Dead"))
+# surv.info = distinct(surv.info, samID, .keep_all = TRUE)
+# rownames(surv.info) = surv.info$samID
+# 
+# library(survival)
+# surv.brca <- compSurv_ext(moic.res = consensus, surv.info = surv.info, 
+#                       convt.time = "m", # convert day unit to month 
+#                       surv.median.line = "h", # draw horizontal line at median survival 
+#                       xyrs.est = c(5,10), # estimate 5 and 10-year survival 
+#                       fig.name = "Kaplan Meier curve of Consensus Subtypes",
+#                       fig.path = paste0(home, "/Results/MOVICS_baseline")) # BH adjustment by default
+# print(surv.brca)
 
 # Plotting using the MOVICS package, which uses pheatmap underneath
 oncoprint <- compMut(moic.res  = consensus,
@@ -1058,6 +1120,19 @@ runKappa(subt1 = as.numeric(transNEO_ntp_expr_up$clust.res$clust),
          fig.path = paste0(home, "/Results/MOVICS_baseline"),
          fig.name = "kappa_NTP_vs_PAM_transNEO")
 
+# Export consensus clustering object
+clust = as.data.frame(consensus$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+openxlsx::write.xlsx(clust, paste0(home, "/Results/MOVICS_baseline/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
+
+# Export session info as .txt
+writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
+                                                 algorithm, "_", data_source, "_",
+                                                 data_types, "_eval_on_", evaluation_source,
+                                                 "_sessionInfo.txt"))
 
 # Save environment
 save.image(paste0(home, "/Results/MOVICS_baseline/", 
