@@ -761,30 +761,11 @@ getMoHeatmap(data          = plotdata,
 gc()
 
 # # Comparison of survival curves
-<<<<<<< Updated upstream
-# surv.info = clinical_data %>% 
-=======
 # surv.info = clinical_data %>%
->>>>>>> Stashed changes
 #   dplyr::select(bcr_patient_barcode, vital_status, days_to_death, days_to_last_followup) %>%
 #   mutate(samID = paste0(bcr_patient_barcode, "-01")) %>%
 #   inner_join(consensus$clust.res, by = "samID") %>%
 #   dplyr::select(-bcr_patient_barcode) %>%
-<<<<<<< Updated upstream
-#   dplyr::rename(fustat = vital_status, futime = days_to_death, Subtype = clust) %>%
-#   dplyr::filter(Subtype != 3) # Only Alive
-# surv.info$fustat[which(surv.info$fustat == "")] = NA
-# 
-# # Use days_to_last_followup to impute missing values in futime, if days_to_death = NA
-# for (i in 1:nrow(surv.info)) {
-#   if (is.na(surv.info$futime[i])) {
-#     surv.info$futime[i] = surv.info$days_to_last_followup[i]
-#   }
-# }
-# 
-# # Remove all NAs
-# surv.info = na.omit(surv.info)
-=======
 #   dplyr::rename(fustat = vital_status, Subtype = clust) %>%
 #   dplyr::filter(Subtype != 3) # Only Alive
 # surv.info$fustat[which(surv.info$fustat == "")] = NA
@@ -797,24 +778,16 @@ gc()
 # # Remove all NAs
 # surv.info = na.omit(surv.info)
 # 
->>>>>>> Stashed changes
 # surv.info$fustat = factor(surv.info$fustat, labels = c(0, 1),
 #                           levels = c("Alive", "Dead"))
 # surv.info = distinct(surv.info, samID, .keep_all = TRUE)
 # rownames(surv.info) = surv.info$samID
 # 
 # library(survival)
-<<<<<<< Updated upstream
-# surv.brca <- compSurv_ext(moic.res = consensus, surv.info = surv.info, 
-#                       convt.time = "m", # convert day unit to month 
-#                       surv.median.line = "h", # draw horizontal line at median survival 
-#                       xyrs.est = c(5,10), # estimate 5 and 10-year survival 
-=======
 # surv.brca <- compSurv_ext(moic.res = consensus, surv.info = surv.info,
 #                       convt.time = "m", # convert day unit to month
 #                       surv.median.line = "h", # draw horizontal line at median survival
 #                       xyrs.est = c(5,10), # estimate 5 and 10-year survival
->>>>>>> Stashed changes
 #                       fig.name = "Kaplan Meier curve of Consensus Subtypes",
 #                       fig.path = paste0(home, "/Results/MOVICS_baseline")) # BH adjustment by default
 # print(surv.brca)
