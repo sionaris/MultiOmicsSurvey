@@ -16,7 +16,10 @@ fetch_citation = function (algorithm) {
 
 # Generate hyperparameters report text
 generate_hyperparams_text = function (algorithm, hyperparameters) {
-  source("Resources/algorithm_descriptions/hyperparameter_texts.R")
+  hyperparameters_text = paste(readLines(paste0("Resources/algorithm_descriptions/", algorithm,
+                         "_hyperparams_text.Rmd")),
+        collapse = "\n")
+  #hyperparameters_text = glue::glue(hyperparameters_text)
   return(hyperparameters_text)
 }
 

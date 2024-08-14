@@ -358,7 +358,7 @@ save(moic.res.list, file = paste0(home, "/Results/MOVICS_baseline/",
 
 # iClusterBayes with lower burnin and draw parameter values
 iClusterBayes.res = getMOIC(data        = input,
-                            N.clust     = 3,
+                            N.clust     = optk$N.clust,
                             methodslist = "iClusterBayes",
                             type        = c("gaussian",
                                             "gaussian",
@@ -383,7 +383,7 @@ rm(iClusterBayes.res); gc()
 
 # moCluster (was throwing out an error when run with the comprehensive getMOIC)
 moCluster.res = getMOIC(data        = input,
-                            N.clust     = 3,
+                            N.clust     = optk$N.clust,
                             methodslist = "MoCluster",
                             type        = c("gaussian",
                                             "gaussian",
@@ -1132,6 +1132,22 @@ writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
                                                  algorithm, "_", data_source, "_",
                                                  data_types, "_eval_on_", evaluation_source,
                                                  "_sessionInfo.txt"))
+
+# Render the R Markdown document with the parameters
+hyperparameters = list(min_k = 2,
+                       max_k = 10,
+                       n_burnin = 1800,
+                       n_draw = 1200)
+params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
+              citation = citation, home = home, optk = optk$N.clust,
+              evaluation_source = evaluation_source, title = title, subtitle = subtitle,
+              description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
+              hyperparameters_text = generate_hyperparams_text(algorithm = algorithm,
+                                                               hyperparameters = hyperparameters))
+
+rmarkdown::render(paste0(getwd(), "/Results/MOVICS_baseline/MOVICS_baseline_report.Rmd"), 
+                  params = params, 
+                  output_file = paste0(home, "/Results/MOVICS_baseline/MOVICS_baseline_report.html"))
 
 # Save environment
 save.image(paste0(home, "/Results/MOVICS_baseline/", 

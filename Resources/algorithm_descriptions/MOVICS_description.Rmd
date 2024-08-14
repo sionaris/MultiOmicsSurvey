@@ -1,5 +1,4 @@
-# GET modules
-The first part of this pipeline is to identify the ideal number of multi-omic clusters in our data. For this, we use the ``getClustNum()`` function. Each dataset is normalized to ensure that data values are on the same scale. This involves setting negative values to zero (by adjusting them based on the minimum value), and scaling all values to a maximum of one. The function uses the ``IntNMF::nmf.opt.k`` method from the <u>IntNMF</u> package to compute the cluster prediction index for a range of cluster numbers (``try.N.clust``). This method performs NMF, which is used to reduce dimensionality and detect patterns in multi-omics data, and estimates the quality of clustering for each possible number of clusters by assessing the stability of clusters across multiple runs. This way, the Cluster Prediction Index (CPI) is estimated.
+The first part of this pipeline is to <b>identify the ideal number of multi-omic clusters</b> in our data. For this, we use the ``getClustNum()`` function. Each dataset is normalized to ensure that data values are on the same scale. This involves setting negative values to zero (by adjusting them based on the minimum value), and scaling all values to a maximum of one. The function uses the ``IntNMF::nmf.opt.k`` method from the <u>IntNMF</u> package to compute the cluster prediction index for a range of cluster numbers (``try.N.clust``). This method performs NMF, which is used to reduce dimensionality and detect patterns in multi-omics data, and estimates the quality of clustering for each possible number of clusters by assessing the stability of clusters across multiple runs. This way, the <b>Cluster Prediction Index (CPI)</b> is estimated.
 
 For each modality $i$ the NMF equation is:
 $$ X_{n \times p_{i}}^i \approx W_{n \times k} H_{k \times p_{i}}^i $$
@@ -12,7 +11,7 @@ $$Q = \min_{W, H} \sum_{i=1}^m \theta_{i} ||X^i - WH^i||_2$$
 
 where $\theta_{i}$ is the user specified weight for $i-$th data. For example, the weights can be calculated as the maximum of the mean sums of squares among all data divided by the mean sums of squares of each data:
 
-$$ \theta_i = \frac{Max\{mean\{||X^i||_2\}\}}{mean\{||X^i||_2\}}, \quad i = 1, \ldots, m\ $$
+$$ \theta_i = \frac{\text{Max}\{\text{mean}\{\|X^i\|_2\}\}}{\text{mean}\{\|X^i\|_2\}}, \quad i = 1, \ldots, m $$
 Thus, the use of $\theta$ ensures that the factorization process is more equitable, i.e. no single dataset with large scale or high variability unduly dominates the factorization process.
 
 The function $Q$ is convex with respect to W; however, the function is not convex when $W$ and all $H^i$ are considered together. Therefore, there is no unique global minimum of the NMF problem. However, a local optimum can be achieved by minimizing the objective function Q using numerical optimization methods.
@@ -22,7 +21,7 @@ Overview of the algorithm:
   <li>$W$ is initialized from a random uniform distribution ($U$[0,1]) and/or using non-negative double singular value decomposition ([NNDSVD](https://www.sciencedirect.com/science/article/pii/S0031320307004359?via%3Dihub))</li>
   <li>Solve for each $H^i$ using the [non-negativity constrained alternating least square (NNALS) algorithm was first proposed by Lawson & Hanson](https://www.semanticscholar.org/paper/Solving-least-squares-problems-Lawson-Hanson/b35e036e0226d923d03c06ae393084b40c9dec7e) and the current value for $W$:
   $$Q_{H^i} = \text{arg}\min_{H^i} ||X^i - WH^i||_2 $$</li>
-  <li> SSolve for $W$ using $X^i$ and current values for $H^i$ $i = 1, \ldots , m$ using NNALS:
+  <li> Solve for $W$ using $X^i$ and the current values for $H^i$ ($i = 1, \ldots, m$) using NNALS:
   $$Q_W = \text{arg}\min_{W} \sum_{i=1}^m \theta_{i} ||X^i - WH^i||_2$$ </li>
   <li>Repeat Step 2 and 3 until convergence</li>
 </ol>
@@ -43,7 +42,7 @@ Cluster memberships of the samples in the test data are predicted using the matr
 </details>
 
 
-The function also computes gap statistics using the ``mogsa::moGap()`` method after performing Multiple Omics data integrative Cluster Analysis (MOCA) with ``mogsa::mbpca()``. 
+The function also computes <b>gap statistics</b> using the ``mogsa::moGap()`` method after performing Multiple Omics data integrative Cluster Analysis (MOCA) with ``mogsa::mbpca()``. 
 
 The function ``mogsa::mbpca()`` is called with the following parameters on a set of matrics $x$:
 
