@@ -47,3 +47,38 @@ MOVICS_jaccard_index <- function(clust1, clust2) {
   jaccard <- intersection/nrow(clust)
   return(jaccard)
 }
+
+# ARI index between two clusterings
+calculate_ari_index <- function(cluster_df1, cluster_df2,
+                                sample_col, clust_col, suffixes) {
+  # Load the mclust package for ARI calculation
+  library(mclust)
+  
+  # Merge data frames by Sample.ID
+  merged_df <- merge(cluster_df1, cluster_df2, by = sample_col, suffixes = suffixes)
+  
+  # Calculate the ARI
+  ari_index <- adjustedRandIndex(merged_df[[paste0(clust_col, suffixes[1])]], 
+                                 merged_df[[paste0(clust_col, suffixes[2])]])
+  return(ari_index)
+}
+
+# NMI index between two clusterings
+calculate_nmi_index <- function(cluster_df1, cluster_df2,
+                                sample_col, clust_col, suffixes) {
+  # Load the clue package for NMI calculation
+  library(clue)
+  
+  # Merge data frames by Sample.ID
+  merged_df <- merge(cluster_df1, cluster_df2, by = sample_col, suffixes = suffixes)
+  
+  # Convert clusters to partitions
+  partition1 <- as.cl_partition(merged_df[[paste0(clust_col, suffixes[1])]])
+  partition2 <- as.cl_partition(merged_df[[paste0(clust_col, suffixes[2])]])
+  
+  # Calculate the NMI
+  nmi_index <- cl_agreement(partition1, partition2, method = "NMI")
+  return(nmi_index)
+}
+
+

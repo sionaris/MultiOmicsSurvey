@@ -1,0 +1,34 @@
+---
+title: "`r params$title`"
+subtitle: "`r params$subtitle`"
+author: "Aris Sionakidis"
+date: "`r Sys.Date()`"
+abstract: >
+  In this markdown document, we present the main results of the `r params$algorithm` algorithm ([Ref](`r params$citation`)). `r params$in_a_nutshell` `r params$algorithm` `r params$optk_text`.
+output: 
+  html_document:
+    fig.width : 12
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Details on the algorithm
+`r params$description`
+
+# Hyperparameters and tuning
+```{r, echo=FALSE, results='asis'}
+res <- knitr::knit_child(paste0(params$home, "/Resources/algorithm_descriptions/",
+                                params$algorithm, "_hyperparameters_text.Rmd"), quiet = TRUE)
+cat(res, sep = '\n')
+```
+
+# Main results on training data
+
+# Evaluation results
+
+# Supplementary results
+
+# Conclusions

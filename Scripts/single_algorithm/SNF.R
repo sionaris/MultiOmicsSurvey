@@ -1,13 +1,7 @@
 # Import data from gitignored "Resources/BRCA complete/" folder #####
 
-# These datasets are pre-standardized
-brca_cnv = read.csv("Resources/BRCA complete/BRCA_CNV.csv")
-brca_met = read.csv("Resources/BRCA complete/BRCA_Methy.csv")
-brca_exp = read.csv("Resources/BRCA complete/BRCA_mRNA.csv")
-brca_mirna = read.csv("Resources/BRCA complete/BRCA_miRNA.csv")
-data_object = list(CNV = brca_cnv, Methylation = brca_met,
-            RNAseq = brca_exp, miRNA = brca_mirna)
-rm(brca_cnv, brca_exp, brca_met, brca_mirna); gc()
+# This RDS object was produced using the Scripts/MOVICS/MOVICS_baseline.R script
+input = readRDS("Resources/BRCA complete/mm_input.rds")
 
 # Setup environment variables for markdown #####
 
@@ -17,6 +11,7 @@ set.seed(123)
 
 # Load custom helper functions
 source("Scripts/automated_scripts/custom_functions.R")
+source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Preamble
 home = getwd()
@@ -24,11 +19,14 @@ algorithm = "SNF"
 alg_feature_pref = "cols" # Where does the algorithm expect the features to be
 citation = fetch_citation(algorithm = algorithm)
 data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
-data_types = "RNAseq-CNV-Methylation-miRNA" # e.g. RNAseq, RNAseq-CNV-miRNA
+data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
 evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER 
 title = paste0("Results from ", algorithm)
-subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types, " | <b>Evaluation</b>: ", evaluation_source)
+subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types, 
+                  " | <b>Evaluation</b>: ", evaluation_source)
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
+ground_truth_labels = openxlsx::read.xlsx("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")
+ground_truth_k = 3 # optk from MOVICS
 optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
@@ -43,117 +41,16 @@ description = paste(readLines(paste0("Resources/algorithm_descriptions/", algori
 library(stringr)
 library(dplyr)
 
+# All preprocessing for this input has already been performed using the 
+# Scripts/MOVICS/MOVICS_baseline.R script
+
+# However SNF prefers features in columns so we transpose the matrices.
+
 # Extract the names of the modalities that will be used
 modalities = unlist(strsplit(data_types, "-"))
 
-# The standardization boolean gets the names from the modalities vector
-standardization_booleans = rep(NULL, length(modalities))
-
-# Replace with TRUE wherever standardization is required or FALSE otherwise
-standardization_booleans = rep(FALSE, length(modalities))
-
-# The same logic follows for features in rows
-features_in_rows = rep(NULL, length(modalities))
-
-# Replace with TRUE wherever features are in rows. Each row will then be standardized
+# Replace with TRUE wherever features are in rows
 features_in_rows = rep(TRUE, length(modalities))
-
-# If features are in columns, each column will be standardized
-
-# The feature column vector is TRUE when features are not rownames, but a column
-feature_column = rep(NULL, length(modalities))
-
-# Replace with either a numeric value or a column name where applicable
-# Leave NULL if features are in columns
-# Use feature_column EVEN IF data are pre-standardized, as long as the data frame
-# contains a feature column
-feature_column = rep("X", length(modalities))
-
-# Give names to the vectors
-names(standardization_booleans) = names(features_in_rows) = names(feature_column) = modalities
-
-# Perform standardization of features if required
-input = data_object
-for (i in 1:length(modalities)) {
-  if (standardization_booleans[modalities[i]] == TRUE) {
-    if (features_in_rows[i] == TRUE && !is.null(feature_column[i])) {
-      
-      # Check if numerical or character string was used for the feature column indicator
-      feature_column_indicator_type = ifelse(is.numeric(feature_column[i]),
-                                             "numeric", "character")
-      
-      # Extract features
-      features = data_object[[i]][, feature_column[i]]
-      
-      # Remove feature column based on indicator type
-      if (feature_column_indicator_type == "numeric") {
-        z_data = data_object[[i]][, -feature_column[i]]
-      } else {
-        z_data = data_object[[i]] %>% dplyr::select(-feature_column[i])
-      }
-      
-      # Convert to matrix and standardize
-      cols = colnames(z_data) # Extract colnames
-      z_data = as.matrix(z_data)
-      z_data = t(apply(z_data, 1, scale))
-      rownames(z_data) = features # Set/ensure rownames
-      colnames(z_data) = cols # Set/ensure colnames
-      
-      # Save the transformed matrix in the input object
-      input[[modalities[i]]] = z_data
-      rm(feature_column_indicator_type, features, z_data, cols)
-    } else if (features_in_rows[i] == TRUE && is.null(feature_column[i])) {
-      
-      # We assume the features are the rownames
-      features = rownames(data_object[[i]])
-      cols = colnames(data_object[[i]])
-      z_data = as.matrix(data_object[[i]])
-      z_data = t(apply(z_data, 1, scale))
-      rownames(z_data) = features # Set/ensure rownames
-      colnames(z_data) = cols # Set/ensure colnames
-      
-      # Save the transformed matrix in the input object
-      input[[modalities[i]]] = z_data
-      rm(features, z_data, cols)
-    } else if (features_in_rows[i] == FALSE) {
-      
-      # We assume that all columns are numeric and are to be standardized
-      rows = rownames(data_object[[i]])
-      features = colnames(data_object[[i]])
-      z_data = as.matrix(data_object[[i]])
-      z_data = apply(z_data, 1, scale)
-      rownames(z_data) = rows # Set/ensure rownames
-      colnames(z_data) = features # Set/ensure colnames
-      
-      # Save the transformed matrix in the input object
-      input[[modalities[i]]] = z_data
-      rm(features, z_data, rows)
-    } 
-  } else if (standardization_booleans[modalities[i]] == FALSE && !is.null(feature_column[i])) {
-    # Only used for pre-standardized data which have the feature names in one column
-    
-    # Check if numerical or character string was used for the feature column indicator
-    feature_column_indicator_type = ifelse(is.numeric(feature_column[i]),
-                                           "numeric", "character")
-    
-    # Extract the rownames from the designated column
-    features = data_object[[i]][, feature_column[i]]
-    # Remove feature column based on indicator type
-    if (feature_column_indicator_type == "numeric") {
-      z_data = data_object[[i]][, -feature_column[i]]
-    } else {
-      z_data = data_object[[i]] %>% dplyr::select(-feature_column[i])
-    }
-    
-    rownames(z_data) = features # Set/ensure colnames
-    
-    # Save the matrix in the input object
-    input[[modalities[i]]] = z_data
-    rm(features, z_data)
-  }
-}
-
-rm(i); gc()
 
 # Run algorithm #####
 library(SNFtool)
@@ -187,43 +84,8 @@ if (alg_feature_pref == "rows") {
 }
 rm(rogue_indices, index); gc()
 
-# Keep samples that have measurements in all modalities
-if (alg_feature_pref == "rows") {
-  # Sample names are in the columns
-  overlap = Reduce(intersect, lapply(input, colnames))
-  
-  # Filter inputs
-  input = lapply(input, function(x) {
-    x = x[, overlap]
-  })
-} else {
-  # Sample names are in the rows
-  overlap = Reduce(intersect, lapply(input, rownames))
-  
-  # Filter inputs
-  input = lapply(input, function(x) {
-    x = x[overlap, ]
-  })
-}
-
-# Download clinical data for the TCGA samples of interest
-library(TCGAbiolinks)
-tcga_samples = gsub("\\.", "-", overlap)
-tcga_samples = str_sub(tcga_samples, 1, 12)
-
-# Create a query to retrieve clinical data for the specified samples
-query <- GDCquery(
-  project = "TCGA-BRCA",  # Replace with the appropriate TCGA project ID
-  data.category = "Clinical",
-  data.type = "Clinical Supplement",
-  barcode = tcga_samples
-)
-
-# Execute the query
-GDCdownload(query)
-
-# Prepare the clinical data
-clinical_data = GDCprepare_clinic(query, clinical.info = "patient")
+# Import clinical data for the TCGA samples of interest
+clinical_data = openxlsx::read.xlsx("Resources/BRCA complete/clinical_data.xlsx")
 
 # Setup ###
 # Hyperparameter tuning
@@ -235,16 +97,21 @@ sigma_range = seq(0.3, 0.8, sigma_step) 	# hyperparameter, usually (0.3~0.8) -RE
 # iterations = seq(10, 100, iter_step)      # Number of Iterations, usually (10~20)
 n_iterations = 20     # Number of Iterations, usually (10~20)
 
-# Here, the simulation data (Data1, Data2) has two data types. They are complementary to each other. And two data types have the same number of points. The first half data belongs to the first cluster; the rest belongs to the second cluster.
-# rcb_label = multimodal_inputs$Labels$RCB.category # 1: pCR, 0: RCB-I/-II/-III
-# names(rcb_label) = multimodal_inputs$Labels$Donor.ID
-# rcb_label = rcb_label[overlap]
+# Modality types
+continuous = c("RNAseq", "CNV", "Methylation", "miRNA")
+categorical = c("SNPs")
 
-# Calculate the pair-wise distance
-inputs_dists = lapply(input, function(x) {
+# Calculate the pair-wise distance (Euclidean for continuous modalities)
+input_dists = lapply(input[continuous], function(x) {
   x = as.matrix(x)
   x = dist2(x, x)
 })
+
+# Binary for SNPs (see ?dist for details)
+input_dists[["SNPs"]] = as.matrix(dist(as.matrix(input$SNPs),
+                                       as.matrix(input$SNPs),
+                                       method = "binary"))
+gc()
 
 # Affinity matrices ###
 affinity_object = list()
@@ -253,7 +120,7 @@ for (nn in num_neighbors_range) {
   for (sigma in sigma_range) {
     sigma_list <- list()
     for (modality in modalities) {
-      aff_mat <- affinityMatrix(as.matrix(inputs_dists[[modality]]), K = nn, sigma = sigma)
+      aff_mat <- affinityMatrix(as.matrix(input_dists[[modality]]), K = nn, sigma = sigma)
       sigma_list[[modality]] <- list(
         num_neighbors = nn,
         regularization = sigma,
@@ -270,49 +137,6 @@ for (nn in num_neighbors_range) {
 rm(nn, sigma)
 
 # Fusions ###
-Fusions = list()
-
-# # Try parallel
-# library(parallel)
-# 
-# # Use 5 cores
-# cl = makeCluster(5)
-# 
-# # Define the function to perform the fusion for a given combination of nn and sigma
-# process_fusion <- function(params_parallel) {
-#   nn <- params_parallel$nn
-#   sigma <- params_parallel$sigma
-#   sublist <- affinity_object[[paste0("NN = ", nn)]][[paste0("sigma = ", sigma)]]
-#   iter_matrices <- lapply(sublist, `[[`, "affinity_matrix")
-#   result <- list()
-#   
-#   for (iter in iterations) {
-#     run_name <- paste0("NN = ", nn, ", sigma = ", sigma, ", n_iter = ", iter)
-#     result[[run_name]] <- SNF(iter_matrices, K = nn, t = iter, parallel = FALSE)
-#   }
-#   # Print update after completing all iterations for the current (nn, sigma)
-#   cat("Completed NN =", nn, ", sigma =", sigma, "\n")
-#   
-#   return(result)
-# }
-# 
-# # Create a list of parameter combinations
-# params_parallel_combinations <- expand.grid(nn = num_neighbors_range, sigma = sigma_range)
-# params_parallel_list <- split(params_parallel_combinations, 
-#                               seq(nrow(params_parallel_combinations)))
-# 
-# # Export the necessary variables and functions to the cluster
-# clusterExport(cl, varlist = c("affinity_object", "iterations", "SNF"))
-# 
-# # Use parLapply to parallelize the process_fusion function
-# results <- parLapply(cl, params_parallel_list, process_fusion)
-# 
-# # Stop the cluster
-# stopCluster(cl)
-# 
-# # Combine the results into a single list
-# Fusions <- do.call(c, results)
-
 # Try parallel
 library(parallel)
 library(foreach)
@@ -343,19 +167,14 @@ names(Fusions) <- unlist(lapply(num_neighbors_range, function(nn) {
   })
 }))
 
-# # Create loop that will create lists of affinity matrices and run fusions
-# for (nn in num_neighbors_range) {
-#   for (sigma in sigma_range) {
-#   sublist = affinity_object[[paste0("NN = ", nn)]][[paste0("sigma = ", sigma)]]
-#   iter_matrices = lapply(sublist, `[[`, "affinity_matrix")
-#   Fusions[[paste0("NN = ", nn)]][[paste0("sigma = ", sigma)]] = SNF(iter_matrices, 
-#                                                                     K = nn, 
-#                                                                     t = n_iterations,
-#                                                                     parallel = FALSE)
-#   rm(sublist)
-#   }
-# }
-# rm(iter_matrices); gc()
+# Give appropriate colnames and rownames
+column_names = colnames(affinity_object[["NN = 10"]][["sigma = 0.3"]][["RNAseq"]][["affinity_matrix"]])
+row_names = rownames(affinity_object[["NN = 10"]][["sigma = 0.3"]][["RNAseq"]][["affinity_matrix"]])
+
+for (i in 1:length(Fusions)) {
+  colnames(Fusions[[i]]) = column_names
+  rownames(Fusions[[i]]) = row_names
+}
 
 save.image(paste0(home, "/Results/single_algorithm/", 
                   algorithm, "/", algorithm, "_", data_source, "_",
@@ -512,45 +331,280 @@ if (sig_status) {
   optSigma = 0.5 # ~median(sigma_range)
 }
 
-# Monte Carlo Consensus Clustering using M3C and optimal hyperparameters matrix
+# Spectral clustering for k = ground_truth_k from MOVICS
 RNGversion("4.2.2")
 set.seed(123)
+
 final_affinity_matrix = Fusions[[paste0("NN = ", optN, ", sigma = ", optSigma)]]
-cc_pheno = clinical_data %>%
-  dplyr::select(ID = bcr_patient_barcode, histological_type, menopause_status,
-                breast_carcinoma_progesterone_receptor_status,
-                breast_carcinoma_estrogen_receptor_status,
-                her2_immunohistochemistry_level_result)
-cc_in = t(input$RNAseq)
-newcols = gsub("\\.", "-", str_sub(colnames(cc_in), 1, 12))
-colnames(cc_in) = newcols
-cc_pheno = cc_pheno[cc_pheno$ID %in% newcols, ] %>%
-  distinct(ID, .keep_all = TRUE)
-cc = M3C_mod(cc_in, des = cc_pheno, iters = 100, repsref = 250, 
-    repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
-    my_affinity_matrix = final_affinity_matrix, clusteralg = "spectral")
+group = spectralClustering(final_affinity_matrix, ground_truth_k)
+names(group) = colnames(final_affinity_matrix)
 
-## With this unified graph W of size n x n, you can do either spectral clustering or Kernel NMF.
-group = spectralClustering(Fusion, 2) 	# spectral clustering with K = 2
+SNF_clusters = as.data.frame(list(Sample.ID = names(group),
+                                  Cluster = group))
 
-## you can evaluate the goodness of the obtained clustering results by 
-# calculating Normalized mutual information (NMI): if NMI is close to 1, it 
-# indicates that the obtained clustering is very close to the "true" cluster information;
-# if NMI is close to 0, it indicates the obtained clustering is not similar to the "true"
-# cluster information.
+# Main results ###
+# Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
+# (Jaccard may be misleading)
 
-displayClusters(Fusion, group)
-SNFNMI = calNMI(group, rcb_label)
+# Calculate ARI and NMI
+library(mclust)
+library(clue)
 
-## you can also find the concordance between each individual network and the fused network
-ConcordanceMatrix = concordanceNetworkNMI(list(Fusion,
-                                               SNF_affinity_matrices[[1]],
-                                               SNF_affinity_matrices[[2]],
-                                               SNF_affinity_matrices[[3]],
-                                               SNF_affinity_matrices[[4]]), 2)
+ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = SNF_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS", "_SNF"))
 
-# Export main results #####
+NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = SNF_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS", "_SNF"))
 
+# MOVICS-like analysis #####
+library(MOVICS)
+library(ComplexHeatmap)
+
+# Import coloring scheme
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp
+rm(scheme); gc()
+
+plotdata <- lapply(lapply(input, as.matrix), 
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
+plot_object = list(clust.res = SNF_clusters %>%
+                     dplyr::rename(samID = Sample.ID, clust = Cluster))
+
+# comprehensive heatmap (may take a while)
+getMoHeatmap(data          = plotdata,
+             row.title     = names(plotdata),
+             is.binary     = c(F,F,F,F,T), 
+             legend.name   = c("Normalised CNV",
+                               "Normalised Methylation",
+                               "Normalised RNAseq FPKM",
+                               "Normalised miRNA FPKM",
+                               "SNPs"
+                               #bquote(bold("Normalised" ~ log[2]("TPM + 1")))
+             ),
+             clust.res     = plot_object, # consensusMOIC-like results
+             clust.dend    = NULL, # show no dendrogram for samples
+             show.rownames = c(F,F,F,F,F), # specify for each omics data
+             show.colnames = FALSE, # show no sample names
+             show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
+             annRow        = NULL, # no selected features
+             color         = col.list,
+             annCol        = annCol, # annotation for samples
+             annColors     = annColors, # annotation color
+             width         = 20, # width of each subheatmap
+             height        = 10, # height of each subheatmap
+             fig.path      = paste0(home, "/Results/single_algorithm/SNF"),
+             fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+gc()
+
+# Clinical variables ###
+# Statistical comparisons
+clin_comp = compClinvar(moic.res = plot_object,
+                        var2comp = var2comp,
+                        strata = "Consensus Subtype",
+                        factorVars = c("vital_status", "race_list", "ethnicity",
+                                       "history_of_neoadjuvant_treatment",
+                                       "primary_lymph_node_presentation_assessment",
+                                       "histological_type", "menopause_status",
+                                       "breast_carcinoma_progesterone_receptor_status",
+                                       "breast_carcinoma_estrogen_receptor_status",
+                                       "lab_proc_her2_neu_immunohistochemistry_receptor_status",
+                                       "distant_metastasis_present_ind2",
+                                       "stage_event_pathologic_stage"),
+                        includeNA = FALSE,
+                        doWord = TRUE,
+                        tab.name = "Summary_of_clinical_variables",
+                        res.path = paste0(home, "/Results/single_algorithm/SNF/"))
+
+# race_list, ER status, PR status, metastasis are sig
+
+# Oncoprint ###
+oncoprint <- compMut(moic.res  = plot_object,
+                     mut.matrix   = plotdata$SNPs, # binary somatic mutation matrix
+                     doWord       = TRUE, # generate table in .docx format
+                     doPlot       = TRUE, # draw OncoPrint
+                     freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
+                     p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
+                     innerclust   = TRUE, # perform clustering within each subtype
+                     annCol       = annCol, # same annotation for heatmap
+                     annColors    = annColors, # same annotation color for heatmap
+                     width        = 12, 
+                     height       = 6,
+                     fig.name     = paste0(algorithm, "_", data_source, "_",
+                                           data_types, "_eval_on_", evaluation_source,
+                                           "_oncoprint"),
+                     tab.name     = "Independent test between subtype and mutation",
+                     fig.path     = paste0(home, "/Results/single_algorithm/SNF"),
+                     res.path     = paste0(home, "/Results/single_algorithm/SNF"))
+
+# Similar to MOVICS: TP53 and PIK3CA patterns
+
+# Drug sensitivity comparison ###
+drug_sensitivity <- compDrugsen(moic.res    = plot_object,
+                                norm.expr   = plotdata$RNAseq,
+                                drugs       = c("Cisplatin", "Paclitaxel", "Lapatinib",
+                                                "Doxorubicin", "5-Fluorouracil",
+                                                "Sorafenib"), # a vector of names of drug in GDSC
+                                tissueType  = "breast", # choose specific tissue type to construct ridge regression model
+                                test.method = "nonparametric", # statistical testing method
+                                prefix      = "Violin_plot_of_IC50",
+                                seed = 123,
+                                fig.path = paste0(home, "/Results/single_algorithm/SNF"))
+
+# Agreement with other subtypes ###
+subtype_agreement <- compAgree2(moic.res  = plot_object,
+                                subt2comp = annCol[, c("ER status", "PR status",
+                                                       "HER2 status", "Metastasis", "Stage")],
+                                doPlot    = TRUE,
+                                box.width = 0.2,
+                                fig.name  = "Classification_agreement",
+                                fig.path  = paste0(home, "/Results/single_algorithm/SNF"),
+                                width     = 12)
+
+# DGEA ###
+dgea = runDEA(dea.method = "limma", # we use normalized data as input
+              expr = plotdata$RNAseq,
+              moic.res = plot_object,
+              prefix = "dgea_",
+              sort.p = TRUE,
+              overwt = TRUE,
+              verbose = TRUE,
+              res.path = paste0(home, "/Results/single_algorithm/SNF"))
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+dgea.marker.up <- runMarker_mod_4.4(moic.res = plot_object,
+                                    dea.method    = "limma", # name of DEA method
+                                    prefix        = "dgea_", # MUST be the same of argument in runDEA()
+                                    dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
+                                    res.path      = paste0(home, "/Results/single_algorithm/SNF"), # path to save marker files
+                                    p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                    p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                    dirct         = "up", # direction of dysregulation in expression
+                                    n.marker      = 100, # number of biomarkers for each subtype
+                                    doplot        = TRUE, # generate diagonal heatmap
+                                    norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
+                                    annCol        = annCol, # sample annotation in heatmap
+                                    annColors     = annColors, # colors for sample annotation
+                                    show_rownames = TRUE, # show no rownames (biomarker name)
+                                    centerFlag = F,
+                                    scaleFlag = F,
+                                    fig.name      = "upregulated_biomarkers_heatmap",
+                                    fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+                                    width = 14,
+                                    height = 12,
+                                    fontsize_row = 3,
+                                    name = "normalized RNA-seq")
+
+# # 2. Down-regulated markers
+dgea.marker.down <- runMarker_mod_4.4(moic.res = plot_object,
+                                      dea.method    = "limma", # name of DEA method
+                                      prefix        = "dgea_", # MUST be the same of argument in runDEA()
+                                      dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
+                                      res.path      = paste0(home, "/Results/single_algorithm/SNF"), # path to save marker files
+                                      p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                      p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                      dirct         = "down", # direction of dysregulation in expression
+                                      n.marker      = 100, # number of biomarkers for each subtype
+                                      doplot        = TRUE, # generate diagonal heatmap
+                                      norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
+                                      annCol        = annCol, # sample annotation in heatmap
+                                      annColors     = annColors, # colors for sample annotation
+                                      show_rownames = TRUE, # show no rownames (biomarker name)
+                                      centerFlag = F,
+                                      scaleFlag = F,
+                                      fig.name      = "downregulated_biomarkers_heatmap",
+                                      fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+                                      width = 14,
+                                      height = 12,
+                                      fontsize_row = 3,
+                                      name = "normalized RNA-seq")
+
+# GSEA ###
+# Load MSigDb file
+MSIGDB.FILE <- system.file("extdata", "c5.bp.v7.1.symbols.xls", package = "MOVICS", mustWork = TRUE)
+
+# GSEA up-regulated
+RNGversion("4.2.2")
+set.seed(123)
+gsea.up <- runGSEA_mod_4.4(moic.res     = plot_object,
+                           dea.method   = "limma", # name of DEA method
+                           prefix       = "dgea_", # MUST be the same of argument in runDEA()
+                           dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
+                           res.path      = paste0(home, "/Results/single_algorithm/SNF"), # path to save marker files
+                           msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
+                           norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
+                           dirct        = "up", # direction of dysregulation in pathway
+                           n.path       = 20,
+                           p.cutoff     = 0.05, # p cutoff to identify significant pathways
+                           p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                           gsva.method  = "gsva", # method to calculate single sample enrichment score
+                           name         = "GSVA scores", # name for colorbar
+                           norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
+                           fig.name     = "upregulated_pathway_heatmap",
+                           nPerm = 10000,
+                           minGSSize = 10,
+                           maxGSSize = 500,
+                           fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+                           width = 14, height = 12)
+
+# GSEA down-regulated
+RNGversion("4.2.2")
+set.seed(123)
+gsea.down <- runGSEA_mod_4.4(moic.res     = plot_object,
+                             dea.method   = "limma", # name of DEA method
+                             prefix       = "dgea_", # MUST be the same of argument in runDEA()
+                             dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
+                             res.path      = paste0(home, "/Results/single_algorithm/SNF"), # path to save marker files
+                             msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
+                             norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
+                             dirct        = "down", # direction of dysregulation in pathway
+                             n.path       = 20,
+                             p.cutoff     = 0.05, # p cutoff to identify significant pathways
+                             p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                             gsva.method  = "gsva", # method to calculate single sample enrichment score
+                             name         = "GSVA scores", # name for colorbar
+                             norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
+                             fig.name     = "downregulated_pathway_heatmap",
+                             nPerm = 10000,
+                             minGSSize = 10,
+                             maxGSSize = 500,
+                             fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+                             width = 14, height = 12)
+
+# Gene set variation analysis #####
+# locate ABSOLUTE path of gene set file
+GSET.FILE <- system.file("extdata", "gene sets of interest.gmt", package = "MOVICS", mustWork = TRUE)
+
+RNGversion("4.2.2")
+set.seed(123)
+gsva.res = runGSVA_mod_4.4(moic.res      = plot_object,
+                           norm.expr     = plotdata$RNAseq,
+                           gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
+                           gsva.method   = "gsva", # method to calculate single sample enrichment score
+                           annCol        = annCol,
+                           annColors     = annColors,
+                           fig.path      = paste0(home, "/Results/single_algorithm/SNF"),
+                           fig.name      = "gene_sets_of_interest_heatmap",
+                           centerFlag    = F,
+                           scaleFlag     = F,
+                           distance      = 'euclidean',
+                           linkage       = 'average',
+                           show_rownames = TRUE,
+                           show_colnames = FALSE,
+                           height        = 8,
+                           width         = 12,
+                           name          = "GSVA scores")
 
 # Evaluation #####
 
@@ -571,9 +625,8 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
 params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
-              hyperparams_text = generate_hyperparams_text(algorithm = algorithm,
-                                                           hyperparameters = hyperparameters),
-              criterion = criterion)
+              citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
+              hyperparameters = hyperparameters)
 
 # Create algorithm directory if it doesn't exist
 if (!dir.exists(paste0(home, "/Results/single_algorithm/", 
