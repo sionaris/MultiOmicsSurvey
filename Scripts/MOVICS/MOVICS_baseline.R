@@ -1142,8 +1142,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               citation = citation, home = home, optk = optk$N.clust,
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
-              hyperparameters_text = generate_hyperparams_text(algorithm = algorithm,
-                                                               hyperparameters = hyperparameters))
+              hyperparameters = hyperparameters)
 
 rmarkdown::render(paste0(getwd(), "/Results/MOVICS_baseline/MOVICS_baseline_report.Rmd"), 
                   params = params, 

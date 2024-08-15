@@ -14,15 +14,6 @@ fetch_citation = function (algorithm) {
   return(citations[[algorithm]])
 }
 
-# Generate hyperparameters report text
-generate_hyperparams_text = function (algorithm, hyperparameters) {
-  hyperparameters_text = paste(readLines(paste0("Resources/algorithm_descriptions/", algorithm,
-                         "_hyperparams_text.Rmd")),
-        collapse = "\n")
-  #hyperparameters_text = glue::glue(hyperparameters_text)
-  return(hyperparameters_text)
-}
-
 # Function to compute Frobenius norm between two matrices
 frobenius_norm <- function(mat1, mat2) {
   return(sqrt(sum((mat1 - mat2)^2)))

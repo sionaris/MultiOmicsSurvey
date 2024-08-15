@@ -22,7 +22,6 @@ knitr::opts_chunk$set(echo = TRUE)
 </details>
 
 # Hyperparameters and tuning
-`r params$hyperparams_text`
 
 # Main results on training data
 

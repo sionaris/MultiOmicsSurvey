@@ -19,7 +19,11 @@ knitr::opts_chunk$set(echo = TRUE)
 `r params$description`
 
 # Hyperparameters and tuning
-Here, we run the MOVICS pipeline (see `r params$citation`) using the default parameters. When identifying the optimal number of clusters $k$, we try for $k \in \{`r hyperparameters[["min_k"]]`, \ldots, `r hyperparameters[["max_k"]]`\}$. All algorithms are run with default parameters, apart from ``iClusterBayes`` where we set ``n.burnin = `r hyperparameters$n_burnin` `` and ``n.draw = `r hyperparameters[["n_draw"]]` ``, to reduce running times. The consensus multi-omic clustering algorithm is run for the optimal $k$ only.
+```{r, echo=FALSE, results='asis'}
+res <- knitr::knit_child(paste0(params$home, "/Resources/algorithm_descriptions/",
+                                algorithm, "_hyperparameters_text.Rmd"), quiet = TRUE)
+cat(res, sep = '\n')
+```
 
 # Main results on training data
 ## Optimal number of clusters
