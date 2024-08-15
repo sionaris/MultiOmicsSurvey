@@ -325,6 +325,9 @@ if (alg_feature_pref == "rows") {
   })
 }
 
+# Export input object as a resource
+saveRDS(input, "Resources/BRCA complete/mm_input.rds")
+
 # Run algorithm #####
 library(MOVICS)
 
