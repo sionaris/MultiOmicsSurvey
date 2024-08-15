@@ -16,12 +16,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Details on the algorithm
-<details>
-  <summary>Expand</summary>
-  `r params$description`
-</details>
+`r params$description`
 
 # Hyperparameters and tuning
+```{r, echo=FALSE, results='asis'}
+res <- knitr::knit_child(paste0(params$home, "/Resources/algorithm_descriptions/",
+                                params$algorithm, "_hyperparameters_text.Rmd"), quiet = TRUE)
+cat(res, sep = '\n')
+```
 
 # Main results on training data
 

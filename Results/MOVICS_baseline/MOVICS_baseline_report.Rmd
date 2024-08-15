@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Hyperparameters and tuning
 ```{r, echo=FALSE, results='asis'}
 res <- knitr::knit_child(paste0(params$home, "/Resources/algorithm_descriptions/",
-                                algorithm, "_hyperparameters_text.Rmd"), quiet = TRUE)
+                                params$algorithm, "_hyperparameters_text.Rmd"), quiet = TRUE)
 cat(res, sep = '\n')
 ```
 
