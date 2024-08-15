@@ -126,6 +126,7 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
     <li>CS3 has a distinct CNV profile compared to CS1 and CS2.</li>
     <li>CS2 is predicted to be significantly more sensitive to cisplatin compared to CS1 and CS3.</li>
   </ul></li>
+  <li> Oncoprint showed association of CS1 with <u>PIK3CA</u> mutations and association of CS2 with <u>TP53</u> mutations.</li>
   <li>CS1 and CS2 labels in transNEO are associated with clinical variables of interest.</li>
 </ol>
 
