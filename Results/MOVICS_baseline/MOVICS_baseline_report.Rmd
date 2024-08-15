@@ -128,3 +128,9 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
   </ul></li>
   <li>CS1 and CS2 labels in transNEO are associated with clinical variables of interest.</li>
 </ol>
+
+# Session info
+
+```{r echo = FALSE}
+print(params$sessionInfo)
+```

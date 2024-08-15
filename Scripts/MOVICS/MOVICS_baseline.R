@@ -737,6 +737,15 @@ annColors = list(
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[rowSums(mat != 0) > 0, ])
 
+# Export coloring settings for other algorithms
+scheme = list(col.list = col.list,
+              annColors = annColors,
+              annCol = annCol,
+              var2comp = var2comp,
+              clust.colors = c("#2EC4B6", "#E71D36", 
+                               "#FF9F1C"))
+saveRDS(scheme, "Resources/scheme.rds")
+
 # comprehensive heatmap (may take a while)
 getMoHeatmap(data          = plotdata,
              row.title     = names(plotdata),
@@ -1145,7 +1154,8 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               citation = citation, home = home, optk = optk$N.clust,
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
-              hyperparameters = hyperparameters)
+              hyperparameters = hyperparameters, 
+              sessionInfo = sessionInfo())
 
 rmarkdown::render(paste0(getwd(), "/Results/MOVICS_baseline/MOVICS_baseline_report.Rmd"), 
                   params = params, 
