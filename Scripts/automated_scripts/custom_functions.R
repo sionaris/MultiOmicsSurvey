@@ -81,4 +81,97 @@ calculate_nmi_index <- function(cluster_df1, cluster_df2,
   return(nmi_index)
 }
 
+# create_MO_heatmap #####
+create_MO_heatmap = function(matrix = NULL, algorithm = NULL, 
+                             need.diag.zero = TRUE, 
+                             clust_annot_pheno = NULL,
+                             afh_colnames = NULL, colors = NULL,
+                             annColors = NULL,
+                             heatmap_title = NULL,
+                             cluster_colors = NULL,
+                             legend_title = NULL,
+                             output_file_name = NULL) {
+  library(ComplexHeatmap)
+  library(circlize)
+  library(dplyr)
+  
+  annotation_for_heatmap = clust_annot_pheno
+  
+  names(cluster_colors) = sort(unique(annotation_for_heatmap[, algorithm]))
+  annColors[[algorithm]] = cluster_colors
+  
+  # Set all diagonals to zero for better visualization
+  if (need.diag.zero) {
+    diag(matrix) = 0
+  }
+  
+  # Define breakpoints for the color mapping
+  breaks <- seq(min(matrix, na.rm = TRUE),
+                max(matrix, na.rm = TRUE), 
+                length.out = length(colors))
+  
+  # Define the color function using colorRamp2
+  color_fun <- circlize::colorRamp2(breaks, colors)
+  
+  # Order samples based on final SNF clusters:
+  order = clust_annot_pheno %>%
+    dplyr::arrange(!!sym(algorithm)) %>%
+    dplyr::select(samID, !!sym(algorithm))
+  order = order$samID
+  
+  annotation_for_heatmap = annotation_for_heatmap[order, ]
+  
+  # Create a HeatmapAnnotation object if you have annotations
+  ha <- HeatmapAnnotation(df = annotation_for_heatmap, col = annColors, 
+                          which = "column", show_annotation_name = TRUE, 
+                          gap = unit(2, "mm"),
+                          annotation_name_side = "left",
+                          annotation_name_gp = gpar(fontface = "bold", fontsize = 12))
+  
+  # Heatmap splits
+  splits = cumsum(table(annotation_for_heatmap[, algorithm]))
+  splits = splits[-length(splits)]
+  splits = rep(1:(length(splits)+1), c(table(annotation_for_heatmap[, algorithm])))
+  
+  # Create Heatmap object
+  heatmap <- Heatmap(matrix[order, order],
+                     column_title = heatmap_title,
+                     column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                     col = color_fun,
+                     top_annotation = ha,
+                     cluster_rows = F,
+                     cluster_columns = F,
+                     show_row_names = FALSE,
+                     show_column_names = FALSE,
+                     show_row_dend = F,
+                     show_column_dend = F,
+                     #clustering_distance_rows = "euclidean",
+                     #clustering_distance_columns = "euclidean",
+                     row_split = splits,
+                     column_split = splits,
+                     heatmap_legend_param = list(
+                       title = legend_title,
+                       title_gp = grid::gpar(fontsize = 10, fontface = "bold"), 
+                       labels_gp = grid::gpar(fontsize = 6),
+                       legend_height = unit(5, "cm"),
+                       grid_width = unit(0.5, "cm"),
+                       title_position = "leftcenter-rot",
+                       border = TRUE
+                     ))
+  
+  # Increase spacing between the main plot and legend (example values, adjust as needed)
+  draw(heatmap, heatmap_legend_side = "right", annotation_legend_side = "right",
+       padding = unit(c(10, 10, 10, 10), "mm"))  # Add padding around the heatmap
+  
+  # Save as PNG
+  png(output_file_name, width = 13, 
+      height = 9, units = 'in', res = 700)
+  draw(heatmap)
+  dev.off()
+  
+  rm(annColors, annotation_for_heatmap, heatmap, legend_title, heatmap_title,
+     breaks, splits, afh_colnames, output_file_name, colors, cluster_colors,
+     order, color_fun, need.diag.zero, algorithm); gc()
+}
+
 

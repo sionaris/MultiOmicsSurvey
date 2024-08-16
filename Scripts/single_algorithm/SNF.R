@@ -483,7 +483,8 @@ dgea = runDEA(dea.method = "limma", # we use normalized data as input
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
-dgea.marker.up <- runMarker_mod_4.4(moic.res = plot_object,
+dgea.marker.up <- runMarker_single_algorithm(algorithm_name = "SNF",
+                                             moic.res = plot_object,
                                     dea.method    = "limma", # name of DEA method
                                     prefix        = "dgea_", # MUST be the same of argument in runDEA()
                                     dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
@@ -507,7 +508,8 @@ dgea.marker.up <- runMarker_mod_4.4(moic.res = plot_object,
                                     name = "normalized RNA-seq")
 
 # # 2. Down-regulated markers
-dgea.marker.down <- runMarker_mod_4.4(moic.res = plot_object,
+dgea.marker.down <- runMarker_single_algorithm(algorithm_name = "SNF",
+                                               moic.res = plot_object,
                                       dea.method    = "limma", # name of DEA method
                                       prefix        = "dgea_", # MUST be the same of argument in runDEA()
                                       dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
@@ -537,7 +539,8 @@ MSIGDB.FILE <- system.file("extdata", "c5.bp.v7.1.symbols.xls", package = "MOVIC
 # GSEA up-regulated
 RNGversion("4.2.2")
 set.seed(123)
-gsea.up <- runGSEA_mod_4.4(moic.res     = plot_object,
+gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = "SNF",
+                                            moic.res     = plot_object,
                            dea.method   = "limma", # name of DEA method
                            prefix       = "dgea_", # MUST be the same of argument in runDEA()
                            dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
@@ -561,7 +564,8 @@ gsea.up <- runGSEA_mod_4.4(moic.res     = plot_object,
 # GSEA down-regulated
 RNGversion("4.2.2")
 set.seed(123)
-gsea.down <- runGSEA_mod_4.4(moic.res     = plot_object,
+gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = "SNF",
+                                              moic.res     = plot_object,
                              dea.method   = "limma", # name of DEA method
                              prefix       = "dgea_", # MUST be the same of argument in runDEA()
                              dat.path      = paste0(home, "/Results/single_algorithm/SNF"), # path of DEA files
@@ -588,7 +592,8 @@ GSET.FILE <- system.file("extdata", "gene sets of interest.gmt", package = "MOVI
 
 RNGversion("4.2.2")
 set.seed(123)
-gsva.res = runGSVA_mod_4.4(moic.res      = plot_object,
+gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = "SNF",
+                                            moic.res      = plot_object,
                            norm.expr     = plotdata$RNAseq,
                            gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
                            gsva.method   = "gsva", # method to calculate single sample enrichment score
@@ -607,6 +612,170 @@ gsva.res = runGSVA_mod_4.4(moic.res      = plot_object,
                            name          = "GSVA scores")
 
 # Evaluation #####
+# Run Nearest Template Prediction in transNEO cohort ###
+# Load transNEO data
+transNEO_mm_inputs = readRDS("Resources/transNEO/transNEO_multimodal_inputs.rds")
+transcr = transNEO_mm_inputs$`RNAseq log2(TPM+1)`[, 1:153]
+rownames(transcr) = transNEO_mm_inputs$`RNAseq log2(TPM+1)`$Hugo
+
+# Up-regulated expression features
+RNGversion("4.2.2")
+transNEO_ntp_expr_up = runNTP(
+  expr = as.matrix(transcr),
+  templates = dgea.marker.up$templates,
+  scaleFlag = TRUE,
+  centerFlag = TRUE,
+  nPerm = 10000,
+  seed = 123,
+  distance = "cosine", # default
+  doPlot = TRUE,
+  height = 8,
+  width = 12,
+  fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+  fig.name = "ntp_expr_up_heatmap_transNEO")
+
+RNGversion("4.2.2")
+transNEO_ntp_expr_down = runNTP(
+  expr = as.matrix(transcr),
+  templates = dgea.marker.down$templates,
+  scaleFlag = TRUE, # already standardised
+  centerFlag = TRUE, # -//-
+  nPerm = 10000,
+  seed = 123,
+  distance = "cosine", # default
+  doPlot = TRUE,
+  height = 8,
+  width = 12,
+  fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+  fig.name = "ntp_expr_down_heatmap_transNEO")
+
+# Check concordance
+expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
+  dplyr::rename(clust_down = clust) %>%
+  inner_join(as.data.frame(transNEO_ntp_expr_up$clust.res) %>%
+               dplyr::rename(clust_up = clust),
+             by = "samID")
+
+# This is counter-intuitive but due to opposite directions of deregulation this
+# is how it works (perhaps this was expected)
+expr_conc$agreement = ifelse(expr_conc$clust_down!=expr_conc$clust_up, "Yes", "No")
+paste("Agremeent of NTP subtypes with respect to expression data from the external cohort is: ",
+      length(which(expr_conc$agreement == "Yes"))/nrow(expr_conc)*100, "% (", nrow(expr_conc),
+      " samples).")
+
+# Compare clinical variables of interest across clusters
+transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
+  dplyr::select(LN.status.at.diagnosis, ER.status, HER2.status,
+                Grade.pre.NAT, pCR.RD, Age, T.stage, PAM50, iC10,
+                NAT.regimen, Chemo.cycles,
+                aHER2.cycles, RCB.score, STAT1.gsva,
+                GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
+  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, `Consensus Subtype` = clust_up),
+             by = "Donor.ID")
+rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
+transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
+
+# Convert to factors
+transNEO_var2comp$LN.status.at.diagnosis = factor(transNEO_var2comp$LN.status.at.diagnosis,
+                                                  levels = c("NEG", "POS"),
+                                                  labels = c("Negative", "Positive"))
+transNEO_var2comp$ER.status = factor(transNEO_var2comp$ER.status,
+                                     levels = c("NEG", "POS"),
+                                     labels = c("Negative", "Positive"))
+transNEO_var2comp$HER2.status = factor(transNEO_var2comp$HER2.status,
+                                       levels = c("NEG", "POS"),
+                                       labels = c("Negative", "Positive"))
+transNEO_var2comp$Grade.pre.NAT = factor(transNEO_var2comp$Grade.pre.NAT,
+                                         levels = c(1, 2, 3, 4),
+                                         labels = c("Grade 1", "Grade 2", "Grade 3", "Grade 4"))
+transNEO_var2comp$pCR.RD = factor(transNEO_var2comp$pCR.RD,
+                                  levels = c("pCR", "RD"),
+                                  labels = c("pCR", "Residual Disease"))
+transNEO_var2comp$PAM50 = factor(transNEO_var2comp$PAM50,
+                                 levels = c("Basal", "Her2", "LumB", "LumA", "Normal", "Unk"),
+                                 labels = c("Basal-like", "HER2+", "Luminal B", "Luminal A",
+                                            "Normal-like", "Unknown"))
+transNEO_var2comp$iC10 = factor(transNEO_var2comp$iC10,
+                                levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                                labels = paste("iC", seq(1, 10, 1), sep = ""))
+
+
+transNEO_clincomp = compClinvar2(moic.res = transNEO_ntp_expr_up,
+                                 var2comp = transNEO_var2comp,
+                                 strata = "Consensus Subtype",
+                                 factorVars = c("ER.status", "HER2.status", "Grade.pre.NAT",
+                                                "NAT.regimen", 
+                                                "pCR.RD", "LN.status.at.diagnosis"),
+                                 includeNA = FALSE,
+                                 doWord = TRUE,
+                                 tab.name = "transNEO_Summary_of_clinical_variables",
+                                 res.path = paste0(home, "/Results/single_algorithm/SNF"))
+
+# Run PAM ###
+RNGversion("4.2.2.")
+set.seed(123)
+transNEO_pam = runPAM(train.expr = plotdata$RNAseq,
+                      moic.res   = plot_object,
+                      test.expr  = as.matrix(transcr))
+
+# Check consistency across methods
+
+# Get predictions for TCGA (discovery cohort)
+RNGversion("4.2.2.")
+set.seed(123)
+TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, plot_object$clust.res$samID],
+                       templates = dgea.marker.up$templates,
+                       doPlot = F)
+
+TCGA.pam.pred = runPAM(train.expr = plotdata$RNAseq[, plot_object$clust.res$samID],
+                       moic.res = plot_object,
+                       test.expr = plotdata$RNAseq[, plot_object$clust.res$samID])
+
+# consensus TCGA vs NTP TCGA # FAILS
+runKappa(subt1 = plot_object$clust.res$clust,
+         subt2 = as.numeric(TCGA.ntp.pred$clust.res$clust),
+         subt1.lab = "SNF",
+         subt2.lab = "NTP TCGA",
+         height = 8,
+         width = 8,
+         fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+         fig.name = "kappa_consensus_vs_NTP_TCGA")
+
+# consensus TCGA vs PAM TCGA
+runKappa(subt1 = plot_object$clust.res$clust,
+         subt2 = as.numeric(TCGA.pam.pred$clust.res$clust),
+         subt1.lab = "SNF",
+         subt2.lab = "PAM TCGA",
+         height = 8,
+         width = 8,
+         fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+         fig.name = "kappa_consensus_vs_PAM_TCGA")
+
+# NTP transNEO vs PAM transNEO # FAILS
+runKappa(subt1 = as.numeric(transNEO_ntp_expr_up$clust.res$clust),
+         subt2 = as.numeric(transNEO_pam$clust.res$clust),
+         subt1.lab = "transNEO NTP",
+         subt2.lab = "transNEO PAM",
+         height = 8,
+         width = 8,
+         fig.path = paste0(home, "/Results/single_algorithm/SNF"),
+         fig.name = "kappa_NTP_vs_PAM_transNEO")
+
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0("SNF", clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/SNF/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
+
+# Supplementary results #####
+colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C")
+clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
+  inner_join(clust, by = "Sample.ID")
+
 
 
 # Wrap up #####

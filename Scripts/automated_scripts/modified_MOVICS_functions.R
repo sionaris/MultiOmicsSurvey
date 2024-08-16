@@ -1,4 +1,4 @@
-# runMarker #####
+# runMarker single algorithm #####
 
 # Just changing the CS labels when focusing on a single algorithm
 runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
@@ -421,7 +421,7 @@ runGSEA_mod <- function (moic.res = NULL, dea.method = c("deseq2", "edger",
               grouped.es = esm, heatmap = hm))
 }
 
-# runGSEA for newer GSVA versions
+# runGSEA for newer GSVA versions #####
 runGSEA_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger", 
                                                              "limma"), norm.expr = NULL, prefix = NULL, dat.path = getwd(), 
                              res.path = getwd(), dirct = "up", n.path = 10, msigdb.path = NULL, 
@@ -647,7 +647,7 @@ runGSEA_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger",
               grouped.es = esm, heatmap = hm))
 }
 
-# runGSEA for newer GSVA versions
+# runGSEA for newer GSVA versions #####
 runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
                                                              "limma"), norm.expr = NULL, prefix = NULL, dat.path = getwd(), 
                              res.path = getwd(), dirct = "up", n.path = 10, msigdb.path = NULL, 
@@ -1146,7 +1146,7 @@ compClinvar2 = function (moic.res = NULL, var2comp = NULL, strata = NULL, factor
   return(list(compTab = comtable))
 }
 
-# runGSVA
+# runGSVA_mod_4.4 #####
 runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = NULL, 
           gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
           halfwidth = 1, annCol = NULL, annColors = NULL, clust.col = c("#2EC4B6", 
@@ -1250,6 +1250,112 @@ runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = 
   return(list(gset.list = gset.list, raw.es = es.backup, scaled.es = es))
 }
 
+# runGSVA_mod_4.4 single algorithm #####
+runGSVA_mod_4.4_single_algorithm <- function (algorithm_name = "CS",
+                             moic.res = NULL, norm.expr = NULL, gset.gmt.path = NULL, 
+                             gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
+                             halfwidth = 1, annCol = NULL, annColors = NULL, clust.col = c("#2EC4B6", 
+                                                                                           "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
+                                                                                           "#023E8A", "#9D4EDD"), distance = "euclidean", linkage = "ward.D", 
+                             show_rownames = TRUE, show_colnames = FALSE, color = c("#366A9B", 
+                                                                                    "#4E98DE", "#DDDDDD", "#FBCFA7", "#F79C4A"), fig.path = getwd(), 
+                             fig.name = NULL, width = 8, height = 8, ...) 
+{
+  standarize.fun <- function(indata = NULL, halfwidth = NULL, 
+                             centerFlag = TRUE, scaleFlag = TRUE) {
+    outdata = t(scale(t(indata), center = centerFlag, scale = scaleFlag))
+    if (!is.null(halfwidth)) {
+      outdata[outdata > halfwidth] = halfwidth
+      outdata[outdata < (-halfwidth)] = -halfwidth
+    }
+    return(outdata)
+  }
+  comsam <- intersect(moic.res$clust.res$samID, colnames(norm.expr))
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  }
+  else {
+    message(paste0("--", (nrow(moic.res$clust.res) - length(comsam)), 
+                   " samples mismatched from current subtypes."))
+  }
+  moic.res$clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+  norm.expr <- norm.expr[, comsam]
+  n.moic <- length(unique(moic.res$clust.res$clust))
+  gset <- try(clusterProfiler::read.gmt(gset.gmt.path), silent = TRUE)
+  if (class(gset) == "try-error") {
+    stop("please provide correct ABSOLUTE PATH for gene sets of interest.")
+  }
+  term <- unique(gset[, 1])
+  gset.list <- list()
+  for (i in term) {
+    gset.list[[i]] <- gset[which(gset[, 1] == i), 2]
+  }
+  if (max(norm.expr) < 25 | (max(norm.expr) >= 25 & min(norm.expr) < 
+                             0)) {
+    message("--expression profile seems to have been standardised (z-score or log transformation), no more action will be performed.")
+  }
+  if (max(norm.expr) >= 25 & min(norm.expr) >= 0) {
+    message("--log2 transformation done for expression data.")
+    norm.expr <- log2(norm.expr + 1)
+  }
+  es <- GSVA::gsva(param = GSVA::gsvaParam(exprData = as.matrix(norm.expr),
+                                           geneSets = gset.list
+  ))
+  es.backup <- es
+  es <- standarize.fun(es, halfwidth = halfwidth, centerFlag = centerFlag, 
+                       scaleFlag = scaleFlag)
+  message(gsva.method, " done...")
+  if (is.null(fig.name)) {
+    outFig <- paste0("enrichment_heatmap_using_", gsva.method, 
+                     ".pdf")
+  }
+  else {
+    outFig <- paste0(fig.name, "_", gsva.method, ".pdf")
+  }
+  sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
+                                        decreasing = FALSE), "samID"]
+  colvec <- clust.col[1:n.moic]
+  names(colvec) <- paste0(algorithm_name, 1:n.moic)
+  if (!is.null(annCol) & !is.null(annColors)) {
+    annCol <- annCol[sam.order, , drop = FALSE]
+    annCol$Subtype <- paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                      "clust"])
+    annColors[["Subtype"]] <- colvec
+  }
+  else {
+    annCol <- data.frame(Subtype = paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                                   "clust"]), row.names = sam.order, stringsAsFactors = FALSE)
+    annColors <- list(Subtype = colvec)
+  }
+  if (!is.null(annCol) & !is.null(annColors)) {
+    for (i in names(annColors)) {
+      if (is.function(annColors[[i]])) {
+        annColors[[i]] <- annColors[[i]](pretty(range(annCol[, 
+                                                             i]), n = 64))
+      }
+    }
+  }
+  ht_opt$message = FALSE
+  if (is.null(distance) | is.null(linkage)) {
+    hcg <- FALSE
+  }
+  else {
+    hcg <- hclust(ClassDiscovery::distanceMatrix(t(as.matrix(es[, 
+                                                                sam.order])), distance), linkage)
+  }
+  hm <- ComplexHeatmap::pheatmap(mat = es[, sam.order], border_color = NA, 
+                                 cluster_cols = FALSE, cluster_rows = hcg, annotation_col = annCol, 
+                                 annotation_colors = annColors, show_rownames = show_rownames, 
+                                 show_colnames = show_colnames, color = (grDevices::colorRampPalette(color))(64), 
+                                 ...)
+  pdf(file.path(fig.path, outFig), width = width, height = height)
+  draw(hm)
+  invisible(dev.off())
+  draw(hm)
+  return(list(gset.list = gset.list, raw.es = es.backup, scaled.es = es))
+}
+
+# runMarker_mod_4.4 #####
 runMarker_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger", "limma"), 
                        prefix = NULL, dat.path = getwd(), res.path = getwd(), 
                        p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", 
@@ -1398,7 +1504,7 @@ runMarker_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger"
   }
 }
 
-# Modified survival function (for extend = TRUE)
+# Modified survival function (for extend = TRUE) #####
 compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d", 
                           surv.cut = NULL, xyrs.est = NULL, clust.col = c("#2EC4B6", 
                                                                           "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
@@ -1526,4 +1632,183 @@ compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d",
     return(list(fitd = fitd, fit = fit, xyrs.est = xyrs, 
                 overall.p = p.val))
   }
+}
+
+# getMoHeatmap_mod #####
+getMoHeatmap_mod = function (data = NULL, is.binary = c(FALSE, FALSE, FALSE, FALSE, 
+                                                        FALSE, FALSE), row.title = c("Data1", "Data2", "Data3", 
+                                                                                     "Data4", "Data5", "Data6"), legend.name = c("Data1", "Data2", 
+                                                                                                                                 "Data3", "Data4", "Data5", "Data6"), clust.res = NULL, clust.dend = NULL, 
+                             show.col.dend = TRUE, show.colnames = FALSE, show.row.dend = c(TRUE, 
+                                                                                            TRUE, TRUE, TRUE, TRUE, TRUE), show.rownames = c(FALSE, 
+                                                                                                                                             FALSE, FALSE, FALSE, FALSE, FALSE), clust.dist.row = c("pearson", 
+                                                                                                                                                                                                    "pearson", "pearson", "pearson", "pearson", "pearson"), 
+                             clust.method.row = c("ward.D", "ward.D", "ward.D", "ward.D", 
+                                                  "ward.D", "ward.D"), clust.col = c("#2EC4B6", "#E71D36", 
+                                                                                     "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
+                                                                                     "#9D4EDD"), color = rep(list(c("#00FF00", "#000000", 
+                                                                                                                    "#FF0000")), length(data)), annCol = NULL, annColors = NULL, 
+                             annRow = NULL, width = 6, height = 4, fig.path = getwd(), 
+                             fig.name = "moheatmap", subtype_prefix = "CS") 
+{
+  ht_opt$message = FALSE
+  defaultW <- getOption("warn")
+  options(warn = -1)
+  if (is.null(names(data))) {
+    names(data) <- sprintf("dat%s", 1:length(data))
+  }
+  n_dat <- length(data)
+  if (n_dat > 6) {
+    stop("current verision of MOVICS can support up to 6 datasets.")
+  }
+  if (n_dat < 2) {
+    stop("current verision of MOVICS needs at least 2 omics data.")
+  }
+  colvec <- clust.col[1:length(unique(clust.res$clust))]
+  names(colvec) <- paste0(subtype_prefix, unique(clust.res$clust))
+  if (!is.null(annCol) & !is.null(annColors)) {
+    annCol <- annCol[colnames(data[[1]]), , drop = FALSE]
+    annCol$Subtype <- paste0(subtype_prefix, clust.res[colnames(data[[1]]), 
+                                                       "clust"])
+    annColors[["Subtype"]] <- colvec
+    if (is.null(clust.dend)) {
+      clust.res <- clust.res[order(clust.res$clust), ]
+      annCol <- annCol[clust.res$samID, , drop = FALSE]
+    }
+    ha <- ComplexHeatmap::HeatmapAnnotation(df = annCol, 
+                                            col = annColors, border = FALSE)
+  }
+  else {
+    annCol <- data.frame(Subtype = paste0(subtype_prefix, clust.res[colnames(data[[1]]), 
+                                                                    "clust"]), row.names = colnames(data[[1]]), stringsAsFactors = FALSE)
+    annColors <- list(Subtype = colvec)
+    if (is.null(clust.dend)) {
+      clust.res <- clust.res[order(clust.res$clust), ]
+      annCol <- annCol[clust.res$samID, , drop = FALSE]
+    }
+    ha <- ComplexHeatmap::HeatmapAnnotation(df = annCol, 
+                                            col = annColors, border = FALSE)
+  }
+  if (!is.null(annRow)) {
+    if (!is.list(annRow)) {
+      stop("argument of annRow should be a list!")
+    }
+  }
+  ht <- list()
+  for (i in 1:n_dat) {
+    hcg <- hclust(ClassDiscovery::distanceMatrix(as.matrix(t(data[[i]])), 
+                                                 clust.dist.row[i]), clust.method.row[i])
+    if (is.null(annRow[[i]][1])) {
+      rowlab <- ""
+      rowlab.index <- 0
+    }
+    else if (is.na(annRow[[i]][1])) {
+      rowlab <- ""
+      rowlab.index <- 0
+    }
+    else {
+      rowlab <- intersect(rownames(data[[i]]), annRow[[i]])
+      rowlab.index <- match(rowlab, rownames(data[[i]]))
+    }
+    if (is.null(clust.dend)) {
+      data <- lapply(data, function(x) x[, clust.res$samID])
+      if (!is.binary[i]) {
+        ht[[i]] <- ComplexHeatmap::Heatmap(matrix = as.matrix(data[[i]]), 
+                                           row_title = row.title[i], name = legend.name[i], 
+                                           cluster_columns = FALSE, cluster_rows = hcg, 
+                                           show_column_dend = FALSE, show_column_names = show.colnames, 
+                                           show_row_dend = show.row.dend[i], show_row_names = show.rownames[i], 
+                                           col = (grDevices::colorRampPalette(color[[i]]))(64), 
+                                           top_annotation = switch((i == 1) + 1, NULL, 
+                                                                   ha), width = grid::unit(width, "cm"), height = grid::unit(height, 
+                                                                                                                             "cm"), heatmap_legend_param = list(at = pretty(range(data[[i]])), 
+                                                                                                                                                                labels = pretty(range(data[[i]]))), right_annotation = ComplexHeatmap::rowAnnotation(link = anno_mark(at = rowlab.index, 
+                                                                                                                                                                                                                                                                      labels = rowlab, which = "row", lines_gp = grid::gpar(fontsize = 5), 
+                                                                                                                                                                                                                                                                      link_width = grid::unit(3, "mm"), padding = grid::unit(0.8, 
+                                                                                                                                                                                                                                                                                                                             "mm"), labels_gp = grid::gpar(fontsize = 7))))
+      }
+      else {
+        col_fun = circlize::colorRamp2(c(0, 1), color[[i]])
+        ht[[i]] <- ComplexHeatmap::Heatmap(matrix = as.matrix(data[[i]]), 
+                                           row_title = row.title[i], name = legend.name[i], 
+                                           cluster_columns = FALSE, cluster_rows = hcg, 
+                                           show_column_dend = FALSE, show_column_names = show.colnames, 
+                                           show_row_dend = show.row.dend[i], show_row_names = show.rownames[i], 
+                                           col = color[[i]], top_annotation = switch((i == 
+                                                                                        1) + 1, NULL, ha), width = grid::unit(width, 
+                                                                                                                              "cm"), height = grid::unit(height, "cm"), 
+                                           heatmap_legend_param = list(at = c(0, 1), 
+                                                                       legend_gp = grid::gpar(fill = col_fun(c(0, 
+                                                                                                               1))), labels = c("0", "1")), right_annotation = ComplexHeatmap::rowAnnotation(link = anno_mark(at = rowlab.index, 
+                                                                                                                                                                                                              labels = rowlab, which = "row", lines_gp = grid::gpar(fontsize = 5), 
+                                                                                                                                                                                                              link_width = grid::unit(3, "mm"), padding = grid::unit(0.8, 
+                                                                                                                                                                                                                                                                     "mm"), labels_gp = grid::gpar(fontsize = 7))))
+      }
+    }
+    else {
+      if (!is.binary[i]) {
+        ht[[i]] <- ComplexHeatmap::Heatmap(matrix = as.matrix(data[[i]]), 
+                                           row_title = row.title[i], name = legend.name[i], 
+                                           cluster_columns = clust.dend, cluster_rows = hcg, 
+                                           show_column_dend = show.col.dend, show_column_names = show.colnames, 
+                                           show_row_dend = show.row.dend[i], show_row_names = show.rownames[i], 
+                                           col = (grDevices::colorRampPalette(color[[i]]))(64), 
+                                           top_annotation = switch((i == 1) + 1, NULL, 
+                                                                   ha), width = grid::unit(width, "cm"), height = grid::unit(height, 
+                                                                                                                             "cm"), heatmap_legend_param = list(at = pretty(range(data[[i]])), 
+                                                                                                                                                                labels = pretty(range(data[[i]]))), right_annotation = ComplexHeatmap::rowAnnotation(link = anno_mark(at = rowlab.index, 
+                                                                                                                                                                                                                                                                      labels = rowlab, which = "row", lines_gp = grid::gpar(fontsize = 5), 
+                                                                                                                                                                                                                                                                      link_width = grid::unit(3, "mm"), padding = grid::unit(0.8, 
+                                                                                                                                                                                                                                                                                                                             "mm"), labels_gp = grid::gpar(fontsize = 7))))
+      }
+      else {
+        col_fun = circlize::colorRamp2(c(0, 1), color[[i]])
+        ht[[i]] <- ComplexHeatmap::Heatmap(matrix = as.matrix(data[[i]]), 
+                                           row_title = row.title[i], name = legend.name[i], 
+                                           cluster_columns = clust.dend, cluster_rows = hcg, 
+                                           show_column_dend = show.col.dend, show_column_names = show.colnames, 
+                                           show_row_dend = show.row.dend[i], show_row_names = show.rownames[i], 
+                                           col = color[[i]], top_annotation = switch((i == 
+                                                                                        1) + 1, NULL, ha), width = grid::unit(width, 
+                                                                                                                              "cm"), height = grid::unit(height, "cm"), 
+                                           heatmap_legend_param = list(at = c(0, 1), 
+                                                                       legend_gp = grid::gpar(fill = col_fun(c(0, 
+                                                                                                               1))), labels = c("0", "1")), right_annotation = ComplexHeatmap::rowAnnotation(link = anno_mark(at = rowlab.index, 
+                                                                                                                                                                                                              labels = rowlab, which = "row", lines_gp = grid::gpar(fontsize = 5), 
+                                                                                                                                                                                                              link_width = grid::unit(3, "mm"), padding = grid::unit(0.8, 
+                                                                                                                                                                                                                                                                     "mm"), labels_gp = grid::gpar(fontsize = 7))))
+      }
+    }
+  }
+  if (n_dat == 1) {
+    ht_list <- ht[[1]]
+  }
+  if (n_dat == 2) {
+    ht_list <- ht[[1]] %v% ht[[2]]
+  }
+  if (n_dat == 3) {
+    ht_list <- ht[[1]] %v% ht[[2]] %v% ht[[3]]
+  }
+  if (n_dat == 4) {
+    ht_list <- ht[[1]] %v% ht[[2]] %v% ht[[3]] %v% ht[[4]]
+  }
+  if (n_dat == 5) {
+    ht_list <- ht[[1]] %v% ht[[2]] %v% ht[[3]] %v% ht[[4]] %v% 
+      ht[[5]]
+  }
+  if (n_dat == 6) {
+    ht_list <- ht[[1]] %v% ht[[2]] %v% ht[[3]] %v% ht[[4]] %v% 
+      ht[[5]] %v% ht[[6]]
+  }
+  outFile <- file.path(fig.path, paste0(fig.name, ".pdf"))
+  if (is.null(annCol)) {
+    pdf(outFile, width = width, height = height * n_dat/2)
+  }
+  else {
+    pdf(outFile, width = width, height = height * n_dat/1.5)
+  }
+  draw(ht_list, merge_legend = TRUE, heatmap_legend_side = "right")
+  invisible(dev.off())
+  draw(ht_list, merge_legend = TRUE, heatmap_legend_side = "right")
+  options(warn = defaultW)
 }
