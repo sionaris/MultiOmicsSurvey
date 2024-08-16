@@ -382,7 +382,8 @@ plot_object = list(clust.res = SNF_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
 
 # comprehensive heatmap (may take a while)
-getMoHeatmap(data          = plotdata,
+getMoHeatmap_single_algorithm(algorithm_name = algorithm,
+                              data          = plotdata,
              row.title     = names(plotdata),
              is.binary     = c(F,F,F,F,T), 
              legend.name   = c("Normalised CNV",
@@ -392,7 +393,7 @@ getMoHeatmap(data          = plotdata,
                                "SNPs"
                                #bquote(bold("Normalised" ~ log[2]("TPM + 1")))
              ),
-             clust.res     = plot_object, # consensusMOIC-like results
+             clust.res     = plot_object$clust.res, # consensusMOIC-like results
              clust.dend    = NULL, # show no dendrogram for samples
              show.rownames = c(F,F,F,F,F), # specify for each omics data
              show.colnames = FALSE, # show no sample names
@@ -787,11 +788,131 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/SNF/",
                                    "_clusterings.xlsx"))
 
 # Supplementary results #####
+
+# Create subdirectory for supplementary plots
+if (!dir.exists(paste0(home, "/Results/single_algorithm/SNF/Supplement"))) {
+  dir.create(paste0(home, "/Results/single_algorithm/SNF/Supplement"))
+}
+
+# Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
 cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
-  inner_join(clust, by = "Sample.ID")
+  inner_join(clust, by = "Sample.ID") %>%
+  dplyr::rename(SNF = Cluster, samID = "Sample.ID")
+rownames(clust_annot_pheno) = clust_annot_pheno$samID
+afh_colnames = colnames(annCol)
 
+# Prepare affinity matrices
+aff_CNV = normalize_affinity_matrix(
+  SNFtool::affinityMatrix(
+    SNFtool::dist2(input$CNV,
+    input$CNV),
+    K = 30, sigma = 0.5))
+colnames(aff_CNV) = rownames(aff_CNV) = rownames(input$CNV)
+
+aff_rna = normalize_affinity_matrix(
+  SNFtool::affinityMatrix(
+    SNFtool::dist2(input$RNAseq,
+                   input$RNAseq),
+    K = 30, sigma = 0.5))
+colnames(aff_rna) = rownames(aff_rna) = rownames(input$RNA)
+
+aff_miRNA = normalize_affinity_matrix(
+  SNFtool::affinityMatrix(
+    SNFtool::dist2(input$miRNA,
+                   input$miRNA),
+  K = 30, sigma = 0.5))
+colnames(aff_miRNA) = rownames(aff_miRNA) = rownames(input$miRNA)
+
+aff_Methyl = normalize_affinity_matrix(
+  SNFtool::affinityMatrix(
+    SNFtool::dist2(input$Methylation,
+                   input$Methylation),
+    K = 30, sigma = 0.5))
+colnames(aff_Methyl) = rownames(aff_Methyl) = rownames(input$Methylation)
+
+aff_SNPs = normalize_affinity_matrix(
+  SNFtool::affinityMatrix(
+    as.matrix(dist(as.matrix(input$SNPs),
+                   as.matrix(input$SNPs),
+                   method = "binary")),
+  K = 30, sigma = 0.5))
+colnames(aff_SNPs) = rownames(aff_SNPs) = rownames(input$SNPs)
+
+aff_final = final_affinity_matrix
+
+# CNV
+create_MO_heatmap(matrix = aff_CNV, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "CNV first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_CNV_heatmap.png"))
+
+# RNAseq
+create_MO_heatmap(matrix = aff_rna, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "RNAseq first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_RNAseq_heatmap.png"))
+
+# miRNA
+create_MO_heatmap(matrix = aff_miRNA, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "miRNA first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_miRNA_heatmap.png"))
+
+# Methylation
+create_MO_heatmap(matrix = aff_Methyl, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "Methylation first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_Methylation_heatmap.png"))
+
+# SNPs
+create_MO_heatmap(matrix = aff_SNPs, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "SNPs first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_SNPs_heatmap.png"))
+
+# Final affinity matrix
+create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "Final affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_final_affinity_heatmap.png"))
 
 
 # Wrap up #####

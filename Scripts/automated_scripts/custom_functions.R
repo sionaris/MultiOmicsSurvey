@@ -1,30 +1,28 @@
 # A series of functions defined to modularize code and make cleaner
 
-# In a nutshell #####
-
-# Fetch the "in a nutshell" text of an algorithm
+# Fetch the "in a nutshell" text of an algorithm #####
 fetch_in_a_nutshell = function (algorithm) {
   source("Resources/algorithm_descriptions/in_a_nutshell.R")
   return(desc_list[[algorithm]])
 }
 
-# Fetch the citation of an algorithm
+# Fetch the citation of an algorithm #####
 fetch_citation = function (algorithm) {
   source("Resources/algorithm_descriptions/citations.R")
   return(citations[[algorithm]])
 }
 
-# Function to compute Frobenius norm between two matrices
+# Function to compute Frobenius norm between two matrices #####
 frobenius_norm <- function(mat1, mat2) {
   return(sqrt(sum((mat1 - mat2)^2)))
 }
 
-# Function to compute Pearson correlation between two matrices
+# Function to compute Pearson correlation between two matrices #####
 pearson_correlation <- function(mat1, mat2) {
   cor(as.vector(mat1), as.vector(mat2))
 }
 
-# Function to reshape Pearson similarity values for ANOVA
+# Function to reshape Pearson similarity values for ANOVA #####
 reshape_SNF_Pearson_for_anova <- function(similarities) {
   data <- data.frame()
   for (key in names(similarities)) {
@@ -36,7 +34,7 @@ reshape_SNF_Pearson_for_anova <- function(similarities) {
   return(data)
 }
 
-# Function to calculate Jaccard index between two clusterings (MOVICS)
+# Function to calculate Jaccard index between two clusterings (MOVICS) #####
 MOVICS_jaccard_index <- function(clust1, clust2) {
   clust = as.data.frame(clust1) %>% 
     dplyr::rename(clust1 = clust) %>%
@@ -48,7 +46,7 @@ MOVICS_jaccard_index <- function(clust1, clust2) {
   return(jaccard)
 }
 
-# ARI index between two clusterings
+# ARI index between two clusterings #####
 calculate_ari_index <- function(cluster_df1, cluster_df2,
                                 sample_col, clust_col, suffixes) {
   # Load the mclust package for ARI calculation
@@ -63,7 +61,7 @@ calculate_ari_index <- function(cluster_df1, cluster_df2,
   return(ari_index)
 }
 
-# NMI index between two clusterings
+# NMI index between two clusterings #####
 calculate_nmi_index <- function(cluster_df1, cluster_df2,
                                 sample_col, clust_col, suffixes) {
   # Load the clue package for NMI calculation
@@ -79,6 +77,28 @@ calculate_nmi_index <- function(cluster_df1, cluster_df2,
   # Calculate the NMI
   nmi_index <- cl_agreement(partition1, partition2, method = "NMI")
   return(nmi_index)
+}
+
+# Normalize SNF affinity matrix #####
+normalize_affinity_matrix <- function(W) {
+  N <- nrow(W)  # Determine the size of the matrix
+  P <- matrix(0, nrow = N, ncol = N)  # Initialize P with zeros
+  
+  # Calculate row sums of W, excluding the diagonal elements
+  row_sums <- rowSums(W) - diag(W)
+  
+  # Fill P matrix based on the conditions
+  for (i in 1:N) {
+    for (j in 1:N) {
+      if (i != j) {
+        P[i, j] = W[i, j] / (2 * row_sums[i])
+      } else {
+        P[i, j] = 0.5
+      }
+    }
+  }
+  
+  return(P)  # Return the normalized matrix
 }
 
 # create_MO_heatmap #####
@@ -119,7 +139,8 @@ create_MO_heatmap = function(matrix = NULL, algorithm = NULL,
     dplyr::select(samID, !!sym(algorithm))
   order = order$samID
   
-  annotation_for_heatmap = annotation_for_heatmap[order, ]
+  annotation_for_heatmap = annotation_for_heatmap[order, ] %>%
+    dplyr::select(-samID)
   
   # Create a HeatmapAnnotation object if you have annotations
   ha <- HeatmapAnnotation(df = annotation_for_heatmap, col = annColors, 

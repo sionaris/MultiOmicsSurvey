@@ -2372,8 +2372,8 @@ runKappa_single_algorithm = function (algorithm_name = "CS",
                          width = width, height = height))
 }
 
-# getMoHeatmap_mod #####
-getMoHeatmap_mod = function (data = NULL, is.binary = c(FALSE, FALSE, FALSE, FALSE, 
+# getMoHeatmap_single_algorithm #####
+getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is.binary = c(FALSE, FALSE, FALSE, FALSE, 
                                                         FALSE, FALSE), row.title = c("Data1", "Data2", "Data3", 
                                                                                      "Data4", "Data5", "Data6"), legend.name = c("Data1", "Data2", 
                                                                                                                                  "Data3", "Data4", "Data5", "Data6"), clust.res = NULL, clust.dend = NULL, 
@@ -2387,7 +2387,7 @@ getMoHeatmap_mod = function (data = NULL, is.binary = c(FALSE, FALSE, FALSE, FAL
                                                                                      "#9D4EDD"), color = rep(list(c("#00FF00", "#000000", 
                                                                                                                     "#FF0000")), length(data)), annCol = NULL, annColors = NULL, 
                              annRow = NULL, width = 6, height = 4, fig.path = getwd(), 
-                             fig.name = "moheatmap", subtype_prefix = "CS") 
+                             fig.name = "moheatmap") 
 {
   ht_opt$message = FALSE
   defaultW <- getOption("warn")
@@ -2403,10 +2403,10 @@ getMoHeatmap_mod = function (data = NULL, is.binary = c(FALSE, FALSE, FALSE, FAL
     stop("current verision of MOVICS needs at least 2 omics data.")
   }
   colvec <- clust.col[1:length(unique(clust.res$clust))]
-  names(colvec) <- paste0(subtype_prefix, unique(clust.res$clust))
+  names(colvec) <- paste0(algorithm_name, unique(clust.res$clust))
   if (!is.null(annCol) & !is.null(annColors)) {
     annCol <- annCol[colnames(data[[1]]), , drop = FALSE]
-    annCol$Subtype <- paste0(subtype_prefix, clust.res[colnames(data[[1]]), 
+    annCol$Subtype <- paste0(algorithm_name, clust.res[colnames(data[[1]]), 
                                                        "clust"])
     annColors[["Subtype"]] <- colvec
     if (is.null(clust.dend)) {
@@ -2417,7 +2417,7 @@ getMoHeatmap_mod = function (data = NULL, is.binary = c(FALSE, FALSE, FALSE, FAL
                                             col = annColors, border = FALSE)
   }
   else {
-    annCol <- data.frame(Subtype = paste0(subtype_prefix, clust.res[colnames(data[[1]]), 
+    annCol <- data.frame(Subtype = paste0(algorithm_name, clust.res[colnames(data[[1]]), 
                                                                     "clust"]), row.names = colnames(data[[1]]), stringsAsFactors = FALSE)
     annColors <- list(Subtype = colvec)
     if (is.null(clust.dend)) {
