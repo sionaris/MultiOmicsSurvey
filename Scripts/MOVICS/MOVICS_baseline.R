@@ -993,8 +993,8 @@ RNGversion("4.2.2")
 transNEO_ntp_expr_up = runNTP(
   expr = as.matrix(transcr),
   templates = dgea.marker.up$templates,
-  scaleFlag = TRUE, # already standardised
-  centerFlag = TRUE, # -//-
+  scaleFlag = TRUE, 
+  centerFlag = TRUE, 
   nPerm = 10000,
   seed = 123,
   distance = "cosine", # default
@@ -1008,8 +1008,8 @@ RNGversion("4.2.2")
 transNEO_ntp_expr_down = runNTP(
   expr = as.matrix(transcr),
   templates = dgea.marker.down$templates,
-  scaleFlag = TRUE, # already standardised
-  centerFlag = TRUE, # -//-
+  scaleFlag = TRUE, 
+  centerFlag = TRUE,
   nPerm = 10000,
   seed = 123,
   distance = "cosine", # default
