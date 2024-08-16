@@ -409,7 +409,8 @@ gc()
 
 # Clinical variables ###
 # Statistical comparisons
-clin_comp = compClinvar(moic.res = plot_object,
+clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
+                                         moic.res = plot_object,
                         var2comp = var2comp,
                         strata = "Consensus Subtype",
                         factorVars = c("vital_status", "race_list", "ethnicity",
@@ -429,7 +430,8 @@ clin_comp = compClinvar(moic.res = plot_object,
 # race_list, ER status, PR status, metastasis are sig
 
 # Oncoprint ###
-oncoprint <- compMut(moic.res  = plot_object,
+oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
+                                      moic.res  = plot_object,
                      mut.matrix   = plotdata$SNPs, # binary somatic mutation matrix
                      doWord       = TRUE, # generate table in .docx format
                      doPlot       = TRUE, # draw OncoPrint
@@ -450,7 +452,8 @@ oncoprint <- compMut(moic.res  = plot_object,
 # Similar to MOVICS: TP53 and PIK3CA patterns
 
 # Drug sensitivity comparison ###
-drug_sensitivity <- compDrugsen(moic.res    = plot_object,
+drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
+                                                 moic.res    = plot_object,
                                 norm.expr   = plotdata$RNAseq,
                                 drugs       = c("Cisplatin", "Paclitaxel", "Lapatinib",
                                                 "Doxorubicin", "5-Fluorouracil",
@@ -462,7 +465,8 @@ drug_sensitivity <- compDrugsen(moic.res    = plot_object,
                                 fig.path = paste0(home, "/Results/single_algorithm/SNF"))
 
 # Agreement with other subtypes ###
-subtype_agreement <- compAgree2(moic.res  = plot_object,
+subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
+                                                moic.res  = plot_object,
                                 subt2comp = annCol[, c("ER status", "PR status",
                                                        "HER2 status", "Metastasis", "Stage")],
                                 doPlot    = TRUE,
@@ -483,7 +487,7 @@ dgea = runDEA(dea.method = "limma", # we use normalized data as input
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
-dgea.marker.up <- runMarker_single_algorithm(algorithm_name = "SNF",
+dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              moic.res = plot_object,
                                     dea.method    = "limma", # name of DEA method
                                     prefix        = "dgea_", # MUST be the same of argument in runDEA()
@@ -508,7 +512,7 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = "SNF",
                                     name = "normalized RNA-seq")
 
 # # 2. Down-regulated markers
-dgea.marker.down <- runMarker_single_algorithm(algorithm_name = "SNF",
+dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                moic.res = plot_object,
                                       dea.method    = "limma", # name of DEA method
                                       prefix        = "dgea_", # MUST be the same of argument in runDEA()
@@ -539,7 +543,7 @@ MSIGDB.FILE <- system.file("extdata", "c5.bp.v7.1.symbols.xls", package = "MOVIC
 # GSEA up-regulated
 RNGversion("4.2.2")
 set.seed(123)
-gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = "SNF",
+gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             moic.res     = plot_object,
                            dea.method   = "limma", # name of DEA method
                            prefix       = "dgea_", # MUST be the same of argument in runDEA()
@@ -564,7 +568,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = "SNF",
 # GSEA down-regulated
 RNGversion("4.2.2")
 set.seed(123)
-gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = "SNF",
+gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               moic.res     = plot_object,
                              dea.method   = "limma", # name of DEA method
                              prefix       = "dgea_", # MUST be the same of argument in runDEA()
@@ -592,7 +596,7 @@ GSET.FILE <- system.file("extdata", "gene sets of interest.gmt", package = "MOVI
 
 RNGversion("4.2.2")
 set.seed(123)
-gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = "SNF",
+gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             moic.res      = plot_object,
                            norm.expr     = plotdata$RNAseq,
                            gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
@@ -619,6 +623,8 @@ transcr = transNEO_mm_inputs$`RNAseq log2(TPM+1)`[, 1:153]
 rownames(transcr) = transNEO_mm_inputs$`RNAseq log2(TPM+1)`$Hugo
 
 # Up-regulated expression features
+dgea.marker.up[["templates"]][["class"]] = gsub("CS", algorithm, 
+                                                dgea.marker.up[["templates"]][["class"]])
 RNGversion("4.2.2")
 transNEO_ntp_expr_up = runNTP(
   expr = as.matrix(transcr),
@@ -634,6 +640,9 @@ transNEO_ntp_expr_up = runNTP(
   fig.path = paste0(home, "/Results/single_algorithm/SNF"),
   fig.name = "ntp_expr_up_heatmap_transNEO")
 
+# down-regulated
+dgea.marker.down[["templates"]][["class"]] = gsub("CS", algorithm, 
+                                                dgea.marker.down[["templates"]][["class"]])
 RNGversion("4.2.2")
 transNEO_ntp_expr_down = runNTP(
   expr = as.matrix(transcr),
@@ -700,7 +709,8 @@ transNEO_var2comp$iC10 = factor(transNEO_var2comp$iC10,
                                 labels = paste("iC", seq(1, 10, 1), sep = ""))
 
 
-transNEO_clincomp = compClinvar2(moic.res = transNEO_ntp_expr_up,
+transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
+                                                 moic.res = transNEO_ntp_expr_up,
                                  var2comp = transNEO_var2comp,
                                  strata = "Consensus Subtype",
                                  factorVars = c("ER.status", "HER2.status", "Grade.pre.NAT",
@@ -714,7 +724,8 @@ transNEO_clincomp = compClinvar2(moic.res = transNEO_ntp_expr_up,
 # Run PAM ###
 RNGversion("4.2.2.")
 set.seed(123)
-transNEO_pam = runPAM(train.expr = plotdata$RNAseq,
+transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
+                                       train.expr = plotdata$RNAseq,
                       moic.res   = plot_object,
                       test.expr  = as.matrix(transcr))
 
@@ -727,32 +738,37 @@ TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, plot_object$clust.res$samID],
                        templates = dgea.marker.up$templates,
                        doPlot = F)
 
-TCGA.pam.pred = runPAM(train.expr = plotdata$RNAseq[, plot_object$clust.res$samID],
+TCGA.pam.pred = runPAM_single_algorithm(algorithm_name = algorithm,
+                                        train.expr = plotdata$RNAseq[, plot_object$clust.res$samID],
                        moic.res = plot_object,
                        test.expr = plotdata$RNAseq[, plot_object$clust.res$samID])
 
 # consensus TCGA vs NTP TCGA # FAILS
-runKappa(subt1 = plot_object$clust.res$clust,
-         subt2 = as.numeric(TCGA.ntp.pred$clust.res$clust),
+runKappa_single_algorithm(algorithm_name = algorithm,
+                          subt1 = plot_object$clust.res$clust,
+         subt2 = gsub(algorithm, "", TCGA.ntp.pred$clust.res$clust),
          subt1.lab = "SNF",
          subt2.lab = "NTP TCGA",
          height = 8,
          width = 8,
          fig.path = paste0(home, "/Results/single_algorithm/SNF"),
-         fig.name = "kappa_consensus_vs_NTP_TCGA")
+         fig.name = paste0("kappa_", algorithm, "_vs_NTP_TCGA"))
 
 # consensus TCGA vs PAM TCGA
-runKappa(subt1 = plot_object$clust.res$clust,
-         subt2 = as.numeric(TCGA.pam.pred$clust.res$clust),
+runKappa_single_algorithm(algorithm_name = algorithm,
+                          subt1 = plot_object$clust.res$clust,
+         subt2 = gsub(algorithm, "", TCGA.pam.pred$clust.res$clust),
          subt1.lab = "SNF",
          subt2.lab = "PAM TCGA",
          height = 8,
          width = 8,
          fig.path = paste0(home, "/Results/single_algorithm/SNF"),
-         fig.name = "kappa_consensus_vs_PAM_TCGA")
+         fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
 # NTP transNEO vs PAM transNEO # FAILS
-runKappa(subt1 = as.numeric(transNEO_ntp_expr_up$clust.res$clust),
+runKappa_single_algorithm(algorithm_name = algorithm,
+                           subt1 = as.numeric(gsub(algorithm, "",
+                                                   transNEO_ntp_expr_up$clust.res$clust)),
          subt2 = as.numeric(transNEO_pam$clust.res$clust),
          subt1.lab = "transNEO NTP",
          subt2.lab = "transNEO PAM",

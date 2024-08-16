@@ -1,8 +1,8 @@
-level	1	2	3	p	test	sig
+level	SNF1	SNF2	SNF3	p	test	sig
 n		   52	   51	   50			NA
-Subtype (%)	CS1	   52 (100.0) 	    0 (  0.0) 	    0 (  0.0) 	<0.001		**
-	CS2	    0 (  0.0) 	   51 (100.0) 	    0 (  0.0) 			NA
-	CS3	    0 (  0.0) 	    0 (  0.0) 	   50 (100.0) 			NA
+Subtype (%)	SNFSNF1	   52 (100.0) 	    0 (  0.0) 	    0 (  0.0) 	<0.001		**
+	SNFSNF2	    0 (  0.0) 	   51 (100.0) 	    0 (  0.0) 			NA
+	SNFSNF3	    0 (  0.0) 	    0 (  0.0) 	   50 (100.0) 			NA
 LN.status.at.diagnosis (%)	Negative	   23 ( 44.2) 	   23 ( 45.1) 	   28 ( 56.0) 	 0.419		
 	Positive	   29 ( 55.8) 	   28 ( 54.9) 	   22 ( 44.0) 			NA
 ER.status (%)	Negative	    8 ( 15.4) 	   13 ( 25.5) 	   30 ( 60.0) 	<0.001		**

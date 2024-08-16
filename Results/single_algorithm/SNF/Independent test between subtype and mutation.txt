@@ -1,4 +1,4 @@
-Gene (Mutated)	TMB	CS1	CS2	CS3	pvalue	padj
+Gene (Mutated)	TMB	SNF1	SNF2	SNF3	pvalue	padj
 CDH1	50 ( 8%)	7 ( 3.3%)	40 (13.5%)	3 ( 2.2%)	2.26e-06	7.53e-06
 FLG	35 ( 5%)	9 (4.2%)	15 (5.1%)	11 (8.2%)	2.54e-01	3.63e-01
 HMCN1	36 ( 6%)	10 (4.7%)	19 (6.4%)	7 (5.2%)	6.96e-01	7.10e-01

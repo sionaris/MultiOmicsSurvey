@@ -1146,6 +1146,603 @@ compClinvar2 = function (moic.res = NULL, var2comp = NULL, strata = NULL, factor
   return(list(compTab = comtable))
 }
 
+# compClinvar single algorithm #####
+compClinvar_single_algorithm = function (algorithm_name = "CS",
+                                         moic.res = NULL, var2comp = NULL, strata = NULL, factorVars = NULL, 
+                         nonnormalVars = NULL, exactVars = NULL, includeNA = FALSE, 
+                         doWord = TRUE, tab.name = NULL, res.path = getwd(), ...) 
+{
+  dat <- moic.res$clust.res
+  colnames(dat)[which(colnames(dat) == "clust")] <- "Subtype"
+  dat$Subtype <- paste0(algorithm_name, dat$Subtype)
+  com_sam <- intersect(dat$samID, rownames(var2comp))
+  if (length(com_sam) == nrow(dat)) {
+    message("--all samples matched.")
+  }
+  else {
+    message(paste0("--", (nrow(dat) - length(com_sam)), 
+                   " samples mismatched from current subtypes."))
+  }
+  dat <- cbind.data.frame(Subtype = dat[com_sam, "Subtype", 
+                                        drop = FALSE], var2comp[com_sam, , drop = FALSE])
+  if (is.null(strata)) {
+    strata <- "Subtype"
+  }
+  if (!is.element(strata, colnames(dat))) {
+    stop("fail to find this strata in var2comp. Consider using NULL by default.")
+  }
+  warn <- character(0)  # Initialize `warn` as an empty character vector
+  
+  tryCatch(stabl <- jstable::CreateTableOne2(vars = setdiff(colnames(dat), 
+                                                            strata), strata = strata, data = dat, factorVars = factorVars, 
+                                             nonnormal = nonnormalVars, exact = exactVars, includeNA = includeNA, 
+                                             showAllLevels = TRUE, ...), warning = function(w) {
+                                               warn <<- append(warn, conditionMessage(w))
+                                             })
+  
+  if (length(warn) > 0 && grepl("NA", warn, fixed = TRUE)) {
+    set.seed(19991018)
+    stabl <- jstable::CreateTableOne2(vars = setdiff(colnames(dat), 
+                                                     strata), strata = strata, data = dat, factorVars = factorVars, 
+                                      nonnormal = nonnormalVars, exact = exactVars, includeNA = includeNA, 
+                                      showAllLevels = TRUE, argsExact = list(simulate.p.value = T), 
+                                      ...)
+  }
+  else {
+    stabl <- jstable::CreateTableOne2(vars = setdiff(colnames(dat), 
+                                                     strata), strata = strata, data = dat, factorVars = factorVars, 
+                                      nonnormal = nonnormalVars, exact = exactVars, includeNA = includeNA, 
+                                      showAllLevels = TRUE, ...)
+  }
+  comtable <- as.data.frame(stabl)
+  comtable <- cbind.data.frame(var = rownames(stabl), comtable)
+  rownames(comtable) <- NULL
+  colnames(comtable)[1] <- " "
+  comtable[is.na(comtable)] <- ""
+  comtable <- comtable[, setdiff(colnames(comtable), "sig")]
+  if (is.null(tab.name)) {
+    outFile <- "summarization of clinical variables stratified by current subtype.txt"
+  }
+  else {
+    outFile <- paste0(tab.name, ".txt")
+  }
+  write.table(stabl, file.path(res.path, outFile), sep = "\t", 
+              quote = FALSE)
+  if (doWord) {
+    table_subtitle <- colnames(comtable)
+    title_name <- paste0("Table *. ", gsub(".txt", "", outFile, 
+                                           fixed = TRUE))
+    mynote <- "Note: ..."
+    my_doc <- officer::read_docx()
+    my_doc %>% officer::body_add_par(value = title_name, 
+                                     style = "table title") %>% officer::body_add_table(value = comtable, 
+                                                                                        style = "table_template") %>% officer::body_add_par(value = mynote) %>% 
+      print(target = file.path(res.path, paste0("TABLE ", 
+                                                gsub(".txt", "", outFile, fixed = TRUE), ".docx")))
+  }
+  return(list(compTab = comtable))
+}
+
+# compMut single algorithm #####
+compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mut.matrix = NULL, freq.cutoff = 0.05, 
+                                     test.method = "fisher", p.adj.method = "BH", doWord = TRUE, 
+                                     doPlot = TRUE, innerclust = TRUE, res.path = getwd(), tab.name = NULL, 
+                                     fig.path = getwd(), fig.name = NULL, annCol = NULL, annColors = NULL, 
+                                     mut.col = "#21498D", bg.col = "#dcddde", p.cutoff = 0.05, 
+                                     p.adj.cutoff = 0.05, clust.col = c("#2EC4B6", "#E71D36", 
+                                                                        "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
+                                                                        "#9D4EDD"), width = 8, height = 4) 
+{
+  library(MOVICS)
+  if (!is.element(test.method, c("fisher", "chisq"))) {
+    stop("test.method for independency can be one of fisher or chisq.\n")
+  }
+  if (!is.element(p.adj.method, c("holm", "hochberg", "hommel", 
+                                  "bonferroni", "BH", "BY", "fdr"))) {
+    stop("p.adj.method can be one of holm, hochberg, hommel, bonferroni, BH, BY, fdr.\n")
+  }
+  create.anntrack <- function(samples = NULL, subtype = NULL, 
+                              typesToPlot = NULL) {
+    if (is.null(samples)) {
+      stop("samples can not be NULL!")
+    }
+    if (length(samples) != length(subtype)) {
+      stop("samples and subtype do not have equal length!")
+    }
+    if (is.null(typesToPlot)) {
+      typesToPlot <- levels(factor(unique(subtype)))
+    }
+    names(subtype) <- samples
+    return(list(subtype = subtype, typesToPlot = typesToPlot))
+  }
+  createMutSubtype <- function(indata = NULL, samples = NULL, 
+                               genename = NULL) {
+    if (!is.element(genename, rownames(indata))) {
+      stop(paste(genename, "not found in indata!", sep = " "))
+    }
+    comsam <- intersect(colnames(indata), samples)
+    out <- rep("Not Available", times = length(samples))
+    names(out) <- samples
+    out[comsam] <- as.character(indata[genename, comsam])
+    out[is.na(out)] <- "Not Available"
+    out[out == "0"] <- "Normal"
+    out[out == "1"] <- "Mutated"
+    return(out)
+  }
+  clust.res <- moic.res$clust.res
+  clust.res <- clust.res[order(clust.res$clust, decreasing = FALSE), 
+                         , drop = FALSE]
+  comsam <- intersect(clust.res$samID, colnames(mut.matrix))
+  clust.res <- clust.res[comsam, , drop = FALSE]
+  mut.matrix <- mut.matrix[, comsam]
+  n.moic <- length(unique(clust.res$clust))
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  }
+  else {
+    message("--", paste0((nrow(moic.res$clust.res) - length(comsam)), 
+                         " samples mismatched from current subtypes."))
+  }
+  ans <- rep(paste0(algorithm_name, 1:n.moic), as.numeric(table(clust.res$clust)))
+  names(ans) <- clust.res$samID
+  genelist <- rownames(mut.matrix[rowSums(mut.matrix) > freq.cutoff * 
+                                    nrow(clust.res), ])
+  binarymut <- as.data.frame(matrix(0, nrow = nrow(clust.res), 
+                                    ncol = length(genelist)))
+  rownames(binarymut) <- names(ans)
+  colnames(binarymut) <- genelist
+  for (k in 1:length(genelist)) {
+    res <- create.anntrack(samples = names(ans), subtype = createMutSubtype(mut.matrix, 
+                                                                            names(ans), genelist[k]))
+    binarymut[, genelist[k]] <- res$subtype
+  }
+  out <- matrix(0, nrow = length(genelist), ncol = n.moic + 
+                  1)
+  colnames(out) <- c(levels(factor(ans)), "pvalue")
+  rownames(out) <- paste(genelist, "Mutated", sep = "_")
+  for (k in 1:length(genelist)) {
+    genek <- genelist[k]
+    x <- ans
+    y <- binarymut[names(x), genek, drop = TRUE]
+    y <- as.character(y)
+    names(y) <- names(x)
+    tmp <- setdiff(names(x), names(y)[y == "Not Available"])
+    x <- x[tmp]
+    y <- y[tmp]
+    res <- table(y, x)
+    if (!all(colnames(res) == colnames(out)[1:(ncol(out) - 
+                                               1)])) {
+      stop(paste("colnames mismatch for ", k, sep = ""))
+    }
+    pct <- paste0("(", format(round(res["Mutated", ]/as.numeric(table(clust.res$clust)) * 
+                                      100, 1), digits = 3), "%)")
+    freqpct <- paste(res["Mutated", ], pct, sep = " ")
+    out[k, 1:(ncol(out) - 1)] <- freqpct
+    if (test.method == "fisher") {
+      out[k, "pvalue"] <- as.numeric(fisher.test(x, y, 
+                                                 workspace = 1e+08)$p.value)
+    }
+    else {
+      out[k, "pvalue"] <- as.numeric(chisq.test(x, y)$p.value)
+    }
+  }
+  out <- as.data.frame(out)
+  out$pvalue <- formatC(as.numeric(as.character(out$pvalue)), 
+                        format = "e", digits = 2)
+  out$padj <- formatC(p.adjust(as.numeric(out$pvalue), method = p.adj.method), 
+                      format = "e", digits = 2)
+  if (is.null(tab.name)) {
+    outFile <- "Independent test between subtype and mutation.txt"
+  }
+  else {
+    outFile <- paste0(tab.name, ".txt")
+  }
+  tmb <- rowSums(mut.matrix[genelist, ])
+  pct <- paste0("(", format(round(tmb/ncol(mut.matrix) * 100, 
+                                  1), digits = 1), "%)")
+  freqpct <- paste(tmb, pct, sep = " ")
+  out <- cbind.data.frame(data.frame(`Gene (Mutated)` = gsub("_Mutated", 
+                                                             "", rownames(out)), TMB = freqpct, check.names = FALSE), 
+                          out)
+  rownames(out) <- NULL
+  write.table(out, file.path(res.path, outFile), row.names = FALSE, 
+              col.names = TRUE, sep = "\t", quote = FALSE)
+  if (doWord) {
+    comtable <- out
+    title_name <- paste0("Table *. ", gsub(".txt", "", outFile, 
+                                           fixed = TRUE))
+    mynote <- "Note: ..."
+    my_doc <- officer::read_docx()
+    my_doc %>% officer::body_add_par(value = title_name, 
+                                     style = "table title") %>% officer::body_add_table(value = comtable, 
+                                                                                        style = "table_template") %>% officer::body_add_par(value = mynote) %>% 
+      print(target = file.path(res.path, paste0("TABLE ", 
+                                                gsub(".txt", "", outFile, fixed = TRUE), ".docx")))
+  }
+  if (doPlot) {
+    if (is.null(fig.name)) {
+      outFig <- paste0("oncoprint for mutations with frequency over than ", 
+                       freq.cutoff * 100, " pct.pdf")
+    }
+    else {
+      outFig <- paste0(fig.name, ".pdf")
+    }
+    sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
+                                          decreasing = FALSE), "samID"]
+    colvec <- clust.col[1:length(unique(moic.res$clust.res$clust))]
+    names(colvec) <- paste0(algorithm_name, unique(moic.res$clust.res$clust))
+    if (!is.null(annCol) & !is.null(annColors)) {
+      annCol <- annCol[sam.order, , drop = FALSE]
+      annCol$Subtype <- paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                        "clust"])
+      annColors[["Subtype"]] <- colvec
+    }
+    else {
+      annCol <- data.frame(Subtype = paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                                     "clust"]), row.names = sam.order)
+      annColors <- list(Subtype = colvec)
+    }
+    sig.mut <- as.character(out[which(as.numeric(out$pvalue) < 
+                                        p.cutoff & as.numeric(out$padj) < p.adj.cutoff), 
+                                "Gene (Mutated)"])
+    onco_dat <- t(binarymut[rownames(annCol), sig.mut, drop = FALSE])
+    onco_dat[onco_dat == "Normal"] <- ""
+    onco_dat <- as.data.frame(onco_dat)
+    alter_fun = list(background = function(x, y, w, h) {
+      grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, 
+                                                          "mm"), gp = gpar(fill = bg.col, col = NA))
+    }, Mutated = function(x, y, w, h) {
+      grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, 
+                                                          "mm"), gp = gpar(fill = mut.col, col = NA))
+    })
+    col = c(Mutated = mut.col)
+    if (innerclust) {
+      sam.reorder <- c()
+      for (i in 1:n.moic) {
+        sam <- moic.res$clust.res[which(moic.res$clust.res$clust == 
+                                          i), "samID"]
+        tmp <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat[, 
+                                                        sam], get_type = function(x) x, alter_fun = alter_fun, 
+                                               col = col, remove_empty_columns = FALSE, show_pct = FALSE, 
+                                               bottom_annotation = NULL, top_annotation = NULL, 
+                                               show_heatmap_legend = FALSE))
+        sam.reorder <- c(sam.reorder, sam[tmp@column_order])
+      }
+      my_annotation = ComplexHeatmap::HeatmapAnnotation(df = annCol[sam.reorder, 
+                                                                    , drop = FALSE], col = annColors)
+      p <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat[, 
+                                                    sam.reorder], get_type = function(x) x, alter_fun = alter_fun, 
+                                           col = col, remove_empty_columns = FALSE, column_order = sam.reorder, 
+                                           show_pct = TRUE, bottom_annotation = my_annotation, 
+                                           top_annotation = NULL, show_heatmap_legend = FALSE))
+    }
+    else {
+      my_annotation = ComplexHeatmap::HeatmapAnnotation(df = annCol, 
+                                                        col = annColors)
+      p <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat, get_type = function(x) x, 
+                                           alter_fun = alter_fun, col = col, remove_empty_columns = FALSE, 
+                                           column_order = colnames(onco_dat), show_pct = TRUE, 
+                                           bottom_annotation = my_annotation, top_annotation = NULL, 
+                                           show_heatmap_legend = FALSE))
+    }
+    pdf(file.path(fig.path, outFig), width = width, height = height)
+    draw(p)
+    invisible(dev.off())
+    draw(p)
+  }
+  return(out)
+}
+
+# compDrugsen single algorithm #####
+compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, norm.expr = NULL, drugs = c("Cisplatin", 
+                                                                                      "Paclitaxel"), tissueType = "all", test.method = "nonparametric", 
+                                         clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
+                                                       "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), prefix = NULL, 
+                                         seed = 123456, fig.path = getwd(), width = 5, height = 5) 
+{
+  library(MOVICS)
+  if (!is.element(test.method, c("nonparametric", "parametric"))) {
+    stop("test.method can be one of nonparametric or parametric.")
+  }
+  comsam <- intersect(moic.res$clust.res$samID, colnames(norm.expr))
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  }
+  else {
+    message(paste0("--", (nrow(moic.res$clust.res) - length(comsam)), 
+                   " samples mismatched from current subtypes."))
+  }
+  moic.res$clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+  norm.expr <- norm.expr[, comsam]
+  n.moic <- length(unique(moic.res$clust.res$clust))
+  sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
+                                        decreasing = FALSE), "samID"]
+  colvec <- clust.col[1:length(unique(moic.res$clust.res$clust))]
+  names(colvec) <- paste0(algorithm_name, unique(moic.res$clust.res$clust))
+  annCol <- data.frame(Subtype = paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                                 "clust"]), samID = sam.order, row.names = sam.order, 
+                       stringsAsFactors = FALSE)
+  if (max(norm.expr) < 25 | (max(norm.expr) >= 25 & min(norm.expr) < 
+                             0)) {
+    message("--expression profile seems to have veen standardised (z-score or log transformation), no more action will be performed.")
+    gset <- norm.expr
+  }
+  if (max(norm.expr) >= 25 & min(norm.expr) >= 0) {
+    message("--log2 transformation done for expression data.")
+    gset <- log2(norm.expr + 1)
+  }
+  predictedPtype <- predictedBoxdat <- list()
+  for (drug in drugs) {
+    set.seed(seed)
+    predictedPtype[[drug]] <- MOVICS:::quiet(MOVICS:::pRRopheticPredict(testMatrix = as.matrix(gset[, 
+                                                                                  rownames(annCol)]), drug = drug, tissueType = tissueType, 
+                                                      dataset = "cgp2016", minNumSamples = 5, selection = 1))
+    if (!all(names(predictedPtype[[drug]]) == rownames(annCol))) {
+      stop("name mismatched!\n")
+    }
+    predictedBoxdat[[drug]] <- data.frame(Est.IC50 = predictedPtype[[drug]], 
+                                          Subtype = as.character(annCol$Subtype), row.names = names(predictedPtype[[drug]]), 
+                                          stringsAsFactors = FALSE)
+    message(drug, " done...")
+    if (n.moic == 2 & test.method == "nonparametric") {
+      statistic = "wilcox.test"
+      ic50.test <- wilcox.test(predictedBoxdat[[drug]]$Est.IC50 ~ 
+                                 predictedBoxdat[[drug]]$Subtype)$p.value
+      cat(paste0("Wilcoxon rank sum test p value = ", 
+                 formatC(ic50.test, format = "e", digits = 2), 
+                 " for ", drug))
+    }
+    if (n.moic == 2 & test.method == "parametric") {
+      statistic = "t.test"
+      ic50.test <- t.test(predictedBoxdat[[drug]]$Est.IC50 ~ 
+                            predictedBoxdat[[drug]]$Subtype)$p.value
+      cat(paste0("Student's t test p value = ", formatC(ic50.test, 
+                                                        format = "e", digits = 2), " for ", drug))
+    }
+    if (n.moic > 2 & test.method == "nonparametric") {
+      statistic = "kruskal.test"
+      ic50.test <- kruskal.test(predictedBoxdat[[drug]]$Est.IC50 ~ 
+                                  predictedBoxdat[[drug]]$Subtype)$p.value
+      pairwise.ic50.test <- pairwise.wilcox.test(predictedBoxdat[[drug]]$Est.IC50, 
+                                                 predictedBoxdat[[drug]]$Subtype, p.adjust.method = "BH")
+      cat(paste0(drug, ": Kruskal-Wallis rank sum test p value = ", 
+                 formatC(ic50.test, format = "e", digits = 2), 
+                 "\npost-hoc pairwise wilcoxon rank sum test with Benjamini-Hochberg adjustment presents below:\n"))
+      print(formatC(pairwise.ic50.test$p.value, format = "e", 
+                    digits = 2))
+    }
+    if (n.moic > 2 & test.method == "parametric") {
+      statistic = "anova"
+      ic50.test <- summary(aov(predictedBoxdat[[drug]]$Est.IC50 ~ 
+                                 predictedBoxdat[[drug]]$Subtype))[[1]][["Pr(>F)"]][1]
+      pairwise.ic50.test <- pairwise.t.test(predictedBoxdat[[drug]]$Est.IC50, 
+                                            predictedBoxdat[[drug]]$Subtype, p.adjust.method = "BH")
+      cat(paste0(drug, ": One-way anova test p value = ", 
+                 formatC(ic50.test, format = "e", digits = 2), 
+                 "\npost-hoc pairwise Student's t test with Benjamini-Hochberg adjustment presents below:\n"))
+      print(formatC(pairwise.ic50.test$p.value, format = "e", 
+                    digits = 2))
+    }
+    p <- ggplot(data = predictedBoxdat[[drug]], aes(x = Subtype, 
+                                                    y = Est.IC50, fill = Subtype)) + scale_fill_manual(values = colvec) + 
+      geom_violin(alpha = 0.4, position = position_dodge(width = 0.75), 
+                  size = 0.8, color = "black") + geom_boxplot(notch = TRUE, 
+                                                              outlier.size = -1, color = "black", lwd = 0.8, alpha = 0.7) + 
+      geom_point(shape = 21, size = 2, position = position_jitterdodge(), 
+                 color = "black", alpha = 1) + theme_classic() + 
+      ylab(bquote("Estimated IC"[50] ~ "of" ~ .(drug))) + 
+      xlab("") + theme(axis.text.x = element_text(angle = 45, 
+                                                  hjust = 1, size = 12), axis.ticks = element_line(size = 0.2, 
+                                                                                                   color = "black"), axis.ticks.length = unit(0.2, 
+                                                                                                                                              "cm"), legend.position = "none", axis.title = element_text(size = 15), 
+                       axis.text = element_text(size = 10)) + ggpubr::stat_compare_means(method = statistic, 
+                                                                                 hjust = ifelse(n.moic%%2 == 0, 0.5, 0), label.x = ifelse(n.moic%%2 == 
+                                                                                                                                            0, n.moic/2 + 0.5, n.moic/2), label.y = min(predictedBoxdat[[drug]]$Est.IC50))
+    if (is.null(prefix)) {
+      outFig <- paste0("boxviolin of estimated ic50 for ", 
+                       drug, ".pdf")
+    }
+    else {
+      outFig <- paste0(prefix, " for ", drug, ".pdf")
+    }
+    ggsave(file.path(fig.path, outFig), width = width, height = height)
+    print(p)
+  }
+  return(predictedBoxdat)
+}
+
+# compAgree single algorithm #####
+compAgree_single_algorithm = function (algorithm_name = "CS",
+                                       moic.res = NULL, subt2comp = NULL, doPlot = TRUE, 
+                       clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
+                                     "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), box.width = 0.1, 
+                       fig.name = NULL, fig.path = getwd(), width = 6, height = 5) 
+{
+  library(ggplot2)
+  library(ggalluvial)
+  library(cowplot)
+  dat <- moic.res$clust.res
+  colnames(dat)[2] <- "Subtype"
+  dat$Subtype <- paste0(algorithm_name, dat$Subtype)
+  comsam <- intersect(dat$samID, rownames(subt2comp))
+  if (length(comsam) == nrow(dat)) {
+    message("--all samples matched.")
+  }
+  else {
+    message(paste0("--", (nrow(dat) - length(comsam)), " samples mismatched from current subtypes."))
+  }
+  dat <- cbind.data.frame(Subtype = dat[comsam, "Subtype", 
+                                        drop = FALSE], subt2comp[comsam, , drop = FALSE])
+  dat <- as.data.frame(na.omit(dat))
+  if (nrow(dat) != nrow(moic.res$clust.res)) {
+    message("--removed NA values in subt2comp.")
+  }
+  var <- colnames(dat)
+  n.var <- length(var)
+  if (n.var > 6) {
+    stop("please indicate less than 6 subtypes (including current subtypes) that need to compare.")
+  }
+  outTab <- NULL
+  c1 <- as.vector(as.numeric(factor(dat[, 1])))
+  for (i in 2:ncol(dat)) {
+    c2 <- as.vector(as.numeric(factor(dat[, i])))
+    RI <- flexclust::comPart(c1, c2, type = c("RI"))
+    AMI <- aricode::AMI(c1, c2)
+    JI <- flexclust::comPart(c1, c2, type = c("J"))
+    FM <- flexclust::comPart(c1, c2, type = c("FM"))
+    outTab <- rbind.data.frame(outTab, data.frame(current.subtype = colnames(dat)[1], 
+                                                  other.subtype = colnames(dat)[i], RI = as.numeric(RI), 
+                                                  AMI = as.numeric(AMI), JI = as.numeric(JI), FM = as.numeric(FM), 
+                                                  stringsAsFactors = FALSE), stringsAsFactors = FALSE)
+  }
+  assign("StatStratum", ggalluvial::StatStratum, envir = globalenv())
+  if (doPlot) {
+    if (is.null(fig.name)) {
+      outFig <- "Agreement between current subtype and other classifications.pdf"
+    }
+    else {
+      outFig <- paste0(fig.name, ".pdf")
+    }
+    agreement <- reshape2::melt(outTab[, 2:ncol(outTab)], 
+                                id.vars = "other.subtype", variable.name = "Method")
+    b <- ggplot(data = agreement, aes(x = Method, y = value, 
+                                      fill = other.subtype)) + geom_bar(stat = "identity", 
+                                                                        position = position_dodge()) + scale_fill_brewer(palette = "Set1") + 
+      ggplot2::labs(x = "", y = "Scalar") + scale_y_continuous(limits = c(0, 
+                                                                          1), expand = c(0, 0)) + theme_bw() + theme(legend.position = "top", 
+                                                                                                                     legend.title = element_blank(), panel.grid = element_blank(), 
+                                                                                                                     axis.ticks = element_blank(), axis.text.x = element_text(color = "black", 
+                                                                                                                                                                              size = 12, face = "bold", vjust = -5), axis.text.y = element_text(color = "black", 
+                                                                                                                                                                                                                                                size = 12, face = "bold"), axis.title.x = element_text(color = "black", 
+                                                                                                                                                                                                                                                                                                       size = 12, face = "bold"), axis.title.y = element_text(color = "black", 
+                                                                                                                                                                                                                                                                                                                                                              size = 12, face = "bold")) + ggtitle("")
+    col = clust.col[1:length(unique(dat$Subtype))]
+    var1 <- var[1]
+    if (n.var == 2) {
+      var2 <- var[2]
+      subdf <- dat[, 1:n.var]
+      colnames(subdf) <- c("Subtype", paste0("Subtype", 
+                                             1:(n.var - 1)))
+      subdf <- subdf %>% group_by(Subtype, Subtype1) %>% 
+        tally(name = "Freq") %>% as.data.frame()
+      p <- ggplot(subdf, aes(y = Freq, axis1 = Subtype, 
+                             axis2 = Subtype1)) + scale_fill_manual(values = col) + 
+        geom_flow(stat = "alluvium", width = 1/8, aes(fill = Subtype)) + 
+        geom_stratum(width = 1/8, reverse = TRUE) + 
+        geom_text(stat = "stratum", aes(label = after_stat(stratum)), 
+                  reverse = TRUE) + scale_x_continuous(breaks = 1:n.var, 
+                                                       labels = c(var1, var2)) + theme_bw() + theme(legend.position = "top", 
+                                                                                                    legend.title = element_blank(), panel.grid = element_blank(), 
+                                                                                                    panel.border = element_blank(), axis.title.x = element_blank(), 
+                                                                                                    axis.title.y = element_blank(), axis.text.y = element_blank(), 
+                                                                                                    axis.ticks = element_blank(), axis.text.x = element_text(size = 12, 
+                                                                                                                                                             face = "bold", color = "black")) + ggtitle("")
+    }
+    if (n.var == 3) {
+      var2 <- var[2]
+      var3 <- var[3]
+      subdf <- dat[, 1:n.var]
+      colnames(subdf) <- c("Subtype", paste0("Subtype", 
+                                             1:(n.var - 1)))
+      subdf <- subdf %>% group_by(Subtype, Subtype1, Subtype2) %>% 
+        tally(name = "Freq") %>% as.data.frame()
+      p <- ggplot(subdf, aes(y = Freq, axis1 = Subtype, 
+                             axis2 = Subtype1, axis3 = Subtype2)) + scale_fill_manual(values = col) + 
+        geom_flow(stat = "alluvium", width = 1/8, aes(fill = Subtype)) + 
+        geom_stratum(width = box.width, reverse = TRUE) + 
+        geom_text(stat = "stratum", aes(label = after_stat(stratum)), 
+                  reverse = TRUE) + scale_x_continuous(breaks = 1:n.var, 
+                                                       labels = c(var1, var2, var3)) + theme_bw() + 
+        theme(legend.position = "top", legend.title = element_blank(), 
+              panel.grid = element_blank(), panel.border = element_blank(), 
+              axis.title.x = element_blank(), axis.title.y = element_blank(), 
+              axis.text.y = element_blank(), axis.ticks = element_blank(), 
+              axis.text.x = element_text(size = 12, face = "bold", 
+                                         color = "black")) + ggtitle("")
+    }
+    if (n.var == 4) {
+      var2 <- var[2]
+      var3 <- var[3]
+      var4 <- var[4]
+      subdf <- dat[, 1:n.var]
+      colnames(subdf) <- c("Subtype", paste0("Subtype", 
+                                             1:(n.var - 1)))
+      subdf <- subdf %>% group_by(Subtype, Subtype1, Subtype2, 
+                                  Subtype3) %>% tally(name = "Freq") %>% as.data.frame()
+      p <- ggplot(subdf, aes(y = Freq, axis1 = Subtype, 
+                             axis2 = Subtype1, axis3 = Subtype2, axis4 = Subtype3)) + 
+        scale_fill_manual(values = col) + geom_flow(stat = "alluvium", 
+                                                    width = 1/8, aes(fill = Subtype)) + geom_stratum(width = 1/8, 
+                                                                                                     reverse = TRUE) + geom_text(stat = "stratum", 
+                                                                                                                                 aes(label = after_stat(stratum)), reverse = TRUE) + 
+        scale_x_continuous(breaks = 1:n.var, labels = c(var1, 
+                                                        var2, var3, var4)) + theme_bw() + theme(legend.position = "top", 
+                                                                                                legend.title = element_blank(), panel.grid = element_blank(), 
+                                                                                                panel.border = element_blank(), axis.title.x = element_blank(), 
+                                                                                                axis.title.y = element_blank(), axis.text.y = element_blank(), 
+                                                                                                axis.ticks = element_blank(), axis.text.x = element_text(size = 12, 
+                                                                                                                                                         face = "bold", color = "black")) + ggtitle("")
+    }
+    if (n.var == 5) {
+      var2 <- var[2]
+      var3 <- var[3]
+      var4 <- var[4]
+      var5 <- var[5]
+      subdf <- dat[, 1:n.var]
+      colnames(subdf) <- c("Subtype", paste0("Subtype", 
+                                             1:(n.var - 1)))
+      subdf <- subdf %>% group_by(Subtype, Subtype1, Subtype2, 
+                                  Subtype3, Subtype4) %>% tally(name = "Freq") %>% 
+        as.data.frame()
+      p <- ggplot(subdf, aes(y = Freq, axis1 = Subtype, 
+                             axis2 = Subtype1, axis3 = Subtype2, axis4 = Subtype3, 
+                             axis5 = Subtype4)) + scale_fill_manual(values = col) + 
+        geom_flow(stat = "alluvium", width = 1/8, aes(fill = Subtype)) + 
+        geom_stratum(width = 1/8, reverse = TRUE) + 
+        geom_text(stat = "stratum", aes(label = after_stat(stratum)), 
+                  reverse = TRUE) + scale_x_continuous(breaks = 1:n.var, 
+                                                       labels = c(var1, var2, var3, var4, var5)) + 
+        theme_bw() + theme(legend.position = "top", 
+                           legend.title = element_blank(), panel.grid = element_blank(), 
+                           panel.border = element_blank(), axis.title.x = element_blank(), 
+                           axis.title.y = element_blank(), axis.text.y = element_blank(), 
+                           axis.ticks = element_blank(), axis.text.x = element_text(size = 12, 
+                                                                                    face = "bold", color = "black")) + ggtitle("")
+    }
+    if (n.var == 6) {
+      var2 <- var[2]
+      var3 <- var[3]
+      var4 <- var[4]
+      var5 <- var[5]
+      var6 <- var[6]
+      subdf <- dat[, 1:n.var]
+      colnames(subdf) <- c("Subtype", paste0("Subtype", 
+                                             1:(n.var - 1)))
+      subdf <- subdf %>% group_by(Subtype, Subtype1, Subtype2, 
+                                  Subtype3, Subtype4, Subtype5) %>% tally(name = "Freq") %>% 
+        as.data.frame()
+      p <- ggplot(subdf, aes(y = Freq, axis1 = Subtype, 
+                             axis2 = Subtype1, axis3 = Subtype2, axis4 = Subtype3, 
+                             axis5 = Subtype4, axis6 = Subtype5)) + scale_fill_manual(values = col) + 
+        geom_flow(stat = "alluvium", width = 1/8, aes(fill = Subtype)) + 
+        geom_stratum(width = 1/8, reverse = TRUE) + 
+        geom_text(stat = "stratum", aes(label = after_stat(stratum)), 
+                  reverse = TRUE) + scale_x_continuous(breaks = 1:n.var, 
+                                                       labels = c(var1, var2, var3, var4, var5, var6)) + 
+        theme_bw() + theme(legend.position = "top", 
+                           legend.title = element_blank(), panel.grid = element_blank(), 
+                           panel.border = element_blank(), axis.title.x = element_blank(), 
+                           axis.title.y = element_blank(), axis.text.y = element_blank(), 
+                           axis.ticks = element_blank(), axis.text.x = element_text(size = 12, 
+                                                                                    face = "bold", color = "black")) + ggtitle("")
+    }
+    agree <- list(b, p)
+    bp <- plot_grid(plotlist = agree, ncol = 2)
+    ggsave(file.path(fig.path, outFig), width = width, height = height)
+    print(bp)
+  }
+  return(outTab)
+}
 # runGSVA_mod_4.4 #####
 runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = NULL, 
           gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
@@ -1590,7 +2187,7 @@ compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d",
                                    legend.title = "", surv.median.line = surv.median.line, 
                                    xlab = paste0("Time (", date.lab, ")"), ylab = "Survival probability (%)", 
                                    risk.table.y.text = FALSE))
-  p$plot <- quiet(p$plot + scale_y_continuous(breaks = seq(0, 
+  p$plot <- suppressWarnings(p$plot + scale_y_continuous(breaks = seq(0, 
                                                            1, 0.25), labels = seq(0, 100, 25)))
   if (n.moic > 2) {
     p.lab <- paste0("Overall P", ifelse(p.val < 0.001, " < 0.001", 
@@ -1632,6 +2229,147 @@ compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d",
     return(list(fitd = fitd, fit = fit, xyrs.est = xyrs, 
                 overall.p = p.val))
   }
+}
+
+# runPAM single algorithm #####
+runPAM_single_algorithm = function (algorithm_name = "CS",
+                                    train.expr = NULL, moic.res = NULL, test.expr = NULL, 
+                                    gene.subset = NULL) 
+{
+  comsam <- intersect(moic.res$clust.res$samID, colnames(train.expr))
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  }
+  else {
+    message(paste0("--", (nrow(moic.res$clust.res) - length(comsam)), 
+                   " samples mismatched from current subtypes."))
+  }
+  moic.res$clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+  train.expr <- train.expr[, comsam]
+  if (is.null(gene.subset)) {
+    comgene <- intersect(rownames(train.expr), rownames(test.expr))
+    message(paste0("--a total of ", length(comgene), " genes shared and used."))
+  }
+  else {
+    comgene <- intersect(intersect(rownames(train.expr), 
+                                   rownames(test.expr)), gene.subset)
+    message(paste0("--a total of ", length(comgene), " genes shared in the gene subset and used."))
+  }
+  train.expr <- train.expr[comgene, ]
+  test.expr <- test.expr[comgene, ]
+  train.subt <- paste0(algorithm_name, moic.res$clust.res$clust)
+  if (max(train.expr) < 25 | (max(train.expr) >= 25 & min(train.expr) < 
+                              0)) {
+    message("--training expression profile seems to have been standardised (z-score or log transformation), no more action will be performed.")
+    train.expr <- train.expr
+  }
+  if (max(train.expr) >= 25 & min(train.expr) >= 0) {
+    message("--log2 transformation done for training expression data.")
+    train.expr <- log2(train.expr + 1)
+  }
+  train.expr <- as.data.frame(t(scale(t(train.expr))))
+  if (max(test.expr) < 25 | (max(test.expr) >= 25 & min(test.expr) < 
+                             0)) {
+    message("--testing expression profile seems to have been standardised (z-score or log transformation), no more action will be performed.")
+    test.expr <- test.expr
+  }
+  if (max(test.expr) >= 25 & min(test.expr) >= 0) {
+    message("--log2 transformation done for testing expression data.")
+    test.expr <- log2(test.expr + 1)
+  }
+  test.expr <- as.data.frame(t(scale(t(test.expr))))
+  mylist <- list(x = as.matrix(train.expr), y = as.vector(train.subt))
+  pamr.classifier <- MOVICS:::quiet(pamr::pamr.train(mylist))
+  pamr.pred.test <- clusterRepro::IGP.clusterRepro(Centroids = pamr.classifier$centroids, 
+                                     Data = as.matrix(test.expr))
+  IGP <- pamr.pred.test$IGP
+  names(IGP) <- paste0(algorithm_name, 1:length(IGP))
+  ex.moic.res <- data.frame(samID = names(pamr.pred.test$Class), 
+                            clust = as.character(pamr.pred.test$Class), row.names = names(pamr.pred.test$Class), 
+                            stringsAsFactors = FALSE)
+  return(list(IGP = IGP, clust.res = ex.moic.res, mo.method = "PAM"))
+}
+
+# runKappa single algorithm #####
+runKappa_single_algorithm = function (algorithm_name = "CS",
+                                      subt1 = NULL, subt2 = NULL, subt1.lab = NULL, subt2.lab = NULL, 
+                                      fig.path = getwd(), fig.name = "constheatmap", width = 5, 
+                                      height = 5) 
+{
+  subt1 <- as.vector(as.character(subt1))
+  subt2 <- as.vector(as.character(subt2))
+  if (length(subt1) != length(subt2)) {
+    stop("subtypes identified from different cohorts.")
+  }
+  if (!identical(sort(unique(subt1)), sort(unique(subt2)))) {
+    stop("subtypes fail to matched from two appraisements.")
+  }
+  if (is.null(subt1.lab) | is.null(subt2.lab)) {
+    stop("label for subtype1 and subtype2 must be both indicated.")
+  }
+  comb.subt <- data.frame(subt1 = paste0(algorithm_name, subt1), subt2 = paste0(algorithm_name, 
+                                                                      subt2), stringsAsFactors = F)
+  tab_classify <- as.data.frame.array(table(comb.subt$subt1, 
+                                            comb.subt$subt2))
+  x <- table(comb.subt$subt1, comb.subt$subt2)
+  nr <- nrow(x)
+  nc <- ncol(x)
+  N <- sum(x)
+  Po <- sum(diag(x))/N
+  Pe <- sum(rowSums(x) * colSums(x)/N)/N
+  kappa <- (Po - Pe)/(1 - Pe)
+  seK0 <- sqrt(Pe/(N * (1 - Pe)))
+  p.v <- 1 - pnorm(kappa/seK0)
+  p.lab <- ifelse(p.v < 0.001, "P < 0.001", paste0("P = ", 
+                                                   format(round(p.v, 3), nsmall = 3)))
+  blue <- "#204F8D"
+  lblue <- "#498EB9"
+  dwhite <- "#B6D1E8"
+  white <- "#E6EAF7"
+  par(bty = "n", mgp = c(2, 0.5, 0), mar = c(4.1, 4.1, 4.1, 
+                                             2.1), tcl = -0.25, font.main = 3)
+  par(xpd = NA)
+  plot(c(0, ncol(tab_classify)), c(0, nrow(tab_classify)), 
+       col = "white", xlab = "", xaxt = "n", ylab = "", yaxt = "n")
+  title(paste0("Consistency between ", subt1.lab, " and ", 
+               subt2.lab, "\nKappa = ", format(round(kappa, 3), nsmall = 3), 
+               "\n", p.lab), adj = 0, line = 0)
+  axis(2, at = 0.5:(nrow(tab_classify) - 0.5), labels = FALSE)
+  text(y = 0.5:(nrow(tab_classify) - 0.5), par("usr")[1], 
+       labels = rownames(tab_classify)[nrow(tab_classify):1], 
+       srt = 0, pos = 2, xpd = TRUE)
+  mtext(paste0("Subtypes derived from ", subt1.lab), side = 2, 
+        line = 3)
+  axis(1, at = 0.5:(ncol(tab_classify) - 0.5), labels = FALSE)
+  text(x = 0.5:(ncol(tab_classify) - 0.5), par("usr")[1] - 
+         0.2, labels = colnames(tab_classify), srt = 45, pos = 1, 
+       xpd = TRUE)
+  mtext(paste0("Subtypes derived from ", subt2.lab), side = 1, 
+        line = 3)
+  input_matrix <- as.matrix(tab_classify)
+  mat.max = max(input_matrix)
+  unq.value <- unique(sort(as.vector(input_matrix)))
+  rbPal <- colorRampPalette(c(white, dwhite, lblue, blue))
+  col.vec <- rbPal(max(unq.value) + 1)
+  col.mat <- matrix(NA, byrow = T, ncol = ncol(input_matrix), 
+                    nrow = nrow(input_matrix))
+  for (i in 1:nrow(col.mat)) {
+    for (j in 1:ncol(col.mat)) {
+      col.mat[i, j] <- col.vec[input_matrix[i, j] + 1]
+    }
+  }
+  x_size <- ncol(input_matrix)
+  y_size <- nrow(input_matrix)
+  my_xleft = rep(c(0:(x_size - 1)), each = x_size)
+  my_xright = my_xleft + 1
+  my_ybottom = rep(c((y_size - 1):0), y_size)
+  my_ytop = my_ybottom + 1
+  rect(xleft = my_xleft, ybottom = my_ybottom, xright = my_xright, 
+       ytop = my_ytop, col = col.mat, border = F)
+  text(my_xleft + 0.5, my_ybottom + 0.5, input_matrix, cex = 1.3)
+  outFig <- paste0(fig.name, ".pdf")
+  invisible(dev.copy2pdf(file = file.path(fig.path, outFig), 
+                         width = width, height = height))
 }
 
 # getMoHeatmap_mod #####
