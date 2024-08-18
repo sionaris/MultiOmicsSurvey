@@ -37,6 +37,13 @@ description = paste(readLines(paste0("Resources/algorithm_descriptions/", algori
                                      "_description.Rmd")),
                     collapse = "\n") # File path to .Rmd file within Resources/algorithm_descriptions
 
+# Create algorithm directory if it doesn't exist
+if (!dir.exists(paste0(home, "/Results/single_algorithm/", 
+                       algorithm))) {
+  dir.create(paste0(home, "/Results/single_algorithm/", 
+                    algorithm))
+}
+
 # Preprocessing flags and code #####
 library(stringr)
 library(dplyr)
@@ -1150,7 +1157,11 @@ dev.off()
 
 # Sunburst plot ###
 library(plotly)
-Pheno_sunburst_SNF = clust_annot_pheno %>%
+Pheno_sunburst_SNF = clust_annot_pheno
+Pheno_sunburst_SNF$`ER status` = gsub("Unknown", "Unk ER status", Pheno_sunburst_SNF$`ER status`)
+Pheno_sunburst_SNF$Metastasis = gsub("Unknown", "Unk metastatic status", 
+                                     Pheno_sunburst_SNF$Metastasis)
+Pheno_sunburst_SNF = Pheno_sunburst_SNF %>%
   dplyr::select(SNF, `ER status`, Metastasis, `Vital status`) %>%
   group_by(SNF, `ER status`, Metastasis, `Vital status`) %>%
   summarise(Counts = n()) %>%
@@ -1162,8 +1173,8 @@ sunburst_coloring_SNF = data.frame(stringsAsFactors = FALSE,
                                                                       "deeppink4", "cadetblue2", "grey40",
                                                                       "lightpink1", "black", "grey40"))),
                                    labels = c("SNF1", "SNF2", "SNF3",
-                                              "Negative", "Positive", "Unknown",
-                                              "Yes", "No", "Unknown",
+                                              "Negative", "Positive", "Unk ER status",
+                                              "Yes", "No", "Unk metastatic status",
                                               "Alive", "Dead", "Unknown"))
 
 sunburstDF_SNF = as.sunburstDF(Pheno_sunburst_SNF, value_column = "Counts", add_root = FALSE) %>%
@@ -1201,13 +1212,6 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
               hyperparameters = hyperparameters)
-
-# Create algorithm directory if it doesn't exist
-if (!dir.exists(paste0(home, "/Results/single_algorithm/", 
-                       algorithm))) {
-  dir.create(paste0(home, "/Results/single_algorithm/", 
-                    algorithm))
-}
 
 # Render the R Markdown document with the parameters
 rmarkdown::render(paste0(getwd(), "/Scripts/automated_scripts/single_algorithm_results_report.Rmd"), 
