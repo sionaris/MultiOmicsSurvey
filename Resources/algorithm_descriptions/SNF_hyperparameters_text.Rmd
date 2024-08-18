@@ -1,0 +1,7 @@
+There are three hyperparameters in SNF: the number of neighbors ($N_i$), the regularization parameter $\sigma$, and the number of iterations $t$.
+
+Here, we used a range of number of neighbors values $\[ `r hyperparameters[["num_neighbors_min"]]`, `r hyperparameters[["num_neighbors_max"]]` \]$ with a step size of `r hyperparameters[["num_neighbors_step"]]`, $\sigma$ values ranging from $`r hyperparameters[["sigma_min"]]`$ to $`r hyperparameters[["sigma_max"]]$ with a step size of $`r hyperparameters[["sigma_step"]]`$, and a number of iterations $t = `r hyperparameters[["n_iter"]]$. Results for larger $t$ are usually identical because the algorithm usually converges after roughly 20 iterations.
+
+We compared (Pearson and Frobenius similarities between matrices) the final fused affinity matrices for a given $N_i$ and/or a given $sigma$. `r hyperparameters[["conclusion""]]`
+
+We therefore proceeded with suggested values for the parameters: $N_i = `r hyperparameters[["optimal N"]]`$, $sigma = `r hyperparameters[["optimal_sigma"]]`$ and $t = `r hyperparameters[["n_iter"]]`$.

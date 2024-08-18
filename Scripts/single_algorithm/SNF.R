@@ -309,16 +309,16 @@ if (summary(anova_nn)[[1]][["Pr(>F)"]][1] < 0.05 &&
     cat(conclusion4)
   }
 } else {
-  conclusion3 = "The nn effect and sigma effect are practically equal based on mean Pearson similarities"
+  conclusion3 = "The nn effect and sigma effect are practically equal based on mean Pearson similarities."
   cat(conclusion3)
 }
 
 if (exists("conclusion4")) {
-  conclusion = paste0(conclusion1, conclusion2, conclusion3, conclusion4, collapse = " ")
+  conclusion = paste(conclusion1, conclusion2, conclusion3, conclusion4)
   rm(conclusion1, conclusion2, conclusion3, conclusion4)
   sig_status = TRUE
 } else {
-  conclusion = paste0(conclusion1, conclusion2, conclusion3, collapse = " ")
+  conclusion = paste(conclusion1, conclusion2, conclusion3)
   rm(conclusion1, conclusion2, conclusion3)
   sig_status = FALSE
 }
@@ -852,6 +852,9 @@ create_MO_heatmap(matrix = aff_CNV, algorithm = algorithm,
                   heatmap_title = "CNV first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
                   output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_CNV_heatmap.png"))
 
 # RNAseq
@@ -864,6 +867,9 @@ create_MO_heatmap(matrix = aff_rna, algorithm = algorithm,
                   heatmap_title = "RNAseq first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
                   output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_RNAseq_heatmap.png"))
 
 # miRNA
@@ -876,6 +882,9 @@ create_MO_heatmap(matrix = aff_miRNA, algorithm = algorithm,
                   heatmap_title = "miRNA first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
                   output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_miRNA_heatmap.png"))
 
 # Methylation
@@ -888,6 +897,9 @@ create_MO_heatmap(matrix = aff_Methyl, algorithm = algorithm,
                   heatmap_title = "Methylation first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
                   output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_Methylation_heatmap.png"))
 
 # SNPs
@@ -900,6 +912,9 @@ create_MO_heatmap(matrix = aff_SNPs, algorithm = algorithm,
                   heatmap_title = "SNPs first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
                   output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_SNPs_heatmap.png"))
 
 # Final affinity matrix
@@ -912,8 +927,260 @@ create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm,
                   heatmap_title = "Final affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
                   output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/aff_final_affinity_heatmap.png"))
 
+# Final affinity matrix with clustered rows and columns
+create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "Final affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  cluster_cols_flag = TRUE,
+                  cluster_rows_flag = TRUE,
+                  splits_flag = FALSE,
+                  output_file_name = paste0(home, "/Results/single_algorithm/SNF/Supplement/hclust_aff_final_affinity_heatmap.png"))
+
+# PCA ###
+# CNV
+pca_from_sim_matrix(sim_matrix = aff_CNV, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/SNF/Supplement"), 
+                    title_add = "CNV")
+
+# RNAseq
+pca_from_sim_matrix(sim_matrix = aff_rna, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/SNF/Supplement"), 
+                    title_add = "RNAseq")
+
+# miRNA
+pca_from_sim_matrix(sim_matrix = aff_miRNA, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/SNF/Supplement"), 
+                    title_add = "miRNA")
+
+# Methylation
+pca_from_sim_matrix(sim_matrix = aff_Methyl, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/SNF/Supplement"), 
+                    title_add = "Methylation")
+
+# SNPs
+pca_from_sim_matrix(sim_matrix = aff_SNPs, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/SNF/Supplement"), 
+                    title_add = "SNPs")
+
+# Final affinity
+pca_from_sim_matrix(sim_matrix = aff_final, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/SNF/Supplement"), 
+                    title_add = "Fusion")
+
+# Setup for barcharts ###
+# Stage
+scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
+                                                `Stage II` = "#099CF5", 
+                                                `Stage III` = "#097BF5", 
+                                                `Stage IV` = "#0B5684", 
+                                                `Unknown` = "grey40"))
+
+# Lymph node status
+scale_fill_lymph_node_status = scale_fill_manual(values = c(No = "grey75", 
+                                                            Yes = "#4A0558", 
+                                                            Unknown = "grey40"))
+
+# ER status
+scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
+                                                    Positive = "#0F1682", 
+                                                    Unknown = "grey40"))
+
+# PR status
+scale_fill_PR_status = scale_fill_manual(values = c(Indeterminate = "aliceblue", 
+                                                    Positive = "dodgerblue4", 
+                                                    Negative = "#F0C6C3", 
+                                                    Unknown = "grey40"))
+
+# HER2 status
+scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
+                                                      Positive = "#560DA7", 
+                                                      Indeterminate = "mistyrose1", 
+                                                      Equivocal = "hotpink4", 
+                                                      Unknown = "grey40"))
+
+# Vital status
+scale_fill_vital_status = scale_fill_manual(values = c(Alive = "lightpink1", 
+                                                       Dead = "black", 
+                                                       Unknown = "grey40"))
+
+# Ethnicity
+scale_fill_ethnicity = scale_fill_manual(values = c(`Hispanic or latino` = "#E58606", 
+                                                    `Not hispanic or latino` = "#24796C", 
+                                                    Unknown = "grey40"))
+
+# Race
+scale_fill_race = scale_fill_manual(values = c(`American indian or alaska native` = "#E73F74", 
+                                               Asian = "#3969AC", 
+                                               `Black or african american` = "#666666", 
+                                               White = "beige", 
+                                               Unknown = "grey40"))
+
+# Metastasis
+scale_fill_metastasis = scale_fill_manual(values = c(Yes = "deeppink4", 
+                                                     No = "cadetblue2", 
+                                                     Unknown = "grey40"))
+
+# Histology
+scale_fill_histology = scale_fill_manual(values = c(`Infiltrating Carcinoma NOS` = "#88CCEE", 
+                                                    `Infiltrating Ductal Carcinoma` = "#CC6677", 
+                                                    `Infiltrating Lobular Carcinoma` = "#DDCC77", 
+                                                    `Medullary Carcinoma` = "#117733", 
+                                                    `Metaplastic Carcinoma` = "#332288", 
+                                                    Mixed = "#AA4499", 
+                                                    `Mucinous Carcinoma` = "#44AA99", 
+                                                    Other = "#999933", 
+                                                    Unknown = "grey40"))
+
+# Menopausal status
+scale_fill_menopausal_status = scale_fill_manual(values = c(Indeterminate = "mistyrose2", 
+                                                            `Pre-menopausal` = "#FAA476", 
+                                                            Perimenopausal = "#DC3977", 
+                                                            `Post-menopausal` = "#7C1D6F", 
+                                                            Unknown = "grey40"))
+
+# Combine all scales into a list
+barchart_scales = list(scale_fill_stage, scale_fill_lymph_node_status, scale_fill_ER_status, 
+                       scale_fill_PR_status, scale_fill_HER2_status, scale_fill_vital_status, 
+                       scale_fill_ethnicity, scale_fill_race, scale_fill_metastasis, 
+                       scale_fill_histology, scale_fill_menopausal_status)
+
+# Name the scales accordingly
+names(barchart_scales) = c("Stage", "Lymph node status", "ER status", "PR status", "HER2 status", 
+                           "Vital status", "Ethnicity", "Race", "Metastasis", "Histology", 
+                           "Menopausal status")
+# Chi-square tests ###
+# Bias-corrected Cramer's V calculation using package rcompanion:
+unbiased.cv.test = function(x, string, digits = 3) {
+  CV = rcompanion::cramerV(x, bias.correct = TRUE)
+  return(list(text = paste0("Bias-corrected Cramer's V / Phi for ", 
+                            string, ": ", round(as.numeric(CV), digits)),
+              value = round(as.numeric(CV), digits)))
+}
+
+voi = colnames(clust_annot_pheno)[1:11]
+output = as.data.frame(matrix(NA, nrow = 0, ncol = 4))
+for (v in 1:length(voi)){
+  test = suppressWarnings(chisq.test(table(clust_annot_pheno[, algorithm], 
+                                           clust_annot_pheno[, voi[v]])))
+  chifit_p = test$p.value
+  chifit_xsq = test$statistic
+  chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno[, algorithm], 
+                                                      clust_annot_pheno[, voi[v]]),
+                                                string = voi[v],
+                                                digits = 3)$value)
+  comparison = paste0(voi[v], " vs ", algorithm, " cluster")
+  output = rbind(output, c(comparison, chifit_p, chifit_xsq, chifit_cv))
+  rm(test, comparison, chifit_p, chifit_xsq, chifit_cv)
+}
+colnames(output) = c("Comparison", "p-value", "Statistic", "Cramer's V")
+
+rm(v); gc()
+openxlsx::write.xlsx(output, 
+                     paste0(home, 
+                            "/Results/single_algorithm/SNF/Supplement/Chisq_tests.xlsx"),
+                     overwrite = TRUE)
+
+# Bar chart generation
+SNF_barcharts = list()
+plotdata_bar = clust_annot_pheno
+plotdata_bar[[algorithm]] = factor(plotdata_bar[[algorithm]])
+for (i in 1:length(voi)) {
+  chifit = output
+  loc = which(grepl(voi[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  SNF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
+                                             chifit = chifit,
+                                             algorithm = algorithm,
+                                             text_y = 500, rect_ymin = 350,
+                                             rect_ymax = 550, x_annot = 2,
+                                             v_gap = 50, rect_xmin = 1.25,
+                                             rect_xmax = 2.75, 
+                                             annot_text_size = 2.25,
+                                             legend.text.size = 5) +
+    barchart_scales[[voi[i]]]
+  print(SNF_barcharts[[i]])
+  ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
+         path = paste0(home, 
+                       "/Results/single_algorithm/SNF/Supplement"), 
+         width = 2420, height = 1820, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(SNF_barcharts) = voi
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+library(ggpubr)
+ggarrange(SNF_barcharts[[1]], SNF_barcharts[[2]], SNF_barcharts[[3]],
+          SNF_barcharts[[4]], SNF_barcharts[[5]], SNF_barcharts[[6]],
+          SNF_barcharts[[7]], SNF_barcharts[[8]], SNF_barcharts[[9]],
+          SNF_barcharts[[10]], SNF_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/SNF/Supplement"), 
+       width = 6500, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Sunburst plot ###
+library(plotly)
+Pheno_sunburst_SNF = clust_annot_pheno %>%
+  dplyr::select(SNF, `ER status`, Metastasis, `Vital status`) %>%
+  group_by(SNF, `ER status`, Metastasis, `Vital status`) %>%
+  summarise(Counts = n()) %>%
+  as.data.frame()
+
+sunburst_coloring_SNF = data.frame(stringsAsFactors = FALSE,
+                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", 
+                                                                      "#C11D9C", "#0F1682",  "grey40",
+                                                                      "deeppink4", "cadetblue2", "grey40",
+                                                                      "lightpink1", "black", "grey40"))),
+                                   labels = c("SNF1", "SNF2", "SNF3",
+                                              "Negative", "Positive", "Unknown",
+                                              "Yes", "No", "Unknown",
+                                              "Alive", "Dead", "Unknown"))
+
+sunburstDF_SNF = as.sunburstDF(Pheno_sunburst_SNF, value_column = "Counts", add_root = FALSE) %>%
+  inner_join(sunburst_coloring_SNF, by = "labels")
+
+pie_SNF = plot_ly() %>%
+  add_trace(ids = sunburstDF_SNF$ids, labels= sunburstDF_SNF$labels, 
+            parents = sunburstDF_SNF$parents, 
+            values= sunburstDF_SNF$values, type='sunburst', branchvalues = 'total',
+            insidetextorientation='radial', maxdepth = 5,
+            marker = list(colors = sunburstDF_SNF$colors)) %>%
+  layout(
+    grid = list(columns =1, rows = 1),
+    margin = list(l = 0, r = 0, b = 0, t = 0)
+  )
+pie_SNF
+rm(Pheno_sunburst_SNF, sunburstDF_SNF, sunburst_coloring_SNF, pie_SNF); gc()
 
 # Wrap up #####
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
@@ -924,7 +1191,8 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        sigma_step = sigma_step,
                        optimal_N = optN,
                        optimal_sigma = optSigma,
-                       conclusion = conclusion
+                       conclusion = conclusion,
+                       n_iter = n_iterations
                        )
 
 # Put all parameters in a list
