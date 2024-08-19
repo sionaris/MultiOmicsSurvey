@@ -36,7 +36,7 @@ The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (whe
 <b>NMI:</b> `r params$NMI_to_MOVICS`
 
 ## Clinical variables
-With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>race, lymph node status, PR status, ER status, HER2 status, Histology and Stage</b>. Results can also be found in the [summary file](`r paste0(params$home,"/Results/MOVICS_baseline/Summary_of_clinical_variables.txt")`) (Exact tests).
+With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>race, lymph node status, PR status, ER status, HER2 status, Histology and Stage</b>. Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/SNF/Summary_of_clinical_variables.txt")`) (Exact tests).
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/Multiplot_SNF_barcharts.png")`)
 
