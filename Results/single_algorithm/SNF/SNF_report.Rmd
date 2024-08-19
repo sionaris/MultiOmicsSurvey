@@ -178,7 +178,7 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
 
 ## Comparison to MOVICS SNF
 
-In MOVICS, the SNF is run by default with $N_i = 30$, $\sigma = 0.5$ and $t = 20$.
+In MOVICS, the SNF algorithm is run by default with $N_i = 30$, $\sigma = 0.5$ and $t = 20$.
 
 <b>ARI:</b> `r params$ARI_to_MOVICS_SNF`
 <b>NMI:</b> `r params$NMI_to_MOVICS_SNF`
