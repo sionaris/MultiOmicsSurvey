@@ -253,7 +253,8 @@ rm(indices, matrices); gc()
 # All similarities
 all_similarities = compute_matrix_similarity(Fusions)
 
-# Overall tests
+# Overall tests ###
+# Parametric ##
 # Reshape data for ANOVA
 nn_reshape <- reshape_SNF_Pearson_for_anova(nn_similarities)
 sigma_reshape <- reshape_SNF_Pearson_for_anova(sigma_similarities)
@@ -330,8 +331,103 @@ if (exists("conclusion4")) {
   sig_status = FALSE
 }
 
+# Non-parametric ##
+# Reshape data for Kruskal-Wallis Test
+nn_reshape <- reshape_SNF_Pearson_for_tests(nn_similarities)  
+sigma_reshape <- reshape_SNF_Pearson_for_tests(sigma_similarities)  
+
+# Perform Kruskal-Wallis test for nn
+kruskal_nn <- kruskal.test(Value ~ Factor, data = nn_reshape)
+print(kruskal_nn)
+
+# Perform Kruskal-Wallis test for sigma
+kruskal_sigma <- kruskal.test(Value ~ Factor, data = sigma_reshape)
+print(kruskal_sigma)
+
+# Perform pairwise Wilcoxon tests if Kruskal-Wallis is significant
+if (kruskal_nn$p.value < 0.05) {
+  pairwise_nn <- pairwise.wilcox.test(nn_reshape$Value, nn_reshape$Factor, p.adjust.method = "bonferroni")
+  print(pairwise_nn)
+}
+
+if (kruskal_sigma$p.value < 0.05) {
+  pairwise_sigma <- pairwise.wilcox.test(sigma_reshape$Value, sigma_reshape$Factor, p.adjust.method = "bonferroni")
+  print(pairwise_sigma)
+}
+
+# Initialize conclusion variables to avoid undefined errors
+np_conclusion1 <- NULL
+np_conclusion2 <- NULL
+np_conclusion3 <- NULL
+np_conclusion4 <- NULL
+
+# np_conclusion
+if (kruskal_nn$p.value < 0.05) {
+  np_conclusion1 <- "Overall, the choice of sigma significantly affects the results for a given `nn`."
+  cat(np_conclusion1, "\n")
+  
+  # Additional comparisons for mean or median if needed
+  nn_median_diff <- max(nn_summary$median) - min(nn_summary$median)
+  sigma_median_diff <- max(sigma_summary$median) - min(sigma_summary$median)
+  
+  if (nn_median_diff > sigma_median_diff) {
+    np_conclusion3 <- paste0("The `nn` effect is stronger than the `sigma` effect based on median",
+                             " Pearson similarities (", nn_median_diff, " vs. ", sigma_median_diff, ").")
+    cat(np_conclusion3, "\n")
+  } else if (nn_median_diff < sigma_median_diff) {
+    np_conclusion3 <- paste0("The `sigma` effect is stronger than the `nn` effect based on median",
+                             " Pearson similarities (", sigma_median_diff, " vs. ", nn_median_diff, ").")
+    cat(np_conclusion3, "\n")
+  } else {
+    np_conclusion3 <- "The `nn` effect and `sigma` effects are practically equal based on median Pearson similarities."
+    cat(np_conclusion3, "\n")
+  }
+} else {
+  np_conclusion1 <- "Overall, the choice of sigma does not significantly affect the results for a given `nn`."
+  cat(np_conclusion1, "\n")
+}
+
+if (kruskal_sigma$p.value < 0.05) {
+  np_conclusion2 <- "Overall, the choice of nn significantly affects the results for a given `sigma`."
+  cat(np_conclusion2, "\n")
+  
+  # Additional comparisons for standard deviations if needed
+  nn_sd_diff <- max(nn_summary$sd) - min(nn_summary$sd)
+  sigma_sd_diff <- max(sigma_summary$sd) - min(sigma_summary$sd)
+  
+  if (nn_sd_diff > sigma_sd_diff) {
+    np_conclusion4 <- paste0("The `nn` effect is stronger than the sigma effect based on", 
+                             " the standard deviation of Pearson similarities (",
+                             nn_sd_diff, " vs. ", sigma_sd_diff, ").")
+    cat(np_conclusion4, "\n")
+  } else if (nn_sd_diff < sigma_sd_diff) {
+    np_conclusion4 <- paste0("The `sigma` effect is stronger than the nn effect based on",  
+                             " the standard deviation of Pearson similarities (",
+                             sigma_sd_diff, " vs. ", nn_sd_diff, ").")
+    cat(np_conclusion4, "\n")
+  } else {
+    np_conclusion4 <- "The `nn` effect and `sigma` effects are practically equal based on the standard deviation of Pearson similarities."
+    cat(np_conclusion4, "\n")
+  }
+} else {
+  np_conclusion2 <- "Overall, the choice of nn does not significantly affect the results for a given `sigma`."
+  cat(np_conclusion2, "\n")
+}
+
+# Consolidate all np_conclusions
+np_conclusion <- paste(c(np_conclusion1, np_conclusion2, np_conclusion3, np_conclusion4)[!sapply(c(np_conclusion1, np_conclusion2, np_conclusion3, np_conclusion4), is.null)], collapse = " ")
+np_sig_status <- (kruskal_nn$p.value < 0.05) | (kruskal_sigma$p.value < 0.05)
+cat(np_conclusion)
+
+# Handle sig_status_final
+if (np_sig_status == FALSE && sig_status == FALSE) {
+  sig_status_final = FALSE
+} else {
+  sig_status_final = TRUE
+}
+
 # If no significant differences are shown between/across hyperparameters then pick median values
-if (sig_status) {
+if (sig_status_final) {
   # Code to pick best hyperparameters
 } else {
   optN = 20 # median(num_neighbors_range)
@@ -1450,7 +1546,7 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        sigma_step = sigma_step,
                        optimal_N = optN,
                        optimal_sigma = optSigma,
-                       conclusion = conclusion,
+                       conclusion = conclusion, # if there is agreement, np_conclusion can also be used
                        n_iter = n_iterations
                        )
 

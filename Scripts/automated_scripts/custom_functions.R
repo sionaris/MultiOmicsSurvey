@@ -22,8 +22,8 @@ pearson_correlation <- function(mat1, mat2) {
   cor(as.vector(mat1), as.vector(mat2))
 }
 
-# Function to reshape Pearson similarity values for ANOVA #####
-reshape_SNF_Pearson_for_anova <- function(similarities) {
+# Function to reshape Pearson similarity values for tests #####
+reshape_SNF_Pearson_for_tests <- function(similarities) {
   data <- data.frame()
   for (key in names(similarities)) {
     pearson_matrix <- similarities[[key]]$Pearson
