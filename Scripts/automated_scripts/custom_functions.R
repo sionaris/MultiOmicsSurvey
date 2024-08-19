@@ -505,3 +505,23 @@ as.sunburstDF = function(DF, value_column = NULL, add_root = FALSE){
   hierarchyDT[, c(parent_columns) := NULL]
   return(hierarchyDT)
 }
+
+# Calculate S matrix (neighborhoods) from final affinity matrix #####
+calculate_S <- function(W) {
+  n <- nrow(W)  # Assuming W is a square matrix
+  S <- matrix(0, n, n)  # Initialize S as a zero matrix of the same size as W
+  
+  # Preserve row and column names
+  rownames(S) <- rownames(W)
+  colnames(S) <- colnames(W)
+  
+  for (i in 1:n) {
+    # Find the indices of the 30 highest values in W[i, ]
+    nn_indices <- order(W[i, ], decreasing = TRUE)[1:30]
+    
+    # Set S[i, nn_indices] to W[i, nn_indices]
+    S[i, nn_indices] <- W[i, nn_indices]
+  }
+  
+  return(S)
+}

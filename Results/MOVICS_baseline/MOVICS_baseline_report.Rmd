@@ -50,9 +50,9 @@ The MOVICS package provides a function ``compMut()`` which applies independent t
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
 ## Differential Gene Expression Analysis (DGEA)
-DGEA is performed in order to compare the expression of the two identified consensus subtypes using the __DESeq2__ package.
+DGEA is performed in order to compare the expression of the three identified consensus subtypes using the __limma__ package.
 
-In order to identify subtype-specific markers, we find the markers that are up-regulated in CS1 vs. all other clusters and the ones which are down-regulated in CS1 vs. all other clusters.
+In order to identify subtype-specific markers, we find the markers that are up-regulated in CS1 vs. all other clusters and the ones which are down-regulated in CS1 vs. all other clusters etc.
 
 In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
@@ -110,7 +110,7 @@ We also perform a few drug sensitivity comparisons. MOVICS uses the [pRRophetic]
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
 
 ## Subtype agreement
-Here we examine how similar the consensus multi-omic clustering labels are to labels from established classification systems like PAM50, tumor staging, iC10 and tumor grade.
+Here we examine how similar the consensus multi-omic clustering labels are to other labels relative to breast cancer.
 
 MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand Index (RI), Adjusted Mutual Information (AMI), Jaccard Index (JI), and Fowlkes-Mallows (FM); all these measurements range from 0 to 1 and the larger the value is, the more similar the compared groups are. 
 
@@ -126,7 +126,7 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
     <li>CS3 has a distinct CNV profile compared to CS1 and CS2.</li>
     <li>CS2 is predicted to be significantly more sensitive to cisplatin compared to CS1 and CS3.</li>
   </ul></li>
-  <li> Oncoprint showed association of CS1 with <u>PIK3CA</u> mutations and association of CS2 with <u>TP53</u> mutations.</li>
+  <li> Oncoprint showed association of CS1 with <em>PIK3CA</em> mutations and association of CS2 with <em>TP53</em> mutations.</li>
   <li>CS1 and CS2 labels in transNEO are associated with clinical variables of interest.</li>
 </ol>
 

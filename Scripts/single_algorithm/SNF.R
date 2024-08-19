@@ -268,18 +268,18 @@ summary(anova_sigma)
 
 # Conclusion
 if (summary(anova_nn)[[1]][["Pr(>F)"]][1] < 0.05) {
-  conclusion1 = "Overall, the choice of sigma significantly affects the results for a given nn."
+  conclusion1 = "Overall, the choice of sigma significantly affects the results for a given ``nn``."
   cat(conclusion1)
 } else {
-  conclusion1 = "Overall, the choice of sigma does not significantly affect the results for a given nn."
+  conclusion1 = "Overall, the choice of sigma does not significantly affect the results for a given ``nn``."
   cat(conclusion1)
 }
 
 if (summary(anova_sigma)[[1]][["Pr(>F)"]][1] < 0.05) {
-  conclusion2 = "Overall, the choice of nn significantly affects the results for a given sigma."
+  conclusion2 = "Overall, the choice of nn significantly affects the results for a given ``sigma``."
   cat(conclusion2)
 } else {
-  conclusion2 = "Overall, the choice of nn does not significantly affect the results for a given sigma."
+  conclusion2 = "Overall, the choice of nn does not significantly affect the results for a given ``sigma``."
   cat(conclusion2)
 }
 
@@ -291,11 +291,11 @@ if (summary(anova_nn)[[1]][["Pr(>F)"]][1] < 0.05 &&
   
   # Means
   if (nn_mean_diff > sigma_mean_diff) {
-    conclusion3 = paste0("The nn effect is stronger than the sigma effect based on mean",
+    conclusion3 = paste0("The ``nn`` effect is stronger than the ``sigma`` effect based on mean",
                          " Pearson similarities (", nn_mean_diff, " vs. ", sigma_mean_diff, ").")
     cat(conclusion3)
   } else if (nn_mean_diff < sigma_mean_diff) {
-    conclusion3 = paste0("The sigma effect is stronger than the nn effect based on mean",
+    conclusion3 = paste0("The ``sigma`` effect is stronger than the ``nn`` effect based on mean",
                          " Pearson similarities (", sigma_mean_diff, " vs. ", nn_mean_diff, ").")
     cat(conclusion3)
   }
@@ -305,18 +305,18 @@ if (summary(anova_nn)[[1]][["Pr(>F)"]][1] < 0.05 &&
   sigma_sd_diff <- max(sigma_summary$sd) - min(sigma_summary$sd)
   
   if (nn_sd_diff > sigma_sd_diff) {
-    conclusion4 = paste0("The nn effect is stronger than the sigma effect based on", 
+    conclusion4 = paste0("The ``nn`` effect is stronger than the sigma effect based on", 
                          " the standard deviation of Pearson similarities (",
                          nn_sd_diff, " vs. ", sigma_sd_diff, ").")
     cat(conclusion4)
   } else if (nn_sd_diff < sigma_sd_diff) {
-    conclusion4 = paste0("The sigma effect is stronger than the nn effect based on",  
+    conclusion4 = paste0("The ``sigma`` effect is stronger than the nn effect based on",  
                          " the standard deviation of Pearson similarities (",
                          sigma_sd_diff, " vs. ", nn_sd_diff, ").")
     cat(conclusion4)
   }
 } else {
-  conclusion3 = "The nn effect and sigma effect are practically equal based on mean Pearson similarities."
+  conclusion3 = "The ``nn`` effect and ``sigma`` effects are practically equal based on mean Pearson similarities."
   cat(conclusion3)
 }
 
@@ -1193,6 +1193,78 @@ pie_SNF = plot_ly() %>%
 pie_SNF
 rm(Pheno_sunburst_SNF, sunburstDF_SNF, sunburst_coloring_SNF, pie_SNF); gc()
 
+# Graphs ###
+library(igraph)
+
+aff_CNV_S = calculate_S(aff_CNV)
+aff_rna_S = calculate_S(aff_rna)
+aff_miRNA_S = calculate_S(aff_miRNA)
+aff_Methyl_S = calculate_S(aff_Methyl)
+aff_SNPs_S = calculate_S(aff_SNPs)
+aff_final_S = calculate_S(aff_final)
+
+list_aff_S = list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, 
+                  aff_SNPs_S, aff_final_S)
+names(list_aff_S) = c(paste0("CNV Original Affinity ", optN, "-NN Graph"),
+                      paste0("RNAseq Original Affinity ", optN, "-NN Graph"),
+                      paste0("miRNA Original Affinity ", optN, "-NN Graph"),
+                      paste0("Methylation Original Affinity ", optN, "-NN Graph"),
+                      paste0("SNPs Original Affinity ", optN, "-NN Graph"),
+                      paste0("Final Fused Affinity ", optN, "-NN Graph"))
+
+for (i in 1:length(list_aff_S)) {
+  
+  # Prepare the graph object
+  g <- graph_from_adjacency_matrix(list_aff_S[[i]], 
+                                   mode = "undirected", weighted = TRUE, diag = FALSE)
+  g <- delete_edges(g, E(g)[weight == 0])
+  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
+  nodes_data <- data.frame(name = V(g)$name) %>%
+    inner_join(clust_annot_pheno %>% dplyr::select(samID, SNF),
+               by = c("name" = "samID"))
+  
+  # Set SNF as a factor for coloring
+  nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
+  V(g)$SNF <- nodes_data[[algorithm]] # modify `$SNF` manually
+  
+  # Set color based on SNF
+  V(g)$color <- fifelse(V(g)$SNF == paste0(algorithm, "1"), "#2EC4B6", 
+                        fifelse(V(g)$SNF == paste0(algorithm, "2"),
+                                "#E71D36", "#FF9F1C"))
+  
+  png(paste0(home, 
+             "/Results/single_algorithm/SNF/Supplement/",
+             names(list_aff_S)[i], ".png"),
+      width = 6000, height = 6000, res = 700)
+  
+  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
+  
+  # Plot the graph with a layout that spreads nodes well
+  plot(g, vertex.color = V(g)$color,
+       edge.width = E(g)$width,
+       vertex.size = 4, 
+       vertex.label = NA, 
+       edge.color = "gray85",
+       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
+       main = "")
+  
+  # Add title with reduced size using title() function
+  title(main = names(list_aff_S)[i], cex.main = 1.7)
+  
+  # Add a legend to the right of the plot
+  legend("bottomright", 
+         title="Node Color Legend",    
+         legend=c(paste0(algorithm, "1"),
+                  paste0(algorithm, "2"),
+                  paste0(algorithm, "3")), 
+         fill=cluster_colors_heatmap,  
+         cex=0.7,      
+         box.lwd=1)  
+  
+  dev.off() 
+}
+rm(g, nodes_data)
+
 # Wrap up #####
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        num_neighbors_max = max(num_neighbors_range),
@@ -1211,10 +1283,11 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
-              hyperparameters = hyperparameters)
+              hyperparameters = hyperparameters, 
+              sessionInfo = sessionInfo(), home = home)
 
 # Render the R Markdown document with the parameters
-rmarkdown::render(paste0(getwd(), "/Scripts/automated_scripts/single_algorithm_results_report.Rmd"), 
+rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/SNF/SNF_report.Rmd"), 
                   params = params, 
                   output_file = paste0(home, "/Results/single_algorithm/", 
                                        algorithm, "/", algorithm, "_report_",
@@ -1222,18 +1295,14 @@ rmarkdown::render(paste0(getwd(), "/Scripts/automated_scripts/single_algorithm_r
                                        data_types, "_eval_on_", evaluation_source,
                                        ".html"))
 
+# Export session info as .txt
+writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
+                                                 algorithm, "_", data_source, "_",
+                                                 data_types, "_eval_on_", evaluation_source,
+                                                 "_sessionInfo.txt"))
+
 # Save environment
 save.image(paste0(home, "/Results/single_algorithm/", 
                   algorithm, "/", algorithm, "_", data_source, "_",
                   data_types, "_eval_on_", evaluation_source,
                   "_env.RData"))
-
-# Session info
-# Capture the output of sessionInfo() to a variable
-session_info <- capture.output(sessionInfo())
-
-# Write the captured output to a .txt file
-writeLines(session_info, paste0(home, "/Results/single_algorithm/", 
-                                algorithm, "/", algorithm, "_", data_source, "_",
-                                data_types, "_eval_on_", evaluation_source,
-                                "_session_info.txt"))
