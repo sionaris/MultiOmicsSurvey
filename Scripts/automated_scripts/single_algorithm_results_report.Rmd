@@ -19,16 +19,197 @@ knitr::opts_chunk$set(echo = TRUE)
 `r params$description`
 
 # Hyperparameters and tuning
-```{r, echo=FALSE, results='asis'}
+```{r hyperparams_text, echo=FALSE, results='asis'}
 res <- knitr::knit_child(paste0(params$home, "/Resources/algorithm_descriptions/",
                                 params$algorithm, "_hyperparameters_text.Rmd"), quiet = TRUE)
 cat(res, sep = '\n')
 ```
 
 # Main results on training data
+## Multi-omics clustering
+The clustering results using the final affinity matrix for $k = $ are shown below (pairwise distances heatmap):
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/default_",params$algorithm",_comprehensive_heatmap-1.png")`)
+
+The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (when `r params$algorithm` subtypes are compared to the MOVICS consensus subtypes) are:
+
+<b>ARI:</b> `r params$ARI_to_MOVICS`
+<b>NMI:</b> `r params$NMI_to_MOVICS`
+
+## Clinical variables
+With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>...</b>. Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Summary_of_clinical_variables.txt")`) (Exact tests).
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Multiplot_",params$algorithm,"_barcharts.png")`)
+
+## Mutations
+The MOVICS package provides a function ``compMut()`` which applies independent testing (i.e., Fisher' s exact test or $\chi^2$ test) for each mutation, and generates a table with statistical results and creates an OncoPrint using those differentially mutated genes.
+
+<b>Oncoprint:</b>
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/",params$algorithm,"_",params$data_source,"_", params$data_types,"_eval_on_",params$evaluation_source,"_oncoprint-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
+
+## Differential Gene Expression Analysis (DGEA)
+DGEA is performed in order to compare the expression of the two identified consensus subtypes using the __limma__ package.
+
+In order to identify subtype-specific markers, we find the markers that are up-regulated in CS1 vs. all other clusters and the ones which are down-regulated in CS1 vs. all other clusters etc.
+
+In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
+
+<b>Up-regulated markers</b>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+## Gene Set Enrichment Analysis
+
+GSEA is carried out using a gene set background which includes all gene sets derived from GO biological processes (c5.bp.v7.1.symbols.gmt) from The Molecular Signatures Database (MSigDB, https://www.gsea-msigdb.org/gsea/msigdb/index.jsp).
+
+Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.25; we set the latter to <u>0.1</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+
+For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
 
 # Evaluation results
+## Nearest Template Prediction (NTP)
+MOVICS provides two model-free approaches for subtype prediction in validation cohort. First, MOVICS switches to nearest template prediction ([NTP](https://pubmed.ncbi.nlm.nih.gov/21124904/)) which can be flexibly applied to cross-platform, cross-species, and multiclass predictions without any optimization of analysis parameters.
+
+Here cosine similarity is used to compare external samples to class templates (here we use the up-regulated genes in the form of a binary matrix with two columns: cluster 1 / cluster 2 where an entry is 1 if the gene is up-regulated in the cluster or -1 otherwise). The nearest class for each sample is determined by the smallest distance (converted from cosine similarity here). Each sample's result includes the nearest class prediction, the distance to all templates, and the p-value of the prediction.
+
+The function randomly permutes the sample labels multiple times (here ``nPerm = 10000``) to generate a null distribution of similarity scores between samples and class templates. For each observed sample-to-template distance, the function compares it against the null distribution to calculate a p-value. This p-value indicates the likelihood that the observed match could have occurred by chance. The p-values are adjusted using the false discovery rate (FDR) method to control for multiple hypothesis testing, ensuring robust statistical inference.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/ntp_expr_up_heatmap_",params$evaluation_source,"-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/ntp_expr_down_heatmap_", params$evaluation_source,"-1.png")`)
+
+Results on the comparisons of `r params$evaluation_source` clinical variables with respect to the predicted consensus subtypes are summarised in [this file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/",params$evaluation_source,"_Summary_of_clinical_variables.txt")`).
+
+## Partition Around Medoids (PAM)
+
+To be specific, ``runPAM()`` first trains a partition around medoids (PAM) classifier in the discovery (training) cohort (i.e., `r params$data_source`) to predict the subtype for patients in the external validation (testing) cohort (i.e., `r params$evaluation_source`), and each sample in the validation cohort was assigned to a subtype label whose centroid had the highest Pearson correlation with the sample. Finally, the [in-group proportion (IGP)](https://pubmed.ncbi.nlm.nih.gov/16613834/) statistic (the proportion of samples within a cluster that were classified into the same cluster upon random permutation of the data) is estimated to evaluate the similarity and reproducibility of the acquired subtypes between discovery and validation cohorts (i.e. are the clusters identified in `r params$data_source` reproducible in `r params$evaluation_source` after label permutation).
+
+<u>Compare SNF `r params$data_source` vs. PAM `r params$data_source`:</u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/kappa_",params$algorithm,"_vs_PAM_",params$data_source,"-1.png")`)
+
+<u>Compare SNF `r params$data_source` vs. NTP `r params$data_source`:</u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/kappa_",params$algorithm,"_vs_NTP_",params$data_source,"-1.png")`)
+
+<u>Compare NTP `r params$evaluation_source` vs. PAM `r params$evaluation_source`:</u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/kappa_NTP_vs_PAM_",params$evaluation_source,"-1.png")`)
 
 # Supplementary results
 
+## PCA from similarity matrices
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/", params$algorithm,"_CNV_kernelPCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/", params$algorithm,"_RNAseq_kernelPCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/", params$algorithm,"_miRNA_kernelPCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/", params$algorithm,"_Methylation_kernelPCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/", params$algorithm,"_SNPs_kernelPCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/", params$algorithm,"_Fusion_kernelPCA.png")`)
+
+## Drug Sensitivity
+We also perform a few drug sensitivity comparisons. MOVICS uses the [pRRophetic]() package for prediction of clinical chemotherapeutic response from tumor gene expression levels (a pre-trained ridge regression model is fit for each gene and the $IC_{50}$ of each drug).
+
+<u><b>Sorafenib</b></u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
+
+<u><b>Paclitaxel</b></u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
+
+<u><b>Lapatinib</b></u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
+
+<u><b>Doxorubicin</b></u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
+
+<u><b>Cisplatin</b></u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
+
+<u><b>5-Fluorouracil</b></u>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
+
+<b>Comparison with MOVICS</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
+
+## Subtype agreement
+Here we examine how similar the consensus multi-omic clustering labels are to other labels relative to breast cancer.
+
+MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand Index (RI), Adjusted Mutual Information (AMI), Jaccard Index (JI), and Fowlkes-Mallows (FM); all these measurements range from 0 to 1 and the larger the value is, the more similar the compared groups are. 
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Classification_agreement-1.png")`)
+
+## Comparison to MOVICS "equivalent"
+
+In MOVICS, `r params$algorithm` is run by default with <...>.
+
+<b>ARI:</b> `r params$ARI_to_MOVICS_<>`
+<b>NMI:</b> `r params$NMI_to_MOVICS_<>`
+
+<b> Oncoprint comparison </b>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/MOVICS_",params$algorithm,"_",params$data_source,"_",params$data_types,"_eval_on_",params$evaluation_source,"_oncoprint-1.png")`)
+
+<b> GSEA comparisons </b>
+<b>No GSEA enrichment across MOVICS SNF clusters</b>.
+
+With respect to GSVA:
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/gene_sets_of_interest_heatmap_MOVICS_",params$algorithm,"_gsva-1.png")`)
+
 # Conclusions
+<ol>
+  <li>The identified SNF subtypes are associated with race, lymph node status, PR status, ER status, HER2 status, Histology and Stage.</li>
+  <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and miRNA modalities</b>.</li>
+  <li>SNF1 and SNF2 are associated with ER+, PR+ samples and have the majority of ILC samples (similar to CS1 from MOVICS).</li>
+  <li>SNF1 and SNF2 are associated with increased TLR and microglial <b>pathway</b> activities and decreased NK cell and antigen processing <b>pathway</b> activities, compared to SNF3. The same result is observed in CS1 from MOVICS compared to CS2 and CS3.</li>
+  <li>SNF2 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF3 has a high proportion of <em>TP53</em> <b>mutations</b>. The distinguishing effect of these two mutations is observed in CS1, CS2 from MOVICS too.</li>
+  <li>In terms of <b>drug sensitivity</b>, SNF1 seems to be more sensitive to <b>lapatinib</b> compared to SNF2 and SNF3 (with an effect size considerably higher than that observed in the CS subtypes). SNF1 is the least sensitive to <b>cisplatin</b>, followed by SNF2 and then SNF3 which is significantly more sensitive. In MOVICS, CS2 is the most sensitive to cisplatin, compared to CS1 and CS3.</li>
+  <li>The MOVICS SNF subtypes are very similar to the CS subtypes and therefore comparisons with MOVICS SNF yield similar results to comparisons with MOVICS CS.<li>
+  <li>Predicted SNF subtypes on the transNEO cohort are associated with lymph node status at diagnosis, ER status, grade, <b>pCR</b> (SNF3 has singificantly more responders, see table below) PAM50, iC10, Chemo cycles, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum (similar resultd to MOVICS CS). </li>
+  <li><u>Overall, it roughly looks like what MOVICS identifies as CS1, is broken into SNF1 and SNF2 by the SNF algorithm, and CS2+CS3 is SNF3.</u></li>
+</ol>
+
+```{r resp_table, echo=FALSE, eval=TRUE}
+# Create the data frame
+data_resp <- data.frame(
+  Response = c("pCR", "Residual Disease"),
+  SNF1 = c("7 ( 13.5%)", "45 ( 86.5%)"),
+  SNF2 = c("8 ( 15.7%)", "43 ( 84.3%)"),
+  SNF3 = c("26 ( 52.0%)", "24 ( 48.0%)")
+)
+
+# Print the table using knitr::kable
+knitr::kable(data_resp, caption = "Response rates across transNEO SNF subtypes")
+```
+
+# Session info
+
+```{r echo = FALSE}
+print(params$sessionInfo)
+```
