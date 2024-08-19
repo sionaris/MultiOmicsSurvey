@@ -1265,6 +1265,182 @@ for (i in 1:length(list_aff_S)) {
 }
 rm(g, nodes_data)
 
+# Compare these SNF results with the SNF output from MOVICS ###
+load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
+MOVICS_SNF = moic.res.list$SNF$clust.res
+
+ARI_to_MOVICS_SNF = calculate_ari_index(cluster_df1 = MOVICS_SNF %>%
+                                          dplyr::rename(Sample.ID = samID,
+                                                        Cluster = clust),
+                                    cluster_df2 = SNF_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_SNF", "_SNF"))
+
+NMI_to_MOVICS_SNF = calculate_nmi_index(cluster_df1 = MOVICS_SNF %>%
+                                          dplyr::rename(Sample.ID = samID,
+                                                        Cluster = clust),
+                                    cluster_df2 = SNF_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_SNF", "_SNF"))
+
+# Oncoprint plot for the MOVICS SNF ###
+oncoprint_MOVICS_SNF <- compMut_single_algorithm(algorithm_name = algorithm,
+                                      moic.res  = moic.res.list$SNF,
+                                      mut.matrix   = plotdata$SNPs, # binary somatic mutation matrix
+                                      doWord       = TRUE, # generate table in .docx format
+                                      doPlot       = TRUE, # draw OncoPrint
+                                      freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
+                                      p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
+                                      innerclust   = TRUE, # perform clustering within each subtype
+                                      annCol       = annCol, # same annotation for heatmap
+                                      annColors    = annColors, # same annotation color for heatmap
+                                      width        = 12, 
+                                      height       = 6,
+                                      fig.name     = paste0("MOVICS_SNF_", data_source, "_",
+                                                            data_types, "_eval_on_", evaluation_source,
+                                                            "_oncoprint"),
+                                      tab.name     = "Independent test between subtype and mutation",
+                                      fig.path     = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
+                                      res.path     = paste0(home, "/Results/single_algorithm/SNF/Supplement"))
+
+# DGEA MOVICS SNF ###
+dgea_MOVICS_SNF = runDEA(dea.method = "limma", # we use normalized data as input
+                         expr = plotdata$RNAseq,
+                         moic.res = moic.res.list$SNF,
+                         prefix = "dgea_MOVICS_SNF_",
+                         sort.p = TRUE,
+                         overwt = TRUE,
+                         verbose = TRUE,
+                         res.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"))
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+dgea.marker.up_MOVICS_SNF <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                                        moic.res = moic.res.list$SNF,
+                                                        dea.method    = "limma", # name of DEA method
+                                                        prefix        = "dgea_MOVICS_SNF_", # MUST be the same of argument in runDEA()
+                                                        dat.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path of DEA files
+                                                        res.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path to save marker files
+                                                        p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                        p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                        dirct         = "up", # direction of dysregulation in expression
+                                                        n.marker      = 100, # number of biomarkers for each subtype
+                                                        doplot        = TRUE, # generate diagonal heatmap
+                                                        norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
+                                                        annCol        = annCol, # sample annotation in heatmap
+                                                        annColors     = annColors, # colors for sample annotation
+                                                        show_rownames = TRUE, # show no rownames (biomarker name)
+                                                        centerFlag = F,
+                                                        scaleFlag = F,
+                                                        fig.name      = "upregulated_biomarkers_heatmap_MOVICS_SNF",
+                                                        fig.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
+                                                        width = 14,
+                                                        height = 12,
+                                                        fontsize_row = 3,
+                                                        name = "normalized RNA-seq")
+
+# # 2. Down-regulated markers
+dgea.marker.down_MOVICS_SNF <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                                          moic.res = moic.res.list$SNF,
+                                                          dea.method    = "limma", # name of DEA method
+                                                          prefix        = "dgea_MOVICS_SNF_", # MUST be the same of argument in runDEA()
+                                                          dat.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path of DEA files
+                                                          res.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path to save marker files
+                                                          p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                          p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                          dirct         = "down", # direction of dysregulation in expression
+                                                          n.marker      = 100, # number of biomarkers for each subtype
+                                                          doplot        = TRUE, # generate diagonal heatmap
+                                                          norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
+                                                          annCol        = annCol, # sample annotation in heatmap
+                                                          annColors     = annColors, # colors for sample annotation
+                                                          show_rownames = TRUE, # show no rownames (biomarker name)
+                                                          centerFlag = F,
+                                                          scaleFlag = F,
+                                                          fig.name      = "downregulated_biomarkers_heatmap_MOVICS_SNF",
+                                                          fig.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
+                                                          width = 14,
+                                                          height = 12,
+                                                          fontsize_row = 3,
+                                                          name = "normalized RNA-seq")
+
+# GSEA MOVICS SNF ###
+# GSEA up-regulated
+RNGversion("4.2.2")
+set.seed(123)
+gsea.up_MOVICS_SNF <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
+                                                       moic.res     = moic.res.list$SNF,
+                                                       dea.method   = "limma", # name of DEA method
+                                                       prefix       = "dgea_MOVICS_SNF_", # MUST be the same of argument in runDEA()
+                                                       dat.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path of DEA files
+                                                       res.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path to save marker files
+                                                       msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
+                                                       norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
+                                                       dirct        = "up", # direction of dysregulation in pathway
+                                                       n.path       = 20,
+                                                       p.cutoff     = 0.05, # p cutoff to identify significant pathways
+                                                       p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                                                       gsva.method  = "gsva", # method to calculate single sample enrichment score
+                                                       name         = "GSVA scores", # name for colorbar
+                                                       norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
+                                                       fig.name     = "upregulated_pathway_heatmap_MOVICS_SNF",
+                                                       nPerm = 10000,
+                                                       minGSSize = 10,
+                                                       maxGSSize = 500,
+                                                       fig.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
+                                                       width = 14, height = 12)
+
+# GSEA down-regulated
+RNGversion("4.2.2")
+set.seed(123)
+gsea.down_MOVICS_SNF <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
+                                                         moic.res     = moic.res.list$SNF,
+                                                         dea.method   = "limma", # name of DEA method
+                                                         prefix       = "dgea_MOVICS_SNF_", # MUST be the same of argument in runDEA()
+                                                         dat.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path of DEA files
+                                                         res.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"), # path to save marker files
+                                                         msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
+                                                         norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
+                                                         dirct        = "down", # direction of dysregulation in pathway
+                                                         n.path       = 20,
+                                                         p.cutoff     = 0.05, # p cutoff to identify significant pathways
+                                                         p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                                                         gsva.method  = "gsva", # method to calculate single sample enrichment score
+                                                         name         = "GSVA scores", # name for colorbar
+                                                         norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
+                                                         fig.name     = "downregulated_pathway_heatmap_MOVICS_SNF",
+                                                         nPerm = 10000,
+                                                         minGSSize = 10,
+                                                         maxGSSize = 500,
+                                                         fig.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
+                                                         width = 14, height = 12)
+
+# Gene set variation analysis MOVICS SNF ###
+RNGversion("4.2.2")
+set.seed(123)
+gsva.res_MOVICS_SNF = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
+                                                       moic.res      = moic.res.list$SNF,
+                                                       norm.expr     = plotdata$RNAseq,
+                                                       gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
+                                                       gsva.method   = "gsva", # method to calculate single sample enrichment score
+                                                       annCol        = annCol,
+                                                       annColors     = annColors,
+                                                       fig.path      = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
+                                                       fig.name      = "gene_sets_of_interest_heatmap_MOVICS_SNF",
+                                                       centerFlag    = F,
+                                                       scaleFlag     = F,
+                                                       distance      = 'euclidean',
+                                                       linkage       = 'average',
+                                                       show_rownames = TRUE,
+                                                       show_colnames = FALSE,
+                                                       height        = 8,
+                                                       width         = 12,
+                                                       name          = "GSVA scores")
+
+
+
 # Wrap up #####
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        num_neighbors_max = max(num_neighbors_range),
@@ -1283,6 +1459,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
+              NMI_to_MOVICS_SNF = NMI_to_MOVICS_SNF, ARI_to_MOVICS_SNF = ARI_to_MOVICS_SNF,
               hyperparameters = hyperparameters, 
               sessionInfo = sessionInfo(), home = home)
 

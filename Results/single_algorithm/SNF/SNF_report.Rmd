@@ -176,6 +176,22 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Classification_agreement-1.png")`)
 
+## Comparison to MOVICS SNF
+
+In MOVICS, the SNF is run by default with $N_i = 30$, $\sigma = 0.5$ and $t = 20$.
+
+<b>ARI:</b> `r params$ARI_to_MOVICS_SNF`
+<b>NMI:</b> `r params$NMI_to_MOVICS_SNF`
+
+<b> Oncoprint comparison </b>
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/MOVICS_SNF_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
+
+<b> GSEA comparisons </b>
+<b>No GSEA enrichment across MOVICS SNF clusters</b>.
+
+With respect to GSVA:
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/gene_sets_of_interest_heatmap_MOVICS_SNF_gsva-1.png")`)
+
 # Conclusions
 <ol>
   <li>The identified SNF subtypes are associated with race, lymph node status, PR status, ER status, HER2 status, Histology and Stage.</li>
@@ -184,6 +200,7 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
   <li>SNF1 and SNF2 are associated with increased TLR and microglial <b>pathway</b> activities and decreased NK cell and antigen processing <b>pathway</b> activities, compared to SNF3. The same result is observed in CS1 from MOVICS compared to CS2 and CS3.</li>
   <li>SNF2 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF3 has a high proportion of <em>TP53</em> <b>mutations</b>. The distinguishing effect of these two mutations is observed in CS1, CS2 from MOVICS too.</li>
   <li>In terms of <b>drug sensitivity</b>, SNF1 seems to be more sensitive to <b>lapatinib</b> compared to SNF2 and SNF3 (with an effect size considerably higher than that observed in the CS subtypes). SNF1 is the least sensitive to <b>cisplatin</b>, followed by SNF2 and then SNF3 which is significantly more sensitive. In MOVICS, CS2 is the most sensitive to cisplatin, compared to CS1 and CS3.</li>
+  <li>The MOVICS SNF subtypes are very similar to the CS subtypes and therefore comparisons with MOVICS SNF yield similar results to comparisons with MOVICS CS.<li>
   <li>Predicted SNF subtypes on the transNEO cohort are associated with lymph node status at diagnosis, ER status, grade, <b>pCR</b> (SNF3 has singificantly more responders, see table below) PAM50, iC10, Chemo cycles, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum (similar resultd to MOVICS CS). </li>
   <li><u>Overall, it roughly looks like what MOVICS identifies as CS1, is broken into SNF1 and SNF2 by the SNF algorithm, and CS2+CS3 is SNF3.</u></li>
 </ol>

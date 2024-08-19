@@ -818,6 +818,7 @@ runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = 
   annCol <- data.frame(Subtype = paste0(algorithm_name, moic.res$clust.res[sam.order, 
                                                                  "clust"]), row.names = sam.order, stringsAsFactors = FALSE)
   annColors <- list(Subtype = colvec)
+  if (length(pathcore) > 0) {
   es <- GSVA::gsva(param = GSVA::gsvaParam(exprData = as.matrix(gset[, rownames(annCol), 
                                                                      drop = FALSE]),
                                            geneSets = pathcore
@@ -870,7 +871,10 @@ runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = 
   invisible(dev.off())
   message("heatmap done...")
   return(list(gsea.list = gsea.list, raw.es = es.backup, scaled.es = es, 
-              grouped.es = esm, heatmap = hm))
+              grouped.es = esm, heatmap = hm)) } else {
+                # Stop the function and print a message that no deregulated pathways were foundmessage("No deregulated pathways were found in the GSEA results.")
+                return(NULL)
+              }
 }
 
 
