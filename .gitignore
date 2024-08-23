@@ -4,5 +4,7 @@
 *.rda
 *.tar.gz
 .Ruserdata
-/Resources/BRCA complete/
 /GDCdata/
+/Resources/TCGA/*.rds
+/Resources/TCGA/*.RData
+/Resources/Archived/
