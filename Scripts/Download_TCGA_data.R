@@ -523,8 +523,67 @@ data_object$CNV = filtered_data_object$CNV
 data_object$Methylation = filtered_data_object$Methylation
 rm(filtered_data_object, noname, res, size_factors); gc()
 
+# Check for missing values
+check_missing_values_with_indices <- function(input) {
+  # Apply the function to each element in the list
+  missing_info <- lapply(input, function(mat) {
+    if (!is.matrix(mat)) {
+      stop("All elements of input should be matrices.")
+    }
+    
+    # Find the row indices where there are missing values
+    missing_indices <- which(rowSums(is.na(mat)) > 0)
+    
+    # Count the number of NA values in the matrix
+    na_count <- sum(is.na(mat))
+    
+    # Return a list containing the count of NA values and the row indices
+    return(list(na_count = na_count, missing_indices = missing_indices))
+  })
+  
+  # Combine the results into a named list
+  names(missing_info) <- names(input)
+  return(missing_info)
+}
+
+res = check_missing_values_with_indices(data_object)
+
+# Methylation has 72 rows with missing values. We remove those
+data_object$Methylation = data_object$Methylation[-res$Methylation$missing_indices, ]
+rm(res); gc()
+
 # All data types apart from SNPs will be standardized feature-wise
 req_standardize = c("RNAseq", "Methylation", "CNV", "miRNA")
+
+# Check if there are rows with only zeros
+# Assuming data_object is a list of matrices
+zero_rows_info <- lapply(data_object, function(mat) {
+  if (!is.matrix(mat)) {
+    stop("All elements of data_object should be matrices.")
+  }
+  
+  # Find row indices where all values are zero
+  zero_indices <- which(rowSums(mat == 0) == ncol(mat))
+  
+  # Return the indices of rows that contain only zeros
+  return(zero_indices)
+})
+
+# Assign names to the list for clarity
+names(zero_rows_info) <- names(data_object)
+
+# Remove the identified rows
+for (name in names(zero_rows_info)) {
+  zero_indices <- zero_rows_info[[name]]
+  
+  if (length(zero_indices) > 0) {
+    # Remove the rows with only zeros from the corresponding matrix
+    data_object[[name]] <- data_object[[name]][-zero_indices, , drop = FALSE]
+    message(paste("Removed", length(zero_indices), "rows from", name))
+  } else {
+    message(paste("No rows with only zeros in", name))
+  }
+}
 
 for (matrix_name in names(data_object)) {
   if (matrix_name %in% req_standardize) {
@@ -533,8 +592,16 @@ for (matrix_name in names(data_object)) {
   }
 }
 
+# Check the data_object for any missing values, one last time
+res = check_missing_values_with_indices(data_object)
+
+# 2 rows with missing values in Methylation. We remove them
+data_object$Methylation = data_object$Methylation[-res$Methylation$missing_indices, ]
+rm(res); gc()
+
 # Export object
 saveRDS(data_object, "Resources/TCGA/norm_data_object.rds"); gc()
+rm(zero_rows_info, matrix_name, name, zero_indices); gc()
 save.image("Resources/TCGA/tcga_env.RData")
 
 # Export session info as .txt
