@@ -12,7 +12,8 @@ query.exp.hg38 <- GDCquery(
   data.category = "Transcriptome Profiling", 
   data.type = "Gene Expression Quantification", 
   workflow.type = "STAR - Counts",
-  access = "open"
+  access = "open",
+  sample.type = "Primary Tumor"
 )
 GDCdownload(query.exp.hg38)
 expdat <- GDCprepare(
@@ -28,17 +29,12 @@ CNV_query <- GDCquery(
   project = "TCGA-BRCA",
   data.category = "Copy Number Variation",
   data.type = "Gene Level Copy Number",
-  workflow.type = "ASCAT3",
-  access = "open"
+  access = "open",
+  sample.type = "Primary Tumor" # ABSOLUTE LiftOver data
 )
 GDCdownload(CNV_query)
-CNV_data <- getResults(CNV_query) %>%
-  filter(analysis_workflow_type == "ASCAT3") %>%
-  group_by(cases.submitter_id) %>%
-  ungroup() %>%
-  distinct(cases.submitter_id, .keep_all = TRUE) # All samples retained
-
 CNV_data <- GDCprepare(CNV_query)
+
 saveRDS(CNV_data, "Resources/TCGA/CNV_full.rds")
 rm(CNV_data, CNV_query); gc()
 
@@ -237,9 +233,6 @@ rows_with_na = apply(cnv_dat, 1, function(row) any(is.na(row)))
 no_of_nas = apply(cnv_dat[rows_with_na, ], 1, function(row) sum(is.na(row)))
 
 table(no_of_nas)
-# no_of_nas
-# 1   2   3   4   5   7   8   9  10  17 120 430 
-# 973  83  19  38   2   4   2   4   5   5   5 803 
 
 # All rows with >10 missing values are removed
 cnv_dat = cnv_dat[apply(cnv_dat, 1, function(row) sum(is.na(row)) <= 10), ]
@@ -294,7 +287,7 @@ data_object$Methylation = methyl_dat; rm(methyl_dat); gc()
 data_object = lapply(data_object, as.matrix)
 data_object = lapply(data_object, function(matrix) matrix[, overlap, drop = FALSE])
 
-# Total: 294 samples
+# Total: 625 samples
 
 # Preprocessing #####
 
@@ -392,8 +385,9 @@ clinical_data = clinical_data[clinical_data$bcr_patient_barcode %in%
   dplyr::rename(Patient.ID = bcr_patient_barcode) %>%
   group_by(Patient.ID) %>%
   arrange(Patient.ID, rowSums(is.na(across(-Patient.ID)))) %>%  # Arrange by Sample.ID and NA count
-  slice(1) %>%  # Keep the first occurrence in case of ties
+  distinct(Patient.ID, .keep_all = TRUE) %>%  # Keep the first occurrence in case of ties
   ungroup()
+
 
 # Add a Sample.ID column
 samples_df = as.data.frame(list(Sample.ID = overlap))
