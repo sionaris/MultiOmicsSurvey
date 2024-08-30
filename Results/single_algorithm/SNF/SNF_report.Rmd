@@ -197,7 +197,7 @@ With respect to GSVA:
 # Conclusions
 <ol>
   <li>The identified SNF subtypes are associated with <b>vital status, history of neoadjuvant treatment, PR status, ER status, HER2 status, ER and PR cell level percentages, and histological type</b>.</li>
-  <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and miRNA modalities</b>.</li>
+  <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and RNA-seq modalities</b>.</li>
   <li>SNF1 is associated with <b>ER+, PR+ samples</b> and have the majority of <b>ILC samples</b>.</li>
   <li>SNF2 has generally <b>higher immune system activity</b> compared to SNF1.</li>
   <li>SNF1 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF2 has a high proportion of <em>TP53</em> <b>mutations</b>. SNF1 has a relatively high ration of <em>CDH1</em> mutations too.</li>
