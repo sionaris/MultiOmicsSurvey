@@ -950,6 +950,7 @@ dgea = runDEA(dea.method = "limma", # we use normalized data as input
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
+dev.off()
 dgea.marker.up <- runMarker_mod_4.4(moic.res = consensus,
                             dea.method    = "limma", # name of DEA method
                             prefix        = "dgea_", # MUST be the same of argument in runDEA()
@@ -973,6 +974,7 @@ dgea.marker.up <- runMarker_mod_4.4(moic.res = consensus,
                             height = 12,
                             fontsize_row = 3,
                             name = "normalized RNA-seq")
+dev.off()
 
 # # 2. Down-regulated markers
 dgea.marker.down <- runMarker_mod_4.4(moic.res = consensus,
@@ -998,6 +1000,7 @@ dgea.marker.down <- runMarker_mod_4.4(moic.res = consensus,
                             height = 12,
                             fontsize_row = 3,
                             name = "normalized RNA-seq")
+dev.off()
 
 # GSEA #####
 # Load MSigDb file
