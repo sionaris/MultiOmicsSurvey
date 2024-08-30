@@ -1,132 +1,8 @@
-# Import data from gitignored "Resources/BRCA complete/" folder #####
+# Import data from gitignored "Resources/TCGA/" folder #####
 
 # These datasets are pre-standardized
-brca_cnv = read.csv("Resources/BRCA complete/BRCA_CNV.csv")
-brca_met = read.csv("Resources/BRCA complete/BRCA_Methy.csv")
-brca_exp = read.csv("Resources/BRCA complete/BRCA_mRNA.csv")
-brca_mirna = read.csv("Resources/BRCA complete/BRCA_miRNA.csv")
-data_object = list(CNV = brca_cnv, Methylation = brca_met,
-                   RNAseq = brca_exp, miRNA = brca_mirna)
-rm(brca_cnv, brca_exp, brca_met, brca_mirna); gc()
-
-data_object <- lapply(data_object, function(df) {
-  colnames(df) <- gsub("\\.", "-", colnames(df))
-  return(df)
-})
-
-# TCGA additional data #####
-# Download clinical data for the TCGA samples of interest ###
-library(TCGAbiolinks)
-tcga_samples = Reduce(intersect, lapply(data_object, colnames))
-tcga_samples = tcga_samples[2:length(tcga_samples)] # Remove X
-tcga_samples = str_sub(tcga_samples, 1, 12)
-
-# Create a query to retrieve clinical data for the specified samples
-query <- GDCquery(
-  project = "TCGA-BRCA",  # Replace with the appropriate TCGA project ID
-  data.category = "Clinical",
-  data.type = "Clinical Supplement",
-  barcode = tcga_samples
-)
-
-# Execute the query
-GDCdownload(query)
-
-# Prepare the clinical data
-clinical_data = GDCprepare_clinic(query, clinical.info = "patient")
-openxlsx::write.xlsx(clinical_data, "Resources/BRCA complete/clinical_data.xlsx")
-gc()
-
-# Download categorical mutation data ###
-library(maftools)
-query_mut = GDCquery(
-  project = "TCGA-BRCA",  # Replace with the appropriate TCGA project ID
-  data.category = "Simple Nucleotide Variation",
-  data.type = "Masked Somatic Mutation",
-  workflow.type = "Aliquot Ensemble Somatic Variant Merging and Masking",
-  barcode = tcga_samples
-)
-
-# Execute the query
-GDCdownload(query_mut)
-
-# Prepare the clinical data
-mut_data = GDCprepare(query_mut)
-mut_data = mut_data %>% maftools::read.maf()
-
-# The @data object is filtered for silent mutations. We use it to create a 
-# binary matrix
-
-# Split for SNP and indels
-SNP_data = mut_data@data %>% dplyr::filter(Variant_Type == "SNP")
-INDEL_data = mut_data@data %>% dplyr::filter(Variant_Type %in% c("DEL", "INS"))
-
-SNP_matrix_input = SNP_data %>% dplyr::select(Hugo_Symbol, Start_Position, Tumor_Sample_Barcode)
-str_sub(SNP_matrix_input$Tumor_Sample_Barcode, 16, -1) = ""
-
-INDEL_matrix_input = INDEL_data %>% 
-  dplyr::select(Hugo_Symbol, Start_Position, End_Position, Tumor_Sample_Barcode)
-str_sub(INDEL_matrix_input$Tumor_Sample_Barcode, 16, -1) = ""
-
-# Set the type of features
-mut_features = "Gene" # can also be "Gene+Position"
-
-if (mut_features == "Gene") {
-  #SNPs
-  SNP_matrix_input = SNP_matrix_input %>% dplyr::select(Hugo_Symbol,
-                                                        Tumor_Sample_Barcode) %>%
-    distinct()
-  SNP_matrix <- dcast(SNP_matrix_input, 
-                      Hugo_Symbol ~ Tumor_Sample_Barcode, fun.aggregate = NULL, 
-                      value.var = "Hugo_Symbol")
-  
-  # INDELs
-  INDEL_matrix_input = INDEL_matrix_input %>% dplyr::select(Hugo_Symbol,
-                                                            Tumor_Sample_Barcode) %>%
-    distinct()
-  INDEL_matrix <- dcast(INDEL_matrix_input, 
-                        Hugo_Symbol ~ Tumor_Sample_Barcode, fun.aggregate = NULL, 
-                        value.var = "Hugo_Symbol")
-  
-} else if (mut_features == "Gene+Position") {
-  # SNPs
-  SNP_matrix_input$feature = paste0(SNP_matrix_input$Hugo_Symbol, "_", 
-                                    SNP_matrix_input$Start_Position)
-  SNP_matrix <- dcast(SNP_matrix_input, 
-                      feature ~ Tumor_Sample_Barcode, fun.aggregate = NULL, 
-                      value.var = "feature")
-  
-  # INDELs
-  INDEL_matrix_input$feature = paste0(INDEL_matrix_input$Hugo_Symbol, "_", 
-                                      INDEL_matrix_input$Start_Position, "_",
-                                      INDEL_matrix_input$End_Position)
-  INDEL_matrix <- dcast(INDEL_matrix_input, 
-                        feature ~ Tumor_Sample_Barcode, fun.aggregate = NULL, 
-                        value.var = "feature")
-}
-
-# Set rownames
-SNP_matrix = as.matrix(SNP_matrix)
-rownames(SNP_matrix) = SNP_matrix[, 1]
-SNP_matrix = SNP_matrix[, 2:ncol(SNP_matrix)]
-
-INDEL_matrix = as.matrix(INDEL_matrix)
-rownames(INDEL_matrix) = INDEL_matrix[, 1]
-INDEL_matrix = INDEL_matrix[, 2:ncol(INDEL_matrix)]
-
-# Replace NAs with 0 and gene names with 1
-SNP_matrix[is.na(SNP_matrix)] <- 0
-SNP_matrix[SNP_matrix != 0] <- 1
-
-INDEL_matrix[is.na(INDEL_matrix)] <- 0
-INDEL_matrix[INDEL_matrix != 0] <- 1
-
-# Numeric matrices
-class(SNP_matrix) = "numeric"
-class(INDEL_matrix) = "numeric"
-
-# Pick one matrix for MOVICS analysis
-data_object[["SNPs"]] = as.data.frame(SNP_matrix)
+data_object = readRDS("Resources/TCGA/norm_data_object.rds")
+clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 
 # Setup environment variables for markdown #####
 
@@ -185,7 +61,6 @@ feature_column = rep(FALSE, length(modalities))
 # Leave NA if features are in columns
 # Use feature_column EVEN IF data are pre-standardized, as long as the data frame
 # contains a feature column
-feature_column = c("X", "X", "X", "X", FALSE)
 
 # Give names to the vectors
 names(standardization_booleans) = names(features_in_rows) = names(feature_column) = modalities
@@ -302,13 +177,9 @@ if (alg_feature_pref == "rows") {
 }
 rm(rogue_indices); gc()
 
-# Keep female samples that have measurements in all modalities
-male_samples = paste0(clinical_data$bcr_patient_barcode[clinical_data$gender == "MALE"],
-                      "-01")
 if (alg_feature_pref == "rows") {
   # Sample names are in the columns
-  overlap = setdiff(Reduce(intersect, lapply(input, colnames)),
-                    male_samples)
+  overlap = Reduce(intersect, lapply(input, colnames))
   
   # Filter inputs
   input = lapply(input, function(x) {
@@ -316,8 +187,7 @@ if (alg_feature_pref == "rows") {
   })
 } else {
   # Sample names are in the rows
-  overlap = setdiff(Reduce(intersect, lapply(input, rownames)),
-                    male_samples)
+  overlap = Reduce(intersect, lapply(input, rownames))
   
   # Filter inputs
   input = lapply(input, function(x) {
@@ -326,20 +196,51 @@ if (alg_feature_pref == "rows") {
 }
 
 # Export input object as a resource
-saveRDS(input, "Resources/BRCA complete/mm_input.rds")
+input$Methylation = na.omit(input$Methylation) # Remove the missing values
+saveRDS(input, "Resources/TCGA/mm_input.rds")
+rm(data_object); gc()
 
 # Run algorithm #####
 library(MOVICS)
 
+check_missing_values_with_indices <- function(input) {
+  # Apply the function to each element in the list
+  missing_info <- lapply(input, function(mat) {
+    if (!is.matrix(mat)) {
+      stop("All elements of input should be matrices.")
+    }
+    
+    # Find the row indices where there are missing values
+    missing_indices <- which(rowSums(is.na(mat)) > 0)
+    
+    # Count the number of NA values in the matrix
+    na_count <- sum(is.na(mat))
+    
+    # Return a list containing the count of NA values and the row indices
+    return(list(na_count = na_count, missing_indices = missing_indices))
+  })
+  
+  # Combine the results into a named list
+  names(missing_info) <- names(input)
+  return(missing_info)
+}
+
+# Example usage
+missing_values_summary <- check_missing_values_with_indices(input) # all clear
+rm(missing_values_summary); gc()
+
 # identify optimal clustering number (may take a while)
+try_min_k = 2
+try_max_k = 10
 optk = getClustNum(data = input,
-                   is.binary = c(F,F,F,F,T),
-                   try.N.clust = 2:10,
+                   is.binary = c(T,F,F,F,F),
+                   try.N.clust = try_min_k:try_max_k,
                    center = FALSE,
-                   scale = FALSE, # default: FALSE
+                   scale = FALSE,
                    fig.path = "Results/MOVICS_baseline",
                    fig.name = paste0("optimal_k_plot_", data_source,
                                      "_", data_types))
+gc()
 
 # Perform multi-omic clustering with 9 available methods using default parameters
 # iClusterBayes will be run on the cluster
@@ -350,8 +251,8 @@ moic.res.list = getMOIC(data = input,
                                            "IntNMF"),
                                            # , "iClusterBayes"),
                         N.clust = optk$N.clust,
-                        type = c("gaussian", "gaussian", "gaussian", "gaussian",
-                                 "binomial"))
+                        type = c("binomial", "gaussian", "gaussian", 
+                                 "gaussian", "gaussian"))
 
 # Save results to local file
 save(moic.res.list, file = paste0(home, "/Results/MOVICS_baseline/", 
@@ -360,16 +261,18 @@ save(moic.res.list, file = paste0(home, "/Results/MOVICS_baseline/",
                                   "_moic.res.list.rda"))
 
 # iClusterBayes with lower burnin and draw parameter values
+n_burnin_iCB = 1800
+n_draw_iCB = 1200
 iClusterBayes.res = getMOIC(data        = input,
                             N.clust     = optk$N.clust,
                             methodslist = "iClusterBayes",
-                            type        = c("gaussian",
+                            type        = c("binomial",
                                             "gaussian",
                                             "gaussian",
                                             "gaussian",
-                                            "binomial"),
-                            n.burnin    = 1800,
-                            n.draw      = 1200,
+                                            "gaussian"),
+                            n.burnin    = n_burnin_iCB,
+                            n.draw      = n_draw_iCB,
                             prior.gamma = c(0.5, 0.5, 0.5, 0.5, 0.5),
                             sdev        = 0.05,
                             thin        = 3)
@@ -388,11 +291,11 @@ rm(iClusterBayes.res); gc()
 moCluster.res = getMOIC(data        = input,
                             N.clust     = optk$N.clust,
                             methodslist = "MoCluster",
-                            type        = c("gaussian",
+                            type        = c("binomial",
                                             "gaussian",
                                             "gaussian",
                                             "gaussian",
-                                            "binomial"),
+                                            "gaussian"),
                             center      = FALSE,
                             scale       = FALSE)
 moic.res.list = append(moic.res.list, 
@@ -403,11 +306,9 @@ rm(moCluster.res); gc()
 save(moic.res.list, file = paste0(home, "/Results/MOVICS_baseline/", 
                                   algorithm, "_", data_source, "_",
                                   data_types, "_eval_on_", evaluation_source,
-                                  "_moic.res.list.rda"))
+                                  "_moic.res.list.rda")); gc()
 
 # Inspect output for similarities/differences across clusterings #####
-library(dplyr)
-
 # Initialize a matrix to store Jaccard indices
 jaccard_matrix <- matrix(0, length(moic.res.list), 
                          length(moic.res.list),
@@ -585,6 +486,186 @@ draw(NMI_heatmap)
 dev.off()
 
 # Consensus #####
+
+# Label reversing
+# Since the optimal k is 2 and every algorithm clustered the samples into two
+# clusters, by reversing the labels of a clustering, we achieve the exact same 
+# sample separation the algorithm produced.
+
+# Based on the NMI and ARI, SNF, CIMLR, NEMO and COCA will have their labels
+# reversed to examine whether this affects the consensus
+
+moic.res.list_pre = moic.res.list
+moic.res.list$SNF$clust.res$clust = ifelse(moic.res.list$SNF$clust.res$clust == 1,
+                                           2, 1)
+moic.res.list$CIMLR$clust.res$clust = ifelse(moic.res.list$SNF$clust.res$clust == 1,
+                                           2, 1)
+moic.res.list$COCA$clust.res$clust = ifelse(moic.res.list$SNF$clust.res$clust == 1,
+                                           2, 1)
+moic.res.list$NEMO$clust.res$clust = ifelse(moic.res.list$SNF$clust.res$clust == 1,
+                                           2, 1)
+
+# Reproduce Jaccard, NMI, ARI heatmaps
+# Initialize a matrix to store Jaccard indices
+rev_jaccard_matrix <- matrix(0, length(moic.res.list), 
+                             length(moic.res.list),
+                             dimnames = list(names(moic.res.list), 
+                                             names(moic.res.list)))
+
+# Calculate Jaccard index for each pair of cluster results (using loaded custom function)
+for (i in 1:length(moic.res.list)) {
+  for (j in i:length(moic.res.list)) {
+    rev_jaccard_matrix[i, j] <-rev_jaccard_matrix[j, i] <-  MOVICS_jaccard_index(moic.res.list[[i]]$clust.res,
+                                                                                 moic.res.list[[j]]$clust.res)
+  }
+}
+
+# Draw heatmap
+rev_jaccard_matrix <- as.matrix(rev_jaccard_matrix)
+class(rev_jaccard_matrix) <- "numeric"
+rev_jaccard_heatmap = Heatmap(rev_jaccard_matrix, 
+                          name = "Jaccard Index", 
+                          column_title = "Jaccard Similarity between clusterings", 
+                          column_title_gp = gpar(fontsize = 8, fontface = "bold"),
+                          col = color_palette, 
+                          cluster_rows = FALSE, 
+                          cluster_columns = FALSE, 
+                          show_row_names = TRUE, 
+                          show_column_names = TRUE,
+                          row_names_gp = grid::gpar(fontsize = 6, fontface = "bold"), 
+                          column_names_gp = grid::gpar(fontsize = 6, fontface = "bold"),
+                          cell_fun = function(j, i, x, y, width, height, fill) {
+                            grid::grid.text(sprintf("%.2f", jaccard_matrix[i, j]), x, y, 
+                                            gp = grid::gpar(col = label_color(fill), fontsize = 6))
+                          },
+                          heatmap_legend_param = list(
+                            title = "Jaccard Index",
+                            title_gp = grid::gpar(fontsize = 6, fontface = "bold"), 
+                            labels_gp = grid::gpar(fontsize = 6),
+                            legend_height = unit(1.5, "cm"),
+                            grid_width = unit(0.25, "cm"),
+                            title_position = "leftcenter-rot"
+                          ))
+
+png(paste0(home, "/Results/MOVICS_baseline/", 
+           algorithm, "_", data_source, "_",
+           data_types, "_eval_on_", evaluation_source, 
+           "_rev_Jaccard_clusterings_heatmap.png"), 
+    width = 4300, height = 4300, res = 700)
+draw(jaccard_heatmap)
+dev.off()
+
+# Calculate ARI and NMI
+# Initialize a matrix to store ARI values
+rev_ari_matrix <- matrix(0, length(moic.res.list), 
+                         length(moic.res.list),
+                         dimnames = list(names(moic.res.list), 
+                                         names(moic.res.list)))
+
+# Calculate ARI for each pair of cluster results
+for (i in 1:length(moic.res.list)) {
+  for (j in i:length(moic.res.list)) {
+    rev_ari_matrix[i, j] <- rev_ari_matrix[j, i] <- adjustedRandIndex(
+      moic.res.list[[i]]$clust.res$clust, 
+      moic.res.list[[j]]$clust.res$clust
+    )
+  }
+}
+
+# Draw heatmap
+rev_ari_matrix <- as.matrix(rev_ari_matrix)
+class(rev_ari_matrix) <- "numeric"
+
+ARI_heatmap = Heatmap(rev_ari_matrix, 
+                      name = "ARI Index", 
+                      column_title = "Adjusted Rand Index (ARI) between clusterings", 
+                      column_title_gp = gpar(fontsize = 8, fontface = "bold"),
+                      col = color_palette, 
+                      cluster_rows = FALSE, 
+                      cluster_columns = FALSE, 
+                      show_row_names = TRUE, 
+                      show_column_names = TRUE,
+                      row_names_gp = grid::gpar(fontsize = 6, fontface = "bold"), 
+                      column_names_gp = grid::gpar(fontsize = 6, fontface = "bold"),
+                      cell_fun = function(j, i, x, y, width, height, fill) {
+                        grid::grid.text(sprintf("%.2f", rev_ari_matrix[i, j]), x, y, 
+                                        gp = grid::gpar(col = label_color(fill), fontsize = 6))
+                      },
+                      heatmap_legend_param = list(
+                        title = "ARI Index",
+                        title_gp = grid::gpar(fontsize = 6, fontface = "bold"), 
+                        labels_gp = grid::gpar(fontsize = 6),
+                        legend_height = unit(1.5, "cm"),
+                        grid_width = unit(0.25, "cm"),
+                        title_position = "leftcenter-rot"
+                      ))
+
+png(paste0(home, "/Results/MOVICS_baseline/", 
+           algorithm, "_", data_source, "_",
+           data_types, "_eval_on_", evaluation_source, 
+           "_rev_ARI_clusterings_heatmap.png"), 
+    width = 4300, height = 4300, res = 700)
+draw(ARI_heatmap)
+dev.off()
+
+# Initialize a matrix to store NMI values
+rev_nmi_matrix <- matrix(0, length(moic.res.list), 
+                         length(moic.res.list),
+                         dimnames = list(names(moic.res.list), 
+                                         names(moic.res.list)))
+
+# Calculate NMI for each pair of cluster results
+for (i in 1:length(moic.res.list)) {
+  for (j in i:length(moic.res.list)) {
+    rev_nmi_matrix[i, j] <- rev_nmi_matrix[j, i] <- clue::cl_agreement(
+      as.cl_partition(moic.res.list[[i]]$clust.res$clust), 
+      as.cl_partition(moic.res.list[[j]]$clust.res$clust), 
+      method = "NMI"
+    )
+  }
+}
+
+# Draw heatmap
+rev_nmi_matrix <- as.matrix(rev_nmi_matrix)
+class(rev_nmi_matrix) <- "numeric"
+
+NMI_heatmap = Heatmap(rev_nmi_matrix, 
+                      name = "NMI Index", 
+                      column_title = "Normalized Mutual Information (NMI) between clusterings", 
+                      column_title_gp = gpar(fontsize = 8, fontface = "bold"),
+                      col = color_palette, 
+                      cluster_rows = FALSE, 
+                      cluster_columns = FALSE, 
+                      show_row_names = TRUE, 
+                      show_column_names = TRUE,
+                      row_names_gp = grid::gpar(fontsize = 6, fontface = "bold"), 
+                      column_names_gp = grid::gpar(fontsize = 6, fontface = "bold"),
+                      cell_fun = function(j, i, x, y, width, height, fill) {
+                        grid::grid.text(sprintf("%.2f", rev_nmi_matrix[i, j]), x, y, 
+                                        gp = grid::gpar(col = label_color(fill), fontsize = 6))
+                      },
+                      heatmap_legend_param = list(
+                        title = "NMI Index",
+                        title_gp = grid::gpar(fontsize = 6, fontface = "bold"), 
+                        labels_gp = grid::gpar(fontsize = 6),
+                        legend_height = unit(1.5, "cm"),
+                        grid_width = unit(0.25, "cm"),
+                        title_position = "leftcenter-rot"
+                      ))
+
+png(paste0(home, "/Results/MOVICS_baseline/", 
+           algorithm, "_", data_source, "_",
+           data_types, "_eval_on_", evaluation_source, 
+           "_rev_NMI_clusterings_heatmap.png"), 
+    width = 4300, height = 4300, res = 700)
+draw(NMI_heatmap)
+dev.off()
+
+# The reversed labels version is more likely to misguide the consensus.
+# Therefore, we proceed with the original output
+moic.res.list = moic.res.list_pre
+rm(moic.res.list_pre); gc()
+
 # get consensus results from all algorithms
 consensus = getConsensusMOIC(moic.res.list = moic.res.list,
                              fig.path = "Results/MOVICS_baseline",
@@ -599,19 +680,25 @@ getSilhouette(sil      = consensus$sil,
               fig.name = "Silhouette",
               height   = 5.5,
               width    = 5)
+dev.off()
 
 # Downstream comparisons #####
-
 # Create data frame for comparisons
 cc_res = consensus$clust.res
 colnames(cc_res) = c("Sample.ID", "Consensus Subtype")
 cc_res$`Consensus Subtype` = factor(cc_res$`Consensus Subtype`,
-                                    levels = c(1, 2, 3),
-                                    labels = c("CS1", "CS2", "CS3"))
-subset_of_interest = clinical_data[, c(1, 7:12, 16, 22, 24, 26, 38, 40, 41,
-                                       51:54, 67:69, 107)] %>%
-  dplyr::rename(Sample.ID = bcr_patient_barcode) %>%
-  dplyr::mutate(Sample.ID = paste0(Sample.ID, "-01")) %>%
+                                    levels = c(1, 2),
+                                    labels = c("CS1", "CS2"))
+subset_of_interest = clinical_data[, c("Sample.ID", "vital_status", "days_to_birth", "days_to_last_known_alive", "days_to_death",
+                                       "days_to_last_followup", "race_list", "history_of_neoadjuvant_treatment",
+                                       "age_at_initial_pathologic_diagnosis", "ethnicity", "primary_lymph_node_presentation_assessment",
+                                       "histological_type", "menopause_status",  "breast_carcinoma_progesterone_receptor_status", 
+                                       "breast_carcinoma_estrogen_receptor_status", "lab_proc_her2_neu_immunohistochemistry_receptor_status",
+                                       "number_of_lymphnodes_positive_by_ihc", "number_of_lymphnodes_positive_by_he", "er_level_cell_percentage_category",
+                                       "progesterone_receptor_level_cell_percent_category","distant_metastasis_present_ind2",
+                                       "stage_event_pathologic_stage")] %>%
+  #dplyr::rename(Sample.ID = bcr_patient_barcode) %>%
+  #dplyr::mutate(Sample.ID = paste0(Sample.ID, "-01")) %>%
   group_by(Sample.ID) %>%
   arrange(Sample.ID, rowSums(is.na(across(-Sample.ID)))) %>%  # Arrange by Sample.ID and NA count
   slice(1) %>%  # Keep the first occurrence in case of ties
@@ -650,7 +737,7 @@ CNV.col <- c("#6699CC", "white", "#FF3C38")
 mut.col   <- c("#EFE5AF", "#780A43")
 methylation.col    <- c("#57087C", "white", "#FF3C38")
 miRNA.col <- c("#D3ACEF", "white", "#FA076B")
-col.list   <- list(CNV.col, methylation.col, mRNA.col, miRNA.col, mut.col)
+col.list   <- list(mut.col, mRNA.col, CNV.col, miRNA.col, methylation.col)
 
 # Create annCol object that will be used for plot annotation and colors
 library(forcats)
@@ -737,25 +824,31 @@ annColors = list(
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[rowSums(mat != 0) > 0, ])
 
+# Use halfwidth for beter coloring in heatmap
+heatmap_plotdata = getStdiz(
+  data = plotdata,
+  halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
+  centerFlag = c(F, F, F, F, F),
+  scaleFlag = c(F, F, F, F, F)
+)
+
 # Export coloring settings for other algorithms
 scheme = list(col.list = col.list,
               annColors = annColors,
               annCol = annCol,
               var2comp = var2comp,
-              clust.colors = c("#2EC4B6", "#E71D36", 
-                               "#FF9F1C"))
+              clust.colors = c("#2EC4B6", "#E71D36"))
 saveRDS(scheme, "Resources/scheme.rds")
 
 # comprehensive heatmap (may take a while)
-getMoHeatmap(data          = plotdata,
+getMoHeatmap(data          = heatmap_plotdata,
              row.title     = names(plotdata),
-             is.binary     = c(F,F,F,F,T), 
-             legend.name   = c("Normalised CNV",
-                               "Normalised Methylation",
-                               "Normalised RNAseq FPKM",
-                               "Normalised miRNA FPKM",
-                               "SNPs"
-                               #bquote(bold("Normalised" ~ log[2]("TPM + 1")))
+             is.binary     = c(T,F,F,F,F), 
+             legend.name   = c("SNPs",
+                               "Standardized RNAseq norm. counts",
+                               "Standardized CNV",
+                               "Standardized miRNA norm. counts",
+                               "Standardized Methylation M-values"
              ),
              clust.res     = consensus$clust.res, # consensusMOIC results
              clust.dend    = NULL, # show no dendrogram for samples
@@ -770,16 +863,15 @@ getMoHeatmap(data          = plotdata,
              height        = 10, # height of each subheatmap
              fig.path      = paste0(home, "/Results/MOVICS_baseline"),
              fig.name      = "default_Comprehensive_heatmap")
+dev.off()
 gc()
 
 # # Comparison of survival curves
 # surv.info = clinical_data %>%
-#   dplyr::select(bcr_patient_barcode, vital_status, days_to_death, days_to_last_followup) %>%
-#   mutate(samID = paste0(bcr_patient_barcode, "-01")) %>%
-#   inner_join(consensus$clust.res, by = "samID") %>%
-#   dplyr::select(-bcr_patient_barcode) %>%
-#   dplyr::rename(fustat = vital_status, Subtype = clust) %>%
-#   dplyr::filter(Subtype != 3) # Only Alive
+#   dplyr::select(Patient.ID, samID = Sample.ID, vital_status, days_to_death, days_to_last_followup) %>%
+#   left_join(consensus$clust.res, by = "samID") %>%
+#   dplyr::select(-Patient.ID) %>%
+#   dplyr::rename(fustat = vital_status, Subtype = clust)
 # surv.info$fustat[which(surv.info$fustat == "")] = NA
 # 
 # surv.info$futime = ifelse(surv.info$fustat == "Alive",
@@ -874,6 +966,7 @@ dgea.marker.up <- runMarker_mod_4.4(moic.res = consensus,
                             show_rownames = TRUE, # show no rownames (biomarker name)
                             centerFlag = F,
                             scaleFlag = F,
+                            halfwidth = 3,
                             fig.name      = "upregulated_biomarkers_heatmap",
                             fig.path = paste0(home, "/Results/MOVICS_baseline"),
                             width = 14,
@@ -898,6 +991,7 @@ dgea.marker.down <- runMarker_mod_4.4(moic.res = consensus,
                             show_rownames = TRUE, # show no rownames (biomarker name)
                             centerFlag = F,
                             scaleFlag = F,
+                            halfwidth = 3,
                             fig.name      = "downregulated_biomarkers_heatmap",
                             fig.path = paste0(home, "/Results/MOVICS_baseline"),
                             width = 14,
@@ -1003,6 +1097,7 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/MOVICS_baseline"),
   fig.name = "ntp_expr_up_heatmap_transNEO")
+dev.off()
 
 RNGversion("4.2.2")
 transNEO_ntp_expr_down = runNTP(
@@ -1018,6 +1113,7 @@ transNEO_ntp_expr_down = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/MOVICS_baseline"),
   fig.name = "ntp_expr_down_heatmap_transNEO")
+dev.off()
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -1146,10 +1242,10 @@ writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
                                                  "_sessionInfo.txt"))
 
 # Render the R Markdown document with the parameters
-hyperparameters = list(min_k = 2,
-                       max_k = 10,
-                       n_burnin = 1800,
-                       n_draw = 1200)
+hyperparameters = list(min_k = try_min_k,
+                       max_k = try_max_k,
+                       n_burnin = n_burnin_iCB,
+                       n_draw = n_draw_iCB)
 params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
               citation = citation, home = home, optk = optk$N.clust,
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
