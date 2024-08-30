@@ -1,7 +1,7 @@
 # Import data from gitignored "Resources/BRCA complete/" folder #####
 
 # This RDS object was produced using the Scripts/MOVICS/MOVICS_baseline.R script
-input = readRDS("Resources/BRCA complete/mm_input.rds")
+input = readRDS("Resources/TCGA/mm_input.rds")
 
 # Setup environment variables for markdown #####
 
@@ -26,7 +26,7 @@ subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types,
                   " | <b>Evaluation</b>: ", evaluation_source)
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
 ground_truth_labels = openxlsx::read.xlsx("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")
-ground_truth_k = 3 # optk from MOVICS
+ground_truth_k = 2 # optk from MOVICS
 optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
@@ -92,17 +92,17 @@ if (alg_feature_pref == "rows") {
 rm(rogue_indices, index); gc()
 
 # Import clinical data for the TCGA samples of interest
-clinical_data = openxlsx::read.xlsx("Resources/BRCA complete/clinical_data.xlsx")
+clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 
 # Setup ###
 # Hyperparameter tuning
 sigma_step = 0.1
 # iter_step = 10
 neighbor_step = 5
-num_neighbors_range = seq(10, 30, neighbor_step) # number of neighbors, usually (10~30)
+num_neighbors_range = seq(10, 50, neighbor_step) # number of neighbors, usually (10~30)
 sigma_range = seq(0.3, 0.8, sigma_step) 	# hyperparameter, usually (0.3~0.8) -REFFERED as \mu in report text
 # iterations = seq(10, 100, iter_step)      # Number of Iterations, usually (10~20)
-n_iterations = 20     # Number of Iterations, usually (10~20)
+n_iterations = 50     # Number of Iterations, usually (10~20)
 
 # Modality types
 continuous = c("RNAseq", "CNV", "Methylation", "miRNA")
@@ -254,10 +254,68 @@ rm(indices, matrices); gc()
 all_similarities = compute_matrix_similarity(Fusions)
 
 # Overall tests ###
+# Get summary statistics
+# Initialize nn_summary and sigma_summary
+nn_summary <- data.frame(
+  nn = integer(),        
+  mean = numeric(),      
+  median = numeric(),    
+  sd = numeric()         
+)
+
+sigma_summary <- data.frame(
+  sigma = numeric(),     
+  mean = numeric(),      
+  median = numeric(),   
+  sd = numeric()        
+)
+
+# Calculate nn_summary
+for (nn in names(nn_similarities)) {
+  pearson_matrix <- nn_similarities[[nn]]$Pearson
+  pearson_values <- pearson_matrix[lower.tri(pearson_matrix, diag = FALSE)]
+  
+  # Compute mean, median, and standard deviation
+  mean_value <- mean(pearson_values)
+  median_value <- median(pearson_values)
+  sd_value <- sd(pearson_values)
+  
+  # Append the results to nn_summary
+  nn_summary <- rbind(nn_summary, data.frame(
+    nn = as.numeric(sub("NN = ", "", nn)),
+    mean = mean_value,
+    median = median_value,
+    sd = sd_value
+  ))
+}
+
+# Calculate sigma_summary
+for (sigma in names(sigma_similarities)) {
+  pearson_matrix <- sigma_similarities[[sigma]]$Pearson
+  pearson_values <- pearson_matrix[lower.tri(pearson_matrix, diag = FALSE)]
+  
+  # Compute mean, median, and standard deviation
+  mean_value <- mean(pearson_values)
+  median_value <- median(pearson_values)
+  sd_value <- sd(pearson_values)
+  
+  # Append the results to sigma_summary
+  sigma_summary <- rbind(sigma_summary, data.frame(
+    sigma = as.numeric(sub("sigma = ", "", sigma)),
+    mean = mean_value,
+    median = median_value,
+    sd = sd_value
+  ))
+}
+
+# Display the summaries
+print(nn_summary)
+print(sigma_summary)
+
 # Parametric ##
 # Reshape data for ANOVA
-nn_reshape <- reshape_SNF_Pearson_for_anova(nn_similarities)
-sigma_reshape <- reshape_SNF_Pearson_for_anova(sigma_similarities)
+nn_reshape <- reshape_SNF_Pearson_for_tests(nn_similarities)
+sigma_reshape <- reshape_SNF_Pearson_for_tests(sigma_similarities)
 
 # Perform ANOVA for nn
 anova_nn <- aov(Value ~ Factor, data = nn_reshape)
@@ -427,12 +485,96 @@ if (np_sig_status == FALSE && sig_status == FALSE) {
 }
 
 # If no significant differences are shown between/across hyperparameters then pick median values
-if (sig_status_final) {
-  # Code to pick best hyperparameters
-} else {
-  optN = 20 # median(num_neighbors_range)
-  optSigma = 0.5 # ~median(sigma_range)
+if (!sig_status_final){
+  optN = median(num_neighbors_range) # 30
+  optSigma = median(sigma_range) # 0.55
 }
+
+# The choice of number of neighbors affects the final matrix more than sigma, which
+# also plays a role, according to parametric tests
+
+# We will therefore pick the median sigma, rounded down to 0.5, a value we actually used in affinities.
+# We then choose the nn value for which the
+# fused similarity matrix has the "best" bimodal distribution of low and high values.
+# WE USE THIS APPROACH ONLY BECAUSE THE NUMBER OF CLUSTERS WE SEEK IS 2!
+
+# We use combine two methodologies to do it:
+
+# 1. Get the sum of variance and IQR for every matrix
+# 2. Get the sum of absolute skewness and kurtosis
+# 3. Find the nn matrix for which the sum of 1 and 2 is maximum
+optSigma = 0.5
+
+# Variance and IQR
+choose_matrix_contrasts <- function(similarity_matrices) {
+  contrast_values <- list()
+  
+  for (name in names(similarity_matrices)) {
+    similarity_values <- as.vector(similarity_matrices[[name]])
+    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
+    
+    # Calculate measures of contrast
+    variance <- var(similarity_values)
+    iqr <- IQR(similarity_values)
+    contrast_metric <- variance + iqr
+    contrast_values[[name]] <- contrast_metric
+  }
+  
+  return(contrast_values)
+}
+
+# Skewness and kurtosis
+library(e1071)
+
+choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
+  skewness_kurtosis_values <- list()
+  
+  for (name in names(similarity_matrices)) {
+    similarity_values <- as.vector(similarity_matrices[[name]])
+    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
+    
+    # Calculate skewness and kurtosis
+    skewness_value <- skewness(similarity_values)
+    kurtosis_value <- kurtosis(similarity_values)
+    
+    # Calculate a combined metric: |skewness| + kurtosis
+    combined_metric <- abs(skewness_value) + kurtosis_value
+    skewness_kurtosis_values[[name]] <- combined_metric
+  }
+  
+  return(skewness_kurtosis_values)
+}
+
+Fusions_filt = Fusions[which(grepl("sigma = 0.5", names(Fusions)))]
+contrast_list <- choose_matrix_contrasts(Fusions_filt)
+skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(Fusions_filt)
+
+# Min-max normalization to [0,1]
+minmax_normalize_values <- function(values) {
+  min_value <- min(values)
+  max_value <- max(values)
+  
+  normalized_values <- (values - min_value) / (max_value - min_value)
+  return(normalized_values)
+}
+
+contrast_values <- unlist(contrast_list)
+skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+
+# Normalize the contrast values and skewness-kurtosis values
+normalized_contrast <- minmax_normalize_values(contrast_values)
+normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+
+# Get the sum
+combined_scores <- normalized_contrast + normalized_skewness_kurtosis
+combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
+print(combined_scores_list)
+
+best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
+cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
+
+# We choose nn = 15
+optN = as.numeric(substr(best_combined_matrix, 6, 7))
 
 # Spectral clustering for k = ground_truth_k from MOVICS
 RNGversion("4.2.2")
@@ -465,6 +607,8 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     clust_col = "Cluster",
                                     suffixes = c("_MOVICS", "_SNF"))
 
+# Very low statistics when compared to the MOVICS default SNF. Results differ
+
 # MOVICS-like analysis #####
 library(MOVICS)
 library(ComplexHeatmap)
@@ -481,20 +625,26 @@ rm(scheme); gc()
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[, colSums(mat != 0) > 0])
 plotdata <- lapply(plotdata, t)
+heatmap_plotdata = getStdiz(
+  data = plotdata,
+  halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
+  centerFlag = c(F, F, F, F, F),
+  scaleFlag = c(F, F, F, F, F)
+)
+
 plot_object = list(clust.res = SNF_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
 
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-             row.title     = names(plotdata),
-             is.binary     = c(F,F,F,F,T), 
-             legend.name   = c("Normalised CNV",
-                               "Normalised Methylation",
-                               "Normalised RNAseq FPKM",
-                               "Normalised miRNA FPKM",
-                               "SNPs"
-                               #bquote(bold("Normalised" ~ log[2]("TPM + 1")))
+                              data          = heatmap_plotdata,
+             row.title     = names(heatmap_plotdata),
+             is.binary     = c(T,F,F,F,F), 
+             legend.name   = c("SNPs",
+                               "Standardized RNAseq norm. counts",
+                               "Standardized CNV",
+                               "Standardized miRNA norm. counts",
+                               "Standardized Methylation M-values"
              ),
              clust.res     = plot_object$clust.res, # consensusMOIC-like results
              clust.dend    = NULL, # show no dendrogram for samples
@@ -509,6 +659,7 @@ getMoHeatmap_single_algorithm(algorithm_name = algorithm,
              height        = 10, # height of each subheatmap
              fig.path      = paste0(home, "/Results/single_algorithm/SNF"),
              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+dev.off()
 gc()
 
 # Clinical variables ###
@@ -556,6 +707,7 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
 # Similar to MOVICS: TP53 and PIK3CA patterns
 
 # Drug sensitivity comparison ###
+library(ggplot2)
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  moic.res    = plot_object,
                                 norm.expr   = plotdata$RNAseq,
@@ -578,6 +730,7 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
                                 fig.name  = "Classification_agreement",
                                 fig.path  = paste0(home, "/Results/single_algorithm/SNF"),
                                 width     = 12)
+dev.off()
 
 # DGEA ###
 dgea = runDEA(dea.method = "limma", # we use normalized data as input
@@ -608,12 +761,14 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                     show_rownames = TRUE, # show no rownames (biomarker name)
                                     centerFlag = F,
                                     scaleFlag = F,
+                                    halfwidth = 3,
                                     fig.name      = "upregulated_biomarkers_heatmap",
                                     fig.path = paste0(home, "/Results/single_algorithm/SNF"),
                                     width = 14,
                                     height = 12,
                                     fontsize_row = 3,
                                     name = "normalized RNA-seq")
+dev.off()
 
 # # 2. Down-regulated markers
 dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
@@ -633,12 +788,14 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                       show_rownames = TRUE, # show no rownames (biomarker name)
                                       centerFlag = F,
                                       scaleFlag = F,
+                                      halfwidth = 3,
                                       fig.name      = "downregulated_biomarkers_heatmap",
                                       fig.path = paste0(home, "/Results/single_algorithm/SNF"),
                                       width = 14,
                                       height = 12,
                                       fontsize_row = 3,
                                       name = "normalized RNA-seq")
+dev.off()
 
 # GSEA ###
 # Load MSigDb file
@@ -718,6 +875,7 @@ gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                            height        = 8,
                            width         = 12,
                            name          = "GSVA scores")
+dev.off()
 
 # Evaluation #####
 # Run Nearest Template Prediction in transNEO cohort ###
@@ -899,7 +1057,7 @@ if (!dir.exists(paste0(home, "/Results/single_algorithm/SNF/Supplement"))) {
 
 # Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
-cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C")
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
   dplyr::rename(SNF = Cluster, samID = "Sample.ID")
@@ -911,28 +1069,28 @@ aff_CNV = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
     SNFtool::dist2(input$CNV,
     input$CNV),
-    K = 30, sigma = 0.5))
+    K = optN, sigma = optSigma))
 colnames(aff_CNV) = rownames(aff_CNV) = rownames(input$CNV)
 
 aff_rna = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
     SNFtool::dist2(input$RNAseq,
                    input$RNAseq),
-    K = 30, sigma = 0.5))
+    K = optN, sigma = optSigma))
 colnames(aff_rna) = rownames(aff_rna) = rownames(input$RNA)
 
 aff_miRNA = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
     SNFtool::dist2(input$miRNA,
                    input$miRNA),
-  K = 30, sigma = 0.5))
+    K = optN, sigma = optSigma))
 colnames(aff_miRNA) = rownames(aff_miRNA) = rownames(input$miRNA)
 
 aff_Methyl = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
     SNFtool::dist2(input$Methylation,
                    input$Methylation),
-    K = 30, sigma = 0.5))
+    K = optN, sigma = optSigma))
 colnames(aff_Methyl) = rownames(aff_Methyl) = rownames(input$Methylation)
 
 aff_SNPs = normalize_affinity_matrix(
@@ -940,7 +1098,7 @@ aff_SNPs = normalize_affinity_matrix(
     as.matrix(dist(as.matrix(input$SNPs),
                    as.matrix(input$SNPs),
                    method = "binary")),
-  K = 30, sigma = 0.5))
+    K = optN, sigma = optSigma))
 colnames(aff_SNPs) = rownames(aff_SNPs) = rownames(input$SNPs)
 
 aff_final = final_affinity_matrix
@@ -1217,10 +1375,10 @@ for (i in 1:length(voi)) {
   SNF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                              chifit = chifit,
                                              algorithm = algorithm,
-                                             text_y = 500, rect_ymin = 350,
-                                             rect_ymax = 550, x_annot = 2,
-                                             v_gap = 50, rect_xmin = 1.25,
-                                             rect_xmax = 2.75, 
+                                             text_y = 600, rect_ymin = 500,
+                                             rect_ymax = 620, x_annot = 1.5,
+                                             v_gap = 35, rect_xmin = 1,
+                                             rect_xmax = 2, 
                                              annot_text_size = 2.25,
                                              legend.text.size = 5) +
     barchart_scales[[voi[i]]]
@@ -1324,9 +1482,7 @@ for (i in 1:length(list_aff_S)) {
   V(g)$SNF <- nodes_data[[algorithm]] # modify `$SNF` manually
   
   # Set color based on SNF
-  V(g)$color <- fifelse(V(g)$SNF == paste0(algorithm, "1"), "#2EC4B6", 
-                        fifelse(V(g)$SNF == paste0(algorithm, "2"),
-                                "#E71D36", "#FF9F1C"))
+  V(g)$color <- fifelse(V(g)$SNF == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
   
   png(paste0(home, 
              "/Results/single_algorithm/SNF/Supplement/",
@@ -1351,8 +1507,7 @@ for (i in 1:length(list_aff_S)) {
   legend("bottomright", 
          title="Node Color Legend",    
          legend=c(paste0(algorithm, "1"),
-                  paste0(algorithm, "2"),
-                  paste0(algorithm, "3")), 
+                  paste0(algorithm, "2")), 
          fill=cluster_colors_heatmap,  
          cex=0.7,      
          box.lwd=1)  
@@ -1430,13 +1585,14 @@ dgea.marker.up_MOVICS_SNF <- runMarker_single_algorithm(algorithm_name = algorit
                                                         show_rownames = TRUE, # show no rownames (biomarker name)
                                                         centerFlag = F,
                                                         scaleFlag = F,
+                                                        halfwidth = 3,
                                                         fig.name      = "upregulated_biomarkers_heatmap_MOVICS_SNF",
                                                         fig.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
                                                         width = 14,
                                                         height = 12,
                                                         fontsize_row = 3,
                                                         name = "normalized RNA-seq")
-
+dev.off()
 # # 2. Down-regulated markers
 dgea.marker.down_MOVICS_SNF <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                           moic.res = moic.res.list$SNF,
@@ -1455,13 +1611,14 @@ dgea.marker.down_MOVICS_SNF <- runMarker_single_algorithm(algorithm_name = algor
                                                           show_rownames = TRUE, # show no rownames (biomarker name)
                                                           centerFlag = F,
                                                           scaleFlag = F,
+                                                          halfwidth = 3,
                                                           fig.name      = "downregulated_biomarkers_heatmap_MOVICS_SNF",
                                                           fig.path = paste0(home, "/Results/single_algorithm/SNF/Supplement"),
                                                           width = 14,
                                                           height = 12,
                                                           fontsize_row = 3,
                                                           name = "normalized RNA-seq")
-
+dev.off()
 # GSEA MOVICS SNF ###
 # GSEA up-regulated
 RNGversion("4.2.2")
@@ -1556,7 +1713,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
               NMI_to_MOVICS_SNF = NMI_to_MOVICS_SNF, ARI_to_MOVICS_SNF = ARI_to_MOVICS_SNF,
-              hyperparameters = hyperparameters, 
+              hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
               sessionInfo = sessionInfo(), home = home)
 
 # Render the R Markdown document with the parameters

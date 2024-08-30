@@ -2,6 +2,16 @@ There are three hyperparameters in SNF: the number of neighbors ($N_i$), the reg
 
 Here, we used a range of number of neighbors values $[ `r hyperparameters[["num_neighbors_min"]]`, `r hyperparameters[["num_neighbors_max"]]` ]$ with a step size of `r hyperparameters[["num_neighbors_step"]]`, $\sigma$ values ranging from $`r hyperparameters[["sigma_min"]]`$ to $`r hyperparameters[["sigma_max"]]`$ with a step size of $`r hyperparameters[["sigma_step"]]`$, and a number of iterations $t = `r hyperparameters[["n_iter"]]`$. Results for larger $t$ are usually identical because the algorithm usually converges after roughly 20 iterations.
 
-We compared the final fused affinity matrices for a given $N_i$ and/or a given $sigma$ (Pearson and Frobenius similarities between matrices). `r hyperparameters[["conclusion"]]`. This is confirmed by both parametric and non-parametric tests.
+We compared the final fused affinity matrices for a given $N_i$ and/or a given $sigma$ (Pearson and Frobenius similarities between matrices). <b>Automatic conclusion:</b> `r hyperparameters[["conclusion"]]` 
 
-We therefore proceeded with suggested values for the parameters: $N_i = `r hyperparameters[["optimal_N"]]`$, $sigma = `r hyperparameters[["optimal_sigma"]]`$ and $t = `r hyperparameters[["n_iter"]]`$.
+The $sigma$ effect was not confirmed by the non-parametric tests.  We therefore set $sigma = `r hyperparameters[["optimal_sigma"]]`$, which is close to the median $sigma$ value (0.55, but rounded down to 0.5 which was actually included in our range of tested $sigma$ values). For $N_i$, we chose the optimal value based on two custom metrics we especially defined for this case where the optimal number of clusters is 2. 
+
+For a given $sigma = 0.5$ and for all $N_i$, we calculated:
+<ol>
+  <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each final fused affinity matrix as an indication of spread.</li>
+  <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li>
+  <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li>
+  <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li>
+</ol>
+
+This led to us to pick $N_i = `r hyperparameters[["optimal_N"]]`$. For the number of iterations $t$, we set it to $`r hyperparameters[["n_iter"]]`$, which is generally considered sufficiently high for achieving convergence.

@@ -1,92 +1,91 @@
-level	CS1	CS2	CS3	p	test	sig
-n		      469	      160	       15			NA
-Subtype (%)	SNF1	      197 (42.0) 	        6 ( 3.8) 	       11 ( 73.3) 	<0.001	exact	**
-	SNF2	      270 (57.6) 	       24 (15.0) 	        2 ( 13.3) 			NA
-	SNF3	        2 ( 0.4) 	      130 (81.2) 	        2 ( 13.3) 			NA
-vital_status (%)		        7 ( 4.9) 	        1 ( 2.6) 	        3 ( 27.3) 	 0.110	exact	
-	Alive	      126 (88.7) 	       36 (92.3) 	        8 ( 72.7) 			NA
-	Dead	        9 ( 6.3) 	        2 ( 5.1) 	        0 (  0.0) 			NA
-days_to_birth 		-21525.62 ± 4829.37	-20916.44 ± 4483.84	-23206.07 ± 4934.19	 0.144		
-days_to_death 		  1613.84 ± 968.32	  1235.81 ± 1068.60	  3959.00 ± NA	    NA		NA
-days_to_last_followup 		  1235.97 ± 1155.20	  1243.03 ± 1304.70	   977.54 ± 446.16	 0.170		
-race_list (%)		       11 ( 2.3) 	        2 ( 1.2) 	        0 (  0.0) 	<0.001	exact	**
-	AMERICAN INDIAN OR ALASKA NATIVE	        0 ( 0.0) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	ASIAN	       23 ( 4.9) 	        9 ( 5.6) 	        0 (  0.0) 			NA
-	BLACK OR AFRICAN AMERICAN	       76 (16.2) 	       53 (33.1) 	        1 (  6.7) 			NA
-	WHITE	      359 (76.5) 	       95 (59.4) 	       14 ( 93.3) 			NA
-history_of_neoadjuvant_treatment (%)		        1 ( 0.2) 	        1 ( 0.6) 	        0 (  0.0) 	 0.699	exact	
-	No	      463 (98.7) 	      158 (98.8) 	       15 (100.0) 			NA
-	Yes	        5 ( 1.1) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-age_at_initial_pathologic_diagnosis 		    58.25 ± 13.31	    56.70 ± 12.25	    63.00 ± 13.49	 0.154		
-ethnicity (%)		       51 (10.9) 	       13 ( 8.1) 	        0 (  0.0) 	 0.643	exact	
-	HISPANIC OR LATINO	       21 ( 4.5) 	        7 ( 4.4) 	        0 (  0.0) 			NA
-	NOT HISPANIC OR LATINO	      397 (84.6) 	      140 (87.5) 	       15 (100.0) 			NA
-primary_lymph_node_presentation_assessment (%)		       99 (21.1) 	       32 (20.0) 	        0 (  0.0) 	 0.137	exact	
-	NO	       16 ( 3.4) 	        9 ( 5.6) 	        1 (  6.7) 			NA
-	YES	      354 (75.5) 	      119 (74.4) 	       14 ( 93.3) 			NA
-histological_type (%)		        0 ( 0.0) 	        1 ( 0.6) 	        0 (  0.0) 	    NA	exact	NA
-	Infiltrating Carcinoma NOS	        0 ( 0.0) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	Infiltrating Ductal Carcinoma	      303 (64.6) 	      133 (83.1) 	       11 ( 73.3) 			NA
-	Infiltrating Lobular Carcinoma	      121 (25.8) 	        4 ( 2.5) 	        0 (  0.0) 			NA
-	Medullary Carcinoma	        0 ( 0.0) 	        4 ( 2.5) 	        1 (  6.7) 			NA
-	Metaplastic Carcinoma	        0 ( 0.0) 	        7 ( 4.4) 	        0 (  0.0) 			NA
-	Mixed Histology (please specify)	       17 ( 3.6) 	        1 ( 0.6) 	        3 ( 20.0) 			NA
-	Mucinous Carcinoma	       10 ( 2.1) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	Other, specify	       18 ( 3.8) 	        9 ( 5.6) 	        0 (  0.0) 			NA
-menopause_status (%)		       41 ( 8.7) 	       12 ( 7.5) 	        0 (  0.0) 	 0.282	exact	
-	Indeterminate (neither Pre or Postmenopausal)	        8 ( 1.7) 	        6 ( 3.8) 	        0 (  0.0) 			NA
-	Peri (6-12 months since last menstrual period)	       14 ( 3.0) 	        7 ( 4.4) 	        0 (  0.0) 			NA
-	Post (prior bilateral ovariectomy OR >12 mo since LMP with no prior hysterectomy)	      294 (62.7) 	      109 (68.1) 	       13 ( 86.7) 			NA
-	Pre (<6 months since LMP AND no prior bilateral ovariectomy AND not on estrogen replacement)	      112 (23.9) 	       26 (16.2) 	        2 ( 13.3) 			NA
-breast_carcinoma_progesterone_receptor_status (%)		       22 ( 4.7) 	       11 ( 6.9) 	        6 ( 40.0) 	<0.001	exact	**
-	Indeterminate	        1 ( 0.2) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	Negative	       68 (14.5) 	      123 (76.9) 	        5 ( 33.3) 			NA
-	Positive	      378 (80.6) 	       25 (15.6) 	        4 ( 26.7) 			NA
-breast_carcinoma_estrogen_receptor_status (%)		       22 ( 4.7) 	       10 ( 6.2) 	        6 ( 40.0) 	<0.001	exact	**
-	Negative	       21 ( 4.5) 	      118 (73.8) 	        1 (  6.7) 			NA
-	Positive	      426 (90.8) 	       32 (20.0) 	        8 ( 53.3) 			NA
-lab_proc_her2_neu_immunohistochemistry_receptor_status (%)		       83 (17.7) 	       30 (18.8) 	        7 ( 46.7) 	    NA	exact	NA
-	Equivocal	       89 (19.0) 	       29 (18.1) 	        0 (  0.0) 			NA
-	Indeterminate	        7 ( 1.5) 	        2 ( 1.2) 	        1 (  6.7) 			NA
-	Negative	      236 (50.3) 	       85 (53.1) 	        3 ( 20.0) 			NA
-	Positive	       54 (11.5) 	       14 ( 8.8) 	        4 ( 26.7) 			NA
-number_of_lymphnodes_positive_by_ihc 		     0.35 ± 0.92	     0.04 ± 0.21	     0.00 ± 0.00	   NaN		NA
-number_of_lymphnodes_positive_by_he 		     2.63 ± 4.62	     1.87 ± 4.51	     2.86 ± 3.30	 0.217		
-er_level_cell_percentage_category (%)		      216 (46.1) 	      116 (72.5) 	       10 ( 66.7) 	    NA	exact	NA
-	<10%	        9 ( 1.9) 	       27 (16.9) 	        0 (  0.0) 			NA
-	10-19%	       13 ( 2.8) 	        3 ( 1.9) 	        5 ( 33.3) 			NA
-	20-29%	        2 ( 0.4) 	        2 ( 1.2) 	        0 (  0.0) 			NA
-	30-39%	        4 ( 0.9) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	40-49%	        3 ( 0.6) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	50-59%	        8 ( 1.7) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	60-69%	        6 ( 1.3) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	70-79%	       38 ( 8.1) 	        2 ( 1.2) 	        0 (  0.0) 			NA
-	80-89%	       21 ( 4.5) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	90-99%	      149 (31.8) 	        9 ( 5.6) 	        0 (  0.0) 			NA
-progesterone_receptor_level_cell_percent_category (%)		      239 (51.0) 	      120 (75.0) 	       13 ( 86.7) 	    NA	exact	NA
-	<10%	       46 ( 9.8) 	       34 (21.2) 	        2 ( 13.3) 			NA
-	10-19%	       21 ( 4.5) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	20-29%	        8 ( 1.7) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	30-39%	        8 ( 1.7) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	40-49%	       11 ( 2.3) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	50-59%	       10 ( 2.1) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	60-69%	        9 ( 1.9) 	        2 ( 1.2) 	        0 (  0.0) 			NA
-	70-79%	       30 ( 6.4) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	80-89%	       23 ( 4.9) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	90-99%	       64 (13.6) 	        3 ( 1.9) 	        0 (  0.0) 			NA
-distant_metastasis_present_ind2 (%)		      275 (58.6) 	      106 (66.2) 	        2 ( 13.3) 	 0.001	exact	**
-	NO	      190 (40.5) 	       51 (31.9) 	       13 ( 86.7) 			NA
-	YES	        4 ( 0.9) 	        3 ( 1.9) 	        0 (  0.0) 			NA
-stage_event_pathologic_stage (%)		        4 ( 0.9) 	        1 ( 0.6) 	        0 (  0.0) 	    NA	exact	NA
-	Stage I	       40 ( 8.5) 	       11 ( 6.9) 	        1 (  6.7) 			NA
-	Stage IA	       41 ( 8.7) 	       12 ( 7.5) 	        1 (  6.7) 			NA
-	Stage IB	        3 ( 0.6) 	        0 ( 0.0) 	        0 (  0.0) 			NA
-	Stage II	        4 ( 0.9) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	Stage IIA	      127 (27.1) 	       74 (46.2) 	        5 ( 33.3) 			NA
-	Stage IIB	      119 (25.4) 	       32 (20.0) 	        2 ( 13.3) 			NA
-	Stage III	        1 ( 0.2) 	        1 ( 0.6) 	        0 (  0.0) 			NA
-	Stage IIIA	       79 (16.8) 	       16 (10.0) 	        5 ( 33.3) 			NA
-	Stage IIIB	       12 ( 2.6) 	        3 ( 1.9) 	        0 (  0.0) 			NA
-	Stage IIIC	       30 ( 6.4) 	        5 ( 3.1) 	        1 (  6.7) 			NA
-	Stage IV	        6 ( 1.3) 	        3 ( 1.9) 	        0 (  0.0) 			NA
-	Stage X	        3 ( 0.6) 	        1 ( 0.6) 	        0 (  0.0) 			NA
+level	CS1	CS2	p	test	sig
+n		      244	      381			NA
+Subtype (%)	SNF1	      163 (66.8) 	      325 (85.3) 	<0.001		**
+	SNF2	       81 (33.2) 	       56 (14.7) 			NA
+vital_status (%)		        8 (11.6) 	        3 ( 2.6) 	 0.034	exact	**
+	Alive	       56 (81.2) 	      107 (92.2) 			NA
+	Dead	        5 ( 7.2) 	        6 ( 5.2) 			NA
+days_to_birth 		-21598.38 ± 4911.55	-21231.22 ± 4689.46	 0.359		
+days_to_death 		  1729.52 ± 1184.65	  1309.67 ± 931.13	 0.145		
+days_to_last_followup 		  1113.53 ± 1111.26	  1289.96 ± 1222.24	 0.087		
+race_list (%)		        4 ( 1.6) 	        9 ( 2.4) 	 0.179	exact	
+	AMERICAN INDIAN OR ALASKA NATIVE	        1 ( 0.4) 	        0 ( 0.0) 			NA
+	ASIAN	       16 ( 6.6) 	       16 ( 4.2) 			NA
+	BLACK OR AFRICAN AMERICAN	       55 (22.5) 	       69 (18.1) 			NA
+	WHITE	      168 (68.9) 	      287 (75.3) 			NA
+history_of_neoadjuvant_treatment (%)		        0 ( 0.0) 	        2 ( 0.5) 	 0.002	exact	**
+	No	      238 (97.5) 	      379 (99.5) 			NA
+	Yes	        6 ( 2.5) 	        0 ( 0.0) 			NA
+age_at_initial_pathologic_diagnosis 		    58.45 ± 13.47	    57.49 ± 12.92	 0.376		
+ethnicity (%)		       26 (10.7) 	       35 ( 9.2) 	 0.704		
+	HISPANIC OR LATINO	        9 ( 3.7) 	       18 ( 4.7) 			NA
+	NOT HISPANIC OR LATINO	      209 (85.7) 	      328 (86.1) 			NA
+primary_lymph_node_presentation_assessment (%)		       49 (20.1) 	       76 (19.9) 	 0.133		
+	NO	       15 ( 6.1) 	       11 ( 2.9) 			NA
+	YES	      180 (73.8) 	      294 (77.2) 			NA
+histological_type (%)		        1 ( 0.4) 	        0 ( 0.0) 	<0.001	exact	**
+	Infiltrating Carcinoma NOS	        0 ( 0.0) 	        1 ( 0.3) 			NA
+	Infiltrating Ductal Carcinoma	      189 (77.5) 	      247 (64.8) 			NA
+	Infiltrating Lobular Carcinoma	       28 (11.5) 	       90 (23.6) 			NA
+	Medullary Carcinoma	        5 ( 2.0) 	        0 ( 0.0) 			NA
+	Metaplastic Carcinoma	        3 ( 1.2) 	        4 ( 1.0) 			NA
+	Mixed Histology (please specify)	       10 ( 4.1) 	       11 ( 2.9) 			NA
+	Mucinous Carcinoma	        1 ( 0.4) 	        9 ( 2.4) 			NA
+	Other, specify	        7 ( 2.9) 	       19 ( 5.0) 			NA
+menopause_status (%)		       23 ( 9.4) 	       28 ( 7.3) 	 0.625		
+	Indeterminate (neither Pre or Postmenopausal)	        4 ( 1.6) 	       10 ( 2.6) 			NA
+	Peri (6-12 months since last menstrual period)	        8 ( 3.3) 	       12 ( 3.1) 			NA
+	Post (prior bilateral ovariectomy OR >12 mo since LMP with no prior hysterectomy)	      162 (66.4) 	      243 (63.8) 			NA
+	Pre (<6 months since LMP AND no prior bilateral ovariectomy AND not on estrogen replacement)	       47 (19.3) 	       88 (23.1) 			NA
+breast_carcinoma_progesterone_receptor_status (%)		       21 ( 8.6) 	       18 ( 4.7) 	 0.001	exact	**
+	Indeterminate	        0 ( 0.0) 	        2 ( 0.5) 			NA
+	Negative	       90 (36.9) 	       94 (24.7) 			NA
+	Positive	      133 (54.5) 	      267 (70.1) 			NA
+breast_carcinoma_estrogen_receptor_status (%)		       21 ( 8.6) 	       17 ( 4.5) 	<0.001		**
+	Negative	       68 (27.9) 	       62 (16.3) 			NA
+	Positive	      155 (63.5) 	      302 (79.3) 			NA
+lab_proc_her2_neu_immunohistochemistry_receptor_status (%)		       48 (19.7) 	       70 (18.4) 	 0.002	exact	**
+	Equivocal	       46 (18.9) 	       64 (16.8) 			NA
+	Indeterminate	        5 ( 2.0) 	        5 ( 1.3) 			NA
+	Negative	      104 (42.6) 	      212 (55.6) 			NA
+	Positive	       41 (16.8) 	       30 ( 7.9) 			NA
+number_of_lymphnodes_positive_by_ihc 		     0.17 ± 0.53	     0.26 ± 0.61	 0.338		
+number_of_lymphnodes_positive_by_he 		     2.93 ± 5.46	     2.25 ± 4.11	 0.116		
+er_level_cell_percentage_category (%)		      145 (59.4) 	      188 (49.3) 	 0.001	exact	**
+	<10%	       18 ( 7.4) 	       17 ( 4.5) 			NA
+	10-19%	       10 ( 4.1) 	       10 ( 2.6) 			NA
+	20-29%	        4 ( 1.6) 	        0 ( 0.0) 			NA
+	30-39%	        3 ( 1.2) 	        2 ( 0.5) 			NA
+	40-49%	        1 ( 0.4) 	        2 ( 0.5) 			NA
+	50-59%	        1 ( 0.4) 	        7 ( 1.8) 			NA
+	60-69%	        2 ( 0.8) 	        5 ( 1.3) 			NA
+	70-79%	       12 ( 4.9) 	       28 ( 7.3) 			NA
+	80-89%	        8 ( 3.3) 	       10 ( 2.6) 			NA
+	90-99%	       40 (16.4) 	      112 (29.4) 			NA
+progesterone_receptor_level_cell_percent_category (%)		      163 (66.8) 	      199 (52.2) 	 0.001	exact	**
+	<10%	       34 (13.9) 	       45 (11.8) 			NA
+	10-19%	        7 ( 2.9) 	       11 ( 2.9) 			NA
+	20-29%	        4 ( 1.6) 	        4 ( 1.0) 			NA
+	30-39%	        2 ( 0.8) 	        6 ( 1.6) 			NA
+	40-49%	        3 ( 1.2) 	        8 ( 2.1) 			NA
+	50-59%	        1 ( 0.4) 	        9 ( 2.4) 			NA
+	60-69%	        3 ( 1.2) 	        9 ( 2.4) 			NA
+	70-79%	        6 ( 2.5) 	       23 ( 6.0) 			NA
+	80-89%	        8 ( 3.3) 	       15 ( 3.9) 			NA
+	90-99%	       13 ( 5.3) 	       52 (13.6) 			NA
+distant_metastasis_present_ind2 (%)		      145 (59.4) 	      221 (58.0) 	 0.159	exact	
+	NO	       99 (40.6) 	      154 (40.4) 			NA
+	YES	        0 ( 0.0) 	        6 ( 1.6) 			NA
+stage_event_pathologic_stage (%)		        2 ( 0.8) 	        3 ( 0.8) 	 0.051	exact	
+	Stage I	       15 ( 6.1) 	       35 ( 9.2) 			NA
+	Stage IA	       10 ( 4.1) 	       39 (10.2) 			NA
+	Stage IB	        0 ( 0.0) 	        3 ( 0.8) 			NA
+	Stage II	        2 ( 0.8) 	        3 ( 0.8) 			NA
+	Stage IIA	       90 (36.9) 	      112 (29.4) 			NA
+	Stage IIB	       52 (21.3) 	       96 (25.2) 			NA
+	Stage III	        1 ( 0.4) 	        1 ( 0.3) 			NA
+	Stage IIIA	       42 (17.2) 	       58 (15.2) 			NA
+	Stage IIIB	        8 ( 3.3) 	        6 ( 1.6) 			NA
+	Stage IIIC	       18 ( 7.4) 	       18 ( 4.7) 			NA
+	Stage IV	        3 ( 1.2) 	        4 ( 1.0) 			NA
+	Stage X	        1 ( 0.4) 	        3 ( 0.8) 			NA

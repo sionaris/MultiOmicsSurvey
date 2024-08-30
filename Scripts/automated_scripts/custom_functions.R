@@ -455,7 +455,7 @@ create_MO_heatmap = function(matrix = NULL, algorithm = NULL,
     dev.off()
     
     rm(annColors, annotation_for_heatmap, heatmap, legend_title, heatmap_title,
-       breaks, splits, afh_colnames, output_file_name, colors, cluster_colors,
+       breaks, afh_colnames, output_file_name, colors, cluster_colors,
        order, color_fun, need.diag.zero, algorithm); gc()
   }
 }
