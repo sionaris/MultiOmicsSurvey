@@ -40,7 +40,7 @@ Comprehensive multi-omics heatmap and clusters:
 <img src="pdf2png/default_Comprehensive_heatmap-1.png" class="wider">
 
 ## Clinical variables
-With respect to <u>clinical variables</u> statistically significant associations were found between the consensus subtypes and <b>race, PR status, ER status, and distant metastasis</b>. Results can be found in the [summary file](`r paste0(params$home,"/Results/MOVICS_baseline/Summary_of_clinical_variables.txt")`).
+With respect to <u>clinical variables</u> statistically significant associations were found between the consensus subtypes and <b>vital status, history of neoadjuvant treatment, histological type, PR status, ER status, HER2 status, and ER and PR cell level percentages</b>. Results can be found in the [summary file](`r paste0(params$home,"/Results/MOVICS_baseline/Summary_of_clinical_variables.txt")`).
 
 ## Mutations
 The MOVICS package provides a function ``compMut()`` which applies independent testing (i.e., Fisher' s exact test or $\chi^2$ test) for each mutation, and generates a table with statistical results and creates an OncoPrint using those differentially mutated genes.
@@ -54,9 +54,7 @@ DGEA is performed in order to compare the expression of the three identified con
 
 In order to identify subtype-specific markers, we find the markers that are up-regulated in CS1 vs. all other clusters and the ones which are down-regulated in CS1 vs. all other clusters etc.
 
-In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
-
-No markers are found for CS3.
+In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> <b>100 markers</b>). These biomarkers should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
 <b>Up-regulated markers</b>
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
@@ -95,7 +93,7 @@ Compare consensus TCGA vs. PAM TCGA (other comparisons not possible):
 
 ## Clinical variables in transNEO
 The predicted CS1 and CS2 subtypes on transNEO are associated with <b>Lymph node status at diagnosis,
-ER status, Grade, pCR (more responders in CS2), PAM50, iC10, number of adjuvant HER2 cycles, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum</b>.
+ER status, Grade, pCR (more responders in CS1), PAM50, iC10, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum</b>.
 
 # Supplementary results
 
@@ -120,15 +118,31 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
 
 <ol>
   <li>There are `r params$optk` predicted clusters (consensus subtypes) in the `r params$data_source` cohort.</li>
+  <li>There are <b>244 CS1 samples and 381 CS2 samples</b>.</li>
   <li>Special findings about different consensus subtypes:
   <ul>
-    <li>CS1 has the majority of ER+ cancers. Almost all ILC are in CS1.</li>
-    <li>CS3 has a distinct CNV profile compared to CS1 and CS2.</li>
-    <li>CS2 is predicted to be significantly more sensitive to cisplatin compared to CS1 and CS3.</li>
+    <li>CS1 has 77.5% IDC samples, while CS2 has 64.8%. CS1 has 11.5% ILC, while CS2 has 23.6%.</li>
+    <li><b>63.5% of CS1 samples are ER+</b>, while <b>79.3% of CS2 samples are ER+</b>.</li>
+    <li><b>54.5% of CS1 samples are PR+</b>, while <b>70.1% of CS2 samples are PR+</b>.</li>
+    <li>CS1 is associated with <u>increased predicted sensitivity</u> to <b>paclitaxel</b> and <u>decreased predicted sensitivity</u> to <b>sorafenib</b>.</li>
+    <li> Oncoprint showed association of CS1 with <em>TP53</em> mutations.</li>
   </ul></li>
-  <li> Oncoprint showed association of CS1 with <em>PIK3CA</em> mutations and association of CS2 with <em>TP53</em> mutations.</li>
-  <li>CS1 and CS2 labels in transNEO are associated with clinical variables of interest.</li>
+  <li>CS1 and CS2 labels in transNEO are associated with clinical variables of interest. With respect to <b>pCR</b>:</li>
 </ol>
+
+
+```{r resp_table, echo=FALSE, eval=TRUE}
+# Create the data frame
+data_resp <- data.frame(
+  Response = c("pCR", "Residual Disease"),
+  CS1 = c("31 ( 39.2%)", "48 ( 60.8%)"),
+  CS2 = c("10 ( 13.5%)", "64 ( 86.5%)")
+
+)
+
+# Print the table using knitr::kable
+knitr::kable(data_resp, caption = "Response rates across transNEO CS subtypes")
+```
 
 # Session info
 
