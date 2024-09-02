@@ -37,6 +37,13 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
   for (filek in DEfiles) {
     DEres <- read.table(file.path(dat.path, filek), header = TRUE, 
                         row.names = NULL, sep = "\t", quote = "", stringsAsFactors = FALSE)
+    
+    # Check if the DEres is empty or has only one gene
+    if (nrow(DEres) < 2) {
+      stop(paste("Skipping file", filek, "because it has less than two rows of data."))
+    }
+    
+    # Proceed with the existing code
     DEres <- DEres[!duplicated(DEres[, 1]), ]
     DEres <- DEres[!is.na(DEres[, 1]), ]
     rownames(DEres) <- DEres[, 1]
@@ -57,6 +64,13 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
   for (filek in DEfiles) {
     DEres <- read.table(file.path(dat.path, filek), header = TRUE, 
                         row.names = NULL, sep = "\t", quote = "", stringsAsFactors = FALSE)
+    
+    # Check if the DEres is empty or has only one gene
+    if (nrow(DEres) < 2) {
+      stop(paste("Skipping file", filek, "because it has less than two rows of data."))
+    }
+    
+    # Proceed with the existing code
     DEres <- DEres[!duplicated(DEres[, 1]), ]
     DEres <- DEres[!is.na(DEres[, 1]), ]
     rownames(DEres) <- DEres[, 1]
@@ -97,10 +111,15 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
   }
   templates <- NULL
   for (filek in DEfiles) {
-    tmp <- data.frame(probe = rownames(marker[[filek]]), 
-                      class = sub("_vs_Others.txt", "", sub(".*.result.", 
-                                                            "", filek)), dirct = marker$dirct, stringsAsFactors = FALSE)
-    templates <- rbind.data.frame(templates, tmp, stringsAsFactors = FALSE)
+    tmp <- NULL
+    if (!is.null(marker[[filek]]) && nrow(marker[[filek]]) > 0) {
+      tmp <- data.frame(probe = rownames(marker[[filek]]), 
+                        class = sub("_vs_Others.txt", "", sub(".*.result.", "", filek)), 
+                        dirct = marker$dirct, stringsAsFactors = FALSE)
+    }
+    if (!is.null(tmp)) {
+      templates <- rbind.data.frame(templates, tmp, stringsAsFactors = FALSE)
+    }
   }
   write.table(templates, file = file.path(res.path, paste0(mo.method, 
                                                            "_", dea.method, "_", dirct, "regulated_marker_templates.txt")), 
