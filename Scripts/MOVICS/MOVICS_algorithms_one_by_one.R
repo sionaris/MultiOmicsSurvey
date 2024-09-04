@@ -2138,23 +2138,29 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 IntNMF_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(IntNMF = paste0("MOVICS_", IntNMF))
+plotdata_bar$IntNMF = factor(plotdata_bar$IntNMF)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["IntNMF"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  IntNMF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  IntNMF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                 chifit = chifit,
                                                 algorithm = "IntNMF",
-                                                text_y = 137, rect_ymin = 112,
-                                                rect_ymax = 145) +
+                                                barchart_ylim = 650,
+                                                text_y = 630, rect_ymin = 530,
+                                                rect_ymax = 650, x_annot = 1.5,
+                                                v_gap = 35, rect_xmin = 1,
+                                                rect_xmax = 2, 
+                                                annot_text_size = 2.25,
+                                                legend.text.size = 5,
+                                                x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(IntNMF_barcharts[[i]])
   ggsave(filename = paste0("IntNMF_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/IntNMF_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -2164,31 +2170,85 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(IntNMF_barcharts[[1]], IntNMF_barcharts[[2]], IntNMF_barcharts[[3]],
           IntNMF_barcharts[[4]], IntNMF_barcharts[[5]], IntNMF_barcharts[[6]],
-          IntNMF_barcharts[[7]], IntNMF_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          IntNMF_barcharts[[7]], IntNMF_barcharts[[8]], IntNMF_barcharts[[9]],
+          IntNMF_barcharts[[10]], IntNMF_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_IntNMF_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/IntNMF_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+IntNMF_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(IntNMF, Histology, Stage,
+                                                       `ER status`, `PR status`, `HER2 status`) %>%
+  dplyr::mutate(IntNMF = paste0("MOVICS_", IntNMF))
+plotdata_bar_sig$IntNMF = factor(plotdata_bar_sig$IntNMF)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "IntNMF")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["IntNMF"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  IntNMF_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                    chifit = chifit,
+                                                    algorithm = "IntNMF",
+                                                    barchart_ylim = 650,
+                                                    text_y = 630, rect_ymin = 530,
+                                                    rect_ymax = 650, x_annot = 1.5,
+                                                    v_gap = 35, rect_xmin = 1,
+                                                    rect_xmax = 2, 
+                                                    annot_text_size = 2.25,
+                                                    legend.text.size = 5,
+                                                    x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(IntNMF_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_IntNMF_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(IntNMF_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(IntNMF_barcharts_sig[[1]], IntNMF_barcharts_sig[[2]], IntNMF_barcharts_sig[[3]],
+          IntNMF_barcharts_sig[[4]], IntNMF_barcharts_sig[[5]], 
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_IntNMF_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"), 
+       width = 5500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_IntNMF = clust_annot_pheno %>%
-  dplyr::select(IntNMF, pCR.RD, PAM50, T.stage) %>%
-  group_by(IntNMF, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_IntNMF = clust_annot_pheno
+Pheno_sunburst_IntNMF$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_IntNMF$`ER status`)
+Pheno_sunburst_IntNMF$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_IntNMF$`ER status`)
+Pheno_sunburst_IntNMF$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_IntNMF$`ER status`)
+Pheno_sunburst_IntNMF$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                           Pheno_sunburst_IntNMF$`HER2 status`)
+Pheno_sunburst_IntNMF$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_IntNMF$`HER2 status`)
+Pheno_sunburst_IntNMF$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_IntNMF$`HER2 status`)
+Pheno_sunburst_IntNMF = Pheno_sunburst_IntNMF %>%
+  dplyr::select(IntNMF, `ER status`, `HER2 status`) %>%
+  group_by(IntNMF, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_IntNMF$IntNMF = paste0("IntNMF", Pheno_sunburst_IntNMF$IntNMF)
 
 sunburst_coloring_IntNMF = data.frame(stringsAsFactors = FALSE,
                                       colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                         "deeppink4", "dodgerblue4",
-                                                                         "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                         "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                      labels = c("IntNMF1", "IntNMF2", "RD", "pCR",
-                                                 "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                                 "T1", "T2", "T3", "T4"))
+                                                                         "#C11D9C", "#0F1682",  "grey40",
+                                                                         "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                         "hotpink4", "grey40"))),
+                                      labels = c("IntNMF1", "IntNMF2",
+                                                 "ER-", "ER+", "Unkn ER status",
+                                                 "HER2-", "HER2+", "Indeterminate",
+                                                 "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_IntNMF = as.sunburstDF(Pheno_sunburst_IntNMF, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_IntNMF, by = "labels")
@@ -2206,67 +2266,107 @@ pie_IntNMF = plot_ly() %>%
 pie_IntNMF
 rm(Pheno_sunburst_IntNMF, sunburstDF_IntNMF, sunburst_coloring_IntNMF, pie_IntNMF); gc()
 
-# See concordance with the final consensus
-table(paste0("IntNMF", clust_annot_pheno2$IntNMF), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS IntNMF to MOVICS consensus
+CS_comp_list[["IntNMF"]]$table = table(clust_annot_pheno2$IntNMF, 
+                                       paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["IntNMF"]]$ARI = calculate_ari_index(cluster_df1 = IntNMF_clust_res %>%
+                                                     dplyr::rename(Cluster = IntNMF) %>%
+                                                     mutate(Cluster = gsub("MOVICS_IntNMF", "", Cluster)),
+                                                   cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                     dplyr::rename(Cluster = clust),
+                                                   sample_col = "samID",
+                                                   clust_col = "Cluster",
+                                                   suffixes = c("_MOVICS_IntNMF", "_CS"))
+
+CS_comp_list[["IntNMF"]]$NMI = calculate_nmi_index(cluster_df1 = IntNMF_clust_res %>%
+                                                     dplyr::rename(Cluster = IntNMF) %>%
+                                                     mutate(Cluster = gsub("MOVICS_IntNMF", "", Cluster)),
+                                                   cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                     dplyr::rename(Cluster = clust),
+                                                   sample_col = "samID",
+                                                   clust_col = "Cluster",
+                                                   suffixes = c("_MOVICS_IntNMF", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$IntNMF)
 
 # iClusterBayes #####
 iCB_feature_ranks = as.data.frame(moic.res.list[["iClusterBayes"]][["feat.res"]])
 write.xlsx(iCB_feature_ranks,
-           "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra/iCB_feature_ranks.xlsx",
+           paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra/iCB_feature_ranks.xlsx"),
            overwrite = TRUE)
 
 # PCA from original matrices ###
+iClusterBayes_clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes) %>%
+  mutate(iClusterBayes = paste0("MOVICS_", iClusterBayes))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "iClusterBayes", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "iClusterBayes", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "iClusterBayes", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "iClusterBayes", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "iClusterBayes", 
+                         clust_res = iClusterBayes_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 iClusterBayes_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(iClusterBayes = paste0("MOVICS_", iClusterBayes))
+plotdata_bar$iClusterBayes = factor(plotdata_bar$iClusterBayes)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["iClusterBayes"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  iClusterBayes_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  iClusterBayes_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                        chifit = chifit,
                                                        algorithm = "iClusterBayes",
-                                                       text_y = 137, rect_ymin = 112,
-                                                       rect_ymax = 145) +
+                                                       barchart_ylim = 650,
+                                                       text_y = 630, rect_ymin = 530,
+                                                       rect_ymax = 650, x_annot = 1.5,
+                                                       v_gap = 35, rect_xmin = 1,
+                                                       rect_xmax = 2, 
+                                                       annot_text_size = 2.25,
+                                                       legend.text.size = 5,
+                                                       x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(iClusterBayes_barcharts[[i]])
   ggsave(filename = paste0("iClusterBayes_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -2276,31 +2376,85 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(iClusterBayes_barcharts[[1]], iClusterBayes_barcharts[[2]], iClusterBayes_barcharts[[3]],
           iClusterBayes_barcharts[[4]], iClusterBayes_barcharts[[5]], iClusterBayes_barcharts[[6]],
-          iClusterBayes_barcharts[[7]], iClusterBayes_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          iClusterBayes_barcharts[[7]], iClusterBayes_barcharts[[8]], iClusterBayes_barcharts[[9]],
+          iClusterBayes_barcharts[[10]], iClusterBayes_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_iClusterBayes_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/iClusterBayes_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just the significant ones
+iClusterBayes_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(iClusterBayes, Histology, Stage,
+                                                       `ER status`, `PR status`, `HER2 status`) %>%
+  dplyr::mutate(iClusterBayes = paste0("MOVICS_", iClusterBayes))
+plotdata_bar_sig$iClusterBayes = factor(plotdata_bar_sig$iClusterBayes)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "iClusterBayes")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["iClusterBayes"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  iClusterBayes_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                           chifit = chifit,
+                                                           algorithm = "iClusterBayes",
+                                                           barchart_ylim = 650,
+                                                           text_y = 630, rect_ymin = 530,
+                                                           rect_ymax = 650, x_annot = 1.5,
+                                                           v_gap = 35, rect_xmin = 1,
+                                                           rect_xmax = 2, 
+                                                           annot_text_size = 2.25,
+                                                           legend.text.size = 5,
+                                                           x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(iClusterBayes_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_iClusterBayes_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(iClusterBayes_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(iClusterBayes_barcharts_sig[[1]], iClusterBayes_barcharts_sig[[2]], iClusterBayes_barcharts_sig[[3]],
+          iClusterBayes_barcharts_sig[[4]], iClusterBayes_barcharts_sig[[5]], 
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_iClusterBayes_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/iClusterBayes_extra"), 
+       width = 5500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_iClusterBayes = clust_annot_pheno %>%
-  dplyr::select(iClusterBayes, pCR.RD, PAM50, T.stage) %>%
-  group_by(iClusterBayes, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_iClusterBayes = clust_annot_pheno
+Pheno_sunburst_iClusterBayes$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_iClusterBayes$`ER status`)
+Pheno_sunburst_iClusterBayes$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_iClusterBayes$`ER status`)
+Pheno_sunburst_iClusterBayes$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_iClusterBayes$`ER status`)
+Pheno_sunburst_iClusterBayes$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                                  Pheno_sunburst_iClusterBayes$`HER2 status`)
+Pheno_sunburst_iClusterBayes$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_iClusterBayes$`HER2 status`)
+Pheno_sunburst_iClusterBayes$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_iClusterBayes$`HER2 status`)
+Pheno_sunburst_iClusterBayes = Pheno_sunburst_iClusterBayes %>%
+  dplyr::select(iClusterBayes, `ER status`, `HER2 status`) %>%
+  group_by(iClusterBayes, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_iClusterBayes$iClusterBayes = paste0("iClusterBayes", Pheno_sunburst_iClusterBayes$iClusterBayes)
 
 sunburst_coloring_iClusterBayes = data.frame(stringsAsFactors = FALSE,
                                              colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                                "deeppink4", "dodgerblue4",
-                                                                                "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                                "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                             labels = c("iClusterBayes1", "iClusterBayes2", "RD", "pCR",
-                                                        "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                                        "T1", "T2", "T3", "T4"))
+                                                                                "#C11D9C", "#0F1682",  "grey40",
+                                                                                "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                                "hotpink4", "grey40"))),
+                                             labels = c("iClusterBayes1", "iClusterBayes2",
+                                                        "ER-", "ER+", "Unkn ER status",
+                                                        "HER2-", "HER2+", "Indeterminate",
+                                                        "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_iClusterBayes = as.sunburstDF(Pheno_sunburst_iClusterBayes, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_iClusterBayes, by = "labels")
@@ -2318,5 +2472,27 @@ pie_iClusterBayes = plot_ly() %>%
 pie_iClusterBayes
 rm(Pheno_sunburst_iClusterBayes, sunburstDF_iClusterBayes, sunburst_coloring_iClusterBayes, pie_iClusterBayes); gc()
 
-# See concordance with the final consensus
-table(paste0("iClusterBayes", clust_annot_pheno2$iClusterBayes), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS iClusterBayes to MOVICS consensus
+CS_comp_list[["iClusterBayes"]]$table = table(clust_annot_pheno2$iClusterBayes, 
+                                              paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["iClusterBayes"]]$ARI = calculate_ari_index(cluster_df1 = iClusterBayes_clust_res %>%
+                                                            dplyr::rename(Cluster = iClusterBayes) %>%
+                                                            mutate(Cluster = gsub("MOVICS_iClusterBayes", "", Cluster)),
+                                                          cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                            dplyr::rename(Cluster = clust),
+                                                          sample_col = "samID",
+                                                          clust_col = "Cluster",
+                                                          suffixes = c("_MOVICS_iClusterBayes", "_CS"))
+
+CS_comp_list[["iClusterBayes"]]$NMI = calculate_nmi_index(cluster_df1 = iClusterBayes_clust_res %>%
+                                                            dplyr::rename(Cluster = iClusterBayes) %>%
+                                                            mutate(Cluster = gsub("MOVICS_iClusterBayes", "", Cluster)),
+                                                          cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                            dplyr::rename(Cluster = clust),
+                                                          sample_col = "samID",
+                                                          clust_col = "Cluster",
+                                                          suffixes = c("_MOVICS_iClusterBayes", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$iClusterBayes)
