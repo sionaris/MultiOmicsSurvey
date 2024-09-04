@@ -1041,57 +1041,75 @@ print(CS_comp_list$PINSPlus)
 
 # NEMO #####
 # PCA from original matrices ###
+NEMO_clust_res = clust_annot_pheno %>% dplyr::select(samID, NEMO) %>%
+  mutate(NEMO = paste0("MOVICS_", NEMO))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "NEMO", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/NEMO_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "NEMO", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/NEMO_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "NEMO", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/NEMO_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "NEMO", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/NEMO_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "NEMO", 
+                         clust_res = NEMO_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 NEMO_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(NEMO = paste0("MOVICS_", NEMO))
+plotdata_bar$NEMO = factor(plotdata_bar$NEMO)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["NEMO"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  NEMO_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  NEMO_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                               chifit = chifit,
                                               algorithm = "NEMO",
-                                              text_y = 137, rect_ymin = 112,
-                                              rect_ymax = 145) +
+                                              barchart_ylim = 650,
+                                              text_y = 630, rect_ymin = 530,
+                                              rect_ymax = 650, x_annot = 1.5,
+                                              v_gap = 35, rect_xmin = 1,
+                                              rect_xmax = 2, 
+                                              annot_text_size = 2.25,
+                                              legend.text.size = 5,
+                                              x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(NEMO_barcharts[[i]])
   ggsave(filename = paste0("NEMO_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/NEMO_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1101,31 +1119,84 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(NEMO_barcharts[[1]], NEMO_barcharts[[2]], NEMO_barcharts[[3]],
           NEMO_barcharts[[4]], NEMO_barcharts[[5]], NEMO_barcharts[[6]],
-          NEMO_barcharts[[7]], NEMO_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          NEMO_barcharts[[7]], NEMO_barcharts[[8]], NEMO_barcharts[[9]],
+          NEMO_barcharts[[10]], NEMO_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_NEMO_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/NEMO_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+NEMO_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(NEMO, Race, Histology, 
+                                                       `ER status`, `PR status`, `Stage`) %>%
+  dplyr::mutate(NEMO = paste0("MOVICS_", NEMO))
+plotdata_bar_sig$NEMO = factor(plotdata_bar_sig$NEMO)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "NEMO")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["NEMO"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  NEMO_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                  chifit = chifit,
+                                                  algorithm = "NEMO",
+                                                  barchart_ylim = 650,
+                                                  text_y = 630, rect_ymin = 530,
+                                                  rect_ymax = 650, x_annot = 1.5,
+                                                  v_gap = 35, rect_xmin = 1,
+                                                  rect_xmax = 2, 
+                                                  annot_text_size = 2.25,
+                                                  legend.text.size = 5,
+                                                  x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(NEMO_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_NEMO_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(NEMO_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(NEMO_barcharts_sig[[1]], NEMO_barcharts_sig[[2]], NEMO_barcharts_sig[[3]],
+          NEMO_barcharts_sig[[4]], NEMO_barcharts_sig[[5]], 
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_NEMO_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/NEMO_extra"), 
+       width = 5500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_NEMO = clust_annot_pheno %>%
-  dplyr::select(NEMO, pCR.RD, PAM50, T.stage) %>%
-  group_by(NEMO, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_NEMO = clust_annot_pheno
+Pheno_sunburst_NEMO$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_NEMO$`ER status`)
+Pheno_sunburst_NEMO$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_NEMO$`ER status`)
+Pheno_sunburst_NEMO$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_NEMO$`ER status`)
+Pheno_sunburst_NEMO$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                         Pheno_sunburst_NEMO$`HER2 status`)
+
+Pheno_sunburst_NEMO = Pheno_sunburst_NEMO %>%
+  dplyr::select(NEMO, `ER status`, Stage) %>%
+  group_by(NEMO, `ER status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_NEMO$NEMO = paste0("NEMO", Pheno_sunburst_NEMO$NEMO)
 
 sunburst_coloring_NEMO = data.frame(stringsAsFactors = FALSE,
                                     colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                       "deeppink4", "dodgerblue4",
-                                                                       "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                       "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                    labels = c("NEMO1", "NEMO2", "RD", "pCR",
-                                               "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                               "T1", "T2", "T3", "T4"))
+                                                                       "#C11D9C", "#0F1682",  "grey40",
+                                                                       "#00C9FF", "#099CF5", "#097BF5", 
+                                                                       "#0B5684", "grey40"))),
+                                    labels = c("NEMO1", "NEMO2",
+                                               "ER-", "ER+", "Unkn ER status",
+                                               "Stage I", "Stage II", "Stage III",
+                                               "Stage IV", "Unkn stage"))
 
 sunburstDF_NEMO = as.sunburstDF(Pheno_sunburst_NEMO, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_NEMO, by = "labels")
@@ -1143,8 +1214,30 @@ pie_NEMO = plot_ly() %>%
 pie_NEMO
 rm(Pheno_sunburst_NEMO, sunburstDF_NEMO, sunburst_coloring_NEMO, pie_NEMO); gc()
 
-# See concordance with the final consensus
-table(paste0("NEMO", clust_annot_pheno2$NEMO), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS NEMO to MOVICS consensus
+CS_comp_list[["NEMO"]]$table = table(clust_annot_pheno2$NEMO, 
+                                     paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["NEMO"]]$ARI = calculate_ari_index(cluster_df1 = NEMO_clust_res %>%
+                                                   dplyr::rename(Cluster = NEMO) %>%
+                                                   mutate(Cluster = gsub("MOVICS_NEMO", "", Cluster)),
+                                                 cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                   dplyr::rename(Cluster = clust),
+                                                 sample_col = "samID",
+                                                 clust_col = "Cluster",
+                                                 suffixes = c("_MOVICS_NEMO", "_CS"))
+
+CS_comp_list[["NEMO"]]$NMI = calculate_nmi_index(cluster_df1 = NEMO_clust_res %>%
+                                                   dplyr::rename(Cluster = NEMO) %>%
+                                                   mutate(Cluster = gsub("MOVICS_NEMO", "", Cluster)),
+                                                 cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                   dplyr::rename(Cluster = clust),
+                                                 sample_col = "samID",
+                                                 clust_col = "Cluster",
+                                                 suffixes = c("_MOVICS_NEMO", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$NEMO)
 
 # COCA #####
 # Get the final Jaccard matrix
@@ -1153,66 +1246,91 @@ coca_jaccard = as.matrix(as.dist(vegan::vegdist(as.matrix(moic.res.list$COCA$fit
 # Final dissimilarity matrix
 create_MO_heatmap(matrix = coca_jaccard, algorithm = "COCA", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno %>%
+                    mutate(COCA = paste0("MOVICS_", COCA)) %>%
+                    select(samID, all_of(afh_colnames), COCA),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "COCA final dissimilarity matrix heatmap",
+                  annColors = annColors,
                   cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
+                  heatmap_title = "COCA final dissimilarity matrix heatmap",
                   legend_title = "Dissimilarity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/COCA_extra/COCA_dissimilarity_heatmap.png")
+                  output_file_name = paste0(home, 
+                                            "/Results/MOVICS_baseline/MO_comparisons/COCA_extra/COCA_dissimilarity_heatmap.png"))
 
 # PCA from original matrices ###
+COCA_clust_res = clust_annot_pheno %>% dplyr::select(samID, COCA) %>%
+  mutate(COCA = paste0("MOVICS_", COCA))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "COCA", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/COCA_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "COCA", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/COCA_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "COCA", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/COCA_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "COCA", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/COCA_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "COCA", 
+                         clust_res = COCA_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 COCA_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(COCA = paste0("MOVICS_", COCA))
+plotdata_bar$COCA = factor(plotdata_bar$COCA)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["COCA"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  COCA_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  COCA_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                               chifit = chifit,
                                               algorithm = "COCA",
-                                              text_y = 137, rect_ymin = 112,
-                                              rect_ymax = 145) +
+                                              barchart_ylim = 700,
+                                              text_y = 680, rect_ymin = 580,
+                                              rect_ymax = 700, x_annot = 1.5,
+                                              v_gap = 35, rect_xmin = 1,
+                                              rect_xmax = 2, 
+                                              annot_text_size = 2.25,
+                                              legend.text.size = 5,
+                                              x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(COCA_barcharts[[i]])
   ggsave(filename = paste0("COCA_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/COCA_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1222,31 +1340,38 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(COCA_barcharts[[1]], COCA_barcharts[[2]], COCA_barcharts[[3]],
           COCA_barcharts[[4]], COCA_barcharts[[5]], COCA_barcharts[[6]],
-          COCA_barcharts[[7]], COCA_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          COCA_barcharts[[7]], COCA_barcharts[[8]], COCA_barcharts[[9]],
+          COCA_barcharts[[10]], COCA_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_COCA_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/COCA_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/COCA_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
+# Only significantly associated variable is HER2
+
 # Sunburst plot ###
-Pheno_sunburst_COCA = clust_annot_pheno %>%
-  dplyr::select(COCA, pCR.RD, PAM50, T.stage) %>%
-  group_by(COCA, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_COCA = clust_annot_pheno
+Pheno_sunburst_COCA$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                             Pheno_sunburst_COCA$`HER2 status`)
+Pheno_sunburst_COCA$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_COCA$`HER2 status`)
+Pheno_sunburst_COCA$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_COCA$`HER2 status`)
+Pheno_sunburst_COCA = Pheno_sunburst_COCA %>%
+  dplyr::select(COCA, `HER2 status`) %>%
+  group_by(COCA, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_COCA$COCA = paste0("COCA", Pheno_sunburst_COCA$COCA)
 
 sunburst_coloring_COCA = data.frame(stringsAsFactors = FALSE,
                                     colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                       "deeppink4", "dodgerblue4",
-                                                                       "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                       "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                    labels = c("COCA1", "COCA2", "RD", "pCR",
-                                               "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                               "T1", "T2", "T3", "T4"))
+                                                                       "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                       "hotpink4", "grey40"))),
+                                    labels = c("COCA1", "COCA2",
+                                               "HER2-", "HER2+", "Indeterminate",
+                                               "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_COCA = as.sunburstDF(Pheno_sunburst_COCA, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_COCA, by = "labels")
@@ -1264,8 +1389,30 @@ pie_COCA = plot_ly() %>%
 pie_COCA
 rm(Pheno_sunburst_COCA, sunburstDF_COCA, sunburst_coloring_COCA, pie_COCA); gc()
 
-# See concordance with the final consensus
-table(paste0("COCA", clust_annot_pheno2$COCA), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS COCA to MOVICS consensus
+CS_comp_list[["COCA"]]$table = table(clust_annot_pheno2$COCA, 
+                                     paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["COCA"]]$ARI = calculate_ari_index(cluster_df1 = COCA_clust_res %>%
+                                                   dplyr::rename(Cluster = COCA) %>%
+                                                   mutate(Cluster = gsub("MOVICS_COCA", "", Cluster)),
+                                                 cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                   dplyr::rename(Cluster = clust),
+                                                 sample_col = "samID",
+                                                 clust_col = "Cluster",
+                                                 suffixes = c("_MOVICS_COCA", "_CS"))
+
+CS_comp_list[["COCA"]]$NMI = calculate_nmi_index(cluster_df1 = COCA_clust_res %>%
+                                                   dplyr::rename(Cluster = COCA) %>%
+                                                   mutate(Cluster = gsub("MOVICS_COCA", "", Cluster)),
+                                                 cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                   dplyr::rename(Cluster = clust),
+                                                 sample_col = "samID",
+                                                 clust_col = "Cluster",
+                                                 suffixes = c("_MOVICS_COCA", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$COCA)
 
 # MoCluster #####
 mocluster_mat_2d = moic.res.list[["MoCluster"]][["fit"]]@fac.scr
@@ -1274,66 +1421,91 @@ dist_mocluster_2d = as.matrix(dist(mocluster_mat_2d, method = "euclidean"))
 # Final 2D CPCA Euclidean distance heatmap
 create_MO_heatmap(matrix = dist_mocluster_2d, algorithm = "MoCluster", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(COCA = paste0("MOVICS_", MoCluster)) %>%
+                    select(samID, all_of(afh_colnames), MoCluster),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "MoCluster 2D CPCA Euclidean distance heatmap",
+                  annColors = annColors,
                   cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
+                  heatmap_title = "MoCluster 2D CPCA Euclidean distance heatmap",
                   legend_title = "Euclidean distance",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra/MoCluster_2D_CPCA_Euclidean_distance_heatmap.png")
+                  output_file_name = paste0(home, 
+                                            "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra/MoCluster_2D_CPCA_Euclidean_distance_heatmap.png"))
 
 # PCA from original matrices ###
+MoCluster_clust_res = clust_annot_pheno %>% dplyr::select(samID, MoCluster) %>%
+  mutate(MoCluster = paste0("MOVICS_", MoCluster))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "MoCluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "MoCluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "MoCluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "MoCluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "MoCluster", 
+                         clust_res = MoCluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 MoCluster_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(MoCluster = paste0("MOVICS_", MoCluster))
+plotdata_bar$MoCluster = factor(plotdata_bar$MoCluster)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["MoCluster"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  MoCluster_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  MoCluster_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                    chifit = chifit,
                                                    algorithm = "MoCluster",
-                                                   text_y = 137, rect_ymin = 112,
-                                                   rect_ymax = 145) +
+                                                   barchart_ylim = 650,
+                                                   text_y = 630, rect_ymin = 530,
+                                                   rect_ymax = 650, x_annot = 1.5,
+                                                   v_gap = 35, rect_xmin = 1,
+                                                   rect_xmax = 2, 
+                                                   annot_text_size = 2.25,
+                                                   legend.text.size = 5,
+                                                   x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(MoCluster_barcharts[[i]])
   ggsave(filename = paste0("MoCluster_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1343,31 +1515,91 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(MoCluster_barcharts[[1]], MoCluster_barcharts[[2]], MoCluster_barcharts[[3]],
           MoCluster_barcharts[[4]], MoCluster_barcharts[[5]], MoCluster_barcharts[[6]],
-          MoCluster_barcharts[[7]], MoCluster_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          MoCluster_barcharts[[7]], MoCluster_barcharts[[8]], MoCluster_barcharts[[9]],
+          MoCluster_barcharts[[10]], MoCluster_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_MoCluster_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/MoCluster_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+MoCluster_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(MoCluster, Race, `Menopausal status`, 
+                                                       `ER status`, `PR status`, Histology, Metastasis) %>%
+  dplyr::mutate(MoCluster = paste0("MOVICS_", MoCluster))
+plotdata_bar_sig$MoCluster = factor(plotdata_bar_sig$MoCluster)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "MoCluster")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["MoCluster"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  MoCluster_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                       chifit = chifit,
+                                                       algorithm = "MoCluster",
+                                                       barchart_ylim = 650,
+                                                       text_y = 630, rect_ymin = 530,
+                                                       rect_ymax = 650, x_annot = 1.5,
+                                                       v_gap = 35, rect_xmin = 1,
+                                                       rect_xmax = 2, 
+                                                       annot_text_size = 2.25,
+                                                       legend.text.size = 5,
+                                                       x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(MoCluster_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_MoCluster_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(MoCluster_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(MoCluster_barcharts_sig[[1]], MoCluster_barcharts_sig[[2]], MoCluster_barcharts_sig[[3]],
+          MoCluster_barcharts_sig[[4]], MoCluster_barcharts_sig[[5]], MoCluster_barcharts_sig[[6]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_MoCluster_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"), 
+       width = 5500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_MoCluster = clust_annot_pheno %>%
-  dplyr::select(MoCluster, pCR.RD, PAM50, T.stage) %>%
-  group_by(MoCluster, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_MoCluster = clust_annot_pheno
+Pheno_sunburst_MoCluster$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_MoCluster$`ER status`)
+Pheno_sunburst_MoCluster$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_MoCluster$`ER status`)
+Pheno_sunburst_MoCluster$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_MoCluster$`ER status`)
+Pheno_sunburst_MoCluster$`Menopausal status` = gsub("Unknown", "Unkn Meno status", 
+                                                    Pheno_sunburst_MoCluster$`Menopausal status`)
+Pheno_sunburst_MoCluster$`Menopausal status` = gsub("Indeterminate", "Indeterminate Meno", 
+                                                    Pheno_sunburst_MoCluster$`Menopausal status`)
+Pheno_sunburst_MoCluster$Metastasis = gsub("Unknown", "Unkn metast. status", Pheno_sunburst_MoCluster$Metastasis)
+Pheno_sunburst_MoCluster$Metastasis = gsub("Yes", "Metastatic", Pheno_sunburst_MoCluster$Metastasis)
+Pheno_sunburst_MoCluster$Metastasis = gsub("No", "Non-metastatic", Pheno_sunburst_MoCluster$Metastasis)
+
+Pheno_sunburst_MoCluster = Pheno_sunburst_MoCluster %>%
+  dplyr::select(MoCluster, `ER status`, `Menopausal status`, Metastasis) %>%
+  group_by(MoCluster, `ER status`, `Menopausal status`, Metastasis) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_MoCluster$MoCluster = paste0("MoCluster", Pheno_sunburst_MoCluster$MoCluster)
 
 sunburst_coloring_MoCluster = data.frame(stringsAsFactors = FALSE,
                                          colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                            "deeppink4", "dodgerblue4",
-                                                                            "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                            "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                         labels = c("MoCluster1", "MoCluster2", "RD", "pCR",
-                                                    "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                                    "T1", "T2", "T3", "T4"))
+                                                                            "#C11D9C", "#0F1682",  "grey40",
+                                                                            "mistyrose2", "#FAA476",
+                                                                            "#DC3977", "#7C1D6F", "grey40",
+                                                                            "deeppink4", "cadetblue2", "grey40"))),
+                                         labels = c("MoCluster1", "MoCluster2",
+                                                    "ER-", "ER+", "Unkn ER status",
+                                                    "Indeterminate Meno", "Pre-menopausal", 
+                                                    "Perimenopausal", "Post-menopausal", "Unkn Meno status",
+                                                    "Metastatic", "Non-metastatic", "Unkn metast. status"))
 
 sunburstDF_MoCluster = as.sunburstDF(Pheno_sunburst_MoCluster, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_MoCluster, by = "labels")
@@ -1385,8 +1617,30 @@ pie_MoCluster = plot_ly() %>%
 pie_MoCluster
 rm(Pheno_sunburst_MoCluster, sunburstDF_MoCluster, sunburst_coloring_MoCluster, pie_MoCluster); gc()
 
-# See concordance with the final consensus
-table(paste0("MoCluster", clust_annot_pheno2$MoCluster), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS MoCluster to MOVICS consensus
+CS_comp_list[["MoCluster"]]$table = table(clust_annot_pheno2$MoCluster, 
+                                          paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["MoCluster"]]$ARI = calculate_ari_index(cluster_df1 = MoCluster_clust_res %>%
+                                                        dplyr::rename(Cluster = MoCluster) %>%
+                                                        mutate(Cluster = gsub("MOVICS_MoCluster", "", Cluster)),
+                                                      cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                        dplyr::rename(Cluster = clust),
+                                                      sample_col = "samID",
+                                                      clust_col = "Cluster",
+                                                      suffixes = c("_MOVICS_MoCluster", "_CS"))
+
+CS_comp_list[["MoCluster"]]$NMI = calculate_nmi_index(cluster_df1 = MoCluster_clust_res %>%
+                                                        dplyr::rename(Cluster = MoCluster) %>%
+                                                        mutate(Cluster = gsub("MOVICS_MoCluster", "", Cluster)),
+                                                      cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                        dplyr::rename(Cluster = clust),
+                                                      sample_col = "samID",
+                                                      clust_col = "Cluster",
+                                                      suffixes = c("_MOVICS_MoCluster", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$MoCluster)
 
 # LRAcluster #####
 LRA_ld_coordinates = t(moic.res.list[["LRAcluster"]][["fit"]][["coordinate"]])
@@ -1394,67 +1648,92 @@ dist_LRA_2d = as.matrix(dist(LRA_ld_coordinates, method = "euclidean"))
 
 # Final 2D Euclidean distance heatmap
 create_MO_heatmap(matrix = dist_LRA_2d, algorithm = "LRAcluster", 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  need.diag.zero = TRUE,
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(LRAcluster = paste0("MOVICS_", LRAcluster)) %>%
+                    select(samID, all_of(afh_colnames), LRAcluster),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "LRAcluster 2D Euclidean distance heatmap",
+                  annColors = annColors,
                   cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
+                  heatmap_title = "LRAcluster 2D Euclidean distance heatmap",
                   legend_title = "Euclidean distance",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra/LRAcluster_2D_Euclidean_distance_heatmap.png")
+                  output_file_name = paste0(home, 
+                                            "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra/LRAcluster_2D_Euclidean_distance_heatmap.png"))
 
 # PCA from original matrices ###
+LRAcluster_clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster) %>%
+  mutate(LRAcluster = paste0("MOVICS_", LRAcluster))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "LRAcluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "LRAcluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "LRAcluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "LRAcluster", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "LRAcluster", 
+                         clust_res = LRAcluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 LRAcluster_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(LRAcluster = paste0("MOVICS_", LRAcluster))
+plotdata_bar$LRAcluster = factor(plotdata_bar$LRAcluster)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["LRAcluster"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  LRAcluster_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  LRAcluster_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                     chifit = chifit,
                                                     algorithm = "LRAcluster",
-                                                    text_y = 137, rect_ymin = 112,
-                                                    rect_ymax = 145) +
+                                                    barchart_ylim = 650,
+                                                    text_y = 630, rect_ymin = 530,
+                                                    rect_ymax = 650, x_annot = 1.5,
+                                                    v_gap = 35, rect_xmin = 1,
+                                                    rect_xmax = 2, 
+                                                    annot_text_size = 2.25,
+                                                    legend.text.size = 5,
+                                                    x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(LRAcluster_barcharts[[i]])
   ggsave(filename = paste0("LRAcluster_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1464,31 +1743,85 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(LRAcluster_barcharts[[1]], LRAcluster_barcharts[[2]], LRAcluster_barcharts[[3]],
           LRAcluster_barcharts[[4]], LRAcluster_barcharts[[5]], LRAcluster_barcharts[[6]],
-          LRAcluster_barcharts[[7]], LRAcluster_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          LRAcluster_barcharts[[7]], LRAcluster_barcharts[[8]], LRAcluster_barcharts[[9]],
+          LRAcluster_barcharts[[10]], LRAcluster_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_LRAcluster_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/LRAcluster_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+LRAcluster_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(LRAcluster, `ER status`, `PR status`, 
+                                                       `HER2 status`, Histology) %>%
+  dplyr::mutate(LRAcluster = paste0("MOVICS_", LRAcluster))
+plotdata_bar_sig$LRAcluster = factor(plotdata_bar_sig$LRAcluster)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "LRAcluster")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["LRAcluster"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  LRAcluster_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                        chifit = chifit,
+                                                        algorithm = "LRAcluster",
+                                                        barchart_ylim = 650,
+                                                        text_y = 630, rect_ymin = 530,
+                                                        rect_ymax = 650, x_annot = 1.5,
+                                                        v_gap = 35, rect_xmin = 1,
+                                                        rect_xmax = 2, 
+                                                        annot_text_size = 2.25,
+                                                        legend.text.size = 5,
+                                                        x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(LRAcluster_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_LRAcluster_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(LRAcluster_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(LRAcluster_barcharts_sig[[1]], LRAcluster_barcharts_sig[[2]], LRAcluster_barcharts_sig[[3]],
+          LRAcluster_barcharts_sig[[4]], 
+          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_LRAcluster_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"), 
+       width = 5500, height = 5500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_LRAcluster = clust_annot_pheno %>%
-  dplyr::select(LRAcluster, pCR.RD, PAM50, T.stage) %>%
-  group_by(LRAcluster, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_LRAcluster = clust_annot_pheno
+Pheno_sunburst_LRAcluster$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_LRAcluster$`ER status`)
+Pheno_sunburst_LRAcluster$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_LRAcluster$`ER status`)
+Pheno_sunburst_LRAcluster$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_LRAcluster$`ER status`)
+Pheno_sunburst_LRAcluster$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                               Pheno_sunburst_LRAcluster$`HER2 status`)
+Pheno_sunburst_LRAcluster$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_LRAcluster$`HER2 status`)
+Pheno_sunburst_LRAcluster$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_LRAcluster$`HER2 status`)
+Pheno_sunburst_LRAcluster = Pheno_sunburst_LRAcluster %>%
+  dplyr::select(LRAcluster, `ER status`, `HER2 status`) %>%
+  group_by(LRAcluster, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_LRAcluster$LRAcluster = paste0("LRAcluster", Pheno_sunburst_LRAcluster$LRAcluster)
 
 sunburst_coloring_LRAcluster = data.frame(stringsAsFactors = FALSE,
                                           colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                             "deeppink4", "dodgerblue4",
-                                                                             "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                             "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                          labels = c("LRAcluster1", "LRAcluster2", "RD", "pCR",
-                                                     "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                                     "T1", "T2", "T3", "T4"))
+                                                                             "#C11D9C", "#0F1682",  "grey40",
+                                                                             "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                             "hotpink4", "grey40"))),
+                                          labels = c("LRAcluster1", "LRAcluster2",
+                                                     "ER-", "ER+", "Unkn ER status",
+                                                     "HER2-", "HER2+", "Indeterminate",
+                                                     "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_LRAcluster = as.sunburstDF(Pheno_sunburst_LRAcluster, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_LRAcluster, by = "labels")
@@ -1506,8 +1839,30 @@ pie_LRAcluster = plot_ly() %>%
 pie_LRAcluster
 rm(Pheno_sunburst_LRAcluster, sunburstDF_LRAcluster, sunburst_coloring_LRAcluster, pie_LRAcluster); gc()
 
-# See concordance with the final consensus
-table(paste0("LRAcluster", clust_annot_pheno2$LRAcluster), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS LRAcluster to MOVICS consensus
+CS_comp_list[["LRAcluster"]]$table = table(clust_annot_pheno2$LRAcluster, 
+                                           paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["LRAcluster"]]$ARI = calculate_ari_index(cluster_df1 = LRAcluster_clust_res %>%
+                                                         dplyr::rename(Cluster = LRAcluster) %>%
+                                                         mutate(Cluster = gsub("MOVICS_LRAcluster", "", Cluster)),
+                                                       cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                         dplyr::rename(Cluster = clust),
+                                                       sample_col = "samID",
+                                                       clust_col = "Cluster",
+                                                       suffixes = c("_MOVICS_LRAcluster", "_CS"))
+
+CS_comp_list[["LRAcluster"]]$NMI = calculate_nmi_index(cluster_df1 = LRAcluster_clust_res %>%
+                                                         dplyr::rename(Cluster = LRAcluster) %>%
+                                                         mutate(Cluster = gsub("MOVICS_LRAcluster", "", Cluster)),
+                                                       cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                         dplyr::rename(Cluster = clust),
+                                                       sample_col = "samID",
+                                                       clust_col = "Cluster",
+                                                       suffixes = c("_MOVICS_LRAcluster", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$LRAcluster)
 
 # Consensus Clustering #####
 final_cc_matrix = 1 - moic.res.list[["ConsensusClustering"]][["fit"]][[2]][["consensusMatrix"]]
