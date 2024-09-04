@@ -14,10 +14,30 @@ library(data.table)
 library(colorspace)
 
 load("Results/MOVICS_baseline/MO_comparisons/MO_comparisons_MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_env.RData")
+# source("Scripts/automated_scripts/custom_functions.R")
 
 # Chi-square tests between clusterings and clinical variables #####
+# Bias-corrected Cramer's V calculation using package rcompanion:
+unbiased.cv.test = function(x, string, digits = 3) {
+  CV = rcompanion::cramerV(x, bias.correct = TRUE)
+  return(list(text = paste0("Bias-corrected Cramer's V / Phi for ", 
+                            string, ": ", round(as.numeric(CV), digits)),
+              value = round(as.numeric(CV), digits)))
+}
+
 chisq_outputs = list()
 algorithms = colnames(clust_annot_pheno)[c(2:11)]
+
+# Modify the clust_annot_pheno object for plotting
+clust_annot_pheno = annCol %>% mutate(samID = rownames(.)) %>%
+  inner_join(clust_annot, by = "samID")
+rownames(clust_annot_pheno) = clust_annot_pheno$samID
+for(algorithm in algorithms) {
+  clust_annot_pheno[[algorithm]] = paste0(algorithm, clust_annot_pheno[[algorithm]])
+}
+
+# Variables of interest
+voi = setdiff(colnames(clust_annot_pheno), algorithms)
 
 for (a in 1:length(algorithms)) {
   output = as.data.frame(matrix(NA, nrow = 0, ncol = 4))
@@ -46,180 +66,341 @@ for (i in 1:length(chisq_outputs)) {
   addWorksheet(chisq_wb, algorithms[i])
   writeData(chisq_wb, algorithms[i], chisq_outputs[[i]])
 }
-saveWorkbook(chisq_wb, file = "new_code/output/MOVICS/MO_comparisons/chisq_tables.xlsx",
+saveWorkbook(chisq_wb, file = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/chisq_tables.xlsx"),
              overwrite = TRUE); rm(chisq_wb)
 
 names(chisq_outputs) = algorithms
 
-# SNF #####
-# Normalize affinity matrix code:
-normalize_affinity_matrix <- function(W) {
-  N <- nrow(W)  # Determine the size of the matrix
-  P <- matrix(0, nrow = N, ncol = N)  # Initialize P with zeros
-  
-  # Calculate row sums of W, excluding the diagonal elements
-  row_sums <- rowSums(W) - diag(W)
-  
-  # Fill P matrix based on the conditions
-  for (i in 1:N) {
-    for (j in 1:N) {
-      if (i != j) {
-        P[i, j] = W[i, j] / (2 * row_sums[i])
-      } else {
-        P[i, j] = 0.5
-      }
-    }
+# Create output directories in the MO_comparisons subdir
+for (algorithm in algorithms) {
+  if (!dir.exists(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/", 
+                         algorithm, "_extra"))) {
+    dir.create(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/", 
+                      algorithm, "_extra"))
   }
-  
-  return(P)  # Return the normalized matrix
 }
 
-aff_lymph = normalize_affinity_matrix(
+# SNF #####
+aff_CNV = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
-    SNFtool::dist2(t(MOVICS_inputs$`Digital Pathology`),
-                   t(MOVICS_inputs$`Digital Pathology`)
+    SNFtool::dist2(t(input$CNV),
+                   t(input$CNV)
     ),
     K = 30, sigma = 0.5)
 )
-colnames(aff_lymph) = rownames(aff_lymph) = colnames(MOVICS_inputs$`Digital Pathology`)
+colnames(aff_CNV) = rownames(aff_CNV) = colnames(input$CNV)
 
 aff_rna = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
-    SNFtool::dist2(t(MOVICS_inputs$RNA),
-                   t(MOVICS_inputs$RNA)
+    SNFtool::dist2(t(input$RNAseq),
+                   t(input$RNAseq)
     ),
     K = 30, sigma = 0.5)
 )
-colnames(aff_rna) = rownames(aff_rna) = colnames(MOVICS_inputs$RNA)
+colnames(aff_rna) = rownames(aff_rna) = colnames(input$RNAseq)
 
 aff_mut = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
-    SNFtool::dist2(t(MOVICS_inputs$`Mutational Signatures`),
-                   t(MOVICS_inputs$`Mutational Signatures`)
-    ),
+    as.matrix(dist(as.matrix(t(input$SNPs)),
+                   as.matrix(t(input$SNPs)),
+                   method = "binary")),
     K = 30, sigma = 0.5)
 )
-colnames(aff_mut) = rownames(aff_mut) = colnames(MOVICS_inputs$`Mutational Signatures`)
+colnames(aff_mut) = rownames(aff_mut) = colnames(input$SNPs)
 
-aff_immune = normalize_affinity_matrix(
+aff_Methyl = normalize_affinity_matrix(
   SNFtool::affinityMatrix(
-    SNFtool::dist2(t(MOVICS_inputs$Immunophenoscore),
-                   t(MOVICS_inputs$Immunophenoscore)
+    SNFtool::dist2(t(input$Methylation),
+                   t(input$Methylation)
     ),
     K = 30, sigma = 0.5)
 )
-colnames(aff_immune) = rownames(aff_immune) = colnames(MOVICS_inputs$Immunophenoscore)
+colnames(aff_Methyl) = rownames(aff_Methyl) = colnames(input$Methylation)
+
+aff_miRNA = normalize_affinity_matrix(
+  SNFtool::affinityMatrix(
+    SNFtool::dist2(t(input$miRNA),
+                   t(input$miRNA)
+    ),
+    K = 30, sigma = 0.5)
+)
+colnames(aff_miRNA) = rownames(aff_miRNA) = colnames(input$miRNA)
 
 aff_final = moic.res.list[["SNF"]][["fit"]]
+colnames(aff_final) = rownames(aff_final) = moic.res.list[["SNF"]][["clust.res"]]$samID
 
 # Heatmaps ###
-# Create heatmap for lymph data
-create_MO_heatmap(matrix = aff_lymph, algorithm = "SNF", 
+colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
+afh_colnames = voi
+
+# CNV
+create_MO_heatmap(matrix = aff_CNV, algorithm = "SNF", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "DigPath first affinity heatmap",
+                  annColors = annColors,
+                  heatmap_title = "CNV first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/SNF_extra/aff_lymph_heatmap.png")
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/aff_CNV_heatmap.png"))
 
-# RNA
+# RNAseq
 create_MO_heatmap(matrix = aff_rna, algorithm = "SNF", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "RNA first affinity heatmap",
+                  annColors = annColors,
+                  heatmap_title = "RNAseq first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/SNF_extra/aff_rna_heatmap.png")
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/aff_RNAseq_heatmap.png"))
 
-# Mutational signatures
+# miRNA
+create_MO_heatmap(matrix = aff_miRNA, algorithm = "SNF", 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "miRNA first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/aff_miRNA_heatmap.png"))
+
+# Methylation
+create_MO_heatmap(matrix = aff_Methyl, algorithm = "SNF", 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "Methylation first affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/aff_Methylation_heatmap.png"))
+
+# SNPs
 create_MO_heatmap(matrix = aff_mut, algorithm = "SNF", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "Mutational signatures first affinity heatmap",
+                  annColors = annColors,
+                  heatmap_title = "SNPs first affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/SNF_extra/aff_mut_heatmap.png")
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/aff_SNPs_heatmap.png"))
 
-# Immunophenoscore
-create_MO_heatmap(matrix = aff_immune, algorithm = "SNF", 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
-                  colors = colors_heatmap,
-                  heatmap_title = "Immunophenoscore first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/SNF_extra/aff_immmune_heatmap.png")
-
-# Final SNF fused matrix
+# Final affinity matrix
 create_MO_heatmap(matrix = aff_final, algorithm = "SNF", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "Final fused affinity heatmap",
+                  annColors = annColors,
+                  heatmap_title = "Final affinity heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   legend_title = "Normalized affinity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/SNF_extra/aff_final_heatmap.png")
+                  cluster_cols_flag = FALSE,
+                  cluster_rows_flag = FALSE,
+                  splits_flag = TRUE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/aff_final_affinity_heatmap.png"))
+
+# Final affinity matrix with clustered rows and columns
+create_MO_heatmap(matrix = aff_final, algorithm = "SNF", 
+                  need.diag.zero = TRUE, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(SNF = paste0("MOVICS_", SNF)) %>%
+                    select(samID, all_of(afh_colnames), SNF),
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "Final affinity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  legend_title = "Normalized affinity",
+                  cluster_cols_flag = TRUE,
+                  cluster_rows_flag = TRUE,
+                  splits_flag = FALSE,
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/hclust_aff_final_affinity_heatmap.png"))
+
 
 # PCA plots ###
-snf_clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF)
+snf_clust_res = clust_annot_pheno %>% dplyr::select(samID, SNF) %>%
+  mutate(SNF = paste0("MOVICS_", SNF))
 
-# Lymph
-pca_from_sim_matrix(sim_matrix = aff_lymph, algorithm = "SNF", clust_res = snf_clust_res,
+# CNV
+pca_from_sim_matrix(sim_matrix = aff_CNV, algorithm = "SNF", clust_res = snf_clust_res,
                     cluster_colors = c("#2EC4B6", "#E71D36"), 
-                    output_path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
-                    title_add = "lymph data")
+                    output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+                    title_add = "CNV")
 
 # RNA
 pca_from_sim_matrix(sim_matrix = aff_rna, algorithm = "SNF", clust_res = snf_clust_res,
                     cluster_colors = c("#2EC4B6", "#E71D36"), 
-                    output_path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
-                    title_add = "RNA data")
+                    output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+                    title_add = "RNA-seq")
 
-# Mutational signatures
+# SNPs
 pca_from_sim_matrix(sim_matrix = aff_mut, algorithm = "SNF", clust_res = snf_clust_res,
                     cluster_colors = c("#2EC4B6", "#E71D36"), 
-                    output_path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
-                    title_add = "Mutational Signatures")
+                    output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+                    title_add = "SNPs")
 
-# Immunophenoscore
-pca_from_sim_matrix(sim_matrix = aff_immune, algorithm = "SNF", clust_res = snf_clust_res,
+# Methylation
+pca_from_sim_matrix(sim_matrix = aff_Methyl, algorithm = "SNF", clust_res = snf_clust_res,
                     cluster_colors = c("#2EC4B6", "#E71D36"), 
-                    output_path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
-                    title_add = "Immunophenoscore")
+                    output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+                    title_add = "Methylation")
+
+# miRNA
+pca_from_sim_matrix(sim_matrix = aff_miRNA, algorithm = "SNF", clust_res = snf_clust_res,
+                    cluster_colors = c("#2EC4B6", "#E71D36"), 
+                    output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+                    title_add = "miRNA")
 
 # Final matrix
 pca_from_sim_matrix(sim_matrix = aff_final, algorithm = "SNF", clust_res = snf_clust_res,
                     cluster_colors = c("#2EC4B6", "#E71D36"), 
-                    output_path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
+                    output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
                     title_add = "Final Fusion")
+
+# Setup for barcharts ###
+# Stage
+scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
+                                                `Stage II` = "#099CF5", 
+                                                `Stage III` = "#097BF5", 
+                                                `Stage IV` = "#0B5684", 
+                                                `Unknown` = "grey40"))
+
+# Lymph node status
+scale_fill_lymph_node_status = scale_fill_manual(values = c(No = "grey75", 
+                                                            Yes = "#4A0558", 
+                                                            Unknown = "grey40"))
+
+# ER status
+scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
+                                                    Positive = "#0F1682", 
+                                                    Unknown = "grey40"))
+
+# PR status
+scale_fill_PR_status = scale_fill_manual(values = c(Indeterminate = "aliceblue", 
+                                                    Positive = "dodgerblue4", 
+                                                    Negative = "#F0C6C3", 
+                                                    Unknown = "grey40"))
+
+# HER2 status
+scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
+                                                      Positive = "#560DA7", 
+                                                      Indeterminate = "mistyrose1", 
+                                                      Equivocal = "hotpink4", 
+                                                      Unknown = "grey40"))
+
+# Vital status
+scale_fill_vital_status = scale_fill_manual(values = c(Alive = "lightpink1", 
+                                                       Dead = "black", 
+                                                       Unknown = "grey40"))
+
+# Ethnicity
+scale_fill_ethnicity = scale_fill_manual(values = c(`Hispanic or latino` = "#E58606", 
+                                                    `Not hispanic or latino` = "#24796C", 
+                                                    Unknown = "grey40"))
+
+# Race
+scale_fill_race = scale_fill_manual(values = c(`American indian or alaska native` = "#E73F74", 
+                                               Asian = "#3969AC", 
+                                               `Black or african american` = "#666666", 
+                                               White = "beige", 
+                                               Unknown = "grey40"))
+
+# Metastasis
+scale_fill_metastasis = scale_fill_manual(values = c(Yes = "deeppink4", 
+                                                     No = "cadetblue2", 
+                                                     Unknown = "grey40"))
+
+# Histology
+scale_fill_histology = scale_fill_manual(values = c(`Infiltrating Carcinoma NOS` = "#88CCEE", 
+                                                    `Infiltrating Ductal Carcinoma` = "#CC6677", 
+                                                    `Infiltrating Lobular Carcinoma` = "#DDCC77", 
+                                                    `Medullary Carcinoma` = "#117733", 
+                                                    `Metaplastic Carcinoma` = "#332288", 
+                                                    Mixed = "#AA4499", 
+                                                    `Mucinous Carcinoma` = "#44AA99", 
+                                                    Other = "#999933", 
+                                                    Unknown = "grey40"))
+
+# Menopausal status
+scale_fill_menopausal_status = scale_fill_manual(values = c(Indeterminate = "mistyrose2", 
+                                                            `Pre-menopausal` = "#FAA476", 
+                                                            Perimenopausal = "#DC3977", 
+                                                            `Post-menopausal` = "#7C1D6F", 
+                                                            Unknown = "grey40"))
+
+# Combine all scales into a list
+barchart_scales = list(scale_fill_stage, scale_fill_lymph_node_status, scale_fill_ER_status, 
+                       scale_fill_PR_status, scale_fill_HER2_status, scale_fill_vital_status, 
+                       scale_fill_ethnicity, scale_fill_race, scale_fill_metastasis, 
+                       scale_fill_histology, scale_fill_menopausal_status)
+
+# Name the scales accordingly
+names(barchart_scales) = c("Stage", "Lymph node status", "ER status", "PR status", "HER2 status", 
+                           "Vital status", "Ethnicity", "Race", "Metastasis", "Histology", 
+                           "Menopausal status")
 
 # Bar charts with clinical variables of interest ###
 SNF_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(SNF = paste0("MOVICS_", SNF))
+plotdata_bar$SNF = factor(plotdata_bar$SNF)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["SNF"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  SNF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  SNF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                              chifit = chifit,
                                              algorithm = "SNF",
-                                             text_y = 137, rect_ymin = 112,
-                                             rect_ymax = 145) +
+                                             barchart_ylim = 650,
+                                             text_y = 630, rect_ymin = 530,
+                                             rect_ymax = 650, x_annot = 1.5,
+                                             v_gap = 35, rect_xmin = 1,
+                                             rect_xmax = 2, 
+                                             annot_text_size = 2.25,
+                                             legend.text.size = 5,
+                                             x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(SNF_barcharts[[i]])
   ggsave(filename = paste0("SNF_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -229,31 +410,82 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(SNF_barcharts[[1]], SNF_barcharts[[2]], SNF_barcharts[[3]],
           SNF_barcharts[[4]], SNF_barcharts[[5]], SNF_barcharts[[6]],
-          SNF_barcharts[[7]], SNF_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          SNF_barcharts[[7]], SNF_barcharts[[8]], SNF_barcharts[[9]],
+          SNF_barcharts[[10]], SNF_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_SNF_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/SNF_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+SNF_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(SNF, Race, Histology, 
+                                                       `ER status`, `PR status`, Stage) %>%
+  dplyr::mutate(SNF = paste0("MOVICS_", SNF))
+plotdata_bar_sig$SNF = factor(plotdata_bar_sig$SNF)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "SNF")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["SNF"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  SNF_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                             chifit = chifit,
+                                             algorithm = "SNF",
+                                             barchart_ylim = 650,
+                                             text_y = 630, rect_ymin = 530,
+                                             rect_ymax = 650, x_annot = 1.5,
+                                             v_gap = 35, rect_xmin = 1,
+                                             rect_xmax = 2, 
+                                             annot_text_size = 2.25,
+                                             legend.text.size = 5,
+                                             x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(SNF_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_SNF_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(SNF_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(SNF_barcharts_sig[[1]], SNF_barcharts_sig[[2]], SNF_barcharts_sig[[3]],
+          SNF_barcharts_sig[[4]], SNF_barcharts_sig[[5]], 
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_SNF_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
+       width = 5500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_SNF = clust_annot_pheno %>%
-  dplyr::select(SNF, pCR.RD, PAM50, T.stage) %>%
-  group_by(SNF, pCR.RD, PAM50, T.stage) %>%
+library(plotly)
+Pheno_sunburst_SNF = clust_annot_pheno
+Pheno_sunburst_SNF$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_SNF$`ER status`)
+Pheno_sunburst_SNF$Stage = gsub("Unknown", "Unkn stage", 
+                                Pheno_sunburst_SNF$Stage)
+Pheno_sunburst_SNF = Pheno_sunburst_SNF %>%
+  dplyr::select(SNF, `ER status`, Stage) %>%
+  group_by(SNF, `ER status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_SNF$SNF = paste0("SNF", Pheno_sunburst_SNF$SNF)
 
 sunburst_coloring_SNF = data.frame(stringsAsFactors = FALSE,
                                    colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                      "deeppink4", "dodgerblue4",
-                                                                      "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                      "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                   labels = c("SNF1", "SNF2", "RD", "pCR",
-                                              "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                              "T1", "T2", "T3", "T4"))
+                                                                      "#C11D9C", "#0F1682",  "grey40",
+                                                                      "#00C9FF", "#099CF5", "#097BF5", 
+                                                                      "#0B5684", "grey40"))),
+                                   labels = c("SNF1", "SNF2",
+                                              "Negative", "Positive", "Unkn ER status",
+                                              "Stage I", "Stage II", "Stage III",
+                                              "Stage IV", "Unkn stage"))
 
 sunburstDF_SNF = as.sunburstDF(Pheno_sunburst_SNF, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_SNF, by = "labels")
@@ -272,57 +504,40 @@ pie_SNF
 rm(Pheno_sunburst_SNF, sunburstDF_SNF, sunburst_coloring_SNF, pie_SNF); gc()
 
 # Draw graphs from affinity matrices
-# We are using the original S matrices because they contain fewer edges
-calculate_S <- function(W) {
-  n <- nrow(W)  # Assuming W is a square matrix
-  S <- matrix(0, n, n)  # Initialize S as a zero matrix of the same size as W
-  
-  # Preserve row and column names
-  rownames(S) <- rownames(W)
-  colnames(S) <- colnames(W)
-  
-  for (i in 1:n) {
-    # Find the indices of the 30 highest values in W[i, ]
-    nn_indices <- order(W[i, ], decreasing = TRUE)[1:30]
-    
-    # Set S[i, nn_indices] to W[i, nn_indices]
-    S[i, nn_indices] <- W[i, nn_indices]
-  }
-  
-  return(S)
-}
-
-aff_lymph_S = calculate_S(aff_lymph)
+aff_CNV_S = calculate_S(aff_CNV)
 aff_rna_S = calculate_S(aff_rna)
+aff_miRNA_S = calculate_S(aff_miRNA)
+aff_Methyl_S = calculate_S(aff_Methyl)
 aff_mut_S = calculate_S(aff_mut)
-aff_immune_S = calculate_S(aff_immune)
 aff_final_S = calculate_S(aff_final)
 
-list_aff_S = list(aff_lymph_S, aff_rna_S, aff_mut_S, aff_immune_S, aff_final_S)
-names(list_aff_S) = c("Lymph Original Affinity 30-NN Graph",
-                      "RNA Original Affinity 30-NN Graph",
-                      "Mutational signatures Original Affinity 30-NN Graph",
-                      "Immunophenoscore Original Affinity 30-NN Graph",
-                      "Final Fused Affinity 30-NN Graph")
+list_aff_S = list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, 
+                  aff_mut_S, aff_final_S)
+names(list_aff_S) = c(paste0("CNV Original Affinity 30-NN Graph"),
+                      paste0("RNAseq Original Affinity 30-NN Graph"),
+                      paste0("miRNA Original Affinity 30-NN Graph"),
+                      paste0("Methylation Original Affinity 30-NN Graph"),
+                      paste0("SNPs Original Affinity 30-NN Graph"),
+                      paste0("Final Fused Affinity 30-NN Graph"))
 
 for (i in 1:length(list_aff_S)) {
   
   # Prepare the graph object
   g <- graph_from_adjacency_matrix(list_aff_S[[i]], 
-                                   mode = "undirected", weighted = TRUE, diag = FALSE)
+                                   mode = "directed", weighted = TRUE, diag = FALSE)
   g <- delete_edges(g, E(g)[weight == 0])
   E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
   nodes_data <- data.frame(name = V(g)$name) %>%
     inner_join(clust_annot_pheno %>% dplyr::select(samID, SNF), by = c("name" = "samID"))
   
   # Set SNF as a factor for coloring
-  nodes_data$SNF <- as.factor(nodes_data$SNF)
+  nodes_data$SNF <- as.factor(paste0("MOVICS_", nodes_data$SNF))
   V(g)$SNF <- nodes_data$SNF
   
   # Set color based on SNF
-  V(g)$color <- ifelse(V(g)$SNF == 1, "#2EC4B6", "#E71D36")
+  V(g)$color <- ifelse(V(g)$SNF == "MOVICS_SNF1", "#2EC4B6", "#E71D36")
   
-  png(paste0("new_code/output/MOVICS/MO_comparisons/SNF_extra/",
+  png(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra/",
              names(list_aff_S)[i], ".png"),
       width = 6000, height = 6000, res = 700)
   
@@ -335,7 +550,8 @@ for (i in 1:length(list_aff_S)) {
        vertex.label = NA, 
        edge.color = "gray85",
        layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
-       main = "")
+       main = "",
+       edge.arrow.size=0.05)
   
   # Add title with reduced size using title() function
   title(main = names(list_aff_S)[i], cex.main = 1.7)
@@ -343,7 +559,7 @@ for (i in 1:length(list_aff_S)) {
   # Add a legend to the right of the plot
   legend("bottomright", 
          title="Node Color Legend",    
-         legend=c("SNF1", "SNF2"), 
+         legend=c("MOVICS_SNF1", "MOVICS_SNF2"), 
          fill=c("#2EC4B6", "#E71D36"),  
          cex=0.7,      
          box.lwd=1)  
@@ -355,76 +571,134 @@ rm(g, nodes_data)
 # See concordance with the final consensus
 clust_annot_pheno2 = clust_annot_pheno %>%
   inner_join(as.data.frame(consensus$clust.res))
-table(paste0("SNF", clust_annot_pheno2$SNF), paste0("CS", clust_annot_pheno2$clust))
+
+# Create a list of cross-tabulations between the CS and individual algorithm labels
+CS_comp_list = vector("list", 10)
+names(CS_comp_list) = algorithms
+for(i in 1:length(CS_comp_list)) {
+  CS_comp_list[[i]] <- list(
+    table = NULL,
+    NMI = NULL,
+    ARI = NULL
+  )
+}
+
+# Compare MOVICS SNF to MOVICS consensus
+CS_comp_list[["SNF"]]$table = table(clust_annot_pheno2$SNF, 
+                              paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["SNF"]]$ARI = calculate_ari_index(cluster_df1 = snf_clust_res %>%
+                                                  dplyr::rename(Cluster = SNF) %>%
+                                                  mutate(Cluster = gsub("MOVICS_SNF", "", Cluster)),
+                                                cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                  dplyr::rename(Cluster = clust),
+                                                sample_col = "samID",
+                                                clust_col = "Cluster",
+                                                suffixes = c("_MOVICS_SNF", "_CS"))
+
+CS_comp_list[["SNF"]]$NMI = calculate_nmi_index(cluster_df1 = snf_clust_res %>%
+                                                  dplyr::rename(Cluster = SNF) %>%
+                                                  mutate(Cluster = gsub("MOVICS_SNF", "", Cluster)),
+                                                cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                  dplyr::rename(Cluster = clust),
+                                                sample_col = "samID",
+                                                clust_col = "Cluster",
+                                                suffixes = c("_MOVICS_SNF", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$SNF)
 
 # CIMLR #####
 
 # PCA from original matrices ###
+CIMLR_clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR) %>%
+  mutate(CIMLR = paste0("MOVICS_", CIMLR))
 
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "CIMLR", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "CIMLR", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "CIMLR", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "CIMLR", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "CIMLR", 
+                         clust_res = CIMLR_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"),
+                         title_add = "Methylation")
 
 # Draw a heatmap of the final S matrix ###
 cimlr_matrix = moic.res.list$CIMLR$fit$S
 dimnames(cimlr_matrix) = dimnames(aff_final)
 create_MO_heatmap(matrix = cimlr_matrix, algorithm = "CIMLR", 
                   need.diag.zero = FALSE, # already zero
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(CIMLR = paste0("MOVICS_", CIMLR)) %>%
+                    select(samID, all_of(afh_colnames), CIMLR),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
+                  annColors = annColors,
                   heatmap_title = "Final CIMLR similarity heatmap",
                   cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
                   legend_title = "Final kernel similarity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra/CIMLR_final_S_matrix_heatmap.png")
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra/CIMLR_final_S_matrix_heatmap.png"))
 
 # Bar charts with clinical variables of interest ###
 CIMLR_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(CIMLR = paste0("MOVICS_", CIMLR))
+plotdata_bar$CIMLR = factor(plotdata_bar$CIMLR)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["CIMLR"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  CIMLR_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  CIMLR_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                chifit = chifit,
                                                algorithm = "CIMLR",
-                                               text_y = 137, rect_ymin = 112,
-                                               rect_ymax = 145) +
+                                               barchart_ylim = 650,
+                                               text_y = 630, rect_ymin = 530,
+                                               rect_ymax = 650, x_annot = 1.5,
+                                               v_gap = 35, rect_xmin = 1,
+                                               rect_xmax = 2, 
+                                               annot_text_size = 2.25,
+                                               legend.text.size = 5,
+                                               x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(CIMLR_barcharts[[i]])
   ggsave(filename = paste0("CIMLR_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -434,31 +708,93 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(CIMLR_barcharts[[1]], CIMLR_barcharts[[2]], CIMLR_barcharts[[3]],
           CIMLR_barcharts[[4]], CIMLR_barcharts[[5]], CIMLR_barcharts[[6]],
-          CIMLR_barcharts[[7]], CIMLR_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          CIMLR_barcharts[[7]], CIMLR_barcharts[[8]], CIMLR_barcharts[[9]],
+          CIMLR_barcharts[[10]], CIMLR_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_CIMLR_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/CIMLR_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+CIMLR_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(CIMLR, Race, `Menopausal status`, 
+                                                       `ER status`, `PR status`, `HER2 status`) %>%
+  dplyr::mutate(CIMLR = paste0("MOVICS_", CIMLR))
+plotdata_bar_sig$CIMLR = factor(plotdata_bar_sig$CIMLR)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "CIMLR")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["CIMLR"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  CIMLR_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                   chifit = chifit,
+                                                   algorithm = "CIMLR",
+                                                   barchart_ylim = 650,
+                                                   text_y = 630, rect_ymin = 530,
+                                                   rect_ymax = 650, x_annot = 1.5,
+                                                   v_gap = 35, rect_xmin = 1,
+                                                   rect_xmax = 2, 
+                                                   annot_text_size = 2.25,
+                                                   legend.text.size = 5,
+                                                   x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(CIMLR_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_CIMLR_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(CIMLR_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(CIMLR_barcharts_sig[[1]], CIMLR_barcharts_sig[[2]], CIMLR_barcharts_sig[[3]],
+          CIMLR_barcharts_sig[[4]], CIMLR_barcharts_sig[[5]], 
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_CIMLR_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CIMLR_extra"), 
+       width = 5500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_CIMLR = clust_annot_pheno %>%
-  dplyr::select(CIMLR, pCR.RD, PAM50, T.stage) %>%
-  group_by(CIMLR, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_CIMLR = clust_annot_pheno
+Pheno_sunburst_CIMLR$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_CIMLR$`ER status`)
+Pheno_sunburst_CIMLR$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_CIMLR$`ER status`)
+Pheno_sunburst_CIMLR$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_CIMLR$`ER status`)
+Pheno_sunburst_CIMLR$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                          Pheno_sunburst_CIMLR$`HER2 status`)
+Pheno_sunburst_CIMLR$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_CIMLR$`HER2 status`)
+Pheno_sunburst_CIMLR$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_CIMLR$`HER2 status`)
+Pheno_sunburst_CIMLR$`Menopausal status` = gsub("Unknown", "Unkn Meno status", 
+                                                Pheno_sunburst_CIMLR$`Menopausal status`)
+Pheno_sunburst_CIMLR$`Menopausal status` = gsub("Indeterminate", "Indeterminate Meno", 
+                                                Pheno_sunburst_CIMLR$`Menopausal status`)
+Pheno_sunburst_CIMLR = Pheno_sunburst_CIMLR %>%
+  dplyr::select(CIMLR, `ER status`, `HER2 status`, `Menopausal status`) %>%
+  group_by(CIMLR, `ER status`, `HER2 status`, `Menopausal status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_CIMLR$CIMLR = paste0("CIMLR", Pheno_sunburst_CIMLR$CIMLR)
 
 sunburst_coloring_CIMLR = data.frame(stringsAsFactors = FALSE,
                                      colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                        "deeppink4", "dodgerblue4",
-                                                                        "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                        "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                     labels = c("CIMLR1", "CIMLR2", "RD", "pCR",
-                                                "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                                "T1", "T2", "T3", "T4"))
+                                                                        "#C11D9C", "#0F1682",  "grey40",
+                                                                        "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                        "hotpink4", "grey40",
+                                                                        "mistyrose2", "#FAA476",
+                                                                        "#DC3977", "#7C1D6F", "grey40"))),
+                                     labels = c("CIMLR1", "CIMLR2",
+                                                "ER-", "ER+", "Unkn ER status",
+                                                "HER2-", "HER2+", "Indeterminate",
+                                                "Equivocal", "Unkn HER2 status",
+                                                "Indeterminate Meno", "Pre-menopausal", "Perimenopausal",
+                                                "Post-menopausal", "Unkn Meno status"))
 
 sunburstDF_CIMLR = as.sunburstDF(Pheno_sunburst_CIMLR, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_CIMLR, by = "labels")
@@ -478,61 +814,101 @@ rm(Pheno_sunburst_CIMLR, sunburstDF_CIMLR, sunburst_coloring_CIMLR, pie_CIMLR); 
 
 
 # See concordance with the final consensus
-table(paste0("CIMLR", clust_annot_pheno2$CIMLR), paste0("CS", clust_annot_pheno2$clust))
+CS_comp_list[["CIMLR"]]$table = table(clust_annot_pheno2$CIMLR, 
+                                      paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["CIMLR"]]$ARI = calculate_ari_index(cluster_df1 = CIMLR_clust_res %>%
+                                                    dplyr::rename(Cluster = CIMLR) %>%
+                                                    mutate(Cluster = gsub("MOVICS_CIMLR", "", Cluster)),
+                                                  cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                    dplyr::rename(Cluster = clust),
+                                                  sample_col = "samID",
+                                                  clust_col = "Cluster",
+                                                  suffixes = c("_MOVICS_CIMLR", "_CS"))
+
+CS_comp_list[["CIMLR"]]$NMI = calculate_nmi_index(cluster_df1 = CIMLR_clust_res %>%
+                                                    dplyr::rename(Cluster = CIMLR) %>%
+                                                    mutate(Cluster = gsub("MOVICS_CIMLR", "", Cluster)),
+                                                  cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                    dplyr::rename(Cluster = clust),
+                                                  sample_col = "samID",
+                                                  clust_col = "Cluster",
+                                                  suffixes = c("_MOVICS_CIMLR", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$CIMLR)
 
 # PINSPlus #####
 # PCA from original matrices ###
+PINSPlus_clust_res = clust_annot_pheno %>% dplyr::select(samID, PINSPlus) %>%
+  mutate(PINSPlus = paste0("MOVICS_", PINSPlus))
+
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "PINSPlus", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/PINSPlus_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "PINSPlus", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/PINSPlus_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "PINSPlus", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/PINSPlus_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "PINSPlus", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/PINSPlus_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "PINSPlus", 
+                         clust_res = PINSPlus_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 PINSPlus_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(PINSPlus = paste0("MOVICS_", PINSPlus))
+plotdata_bar$PINSPlus = factor(plotdata_bar$PINSPlus)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["PINSPlus"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  PINSPlus_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
+  PINSPlus_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                   chifit = chifit,
                                                   algorithm = "PINSPlus",
-                                                  text_y = 137, rect_ymin = 112,
-                                                  rect_ymax = 145) +
+                                                  barchart_ylim = 650,
+                                                  text_y = 630, rect_ymin = 530,
+                                                  rect_ymax = 650, x_annot = 1.5,
+                                                  v_gap = 35, rect_xmin = 1,
+                                                  rect_xmax = 2, 
+                                                  annot_text_size = 2.25,
+                                                  legend.text.size = 5,
+                                                  x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(PINSPlus_barcharts[[i]])
   ggsave(filename = paste0("PINSPlus_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/PINSPlus_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -542,31 +918,85 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(PINSPlus_barcharts[[1]], PINSPlus_barcharts[[2]], PINSPlus_barcharts[[3]],
           PINSPlus_barcharts[[4]], PINSPlus_barcharts[[5]], PINSPlus_barcharts[[6]],
-          PINSPlus_barcharts[[7]], PINSPlus_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+          PINSPlus_barcharts[[7]], PINSPlus_barcharts[[8]], PINSPlus_barcharts[[9]],
+          PINSPlus_barcharts[[10]], PINSPlus_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "Multiplot_PINSPlus_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/PINSPlus_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+PINSPlus_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(PINSPlus, `ER status`, `PR status`, `HER2 status`,
+                                                       Histology) %>%
+  dplyr::mutate(PINSPlus = paste0("MOVICS_", PINSPlus))
+plotdata_bar_sig$PINSPlus = factor(plotdata_bar_sig$PINSPlus)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "PINSPlus")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["PINSPlus"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  PINSPlus_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                      chifit = chifit,
+                                                      algorithm = "PINSPlus",
+                                                      barchart_ylim = 650,
+                                                      text_y = 630, rect_ymin = 530,
+                                                      rect_ymax = 650, x_annot = 1.5,
+                                                      v_gap = 35, rect_xmin = 1,
+                                                      rect_xmax = 2, 
+                                                      annot_text_size = 2.25,
+                                                      legend.text.size = 5,
+                                                      x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(PINSPlus_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_PINSPlus_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(PINSPlus_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(PINSPlus_barcharts_sig[[1]], PINSPlus_barcharts_sig[[2]], PINSPlus_barcharts_sig[[3]],
+          PINSPlus_barcharts_sig[[4]], 
+          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_PINSPlus_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"), 
+       width = 5500, height = 5500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_PINSPlus = clust_annot_pheno %>%
-  dplyr::select(PINSPlus, pCR.RD, PAM50, T.stage) %>%
-  group_by(PINSPlus, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_PINSPlus = clust_annot_pheno
+Pheno_sunburst_PINSPlus$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_PINSPlus$`ER status`)
+Pheno_sunburst_PINSPlus$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_PINSPlus$`ER status`)
+Pheno_sunburst_PINSPlus$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_PINSPlus$`ER status`)
+Pheno_sunburst_PINSPlus$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                             Pheno_sunburst_PINSPlus$`HER2 status`)
+Pheno_sunburst_PINSPlus$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_PINSPlus$`HER2 status`)
+Pheno_sunburst_PINSPlus$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_PINSPlus$`HER2 status`)
+Pheno_sunburst_PINSPlus = Pheno_sunburst_PINSPlus %>%
+  dplyr::select(PINSPlus, `ER status`, `HER2 status`) %>%
+  group_by(PINSPlus, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_PINSPlus$PINSPlus = paste0("PINSPlus", Pheno_sunburst_PINSPlus$PINSPlus)
 
 sunburst_coloring_PINSPlus = data.frame(stringsAsFactors = FALSE,
                                         colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                           "deeppink4", "dodgerblue4",
-                                                                           "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                           "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                        labels = c("PINSPlus1", "PINSPlus2", "RD", "pCR",
-                                                   "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                                   "T1", "T2", "T3", "T4"))
+                                                                           "#C11D9C", "#0F1682",  "grey40",
+                                                                           "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                           "hotpink4", "grey40"))),
+                                        labels = c("PINSPlus1", "PINSPlus2",
+                                                   "ER-", "ER+", "Unkn ER status",
+                                                   "HER2-", "HER2+", "Indeterminate",
+                                                   "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_PINSPlus = as.sunburstDF(Pheno_sunburst_PINSPlus, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_PINSPlus, by = "labels")
@@ -584,14 +1014,35 @@ pie_PINSPlus = plot_ly() %>%
 pie_PINSPlus
 rm(Pheno_sunburst_PINSPlus, sunburstDF_PINSPlus, sunburst_coloring_PINSPlus, pie_PINSPlus); gc()
 
+# Compare MOVICS PINSPlus to MOVICS consensus
+CS_comp_list[["PINSPlus"]]$table = table(clust_annot_pheno2$PINSPlus, 
+                                         paste0("CS", clust_annot_pheno2$clust))
 
-# See concordance with the final consensus
-table(paste0("PINSPlus", clust_annot_pheno2$PINSPlus), paste0("CS", clust_annot_pheno2$clust))
+CS_comp_list[["PINSPlus"]]$ARI = calculate_ari_index(cluster_df1 = PINSPlus_clust_res %>%
+                                                       dplyr::rename(Cluster = PINSPlus) %>%
+                                                       mutate(Cluster = gsub("MOVICS_PINSPlus", "", Cluster)),
+                                                     cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                       dplyr::rename(Cluster = clust),
+                                                     sample_col = "samID",
+                                                     clust_col = "Cluster",
+                                                     suffixes = c("_MOVICS_PINSPlus", "_CS"))
+
+CS_comp_list[["PINSPlus"]]$NMI = calculate_nmi_index(cluster_df1 = PINSPlus_clust_res %>%
+                                                       dplyr::rename(Cluster = PINSPlus) %>%
+                                                       mutate(Cluster = gsub("MOVICS_PINSPlus", "", Cluster)),
+                                                     cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                       dplyr::rename(Cluster = clust),
+                                                     sample_col = "samID",
+                                                     clust_col = "Cluster",
+                                                     suffixes = c("_MOVICS_PINSPlus", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$PINSPlus)
 
 # NEMO #####
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "NEMO", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -599,7 +1050,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "NEMO", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -607,7 +1058,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "NEMO", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -615,7 +1066,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "NEMO", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -712,7 +1163,7 @@ create_MO_heatmap(matrix = coca_jaccard, algorithm = "COCA",
 
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "COCA", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -720,7 +1171,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "COCA", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -728,7 +1179,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "COCA", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -736,7 +1187,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "COCA", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -833,7 +1284,7 @@ create_MO_heatmap(matrix = dist_mocluster_2d, algorithm = "MoCluster",
 
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "MoCluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -841,7 +1292,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "MoCluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -849,7 +1300,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "MoCluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -857,7 +1308,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "MoCluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -954,7 +1405,7 @@ create_MO_heatmap(matrix = dist_LRA_2d, algorithm = "LRAcluster",
 
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "LRAcluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -962,7 +1413,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "LRAcluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -970,7 +1421,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "LRAcluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -978,7 +1429,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "LRAcluster", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1076,7 +1527,7 @@ create_MO_heatmap(matrix = final_cc_matrix, algorithm = "ConsensusClustering",
 
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "ConsensusClustering", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1084,7 +1535,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "ConsensusClustering", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1092,7 +1543,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "ConsensusClustering", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1100,7 +1551,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "ConsensusClustering", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1183,7 +1634,7 @@ table(paste0("CC", clust_annot_pheno2$ConsensusClustering), paste0("CS", clust_a
 # IntNMF #####
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "IntNMF", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1191,7 +1642,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "IntNMF", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1199,7 +1650,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "IntNMF", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1207,7 +1658,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "IntNMF", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1295,7 +1746,7 @@ write.xlsx(iCB_feature_ranks,
 
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = MOVICS_inputs$RNA, 
+pca_from_original_matrix(mydata = input$RNA, 
                          algorithm = "iClusterBayes", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1303,7 +1754,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$RNA,
                          title_add = "RNA")
 
 # Digital Pathology
-pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`, 
+pca_from_original_matrix(mydata = input$`Digital Pathology`, 
                          algorithm = "iClusterBayes", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1311,7 +1762,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$`Digital Pathology`,
                          title_add = "Digital Pathology")
 
 # Immune
-pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore, 
+pca_from_original_matrix(mydata = input$Immunophenoscore, 
                          algorithm = "iClusterBayes", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1319,7 +1770,7 @@ pca_from_original_matrix(mydata = MOVICS_inputs$Immunophenoscore,
                          title_add = "Immunophenoscore")
 
 # Mutational signatures
-pca_from_original_matrix(mydata = MOVICS_inputs$`Mutational Signatures`, 
+pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
                          algorithm = "iClusterBayes", 
                          clust_res = clust_annot_pheno,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 

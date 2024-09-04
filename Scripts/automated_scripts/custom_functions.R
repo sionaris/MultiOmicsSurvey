@@ -362,6 +362,7 @@ create_MO_heatmap = function(matrix = NULL, algorithm = NULL,
     dplyr::select(samID, !!sym(algorithm))
   order = order$samID
   
+  rownames(annotation_for_heatmap) = annotation_for_heatmap$samID
   annotation_for_heatmap = annotation_for_heatmap[order, ] %>%
     dplyr::select(-samID)
   
@@ -635,20 +636,73 @@ pca_from_sim_matrix = function (sim_matrix = NULL, algorithm = NULL, clust_res =
      scores, shapes, n_clust, cluster_colors, output_path, title_add); gc()
 }
 
+# MDS from original matrix #####
+# Designed for matrices with features in rows
+mds_from_original_matrix = function (matrix = NULL, dist_method = NULL, algorithm = NULL, clust_res = NULL,
+                                 cluster_colors = NULL, output_path = NULL,
+                                 title_add = NULL) {
+  library(ggplot2)
+  
+  dists = stats::dist(t(matrix), method = dist_method)
+  mds = clust_res %>%
+    inner_join(as.data.frame(cmdscale(dists)) %>%
+                 mutate(samID = rownames(.)), by = "samID") %>%
+    dplyr::rename(MDS1 = V1, MDS2 = V2)
+  
+  clust_names = sort(unique(mds[[algorithm]]))
+  
+  mdsplot = ggplot(mds, aes(x = MDS1, y = MDS2, color = !!sym(algorithm), 
+                            shape = !!sym(algorithm))) +
+    geom_point(size = 0.5, alpha = 0.65) +
+    ggtitle(paste0("Multidimensional scaling: ", title_add)) +
+    theme_classic() +
+    scale_color_manual(name = algorithm, values = cluster_colors,
+                       labels = clust_names)+
+    theme(plot.title = element_text(size = 4, face = "bold", vjust = 0.5, hjust = 0.5),
+          axis.text = element_text(size = 3, hjust = 0.5, vjust = 0.5, 
+                                   color = "black"),
+          axis.title = element_text(size = 4, face = "bold"),
+          axis.ticks = element_line(linewidth = 0.05),
+          axis.line = element_line(linewidth = 0.2),
+          legend.position = "right",
+          legend.key.size = unit(2, units = "mm"),
+          legend.text = element_text(size = 3),
+          legend.title = element_text(face = "bold", size = 3.5),
+          legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+          legend.spacing.y = unit(0.5, units = "mm"),
+          legend.spacing.x = unit(0.5, units = "mm"),
+          legend.background = element_blank())+
+    labs(x = "MDS1", y = "MDS2") +
+    guides(alpha = "none")
+  
+  print(mdsplot)
+  ggsave(filename = paste0(algorithm, "_", title_add, "_MDS.png"),
+         path = output_path, 
+         width = 1920, height = 1080, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+  
+  # Clean up
+  rm(algorithm, mdsplot, dists, mds,
+     clust_names, cluster_colors, output_path, title_add); gc()
+}
+
 # create single barchart #####
 create_annot_barchart = function (plotdata = NULL, fill = NULL,
                                   chifit = NULL, algorithm = NULL,
                                   text_y = NULL, rect_ymin = NULL,
                                   rect_ymax = NULL, x_annot = NULL,
+                                  barchart_ylim = NULL,
                                   v_gap = NULL, rect_xmin = NULL,
                                   rect_xmax = NULL, annot_text_size = NULL,
-                                  legend.text.size = NULL) {
+                                  legend.text.size = NULL,
+                                  x.axis.text.size = NULL) {
   library(ggplot2)
   
   barchart = ggplot(plotdata, aes(fill=!!sym(fill), x=!!sym(algorithm))) + 
     geom_bar(position="stack", stat="count", width = 0.4) +
-    scale_y_continuous(limits = c(0,nrow(plotdata)), 
-                       breaks = seq(0, nrow(plotdata), 50)) +
+    scale_y_continuous(limits = c(0, barchart_ylim), 
+                       breaks = seq(0, barchart_ylim, 50)) +
     labs(y = "Number of samples") +
     ggplot2::annotate("text", x = x_annot, y = text_y, size = annot_text_size, 
                       label = bquote(italic(X^2) == .(round(as.numeric(chifit$Statistic), 2))))+
@@ -668,6 +722,7 @@ create_annot_barchart = function (plotdata = NULL, fill = NULL,
           panel.grid = element_blank(),
           axis.line = element_line(),
           axis.title = element_text(size = 8, face = "bold"),
+          axis.text.x = element_text(size = x.axis.text.size),
           legend.key.size = unit(0.25, "cm"),
           legend.text = element_text(size = legend.text.size),
           legend.title = element_text(face = "bold", size  = legend.text.size))
