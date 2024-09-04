@@ -1872,153 +1872,269 @@ dimnames(final_cc_matrix) = list(names(moic.res.list[["ConsensusClustering"]][["
 # Final 2D Euclidean distance heatmap
 create_MO_heatmap(matrix = final_cc_matrix, algorithm = "ConsensusClustering", 
                   need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames_movics, 
+                  clust_annot_pheno = clust_annot_pheno %>%
+                    mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering)) %>%
+                    select(samID, all_of(afh_colnames), ConsensusClustering),
+                  afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
-                  heatmap_title = "Consensus Clustering final connectivity heatmap",
+                  annColors = annColors,
                   cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
+                  heatmap_title = "Consensus Clustering final connectivity heatmap",
                   legend_title = "1 - final connectivity",
-                  output_file_name = "new_code/output/MOVICS/MO_comparisons/CC_extra/CC_final_connectivity_heatmap.png")
+                  output_file_name = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra/CC_final_connectivity_heatmap.png"))
 
 # PCA from original matrices ###
+ConsensusClustering_clust_res = clust_annot_pheno %>% dplyr::select(samID, ConsensusClustering) %>%
+  mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "ConsensusClustering", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CC_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "ConsensusClustering", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CC_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "ConsensusClustering", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CC_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "ConsensusClustering", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/CC_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "ConsensusClustering", 
+                         clust_res = ConsensusClustering_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
-CC_barcharts = list()
-cols_to_factor <- c(2:15, 18:21)
-plotdata = clust_annot_pheno
-plotdata[cols_to_factor] <- lapply(plotdata[cols_to_factor], as.factor)
+ConsensusClustering_barcharts = list()
+plotdata_bar = clust_annot_pheno %>%
+  dplyr::mutate(ConsensusClustering = gsub("ConsensusClustering", "CC", ConsensusClustering)) %>%
+  dplyr::mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering))
+plotdata_bar$ConsensusClustering = factor(plotdata_bar$ConsensusClustering)
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["ConsensusClustering"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  CC_barcharts[[i]] = create_annot_barchart(plotdata = plotdata, fill = voi[i],
-                                            chifit = chifit,
-                                            algorithm = "ConsensusClustering",
-                                            text_y = 137, rect_ymin = 112,
-                                            rect_ymax = 145) +
+  ConsensusClustering_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
+                                                             chifit = chifit,
+                                                             algorithm = "ConsensusClustering",
+                                                             barchart_ylim = 650,
+                                                             text_y = 630, rect_ymin = 530,
+                                                             rect_ymax = 650, x_annot = 1.5,
+                                                             v_gap = 35, rect_xmin = 1,
+                                                             rect_xmax = 2, 
+                                                             annot_text_size = 2.25,
+                                                             legend.text.size = 5,
+                                                             x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
-  print(CC_barcharts[[i]])
-  ggsave(filename = paste0("CC_", voi[i], "_barchart.png"),
-         path = "new_code/output/MOVICS/MO_comparisons/CC_extra", 
-         width = 1920, height = 1620, device = 'png', units = "px",
+  print(ConsensusClustering_barcharts[[i]])
+  ggsave(filename = paste0("ConsensusClustering_", voi[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
-names(CC_barcharts) = voi
+names(ConsensusClustering_barcharts) = voi
 rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
-ggarrange(CC_barcharts[[1]], CC_barcharts[[2]], CC_barcharts[[3]],
-          CC_barcharts[[4]], CC_barcharts[[5]], CC_barcharts[[6]],
-          CC_barcharts[[7]], CC_barcharts[[8]],
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+ggarrange(ConsensusClustering_barcharts[[1]], ConsensusClustering_barcharts[[2]], ConsensusClustering_barcharts[[3]],
+          ConsensusClustering_barcharts[[4]], ConsensusClustering_barcharts[[5]], ConsensusClustering_barcharts[[6]],
+          ConsensusClustering_barcharts[[7]], ConsensusClustering_barcharts[[8]], ConsensusClustering_barcharts[[9]],
+          ConsensusClustering_barcharts[[10]], ConsensusClustering_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
-ggsave(filename = "Multiplot_CC_barcharts.png",
-       path = "new_code/output/MOVICS/MO_comparisons/CC_extra", 
-       width = 4612, height = 6000, device = 'png', units = "px",
+ggsave(filename = "Multiplot_ConsensusClustering_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+ConsensusClustering_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(ConsensusClustering, `ER status`, 
+                                                       `PR status`, `HER2 status`, Histology) %>%
+  dplyr::mutate(ConsensusClustering = gsub("ConsensusClustering", "CC", ConsensusClustering)) %>%
+  dplyr::mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering))
+plotdata_bar_sig$ConsensusClustering = factor(plotdata_bar_sig$ConsensusClustering)
+voi_sig = setdiff(colnames(plotdata_bar_sig), "ConsensusClustering")
+for (i in 1:length(voi_sig)) {
+  chifit = chisq_outputs[["ConsensusClustering"]]
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  ConsensusClustering_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                                 chifit = chifit,
+                                                                 algorithm = "ConsensusClustering",
+                                                                 barchart_ylim = 650,
+                                                                 text_y = 630, rect_ymin = 530,
+                                                                 rect_ymax = 650, x_annot = 1.5,
+                                                                 v_gap = 35, rect_xmin = 1,
+                                                                 rect_xmax = 2, 
+                                                                 annot_text_size = 2.25,
+                                                                 legend.text.size = 5,
+                                                                 x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(ConsensusClustering_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_ConsensusClustering_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"), 
+         width = 2320, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(ConsensusClustering_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(ConsensusClustering_barcharts_sig[[1]], ConsensusClustering_barcharts_sig[[2]], ConsensusClustering_barcharts_sig[[3]],
+          ConsensusClustering_barcharts_sig[[4]],  
+          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = "sig_Multiplot_ConsensusClustering_barcharts.png",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/CC_extra"), 
+       width = 5500, height = 5500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
-Pheno_sunburst_CC = clust_annot_pheno %>%
-  dplyr::select(ConsensusClustering, pCR.RD, PAM50, T.stage) %>%
-  group_by(ConsensusClustering, pCR.RD, PAM50, T.stage) %>%
+Pheno_sunburst_ConsensusClustering = clust_annot_pheno
+Pheno_sunburst_ConsensusClustering$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_ConsensusClustering$`ER status`)
+Pheno_sunburst_ConsensusClustering$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_ConsensusClustering$`ER status`)
+Pheno_sunburst_ConsensusClustering$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_ConsensusClustering$`ER status`)
+Pheno_sunburst_ConsensusClustering$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                                        Pheno_sunburst_ConsensusClustering$`HER2 status`)
+Pheno_sunburst_ConsensusClustering$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_ConsensusClustering$`HER2 status`)
+Pheno_sunburst_ConsensusClustering$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_ConsensusClustering$`HER2 status`)
+Pheno_sunburst_ConsensusClustering = Pheno_sunburst_ConsensusClustering %>%
+  dplyr::mutate(ConsensusClustering = gsub("ConsensusClustering", "CC", ConsensusClustering)) %>%
+  dplyr::select(ConsensusClustering, `ER status`, `HER2 status`) %>%
+  group_by(ConsensusClustering, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-Pheno_sunburst_CC$ConsensusClustering = paste0("CC", Pheno_sunburst_CC$ConsensusClustering)
 
-sunburst_coloring_CC = data.frame(stringsAsFactors = FALSE,
-                                  colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                     "deeppink4", "dodgerblue4",
-                                                                     "red4", "violet", "darkblue", "skyblue", "lightgreen","grey",
-                                                                     "#00C9FF", "#099CF5", "#097BF5", "#0B5684"))),
-                                  labels = c("CC1", "CC2", "RD", "pCR",
-                                             "Basal", "Her2", "LumA", "LumB", "Normal", "Unk",
-                                             "T1", "T2", "T3", "T4"))
+sunburst_coloring_ConsensusClustering = data.frame(stringsAsFactors = FALSE,
+                                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
+                                                                                      "#C11D9C", "#0F1682",  "grey40",
+                                                                                      "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                                      "hotpink4", "grey40"))),
+                                                   labels = c("CC1", "CC2",
+                                                              "ER-", "ER+", "Unkn ER status",
+                                                              "HER2-", "HER2+", "Indeterminate",
+                                                              "Equivocal", "Unkn HER2 status"))
 
-sunburstDF_CC = as.sunburstDF(Pheno_sunburst_CC, value_column = "Counts", add_root = FALSE) %>%
-  inner_join(sunburst_coloring_CC, by = "labels")
+sunburstDF_ConsensusClustering = as.sunburstDF(Pheno_sunburst_ConsensusClustering, value_column = "Counts", add_root = FALSE) %>%
+  inner_join(sunburst_coloring_ConsensusClustering, by = "labels")
 
-pie_CC = plot_ly() %>%
-  add_trace(ids = sunburstDF_CC$ids, labels= sunburstDF_CC$labels, 
-            parents = sunburstDF_CC$parents, 
-            values= sunburstDF_CC$values, type='sunburst', branchvalues = 'total',
+pie_ConsensusClustering = plot_ly() %>%
+  add_trace(ids = sunburstDF_ConsensusClustering$ids, labels= sunburstDF_ConsensusClustering$labels, 
+            parents = sunburstDF_ConsensusClustering$parents, 
+            values= sunburstDF_ConsensusClustering$values, type='sunburst', branchvalues = 'total',
             insidetextorientation='radial', maxdepth = 5,
-            marker = list(colors = sunburstDF_CC$colors)) %>%
+            marker = list(colors = sunburstDF_ConsensusClustering$colors)) %>%
   layout(
     grid = list(columns =1, rows = 1),
     margin = list(l = 0, r = 0, b = 0, t = 0)
   )
-pie_CC
-rm(Pheno_sunburst_CC, sunburstDF_CC, sunburst_coloring_CC, pie_CC); gc()
+pie_ConsensusClustering
+rm(Pheno_sunburst_ConsensusClustering, sunburstDF_ConsensusClustering, 
+   sunburst_coloring_ConsensusClustering, pie_ConsensusClustering); gc()
 
-# See concordance with the final consensus
-table(paste0("CC", clust_annot_pheno2$ConsensusClustering), paste0("CS", clust_annot_pheno2$clust))
+# Compare MOVICS ConsensusClustering to MOVICS consensus
+CS_comp_list[["ConsensusClustering"]]$table = table(clust_annot_pheno2$ConsensusClustering, 
+                                                    paste0("CS", clust_annot_pheno2$clust))
+
+CS_comp_list[["ConsensusClustering"]]$ARI = calculate_ari_index(cluster_df1 = ConsensusClustering_clust_res %>%
+                                                                  dplyr::rename(Cluster = ConsensusClustering) %>%
+                                                                  mutate(Cluster = gsub("MOVICS_ConsensusClustering", "", Cluster)),
+                                                                cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                                  dplyr::rename(Cluster = clust),
+                                                                sample_col = "samID",
+                                                                clust_col = "Cluster",
+                                                                suffixes = c("_MOVICS_ConsensusClustering", "_CS"))
+
+CS_comp_list[["ConsensusClustering"]]$NMI = calculate_nmi_index(cluster_df1 = ConsensusClustering_clust_res %>%
+                                                                  dplyr::rename(Cluster = ConsensusClustering) %>%
+                                                                  mutate(Cluster = gsub("MOVICS_ConsensusClustering", "", Cluster)),
+                                                                cluster_df2 = as.data.frame(consensus$clust.res) %>%
+                                                                  dplyr::rename(Cluster = clust),
+                                                                sample_col = "samID",
+                                                                clust_col = "Cluster",
+                                                                suffixes = c("_MOVICS_ConsensusClustering", "_CS"))
+
+# Print all comparison data
+print(CS_comp_list$ConsensusClustering)
 
 # IntNMF #####
 # PCA from original matrices ###
+IntNMF_clust_res = clust_annot_pheno %>% dplyr::select(samID, IntNMF) %>%
+  mutate(IntNMF = paste0("MOVICS_", IntNMF))
+
 # RNA
-pca_from_original_matrix(mydata = input$RNA, 
+pca_from_original_matrix(mydata = input$RNAseq, 
                          algorithm = "IntNMF", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/IntNMF_extra",
-                         title_add = "RNA")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"),
+                         title_add = "RNA-seq")
 
-# Digital Pathology
-pca_from_original_matrix(mydata = input$`Digital Pathology`, 
+# miRNA
+pca_from_original_matrix(mydata = input$miRNA, 
                          algorithm = "IntNMF", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/IntNMF_extra",
-                         title_add = "Digital Pathology")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"),
+                         title_add = "miRNA")
 
-# Immune
-pca_from_original_matrix(mydata = input$Immunophenoscore, 
+# CNV
+pca_from_original_matrix(mydata = input$CNV, 
                          algorithm = "IntNMF", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/IntNMF_extra",
-                         title_add = "Immunophenoscore")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"),
+                         title_add = "CNV")
 
-# Mutational signatures
-pca_from_original_matrix(mydata = input$`Mutational Signatures`, 
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          algorithm = "IntNMF", 
-                         clust_res = clust_annot_pheno,
+                         clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = "new_code/output/MOVICS/MO_comparisons/IntNMF_extra",
-                         title_add = "Mutational Signatures")
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "IntNMF", 
+                         clust_res = IntNMF_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"),
+                         title_add = "Methylation")
 
 # Bar charts with clinical variables of interest ###
 IntNMF_barcharts = list()
