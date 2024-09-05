@@ -381,6 +381,9 @@ SNF_barcharts = list()
 plotdata_bar = clust_annot_pheno %>%
   dplyr::mutate(SNF = paste0("MOVICS_", SNF))
 plotdata_bar$SNF = factor(plotdata_bar$SNF)
+
+# IMPORTANT: REMOVE samID from voi
+voi = voi[!voi=="samID"]
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["SNF"]]
   loc = which(grepl(voi[i], chifit$Comparison))

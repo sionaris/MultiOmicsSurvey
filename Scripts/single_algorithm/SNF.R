@@ -1412,24 +1412,24 @@ dev.off()
 # Sunburst plot ###
 library(plotly)
 Pheno_sunburst_SNF = clust_annot_pheno
-Pheno_sunburst_SNF$`ER status` = gsub("Unknown", "Unk ER status", Pheno_sunburst_SNF$`ER status`)
-Pheno_sunburst_SNF$Metastasis = gsub("Unknown", "Unk metastatic status", 
-                                     Pheno_sunburst_SNF$Metastasis)
+Pheno_sunburst_SNF$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_SNF$`ER status`)
+Pheno_sunburst_SNF$Stage = gsub("Unknown", "Unkn stage", 
+                                     Pheno_sunburst_SNF$Stage)
 Pheno_sunburst_SNF = Pheno_sunburst_SNF %>%
-  dplyr::select(SNF, `ER status`, Metastasis, `Vital status`) %>%
-  group_by(SNF, `ER status`, Metastasis, `Vital status`) %>%
+  dplyr::select(SNF, `ER status`, Stage) %>%
+  group_by(SNF, `ER status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_SNF = data.frame(stringsAsFactors = FALSE,
-                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", 
+                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
                                                                       "#C11D9C", "#0F1682",  "grey40",
-                                                                      "deeppink4", "cadetblue2", "grey40",
-                                                                      "lightpink1", "black", "grey40"))),
-                                   labels = c("SNF1", "SNF2", "SNF3",
-                                              "Negative", "Positive", "Unk ER status",
-                                              "Yes", "No", "Unk metastatic status",
-                                              "Alive", "Dead", "Unknown"))
+                                                                      "#00C9FF", "#099CF5", "#097BF5", 
+                                                                      "#0B5684", "grey40"))),
+                                   labels = c("SNF1", "SNF2",
+                                              "Negative", "Positive", "Unkn ER status",
+                                              "Stage I", "Stage II", "Stage III",
+                                              "Stage IV", "Unkn stage"))
 
 sunburstDF_SNF = as.sunburstDF(Pheno_sunburst_SNF, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_SNF, by = "labels")
