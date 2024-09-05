@@ -564,3 +564,45 @@ for (k in 1:length(sim_matrices)) {
 }
 
 names(overlap_heatmap) = names(sim_matrices)
+
+# Create a comprehensive plot that will both display similarities in:
+# a) clusterings and b) identified pathways
+library(reshape2)
+
+# Average of NMI and ARI for cluster similarity
+average_cluster_similarity <- (nmi_matrix + ari_matrix) / 2
+overlap_matrix <- sim_matrices[["All sets in CS1"]]
+
+# Create a long format data frame from the matrices
+nmi_df <- melt(average_cluster_similarity)
+colnames(nmi_df) <- c("Algorithm1", "Algorithm2", "Cluster similarity")
+overlap_df <- melt(overlap_matrix)
+colnames(overlap_df) <- c("Algorithm1", "Algorithm2", "Pathway overlap")
+
+# Merge the two data frames
+comparison_df <- merge(nmi_df, overlap_df, by = c("Algorithm1", "Algorithm2"))
+
+# Plot using ggplot2
+alg_biol_comp = ggplot(comparison_df, aes(x = Algorithm1, y = Algorithm2)) +
+  geom_tile(aes(fill = `Cluster similarity`), color = "white") +
+  geom_point(aes(size = `Pathway overlap`), shape = 16) + 
+  scale_fill_gradientn(colors = rev(colorRampPalette(viridisLite::magma(10))(255))[3:225]) +
+  scale_size_continuous(range = c(1, 10)) + 
+  ggtitle("Algorithm comparisons: clusterings and underlying biology") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        axis.text.y = element_text(size = 8),
+        plot.title = element_text(face = "bold", size = 10, hjust = 0.5),
+        panel.background = element_blank(),
+        legend.title = element_text(face = "bold", size = 6.5),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        legend.background = element_rect(fill = "white", linetype = "solid"),
+        legend.text = element_text(size = 5.5)) +
+  labs(x = "", y = "", 
+       fill = "Cluster Similarity (NMI + ARI)", shape = "Pathway overlap")
+alg_biol_comp
+ggsave(filename = "biology_and_clust_comparisons_across_algorithms.pdf",
+       path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons"), 
+       width = 5300, height = 4300, device = 'pdf', units = "px",
+       dpi = 700)
+dev.off()
