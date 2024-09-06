@@ -1004,7 +1004,7 @@ dev.off()
 
 # GSEA #####
 # Load MSigDb file
-MSIGDB.FILE <- system.file("extdata", "c5.bp.v7.1.symbols.xls", package = "MOVICS", mustWork = TRUE)
+MSIGDB.FILE <- paste0(home, "/Resources/Pathways/GO-BP_c5.go.bp.v2024.1.Hs.symbols.gmt")
 
 # GSEA up-regulated
 RNGversion("4.2.2")
@@ -1017,7 +1017,7 @@ gsea.up <- runGSEA_mod_4.4(moic.res     = consensus,
                        msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                        norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
                        dirct        = "up", # direction of dysregulation in pathway
-                       n.path       = 10,
+                       n.path       = 20,
                        p.cutoff     = 0.05, # p cutoff to identify significant pathways
                        p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
                        gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -1041,7 +1041,7 @@ gsea.down <- runGSEA_mod_4.4(moic.res     = consensus,
                            msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                            norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
                            dirct        = "down", # direction of dysregulation in pathway
-                           n.path       = 10,
+                           n.path       = 20,
                            p.cutoff     = 0.05, # p cutoff to identify significant pathways
                            p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
                            gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -1056,7 +1056,7 @@ gsea.down <- runGSEA_mod_4.4(moic.res     = consensus,
 
 # Gene set variation analysis #####
 # locate ABSOLUTE path of gene set file
-GSET.FILE <- system.file("extdata", "gene sets of interest.gmt", package = "MOVICS", mustWork = TRUE)
+GSET.FILE <- paste0(home, "/Resources/Pathways/gene_sets_of_interest.gmt")
 
 RNGversion("4.2.2")
 set.seed(123)
