@@ -106,69 +106,62 @@ ggsave(filename = "comp_ER_clust_alg.png",
 
 
 # Examine the differences in oncoprints #####
+# Not for COCA (not sufficient results - same in DGEA)
+oncoprints = list()
+for (i in c(1:4, 6:10)) {
+oncoprints[[i]] <- compMut_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                 moic.res  = moic.res.list[[i]],
+                                                 mut.matrix   = input$SNPs, # binary somatic mutation matrix
+                                                 doWord       = TRUE, # generate table in .docx format
+                                                 doPlot       = TRUE, # draw OncoPrint
+                                                 freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
+                                                 p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
+                                                 innerclust   = TRUE, # perform clustering within each subtype
+                                                 annCol       = annCol, # same annotation for heatmap
+                                                 annColors    = annColors, # same annotation color for heatmap
+                                                 width        = 12, 
+                                                 height       = 6,
+                                                 fig.name     = paste0("MOVICS_", names(moic.res.list)[i],
+                                                                       "_", data_source, "_",
+                                                                       data_types, "_eval_on_", evaluation_source,
+                                                                       "_oncoprint"),
+                                                 tab.name     = "Independent test between subtype and mutation",
+                                                 fig.path     = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/Oncoprints"),
+                                                 res.path     = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/Oncoprints"))
+}
+names(oncoprints) = names(moic.res.list)
 
-# Create oncoprints for each algorithm
-# comp_oncoprint_full = comp_oncoprint_coding = comp_oncoprint_driver_coding = list()
-# comp_oncoprint_full = comp_oncoprint_coding = list()
-# 
-# for (i in 1:length(moic.res.list)) {
-#   # mutational frequency comparison
-#   comp_oncoprint_full[[i]] <- compMut(moic.res  = moic.res.list[[i]],
-#                             mut.matrix   = bmm_full, # binary somatic mutation matrix
-#                             doWord       = TRUE, # generate table in .docx format
-#                             doPlot       = TRUE, # draw OncoPrint
-#                             freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
-#                             p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
-#                             innerclust   = TRUE, # perform clustering within each subtype
-#                             annCol       = annCol, # same annotation for heatmap
-#                             annColors    = annColors, # same annotation color for heatmap
-#                             width        = 12, 
-#                             height       = 6,
-#                             fig.name     = paste0("oncoprint_full_", names(moic.res.list)[i]),
-#                             tab.name     = paste0("Independent test between ", names(moic.res.list)[i],
-#                                             " subtype and mutation"),
-#                             fig.path     = "new_code/output/MOVICS/MO_comparisons/oncoprints",
-#                             res.path     = "new_code/output/MOVICS/MO_comparisons/oncoprints")
-#   
-#   comp_oncoprint_coding[[i]] <- compMut(moic.res  = moic.res.list[[i]],
-#                               mut.matrix   = bmm_coding, # binary somatic mutation matrix
-#                               doWord       = TRUE, # generate table in .docx format
-#                               doPlot       = TRUE, # draw OncoPrint
-#                               freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
-#                               p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
-#                               innerclust   = TRUE, # perform clustering within each subtype
-#                               annCol       = annCol, # same annotation for heatmap
-#                               annColors    = annColors, # same annotation color for heatmap
-#                               width        = 12, 
-#                               height       = 6,
-#                               fig.name     = paste0("oncoprint_coding_", names(moic.res.list)[i]),
-#                               tab.name     = paste0("Independent test between ", names(moic.res.list)[i],
-#                                                     " subtype and coding mutation"),
-#                               fig.path     = "new_code/output/MOVICS/MO_comparisons/oncoprints",
-#                               res.path     = "new_code/output/MOVICS/MO_comparisons/oncoprints")
-#   
-#   # driv = moic.res.list[[i]]
-#   # driv$fit = driv$fit[colnames(bmm_driver_coding), colnames(bmm_driver_coding)]
-#   # driv$clust.res = driv$clust.res[colnames(bmm_driver_coding), ]
-#   # comp_oncoprint_driver_coding[[i]] <- compMut(moic.res  = driv,
-#   #                                   mut.matrix   = bmm_driver_coding, # binary somatic mutation matrix
-#   #                                   doWord       = TRUE, # generate table in .docx format
-#   #                                   doPlot       = TRUE, # draw OncoPrint
-#   #                                   freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
-#   #                                   p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
-#   #                                   innerclust   = TRUE, # perform clustering within each subtype
-#   #                                   annCol       = annCol, # same annotation for heatmap
-#   #                                   annColors    = annColors, # same annotation color for heatmap
-#   #                                   width        = 12, 
-#   #                                   height       = 6,
-#   #                                   fig.name     = paste0("oncoprint_coding_driver_", names(moic.res.list)[i]),
-#   #                                   tab.name     = paste0("Independent test between ", names(moic.res.list)[i],
-#   #                                                         " subtype and coding driver mutation"),
-#   #                                   fig.path     = "new_code/output/MOVICS/MO_comparisons/oncoprints",
-#   #                                   res.path     = "new_code/output/MOVICS/MO_comparisons/oncoprints")
-# }
-# 
-# names(comp_oncoprint_full) = names(comp_oncoprint_coding) = names(moic.res.list)
+# Drug sensitivity comparisons #####
+drug_sensitivities = list()
+for (i in 1:length(moic.res.list)) {
+  drug_sensitivities[[i]] <- compDrugsen(moic.res    = moic.res.list[[i]],
+                                  norm.expr   = input$RNAseq,
+                                  drugs       = c("Cisplatin", "Paclitaxel", "Lapatinib",
+                                                  "Doxorubicin", "5-Fluorouracil",
+                                                  "Sorafenib"), # a vector of names of drug in GDSC
+                                  tissueType  = "breast", # choose specific tissue type to construct ridge regression model
+                                  test.method = "nonparametric", # statistical testing method
+                                  prefix      = paste0("MOVICS_", names(moic.res.list)[i], "_",
+                                                       "Violin_plot_of_IC50"),
+                                  seed = 123,
+                                  fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DrugSen"))
+}
+names(drug_sensitivities) = names(moic.res.list)
+
+# Agreement with other subtypes #####
+subtype_agreements = list()
+for (i in 1:length(moic.res.list)) {
+  subtype_agreements[[i]] <- compAgree2(moic.res  = moic.res.list[[i]],
+                                  subt2comp = annCol[, c("Stage", "ER status", "PR status",
+                                                         "HER2 status", "Metastasis")],
+                                  doPlot    = TRUE,
+                                  box.width = 0.2,
+                                  fig.name  = paste0("MOVICS_", names(moic.res.list)[i], "_",
+                                                     "Classification_agreement"),
+                                  fig.path  = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/Subtype_agreements"),
+                                  width     = 12)
+}
+names(subtype_agreements) = names(moic.res.list)
 
 # Examine the differences in terms of gene expression and pathways across clusterings #####
 
@@ -242,7 +235,7 @@ for (i in 1:length(moic.res.list)) {
 }
 
 # Pathways
-MSIGDB.FILE <- system.file("extdata", "c5.bp.v7.1.symbols.xls", package = "MOVICS", mustWork = TRUE)
+MSIGDB.FILE <- paste0(home, "/Resources/Pathways/GO-BP_c5.go.bp.v2024.1.Hs.symbols.gmt")
 
 comp_gsea.up = comp_gsea.down = list()
 # Exclude COCA
@@ -259,7 +252,7 @@ for (i in c(1:4, 6:10)) {
                                                         msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                                         norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
                                                         dirct        = "up", # direction of dysregulation in pathway
-                                                        n.path       = 10,
+                                                        n.path       = 20,
                                                         p.cutoff     = 0.05, # p cutoff to identify significant pathways
                                                         p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
                                                         gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -284,7 +277,7 @@ for (i in c(1:4, 6:10)) {
                                                           msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                                           norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
                                                           dirct        = "down", # direction of dysregulation in pathway
-                                                          n.path       = 10,
+                                                          n.path       = 20,
                                                           p.cutoff     = 0.05, # p cutoff to identify significant pathways
                                                           p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
                                                           gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -305,6 +298,34 @@ names(comp_gsea.up) = names(comp_gsea.down) = names(moic.res.list)
 comp_gsea.up = comp_gsea.up[setdiff(names(comp_gsea.up), "COCA")]
 comp_gsea.down = comp_gsea.down[setdiff(names(comp_gsea.down), "COCA")]
 
+GSET.FILE <- paste0(home, "/Resources/Pathways/gene_sets_of_interest.gmt")
+comp_gsva.res = list()
+for (i in c(1:4, 6:10)) {
+  RNGversion("4.2.2")
+  set.seed(123)
+  comp_gsva.res[[i]] = runGSVA_mod_4.4_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                         moic.res     = moic.res.list[[i]],
+                                                         norm.expr     = input$RNAseq,
+                                                         gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
+                                                         gsva.method   = "gsva", # method to calculate single sample enrichment score
+                                                         annCol        = annCol,
+                                                         annColors     = annColors,
+                                                         fig.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"),
+                                                         fig.name      = paste0("gene_sets_of_interest_heatmap_MOVICS_", names(moic.res.list)[i]),
+                                                         centerFlag    = F,
+                                                         scaleFlag     = F,
+                                                         distance      = 'euclidean',
+                                                         linkage       = 'average',
+                                                         show_rownames = TRUE,
+                                                         show_colnames = FALSE,
+                                                         height        = 8,
+                                                         width         = 12,
+                                                         name          = "GSVA scores")
+}
+names(comp_gsva.res) = names(moic.res.list)
+# Exclude COCA slot
+comp_gsva.res = comp_gsva.res[setdiff(names(comp_gsva.res), "COCA")]
+
 # Jaccard heatmap for pathways (see if the clusterings uncover similar biology)
 
 # Up-regulated patwhays in CS1
@@ -323,7 +344,7 @@ rm(cs1_upreg_path_alg)
 table(cs1_upreg_path$Algorithm)
 
 # Number of distinct up-regulated pathways
-length(unique(cs1_upreg_path$ID)) # 2939
+length(unique(cs1_upreg_path$ID)) # 2854
 
 # Down-regulated pathways in CS1
 cs1_downreg_path = as.data.frame(matrix(data = NA, nrow = 0, ncol = 3))
@@ -341,7 +362,7 @@ rm(cs1_downreg_path_alg)
 table(cs1_downreg_path$Algorithm)
 
 # Number of distinct down-regulated pathways
-length(unique(cs1_downreg_path$ID)) # 2702
+length(unique(cs1_downreg_path$ID)) # 2578
 
 # Bar plot of top 10 most frequent pathways
 top10_upreg_pathways <- cs1_upreg_path %>%
