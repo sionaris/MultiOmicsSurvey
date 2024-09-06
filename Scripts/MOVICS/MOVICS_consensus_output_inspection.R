@@ -174,7 +174,7 @@ ggsave(filename = "comp_ER_clust_alg.png",
 
 # DGEA
 comp_dgea = comp_dgea.marker.up = comp_dgea.marker.down = list()
-# No significant genes for COCA (just 1 down-regulated)
+# No significant genes for COCA (just 1 down-regulated, for i = 6)
 for (i in 1:length(moic.res.list)) {
   comp_dgea[[i]] = runDEA(dea.method = "limma",
                           expr = input$RNAseq,
@@ -233,7 +233,7 @@ for (i in 1:length(moic.res.list)) {
                                                            scaleFlag = F,
                                                            halfwidth = 3,
                                                            fig.name      = paste0(names(moic.res.list)[i], 
-                                                                                  "_upregulated_biomarkers_heatmap"),
+                                                                                  "_downregulated_biomarkers_heatmap"),
                                                            fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DGEA"),
                                                            width = 14,
                                                            height = 12,
@@ -291,7 +291,7 @@ for (i in c(1:4, 6:10)) {
                                                           name         = "GSVA scores", # name for colorbar
                                                           norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
                                                           fig.name     = paste0(names(moic.res.list)[i], 
-                                                                                "_upregulated_pathway_heatmap"),
+                                                                                "_downregulated_pathway_heatmap"),
                                                           nPerm = 10000,
                                                           minGSSize = 10,
                                                           maxGSSize = 500,
@@ -323,7 +323,7 @@ rm(cs1_upreg_path_alg)
 table(cs1_upreg_path$Algorithm)
 
 # Number of distinct up-regulated pathways
-length(unique(cs1_upreg_path$ID)) # 266
+length(unique(cs1_upreg_path$ID)) # 2939
 
 # Down-regulated pathways in CS1
 cs1_downreg_path = as.data.frame(matrix(data = NA, nrow = 0, ncol = 3))
