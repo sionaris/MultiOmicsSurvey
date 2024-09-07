@@ -49,8 +49,11 @@ The MOVICS package provides a function ``compMut()`` which applies independent t
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/SNF_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/Oncoprints/pdf2png/MOVICS_SNF_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
 ## Differential Gene Expression Analysis (DGEA)
 DGEA is performed in order to compare the expression of the two identified consensus subtypes using the __limma__ package.
@@ -64,21 +67,27 @@ In this procedure, the most differentially expressed genes sorted by __log2FoldC
 
 ## Gene Set Enrichment Analysis
 
-GSEA is carried out using a gene set background which includes all gene sets derived from GO biological processes (c5.bp.v7.1.symbols.gmt) from The Molecular Signatures Database (MSigDB, https://www.gsea-msigdb.org/gsea/msigdb/index.jsp).
+GSEA is carried out using a gene set background which includes all gene sets derived from GO biological processes (``Resources/Pathways/c5.go.bp.v2024.1.Hs.symbols.gmt``) from The Molecular Signatures Database (MSigDB, https://www.gsea-msigdb.org/gsea/msigdb/index.jsp).
 
 Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.25; we set the latter to <u>0.1</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/SNF_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
 For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/gene_sets_of_interest_heatmap_MOVICS_SNF_gsva-1.png")`)
 
 # Evaluation results
 ## Nearest Template Prediction (NTP)
@@ -111,12 +120,12 @@ To be specific, ``runPAM()`` first trains a partition around medoids (PAM) class
 ## Graphs of affinity matrices
 The graphs of the <u>original</u> $S$ matrices (neighborhood graphs) and the neighborhood graph of the <b>final fused affinity matrix</b> are shown below:
 
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/CNV Original Affinity 20-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/RNAseq Original Affinity 20-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/miRNA Original Affinity 20-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/Methylation Original Affinity 20-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/SNPs Original Affinity 20-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/Final Fused Affinity 20-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/CNV Original Affinity 15-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/RNAseq Original Affinity 15-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/miRNA Original Affinity 15-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/Methylation Original Affinity 15-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/SNPs Original Affinity 15-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/Final Fused Affinity 15-NN Graph.png")`)
 
 ## PCA from final affinity matrices
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/SNF_CNV_kernelPCA.png")`)
@@ -132,44 +141,68 @@ We also perform a few drug sensitivity comparisons. MOVICS uses the [pRRophetic]
 <u><b>Sorafenib</b></u>
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_SNF_Violin_plot_of_IC50 for Sorafenib-1.png")`)
 
 <u><b>Paclitaxel</b></u>
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_SNF_Violin_plot_of_IC50 for Paclitaxel-1.png")`)
 
 <u><b>Lapatinib</b></u>
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_SNF_Violin_plot_of_IC50 for Lapatinib-1.png")`)
 
 <u><b>Doxorubicin</b></u>
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_SNF_Violin_plot_of_IC50 for Doxorubicin-1.png")`)
 
 <u><b>Cisplatin</b></u>
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_SNF_Violin_plot_of_IC50 for Cisplatin-1.png")`)
 
 <u><b>5-Fluorouracil</b></u>
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
 
-<b>Comparison with MOVICS</b>:
+<b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
+
+<b>Comparison with MOVICS SNF subtypes</b>:
+
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_SNF_Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
 
 ## Subtype agreement
 Here we examine how similar the consensus multi-omic clustering labels are to other labels relative to breast cancer.
@@ -185,18 +218,10 @@ In MOVICS, the SNF algorithm is run by default with $N_i = 30$, $\sigma = 0.5$ a
 <b>ARI:</b> `r params$ARI_to_MOVICS_SNF`
 <b>NMI:</b> `r params$NMI_to_MOVICS_SNF`
 
-<b> Oncoprint comparison </b>
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/MOVICS_SNF_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
-
-<b> GSEA comparisons </b>
-<b>No GSEA enrichment across MOVICS SNF clusters</b>.
-
-With respect to GSVA:
-![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/gene_sets_of_interest_heatmap_MOVICS_SNF_gsva-1.png")`)
-
 # Conclusions
 <ol>
   <li>The identified SNF subtypes are associated with <b>vital status, history of neoadjuvant treatment, PR status, ER status, HER2 status, ER and PR cell level percentages, and histological type</b>.</li>
+  <li>The identified SNF subtypes are similar to the MOVICS SNF subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS_SNF`, <b>NMI:</b> `r params$NMI_to_MOVICS_SNF`).</li>
   <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and RNA-seq modalities</b>.</li>
   <li>SNF1 is associated with <b>ER+, PR+ samples</b> and have the majority of <b>ILC samples</b>.</li>
   <li>SNF2 has generally <b>higher immune system activity</b> compared to SNF1.</li>
