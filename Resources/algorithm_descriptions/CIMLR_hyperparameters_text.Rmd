@@ -1,0 +1,5 @@
+There is one hyperparameter in CIMLR: the number of neighbors ($nn'$) used during the diffusion step of the algorithm..
+
+Here, we used a range of number of neighbors values $[ `r hyperparameters[["num_neighbors_min"]]`, `r hyperparameters[["num_neighbors_max"]]` ]$ with a step size of `r hyperparameters[["num_neighbors_step"]]`. Hyperparameters that are hard coded in the source code of ``CIMLR()`` include eigenvalue adjustment parameters $\alpha = 0.8$, $\beta = 2$, diffusion parameter $\delta = 0.8$ and the number of iterations ``NITER = 30``.
+
+We compared the final similarity matrices $S$ for various $nn'$ (Pearson and Frobenius similarities between matrices). <b>Automatic conclusion:</b> `r hyperparameters[["conclusion"]]` 

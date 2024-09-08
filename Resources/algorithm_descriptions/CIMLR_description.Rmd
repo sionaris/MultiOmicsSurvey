@@ -1,0 +1,94 @@
+<!--## Cancer Integration via Multikernel LeaRning (CIMLR)
+### Algorithm
+<u>**In a nutshell (a.k.a. TL;DR)**:</u>
+
+[CIMLR](`r cite_CIMLR`) learns a measure of similarity between each pair of samples in a multi-omic dataset by combining multiple Gaussian kernels per data type, corresponding to different, complementary representations of the data. It enforces a block structure in the resulting similarity matrix, which is then used for dimension reduction and k-means clustering. CIMLR is building on the [SIMLR](https://pubmed.ncbi.nlm.nih.gov/29265724/) approach.-->
+
+<u>**In detail**:</u>
+
+<ol>
+  <li> Each modality $m \in \{1, 2, \ldots, p\}$ should have an input matrix $X^m_{N \times M}$, where $N$ is the number of samples in the experiment and $M$ is the number of features. </li>
+
+  <li> For each data modality, a set of multiple kernels is computed. Specifically, for a given input matrix $X^m$, multiple Gaussian kernels are fit using different values of the parameters $k$ (the number of nearest neighbors) and $\sigma$ (the scaling factor for the Gaussian function):
+  
+  $$K(x_i, x_j) = \frac{1}{\sigma_{ij}\sqrt{2\pi}} \exp\left(-\frac{||x_i - x_j||_2^2}{2\sigma_{ij}^2}\right)$$
+  
+  where $x_i$ and $x_j$ are the $i$-th and $j$-th rows (samples) of the input data, and $\sigma_{ij}^2$ is the variance, computed as the mean distance between sample $i$ and its $k$ nearest neighbors. </li>
+
+  <li> The parameters used for kernel construction are:
+  
+  <ul>
+      <li> $nn \in \{10, 12, 14, \ldots, 30\}$: This defines the number of nearest neighbors for constructing each kernel. For each $nn$, the mean distance between sample $i$ and its $nn$ nearest neighbors is used to scale the Gaussian kernel. </li>
+      <li> $\sigma \in \{1.0, 1.25, 1.5, 1.75, 2.0\}$: These are the scaling factors for the Gaussian function, controlling the smoothness of the kernels. </li>
+  </ul>
+
+  In total, 55 different kernels are computed for each data modality ($11$ different $nn$ values and $5$ different $\sigma$ values). </li>
+
+  <li> The kernel matrices are normalized using the following formula to ensure that the similarity values are scaled appropriately:
+  
+  $$K_{ij} \rightarrow \frac{K_{ij}}{\sqrt{K_{ii} K_{jj}}}$$
+  
+  where $K_{ii}$ and $K_{jj}$ are the diagonal elements of $K$, representing self-similarity. This normalization step ensures that the kernel matrices are comparable across different scales and data types. </li>
+
+  <li> Once the multiple kernels are computed for each data modality, they are concatenated to form a comprehensive set of kernels for all data types. These kernels capture different relationships between samples (e.g., local vs. global similarities) and across data modalities. </li>
+
+  <li> The optimization problem that the algorithm seeks to solve is:
+  
+  $$\text{minimize}_{S,L,w} \ - \sum_{i,j,l} w_l K_l(x_i, x_j) S_{ij} + \beta||S||^2_F + \gamma \, \text{tr}(L^T(I_N - S)L) + \rho \sum_l w_l \log w_l$$
+  
+  $$\text{subject to} \quad L^T L = I_C, \sum_l w_l = 1, w_l \geq 0, \sum_j S_{ij} = 1 \quad \text{and} \quad S_{ij} \geq 0$$
+  
+  where $N$ is the number of samples, $C$ is the number of clusters, $i$ is the row (sample) index, $j$ is the column (feature) index, $l$ is the kernel index ($l \in \{1, \ldots, K \times p\}$), $w_l$ represents the weight of each Gaussian kernel, $\beta$, $\gamma$, and $\rho$ are non-negative tuning parameters, $||S||_F$ is the Frobenius norm of $S$, and $L$ is an auxiliary low-dimensional matrix enforcing the low-rank constraint on $S$. </li>
+
+  <li> <b>Adjacency Matrix $A$:</b> The matrix $A$ is initially constructed from local distances between samples and then refined iteratively. The construction of $A$ is based on distances between nearest neighbors $\text{distX}_{ij}$ (derived from the Gaussian kernels) and the corresponding low-dimensional distances $\text{distf}_{ij}$. For a given sample $i$ and its neighbors $j$:
+
+  $$A_{ij} = \frac{( \text{distX}_{ij} + \lambda \cdot \text{distf}_{ij} )}{2r}$$
+  
+  Here, $\lambda$ is a regularization term and $r$ helps to smooth the affinity matrix, making it more robust to noise and outliers. </li>
+
+  <li> <b>Parameters:</b>
+  <ul>
+      <li> $nn'$ (``k`` in the source code): Number of nearest neighbors for building the similarity matrix. Default is $nn' = 10$. This parameter controls how local the similarity matrix is, influencing the clustering quality. </li>
+      <li> $\beta$: Balances the contribution of the Frobenius norm regularization of the similarity matrix $S$. Higher $\beta$ encourages smoother similarity matrices. </li>
+      <li> <b>Regularization Parameters:</b>
+      <ul>
+        <li> $\lambda$: This regularization parameter balances the contribution of distances in updating the adjacency matrix $A$. It controls how much weight is given to the local distances (distances within the same cluster) versus global distances. Initially, $\lambda$ is set based on the local distances $rr$:
+        $$\lambda = \max(\text{mean}(rr), 0)$$
+        Then, $\lambda$ is updated iteratively during optimization using the rule:
+        $$\lambda = 1.5 \cdot \lambda$$
+        </li>
+        <li> $r$: This is another regularization term that helps smooth the update of the adjacency matrix $A$. If $r$ is not set explicitly, it is computed from the mean of the distances to the nearest neighbors:
+        $$r = \text{mean}(rr)$$
+        Here, $rr$ represents the residual distances between samples and their neighbors, used to adjust the adjacency matrix. </li>
+      </ul>
+      </li>
+      <li> Number of iterations: The algorithm performs a set number of iterations ($NITER = 30$ by default). At each iteration, the similarity matrix $S$ and other variables are updated based on the optimization criteria. </li>
+  </ul>
+  </li>
+
+  <li> The final matrix $S$ is a weighted sum of the $K \times p$ kernels, under the above constraints. The weights $w_l$ (stored in ``alphaK``) are updated iteratively based on how well each kernel helps to explain the clustering structure. </li>
+
+  <li> After constructing the matrix $S$, a <b>network diffusion process</b> is applied to propagate similarities across the graph. The diffusion process smooths the similarity matrix by propagating information between neighboring nodes in the similarity graph:
+  
+  $$S = (1 - \delta) A + \delta S$$
+  
+  where $A$ is the updated adjacency matrix, and $\delta = 0.8$ controls the diffusion of similarities. </li>
+
+  <li> During the network diffusion process, the adjacency matrix $A$ has its diagonal set to 0 to ensure that no node is its own neighbor. A sign matrix $\text{sign}(A)$ is created to retain the signs of connections (positive or negative). The dominant set of neighbors for each node is calculated based on the absolute values of $A$, but the original signs are preserved. This dominant set is then normalized to create a stochastic transition matrix. An eigen decomposition is performed on the matrix to allow diffusion of information across the network.
+
+  The eigenvalues $e$ of the transition matrix are adjusted by $\alpha$ and $\beta'$ as follows:
+  
+  $$e = \frac{(1 - \alpha) e}{1 - \alpha \cdot e^{\beta'}}$$
+  
+  where $\alpha = 0.8$ and $\beta' = 2$ control the diffusion rate for the eigenvalues. </li>
+
+  <li> Eigenvalue decomposition is then performed on the graph Laplacian matrix $L = D - S$, where $D$ is the diagonal degree matrix. The leading $C$ eigenvectors are used to obtain a lower-dimensional embedding of the data. </li>
+
+  <li> The algorithm seeks to optimize the cluster indication matrix $Z(R) = X R$, with $X$ being the matrix of the top eigenvectors of the similarity Laplacian and $R$ a rotation matrix. The cost function minimized is:
+  
+  $$J(R) = \sum_{i,j} \frac{[Z(R)]_{i,j}^2}{[M(R)]^2_i}$$
+  
+  where $M(R)_i = \max_j [Z(R)]_{i,j}$. </li>
+
+  <li> The final number of clusters is determined by observing the largest drop in $J(R)$ over different values of $C$. </li>
+</ol>
