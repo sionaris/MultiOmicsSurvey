@@ -2429,8 +2429,7 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
   names(colvec) <- paste0(algorithm_name, unique(clust.res$clust))
   if (!is.null(annCol) & !is.null(annColors)) {
     annCol <- annCol[colnames(data[[1]]), , drop = FALSE]
-    annCol$Subtype <- paste0(algorithm_name, clust.res[colnames(data[[1]]), 
-                                                       "clust"])
+    annCol$Subtype <- paste0(algorithm_name, clust.res[colnames(data[[1]]), "clust"])
     annColors[["Subtype"]] <- colvec
     if (is.null(clust.dend)) {
       clust.res <- clust.res[order(clust.res$clust), ]

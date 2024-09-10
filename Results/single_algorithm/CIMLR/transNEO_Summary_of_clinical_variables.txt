@@ -1,0 +1,62 @@
+level	CIMLR1	CIMLR2	p	test	sig
+n		   86	   67			NA
+Subtype (%)	CIMLRCIMLR1	   86 (100.0) 	    0 (  0.0) 	<0.001		**
+	CIMLRCIMLR2	    0 (  0.0) 	   67 (100.0) 			NA
+LN.status.at.diagnosis (%)	Negative	   33 ( 38.4) 	   41 ( 61.2) 	 0.008		**
+	Positive	   53 ( 61.6) 	   26 ( 38.8) 			NA
+ER.status (%)	Negative	   13 ( 15.1) 	   38 ( 56.7) 	<0.001		**
+	Positive	   73 ( 84.9) 	   29 ( 43.3) 			NA
+HER2.status (%)	Negative	   49 ( 57.0) 	   45 ( 67.2) 	 0.264		
+	Positive	   37 ( 43.0) 	   22 ( 32.8) 			NA
+Grade.pre.NAT (%)	Grade 2	   50 ( 58.1) 	    9 ( 13.4) 	<0.001	exact	**
+	Grade 3	   36 ( 41.9) 	   58 ( 86.6) 			NA
+pCR.RD (%)	pCR	   12 ( 14.0) 	   29 ( 43.3) 	<0.001		**
+	Residual Disease	   74 ( 86.0) 	   38 ( 56.7) 			NA
+Age 		50.58 ± 9.70	49.69 ± 12.20	 0.624		
+T.stage (%)	T1	    9 ( 10.5) 	    3 (  4.5) 	 0.085	exact	
+	T2	   45 ( 52.3) 	   47 ( 70.1) 			NA
+	T3	   28 ( 32.6) 	   13 ( 19.4) 			NA
+	T4	    4 (  4.7) 	    4 (  6.0) 			NA
+PAM50 (%)	Basal-like	    3 (  3.5) 	   35 ( 52.2) 	<0.001	exact	**
+	HER2+	   20 ( 23.3) 	   15 ( 22.4) 			NA
+	Luminal B	   33 ( 38.4) 	   15 ( 22.4) 			NA
+	Luminal A	   22 ( 25.6) 	    0 (  0.0) 			NA
+	Normal-like	    8 (  9.3) 	    1 (  1.5) 			NA
+	Unknown	    0 (  0.0) 	    1 (  1.5) 			NA
+iC10 (%)	iC1	    6 (  7.0) 	    3 (  4.5) 	<0.001	exact	**
+	iC2	    7 (  8.1) 	    4 (  6.0) 			NA
+	iC3	    6 (  7.0) 	    1 (  1.5) 			NA
+	iC4	    9 ( 10.5) 	    4 (  6.0) 			NA
+	iC5	   22 ( 25.6) 	   15 ( 22.4) 			NA
+	iC6	    8 (  9.3) 	    4 (  6.0) 			NA
+	iC7	    8 (  9.3) 	    0 (  0.0) 			NA
+	iC8	   12 ( 14.0) 	    0 (  0.0) 			NA
+	iC9	    6 (  7.0) 	   12 ( 17.9) 			NA
+	iC10	    2 (  2.3) 	   24 ( 35.8) 			NA
+NAT.regimen (%)	EC-T	    1 (  1.2) 	    1 (  1.5) 	 0.662	exact	
+	EC-T + Trastuzumab	    1 (  1.2) 	    0 (  0.0) 			NA
+	EC + Trastuzumab	    0 (  0.0) 	    1 (  1.5) 			NA
+	FEC-T	    2 (  2.3) 	    3 (  4.5) 			NA
+	FEC-T + Trastuzumab	   28 ( 32.6) 	   18 ( 26.9) 			NA
+	FEC-T + Trastuzumab + Pertuzumab	    3 (  3.5) 	    1 (  1.5) 			NA
+	P-Carboplatin	    1 (  1.2) 	    0 (  0.0) 			NA
+	P-EC	    1 (  1.2) 	    3 (  4.5) 			NA
+	P-FEC	    1 (  1.2) 	    4 (  6.0) 			NA
+	P + Trastuzumab	    1 (  1.2) 	    0 (  0.0) 			NA
+	T	    0 (  0.0) 	    1 (  1.5) 			NA
+	T-Carboplatin	    2 (  2.3) 	    0 (  0.0) 			NA
+	T-EC	    5 (  5.8) 	    3 (  4.5) 			NA
+	T-FEC	   33 ( 38.4) 	   28 ( 41.8) 			NA
+	T-FEC + Trastuzumab	    1 (  1.2) 	    0 (  0.0) 			NA
+	T-FEC + Trastuzumab + Pertuzumab	    2 (  2.3) 	    0 (  0.0) 			NA
+	T + Pertuzumab + Trastuzumab	    0 (  0.0) 	    1 (  1.5) 			NA
+	TC	    2 (  2.3) 	    1 (  1.5) 			NA
+	TC + Trastuzumab	    2 (  2.3) 	    2 (  3.0) 			NA
+Chemo.cycles 		 5.90 ± 0.59	 5.88 ± 0.81	 0.900		
+aHER2.cycles 		 2.84 ± 1.03	 2.61 ± 0.72	 0.303		
+RCB.score 		 2.10 ± 1.31	 1.20 ± 1.25	<0.001		**
+STAT1.gsva 		-0.13 ± 0.47	 0.16 ± 0.50	<0.001		**
+GGI.gsva 		-0.30 ± 0.38	 0.36 ± 0.28	<0.001		**
+ESC.gsva 		-0.24 ± 0.28	 0.23 ± 0.25	<0.001		**
+TMB 		 1.61 ± 1.57	 2.77 ± 1.75	<0.001		**
+HRD.sum 		18.97 ± 10.01	35.84 ± 16.90	<0.001		**

@@ -31,7 +31,7 @@ subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types,
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
 ground_truth_labels = openxlsx::read.xlsx("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")
 ground_truth_k = 2 # optk from MOVICS
-optk_boolean = "TRUE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
+optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
                    "<u>does not suggest</u> an optimal number of multi-omic clusters $k$")
@@ -109,348 +109,119 @@ library(Matrix)
 library(parallel)
 similarity_object = list()
 for (nn in num_neighbors_range) {
-  similarity_object[["nn"]] = CIMLR_mod(X = input, c = ground_truth_k, 
+  similarity_object[[paste0("NN = ", nn)]] = CIMLR_mod(X = input, c = ground_truth_k, 
                                       k = nn, binary_flags = c("Yes", "No", "No", "No", "No"),
                     binary_distance = "binary", nonbinary_distance = "sqeuclidean", cores.ratio = 0.25)
 }
 rm(nn)
 
-# Fusions ###
-# Try parallel
-library(parallel)
-library(foreach)
-library(doParallel)
-
-# Use 5 cores
-cl = makeCluster(6) # or 3 (depending on resources)
-registerDoParallel(cl)
-
-Fusions = list()
-
-# Use foreach to parallelize the computation (< 30 min)
-Fusions <- foreach(nn = num_neighbors_range, .combine = 'c', .packages = 'CIMLRtool') %:%
-  foreach(sigma = sigma_range, .combine = 'c') %dopar% {
-    sublist <- similarity_object[[paste0("NN = ", nn)]][[paste0("sigma = ", sigma)]]
-    iter_matrices <- lapply(sublist, `[[`, "affinity_matrix")
-    fusion_result <- CIMLR(iter_matrices, K = nn, t = n_iterations, parallel = FALSE)
-    list(fusion_result)
-  }
-
-# Stop the cluster
-stopCluster(cl)
-
-# Restructure the Fusions list to match the desired output format
-names(Fusions) <- unlist(lapply(num_neighbors_range, function(nn) {
-  lapply(sigma_range, function(sigma) {
-    paste0("NN = ", nn, ", sigma = ", sigma)
-  })
-}))
-
-# Give appropriate colnames and rownames
-column_names = colnames(similarity_object[["NN = 10"]][["sigma = 0.3"]][["RNAseq"]][["affinity_matrix"]])
-row_names = rownames(similarity_object[["NN = 10"]][["sigma = 0.3"]][["RNAseq"]][["affinity_matrix"]])
-
-for (i in 1:length(Fusions)) {
-  colnames(Fusions[[i]]) = column_names
-  rownames(Fusions[[i]]) = row_names
-}
-
-save.image(paste0(home, "/Results/single_algorithm/", 
-                  algorithm, "/", algorithm, "_", data_source, "_",
-                  data_types, "_eval_on_", evaluation_source,
-                  "_env.RData"))
-
-# Function to compute both Frobenius norm and Pearson correlation between matrices
-compute_matrix_similarity <- function(matrices) {
-  num_matrices <- length(matrices)
-  similarity_frobenius <- matrix(0, nrow = num_matrices, ncol = num_matrices)
-  similarity_pearson <- matrix(0, nrow = num_matrices, ncol = num_matrices)
-  
-  for (i in 1:num_matrices) {
-    for (j in 1:num_matrices) {
-      if (i != j) {
-        similarity_frobenius[i, j] <- frobenius_norm(matrices[[i]], matrices[[j]])
-        similarity_pearson[i, j] <- pearson_correlation(matrices[[i]], matrices[[j]])
-      }
-    }
-  }
-  
-  # Set row names and column names
-  
-  rownames(similarity_frobenius) <- colnames(similarity_frobenius) <- 
-    rownames(similarity_pearson) <- colnames(similarity_pearson) <- names(matrices)
-  
-  return(list(Frobenius = similarity_frobenius, Pearson = similarity_pearson))
-}
+# Compare similarity matrices similarly to what we did to SNF
+sim_matrices_S = lapply(similarity_object, function(x) x[["S"]])
+D2_matrices_F = lapply(similarity_object, function(x) x[["F"]])
+names(sim_matrices_S) = names(D2_matrices_F) = names(similarity_object)
 
 # Check similarities for a given nn
-nn_similarities = list()
-for (nn in num_neighbors_range) {
-  indices = grepl(paste0("NN = ", nn), names(Fusions))
-  matrices = Fusions[indices]
-  similarity_results <- compute_matrix_similarity(matrices)
-  
-  # Modify row names and column names for the similarity matrices
-  matrix_names <- substr(names(matrices), 9, 20)
-  rownames(similarity_results$Frobenius) <- matrix_names
-  colnames(similarity_results$Frobenius) <- matrix_names
-  rownames(similarity_results$Pearson) <- matrix_names
-  colnames(similarity_results$Pearson) <- matrix_names
-  
-  nn_similarities[[paste0("NN = ", nn)]] <- similarity_results
-}
+S_similarities = compute_matrix_similarity(sim_matrices_S)
+dimnames(S_similarities$Frobenius) = dimnames(S_similarities$Pearson) =
+  list(names(similarity_object), names(similarity_object))
 
-print(nn_similarities)
+# Examine Pearson matrices ###
+S_Pearson_matrix <- S_similarities$Pearson
+S_Frobenius_matrix <- S_similarities$Frobenius
 
-# Check similarities for a given sigma
-sigma_similarities = list()
-for (sigma in sigma_range) {
-  indices = grepl(paste0("sigma = ", sigma), names(Fusions))
-  matrices = Fusions[indices]
-  similarity_results <- compute_matrix_similarity(matrices)
-  
-  # Modify row names and column names for the similarity matrices
-  matrix_names <- substr(names(matrices), 0, 7)
-  rownames(similarity_results$Frobenius) <- matrix_names
-  colnames(similarity_results$Frobenius) <- matrix_names
-  rownames(similarity_results$Pearson) <- matrix_names
-  colnames(similarity_results$Pearson) <- matrix_names
-  
-  sigma_similarities[[paste0("sigma = ", sigma)]] <- similarity_results
-}
+S_Pearson_values <- S_Pearson_matrix[lower.tri(S_Pearson_matrix, diag = FALSE)]
+S_mean_Pearson_value <- mean(S_Pearson_values)
+S_median_Pearson_value <- median(S_Pearson_values)
+S_sd_Pearson_value <- sd(S_Pearson_values)
 
-print(sigma_similarities)
-rm(indices, matrices); gc()
+S_Frobenius_values <- S_Frobenius_matrix[lower.tri(S_Frobenius_matrix, diag = FALSE)]
+S_mean_Frobenius_value <- mean(S_Frobenius_values)
+S_median_Frobenius_value <- median(S_Frobenius_values)
+S_sd_Frobenius_value <- sd(S_Frobenius_values)
 
-# All similarities
-all_similarities = compute_matrix_similarity(Fusions)
+# Plot histogram of Pearson values
+library(ggplot2)
+ggplot(data = data.frame(S_Pearson_values), aes(x = S_Pearson_values)) +
+  geom_histogram(breaks = seq(0, 1, length.out = 37),
+                 fill = "skyblue", color = "lightblue", size = 0.15) +
+  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
+  geom_vline(aes(xintercept = S_mean_Pearson_value, color = "Mean"), size = 0.2) + 
+  geom_vline(aes(xintercept = S_median_Pearson_value, color = "Median"), size = 0.2) + 
+  geom_vline(aes(xintercept = S_mean_Pearson_value - S_sd_Pearson_value, color = "Mean - SD"), 
+             linetype = "dashed", size = 0.2) + 
+  geom_vline(aes(xintercept = S_mean_Pearson_value + S_sd_Pearson_value, color = "Mean + SD"), 
+             linetype = "dashed", size = 0.2) +
+  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
+                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
+                                                "Density" = "darkblue")) +
+  labs(title = "Histogram of Pearson values between S matrices for different values of Nearest Neighbors", 
+       x = "S Matrix Pearson Values", y = "Frequency") +
+  scale_x_continuous(name = "S Matrix Pearson Values", limits = c(0, 1),
+                     breaks = seq(0, 1, 0.1), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(linewidth = 0.25),
+        plot.title = element_text(face = "bold", size = 6.3),
+        axis.title = element_text(face = "bold", size = 5.8),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.2),
+        legend.text = element_text(size = 4.5),
+        legend.title = element_text(size = 5, face = "bold"),
+        legend.key.spacing.y = unit(1, "mm"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.box.background = element_rect(color = "black"))
+ggsave(filename = paste0(algorithm, "_S_matrix_Pearson_similarity_histogram.pdf"),
+  path = paste0(home, 
+                "/Results/single_algorithm/CIMLR/Supplement"), 
+  width = 2880, height = 1820, device = 'pdf', units = "px",
+  dpi = 700)
+dev.off()
 
-# Overall tests ###
-# Get summary statistics
-# Initialize nn_summary and sigma_summary
-nn_summary <- data.frame(
-  nn = integer(),        
-  mean = numeric(),      
-  median = numeric(),    
-  sd = numeric()         
-)
+# Plot histogram of Frobenius values
+ggplot(data = data.frame(S_Frobenius_values), aes(x = S_Frobenius_values)) +
+  geom_histogram(breaks = seq(0, 2, length.out = 37),
+                 fill = "skyblue", color = "lightblue", size = 0.15) +
+  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
+  geom_vline(aes(xintercept = S_mean_Frobenius_value, color = "Mean"), size = 0.2) + 
+  geom_vline(aes(xintercept = S_median_Frobenius_value, color = "Median"), size = 0.2) + 
+  geom_vline(aes(xintercept = S_mean_Frobenius_value - S_sd_Frobenius_value, color = "Mean - SD"), 
+             linetype = "dashed", size = 0.2) + 
+  geom_vline(aes(xintercept = S_mean_Frobenius_value + S_sd_Frobenius_value, color = "Mean + SD"), 
+             linetype = "dashed", size = 0.2) +
+  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
+                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
+                                                "Density" = "darkblue")) +
+  labs(title = "Histogram of Frobenius values between S matrices for different values of Nearest Neighbors", 
+       x = "S Matrix Frobenius Values", y = "Frequency") +
+  scale_x_continuous(name = "S Matrix Frobenius Values", limits = c(0, 2),
+                     breaks = seq(0, 2, 0.2), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(linewidth = 0.25),
+        plot.title = element_text(face = "bold", size = 6.3),
+        axis.title = element_text(face = "bold", size = 5.8),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.2),
+        legend.text = element_text(size = 4.5),
+        legend.title = element_text(size = 5, face = "bold"),
+        legend.key.spacing.y = unit(1, "mm"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.box.background = element_rect(color = "black"))
+ggsave(filename = paste0(algorithm, "_S_matrix_Frobenius_similarity_histogram.pdf"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/CIMLR/Supplement"), 
+       width = 2880, height = 1820, device = 'pdf', units = "px",
+       dpi = 700)
+dev.off()
 
-sigma_summary <- data.frame(
-  sigma = numeric(),     
-  mean = numeric(),      
-  median = numeric(),   
-  sd = numeric()        
-)
-
-# Calculate nn_summary
-for (nn in names(nn_similarities)) {
-  pearson_matrix <- nn_similarities[[nn]]$Pearson
-  pearson_values <- pearson_matrix[lower.tri(pearson_matrix, diag = FALSE)]
-  
-  # Compute mean, median, and standard deviation
-  mean_value <- mean(pearson_values)
-  median_value <- median(pearson_values)
-  sd_value <- sd(pearson_values)
-  
-  # Append the results to nn_summary
-  nn_summary <- rbind(nn_summary, data.frame(
-    nn = as.numeric(sub("NN = ", "", nn)),
-    mean = mean_value,
-    median = median_value,
-    sd = sd_value
-  ))
-}
-
-# Calculate sigma_summary
-for (sigma in names(sigma_similarities)) {
-  pearson_matrix <- sigma_similarities[[sigma]]$Pearson
-  pearson_values <- pearson_matrix[lower.tri(pearson_matrix, diag = FALSE)]
-  
-  # Compute mean, median, and standard deviation
-  mean_value <- mean(pearson_values)
-  median_value <- median(pearson_values)
-  sd_value <- sd(pearson_values)
-  
-  # Append the results to sigma_summary
-  sigma_summary <- rbind(sigma_summary, data.frame(
-    sigma = as.numeric(sub("sigma = ", "", sigma)),
-    mean = mean_value,
-    median = median_value,
-    sd = sd_value
-  ))
-}
-
-# Display the summaries
-print(nn_summary)
-print(sigma_summary)
-
-# Parametric ##
-# Reshape data for ANOVA
-nn_reshape <- reshape_CIMLR_Pearson_for_tests(nn_similarities)
-sigma_reshape <- reshape_CIMLR_Pearson_for_tests(sigma_similarities)
-
-# Perform ANOVA for nn
-anova_nn <- aov(Value ~ Factor, data = nn_reshape)
-summary(anova_nn)
-
-# Perform ANOVA for sigma
-anova_sigma <- aov(Value ~ Factor, data = sigma_reshape)
-summary(anova_sigma)
-
-# Conclusion
-if (summary(anova_nn)[[1]][["Pr(>F)"]][1] < 0.05) {
-  conclusion1 = "Overall, the choice of sigma significantly affects the results for a given ``nn``."
-  cat(conclusion1)
-} else {
-  conclusion1 = "Overall, the choice of sigma does not significantly affect the results for a given ``nn``."
-  cat(conclusion1)
-}
-
-if (summary(anova_sigma)[[1]][["Pr(>F)"]][1] < 0.05) {
-  conclusion2 = "Overall, the choice of nn significantly affects the results for a given ``sigma``."
-  cat(conclusion2)
-} else {
-  conclusion2 = "Overall, the choice of nn does not significantly affect the results for a given ``sigma``."
-  cat(conclusion2)
-}
-
-# Determine overall effect
-if (summary(anova_nn)[[1]][["Pr(>F)"]][1] < 0.05 &&
-    summary(anova_sigma)[[1]][["Pr(>F)"]][1] < 0.05) {
-  nn_mean_diff <- max(nn_summary$mean) - min(nn_summary$mean)
-  sigma_mean_diff <- max(sigma_summary$mean) - min(sigma_summary$mean)
-  
-  # Means
-  if (nn_mean_diff > sigma_mean_diff) {
-    conclusion3 = paste0("The ``nn`` effect is stronger than the ``sigma`` effect based on mean",
-                         " Pearson similarities (", nn_mean_diff, " vs. ", sigma_mean_diff, ").")
-    cat(conclusion3)
-  } else if (nn_mean_diff < sigma_mean_diff) {
-    conclusion3 = paste0("The ``sigma`` effect is stronger than the ``nn`` effect based on mean",
-                         " Pearson similarities (", sigma_mean_diff, " vs. ", nn_mean_diff, ").")
-    cat(conclusion3)
-  }
-  
-  # Standard deviations
-  nn_sd_diff <- max(nn_summary$sd) - min(nn_summary$sd)
-  sigma_sd_diff <- max(sigma_summary$sd) - min(sigma_summary$sd)
-  
-  if (nn_sd_diff > sigma_sd_diff) {
-    conclusion4 = paste0("The ``nn`` effect is stronger than the sigma effect based on", 
-                         " the standard deviation of Pearson similarities (",
-                         nn_sd_diff, " vs. ", sigma_sd_diff, ").")
-    cat(conclusion4)
-  } else if (nn_sd_diff < sigma_sd_diff) {
-    conclusion4 = paste0("The ``sigma`` effect is stronger than the nn effect based on",  
-                         " the standard deviation of Pearson similarities (",
-                         sigma_sd_diff, " vs. ", nn_sd_diff, ").")
-    cat(conclusion4)
-  }
-} else {
-  conclusion3 = "The ``nn`` effect and ``sigma`` effects are practically equal based on mean Pearson similarities."
-  cat(conclusion3)
-}
-
-if (exists("conclusion4")) {
-  conclusion = paste(conclusion1, conclusion2, conclusion3, conclusion4)
-  rm(conclusion1, conclusion2, conclusion3, conclusion4)
-  sig_status = TRUE
-} else {
-  conclusion = paste(conclusion1, conclusion2, conclusion3)
-  rm(conclusion1, conclusion2, conclusion3)
-  sig_status = FALSE
-}
-
-# Non-parametric ##
-# Reshape data for Kruskal-Wallis Test
-nn_reshape <- reshape_CIMLR_Pearson_for_tests(nn_similarities)  
-sigma_reshape <- reshape_CIMLR_Pearson_for_tests(sigma_similarities)  
-
-# Perform Kruskal-Wallis test for nn
-kruskal_nn <- kruskal.test(Value ~ Factor, data = nn_reshape)
-print(kruskal_nn)
-
-# Perform Kruskal-Wallis test for sigma
-kruskal_sigma <- kruskal.test(Value ~ Factor, data = sigma_reshape)
-print(kruskal_sigma)
-
-# Perform pairwise Wilcoxon tests if Kruskal-Wallis is significant
-if (kruskal_nn$p.value < 0.05) {
-  pairwise_nn <- pairwise.wilcox.test(nn_reshape$Value, nn_reshape$Factor, p.adjust.method = "bonferroni")
-  print(pairwise_nn)
-}
-
-if (kruskal_sigma$p.value < 0.05) {
-  pairwise_sigma <- pairwise.wilcox.test(sigma_reshape$Value, sigma_reshape$Factor, p.adjust.method = "bonferroni")
-  print(pairwise_sigma)
-}
-
-# Initialize conclusion variables to avoid undefined errors
-np_conclusion1 <- NULL
-np_conclusion2 <- NULL
-np_conclusion3 <- NULL
-np_conclusion4 <- NULL
-
-# np_conclusion
-if (kruskal_nn$p.value < 0.05) {
-  np_conclusion1 <- "Overall, the choice of sigma significantly affects the results for a given `nn`."
-  cat(np_conclusion1, "\n")
-  
-  # Additional comparisons for mean or median if needed
-  nn_median_diff <- max(nn_summary$median) - min(nn_summary$median)
-  sigma_median_diff <- max(sigma_summary$median) - min(sigma_summary$median)
-  
-  if (nn_median_diff > sigma_median_diff) {
-    np_conclusion3 <- paste0("The `nn` effect is stronger than the `sigma` effect based on median",
-                             " Pearson similarities (", nn_median_diff, " vs. ", sigma_median_diff, ").")
-    cat(np_conclusion3, "\n")
-  } else if (nn_median_diff < sigma_median_diff) {
-    np_conclusion3 <- paste0("The `sigma` effect is stronger than the `nn` effect based on median",
-                             " Pearson similarities (", sigma_median_diff, " vs. ", nn_median_diff, ").")
-    cat(np_conclusion3, "\n")
-  } else {
-    np_conclusion3 <- "The `nn` effect and `sigma` effects are practically equal based on median Pearson similarities."
-    cat(np_conclusion3, "\n")
-  }
-} else {
-  np_conclusion1 <- "Overall, the choice of sigma does not significantly affect the results for a given `nn`."
-  cat(np_conclusion1, "\n")
-}
-
-if (kruskal_sigma$p.value < 0.05) {
-  np_conclusion2 <- "Overall, the choice of nn significantly affects the results for a given `sigma`."
-  cat(np_conclusion2, "\n")
-  
-  # Additional comparisons for standard deviations if needed
-  nn_sd_diff <- max(nn_summary$sd) - min(nn_summary$sd)
-  sigma_sd_diff <- max(sigma_summary$sd) - min(sigma_summary$sd)
-  
-  if (nn_sd_diff > sigma_sd_diff) {
-    np_conclusion4 <- paste0("The `nn` effect is stronger than the sigma effect based on", 
-                             " the standard deviation of Pearson similarities (",
-                             nn_sd_diff, " vs. ", sigma_sd_diff, ").")
-    cat(np_conclusion4, "\n")
-  } else if (nn_sd_diff < sigma_sd_diff) {
-    np_conclusion4 <- paste0("The `sigma` effect is stronger than the nn effect based on",  
-                             " the standard deviation of Pearson similarities (",
-                             sigma_sd_diff, " vs. ", nn_sd_diff, ").")
-    cat(np_conclusion4, "\n")
-  } else {
-    np_conclusion4 <- "The `nn` effect and `sigma` effects are practically equal based on the standard deviation of Pearson similarities."
-    cat(np_conclusion4, "\n")
-  }
-} else {
-  np_conclusion2 <- "Overall, the choice of nn does not significantly affect the results for a given `sigma`."
-  cat(np_conclusion2, "\n")
-}
-
-# Consolidate all np_conclusions
-np_conclusion <- paste(c(np_conclusion1, np_conclusion2, np_conclusion3, np_conclusion4)[!sapply(c(np_conclusion1, np_conclusion2, np_conclusion3, np_conclusion4), is.null)], collapse = " ")
-np_sig_status <- (kruskal_nn$p.value < 0.05) | (kruskal_sigma$p.value < 0.05)
-cat(np_conclusion)
+# Evidently, Pearson correlations are on the lower extreme and Frobenius norms are high
+conclusion1 = paste0("Average Pearson similarity across S matrices produced by different values of $nn'$ was ",
+                     S_mean_Pearson_value, ", which indicates generally ",
+                     ifelse(S_mean_Pearson_value < 0.75, "dissimilar", "similar"),
+                     " S matrices across $nn'$ values.")
 
 # Handle sig_status_final
-if (np_sig_status == FALSE && sig_status == FALSE) {
+if (S_mean_Pearson_value > 0.75) {
   sig_status_final = FALSE
 } else {
   sig_status_final = TRUE
@@ -458,78 +229,23 @@ if (np_sig_status == FALSE && sig_status == FALSE) {
 
 # If no significant differences are shown between/across hyperparameters then pick median values
 if (!sig_status_final){
-  optN = median(num_neighbors_range) # 30
-  optSigma = median(sigma_range) # 0.55
+  optNN = 15 # arbitrary, but yielded good results in SNF
 }
 
-# The choice of number of neighbors affects the final matrix more than sigma, which
-# also plays a role, according to parametric tests
-
-# We will therefore pick the median sigma, rounded down to 0.5, a value we actually used in affinities.
 # We then choose the nn value for which the
 # fused similarity matrix has the "best" bimodal distribution of low and high values.
 # WE USE THIS APPROACH ONLY BECAUSE THE NUMBER OF CLUSTERS WE SEEK IS 2!
 
-# We use combine two methodologies to do it:
+# We combine two methodologies to do it:
 
 # 1. Get the sum of variance and IQR for every matrix
 # 2. Get the sum of absolute skewness and kurtosis
 # 3. Find the nn matrix for which the sum of 1 and 2 is maximum
-optSigma = 0.5
-
-# Variance and IQR
-choose_matrix_contrasts <- function(similarity_matrices) {
-  contrast_values <- list()
-  
-  for (name in names(similarity_matrices)) {
-    similarity_values <- as.vector(similarity_matrices[[name]])
-    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
-    
-    # Calculate measures of contrast
-    variance <- var(similarity_values)
-    iqr <- IQR(similarity_values)
-    contrast_metric <- variance + iqr
-    contrast_values[[name]] <- contrast_metric
-  }
-  
-  return(contrast_values)
-}
 
 # Skewness and kurtosis
 library(e1071)
-
-choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
-  skewness_kurtosis_values <- list()
-  
-  for (name in names(similarity_matrices)) {
-    similarity_values <- as.vector(similarity_matrices[[name]])
-    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
-    
-    # Calculate skewness and kurtosis
-    skewness_value <- skewness(similarity_values)
-    kurtosis_value <- kurtosis(similarity_values)
-    
-    # Calculate a combined metric: |skewness| + kurtosis
-    combined_metric <- abs(skewness_value) + kurtosis_value
-    skewness_kurtosis_values[[name]] <- combined_metric
-  }
-  
-  return(skewness_kurtosis_values)
-}
-
-Fusions_filt = Fusions[which(grepl("sigma = 0.5", names(Fusions)))]
-contrast_list <- choose_matrix_contrasts(Fusions_filt)
-skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(Fusions_filt)
-
-# Min-max normalization to [0,1]
-minmax_normalize_values <- function(values) {
-  min_value <- min(values)
-  max_value <- max(values)
-  
-  normalized_values <- (values - min_value) / (max_value - min_value)
-  return(normalized_values)
-}
-
+contrast_list <- choose_matrix_contrasts(sim_matrices_S)
+skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(sim_matrices_S)
 contrast_values <- unlist(contrast_list)
 skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
 
@@ -545,23 +261,52 @@ print(combined_scores_list)
 best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
 cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
 
-# We choose nn = 15
-optN = as.numeric(substr(best_combined_matrix, 6, 7))
+# We choose nn = 20
+optNN = as.numeric(substr(best_combined_matrix, 6, 7))
+conclusion2 = paste0("Best similarity matrix based on combined normalized scores is for $nn' = ", 
+                     optNN, "$. We therefore proceed with $nn' = ",
+                     optNN, "$.")
+conclusion = paste(conclusion1, conclusion2)
 
-# Spectral clustering for k = ground_truth_k from MOVICS
+# M3C k-means clustering
+library(M3C)
+
+# Import resources
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp
+rm(scheme); gc()
+
+# Here we create a class column for ER status
+m3c_des = annCol
+m3c_des$class = m3c_des$`ER status`
+m3c_des$ID = rownames(m3c_des)
+m3c_input = t(similarity_object[[paste0("NN = ", optNN)]]$F) %>% as.data.frame()
+rownames(m3c_input) = c("t_SNE1", "t_SNE2")
+colnames(m3c_input) = colnames(input[["SNPs"]])
+
 RNGversion("4.2.2")
-set.seed(123)
+consensus_km = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
+           repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
+           clusteralg = "km", maxK = 2)
 
-final_affinity_matrix = Fusions[[paste0("NN = ", optN, ", sigma = ", optSigma)]]
-group = spectralClustering(final_affinity_matrix, ground_truth_k)
-names(group) = colnames(final_affinity_matrix)
+# Is the clustering significant?
+paste0(ifelse(consensus_km$scores$NORM_P < 0.05, "The clustering is significant.",
+       "The clustering is not significant."))
 
-CIMLR_clusters = as.data.frame(list(Sample.ID = names(group),
-                                  Cluster = group))
+# Normally, we would not proceed, but for the sake of comparisons across algorithms
+# we will produce the additional relevant plots
 
 # Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
+CIMLR_clusters = as.data.frame(list(Sample.ID = rownames(consensus_km[["realdataresults"]][[2]][["ordered_annotation"]]),
+                               Cluster = consensus_km[["realdataresults"]][[2]][["ordered_annotation"]][["consensuscluster"]]))
+CIMLR_clusters$Sample.ID = gsub("\\.", "-", CIMLR_clusters$Sample.ID)
+rownames(CIMLR_clusters) = CIMLR_clusters$Sample.ID
 
 # Calculate ARI and NMI
 library(mclust)
@@ -579,24 +324,14 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     clust_col = "Cluster",
                                     suffixes = c("_MOVICS", "_CIMLR"))
 
-# Very low statistics when compared to the MOVICS default CIMLR. Results differ
+# Very low statistics when compared to the MOVICS. Results differ
 
 # MOVICS-like analysis #####
 library(MOVICS)
 library(ComplexHeatmap)
 
-# Import coloring scheme
-scheme = readRDS("Resources/scheme.rds")
-annCol = scheme$annCol
-annColors = scheme$annColors
-cluster_colors = scheme$clust.colors
-col.list = scheme$col.list
-var2comp = scheme$var2comp
-rm(scheme); gc()
-
 plotdata <- lapply(lapply(input, as.matrix), 
-                   function(mat) mat[, colSums(mat != 0) > 0])
-plotdata <- lapply(plotdata, t)
+                   function(mat) mat[rowSums(mat != 0) > 0, ])
 heatmap_plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
@@ -679,7 +414,6 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
 # Similar to MOVICS: TP53 and PIK3CA patterns
 
 # Drug sensitivity comparison ###
-library(ggplot2)
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  moic.res    = plot_object,
                                                  norm.expr   = plotdata$RNAseq,
@@ -999,7 +733,7 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
-# NTP transNEO vs PAM transNEO # FAILS
+# NTP transNEO vs PAM transNEO
 runKappa_single_algorithm(algorithm_name = algorithm,
                           subt1 = as.numeric(gsub(algorithm, "",
                                                   transNEO_ntp_expr_up$clust.res$clust)),
@@ -1036,192 +770,67 @@ clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
 rownames(clust_annot_pheno) = clust_annot_pheno$samID
 afh_colnames = colnames(annCol)
 
-# Prepare affinity matrices
-aff_CNV = normalize_affinity_matrix(
-  CIMLRtool::affinityMatrix(
-    CIMLRtool::dist2(input$CNV,
-                   input$CNV),
-    K = optN, sigma = optSigma))
-colnames(aff_CNV) = rownames(aff_CNV) = rownames(input$CNV)
+# Same data frame. Different columns. Just for easiness
+CIMLR_clust_res = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID, CIMLR = Cluster)
 
-aff_rna = normalize_affinity_matrix(
-  CIMLRtool::affinityMatrix(
-    CIMLRtool::dist2(input$RNAseq,
-                   input$RNAseq),
-    K = optN, sigma = optSigma))
-colnames(aff_rna) = rownames(aff_rna) = rownames(input$RNA)
-
-aff_miRNA = normalize_affinity_matrix(
-  CIMLRtool::affinityMatrix(
-    CIMLRtool::dist2(input$miRNA,
-                   input$miRNA),
-    K = optN, sigma = optSigma))
-colnames(aff_miRNA) = rownames(aff_miRNA) = rownames(input$miRNA)
-
-aff_Methyl = normalize_affinity_matrix(
-  CIMLRtool::affinityMatrix(
-    CIMLRtool::dist2(input$Methylation,
-                   input$Methylation),
-    K = optN, sigma = optSigma))
-colnames(aff_Methyl) = rownames(aff_Methyl) = rownames(input$Methylation)
-
-aff_SNPs = normalize_affinity_matrix(
-  CIMLRtool::affinityMatrix(
-    as.matrix(dist(as.matrix(input$SNPs),
-                   as.matrix(input$SNPs),
-                   method = "binary")),
-    K = optN, sigma = optSigma))
-colnames(aff_SNPs) = rownames(aff_SNPs) = rownames(input$SNPs)
-
-aff_final = final_affinity_matrix
-
-# CNV
-create_MO_heatmap(matrix = aff_CNV, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "CNV first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/aff_CNV_heatmap.png"))
-
-# RNAseq
-create_MO_heatmap(matrix = aff_rna, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "RNAseq first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/aff_RNAseq_heatmap.png"))
+# PCA from original matrices ###
+# RNA
+pca_from_original_matrix(mydata = input$RNAseq, 
+                         algorithm = "CIMLR", 
+                         clust_res = CIMLR_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         title_add = "RNAseq")
 
 # miRNA
-create_MO_heatmap(matrix = aff_miRNA, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "miRNA first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/aff_miRNA_heatmap.png"))
+pca_from_original_matrix(mydata = input$miRNA, 
+                         algorithm = "CIMLR", 
+                         clust_res = CIMLR_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         title_add = "miRNA")
 
-# Methylation
-create_MO_heatmap(matrix = aff_Methyl, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Methylation first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/aff_Methylation_heatmap.png"))
-
-# SNPs
-create_MO_heatmap(matrix = aff_SNPs, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "SNPs first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/aff_SNPs_heatmap.png"))
-
-# Final affinity matrix
-create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Final affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/aff_final_affinity_heatmap.png"))
-
-# Final affinity matrix with clustered rows and columns
-create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Final affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = TRUE,
-                  cluster_rows_flag = TRUE,
-                  splits_flag = FALSE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/hclust_aff_final_affinity_heatmap.png"))
-
-# PCA ###
 # CNV
-pca_from_sim_matrix(sim_matrix = aff_CNV, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"), 
-                    title_add = "CNV")
+pca_from_original_matrix(mydata = input$CNV, 
+                         algorithm = "CIMLR", 
+                         clust_res = CIMLR_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         title_add = "CNV")
 
-# RNAseq
-pca_from_sim_matrix(sim_matrix = aff_rna, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"), 
-                    title_add = "RNAseq")
-
-# miRNA
-pca_from_sim_matrix(sim_matrix = aff_miRNA, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"), 
-                    title_add = "miRNA")
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+                         algorithm = "CIMLR", 
+                         clust_res = CIMLR_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         title_add = "SNPs")
 
 # Methylation
-pca_from_sim_matrix(sim_matrix = aff_Methyl, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"), 
-                    title_add = "Methylation")
+pca_from_original_matrix(mydata = input$Methylation, 
+                         algorithm = "CIMLR", 
+                         clust_res = CIMLR_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         title_add = "Methylation")
 
-# SNPs
-pca_from_sim_matrix(sim_matrix = aff_SNPs, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"), 
-                    title_add = "SNPs")
-
-# Final affinity
-pca_from_sim_matrix(sim_matrix = aff_final, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"), 
-                    title_add = "Fusion")
+# Draw a heatmap of the final S matrix ###
+cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
+dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
+create_MO_heatmap(matrix = cimlr_matrix, algorithm = "CIMLR", 
+                  need.diag.zero = FALSE, # already zero
+                  clust_annot_pheno = clust_annot_pheno ,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "Final CIMLR similarity heatmap",
+                  cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
+                  legend_title = "Final kernel similarity",
+                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/CIMLR_final_S_matrix_heatmap.png"))
 
 # Setup for barcharts ###
 # Stage
@@ -1385,9 +994,8 @@ dev.off()
 
 # Just significant ones now
 CIMLR_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(CIMLR, Race, Histology, 
-                                                       `ER status`, `PR status`) %>%
-  dplyr::mutate(CIMLR = paste0("MOVICS_", CIMLR))
+plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(CIMLR, Histology, 
+                                                       `ER status`, `PR status`)
 plotdata_bar_sig$CIMLR = factor(plotdata_bar_sig$CIMLR)
 voi_sig = setdiff(colnames(plotdata_bar_sig), "CIMLR")
 for (i in 1:length(voi_sig)) {
@@ -1419,13 +1027,12 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(CIMLR_barcharts_sig[[1]], CIMLR_barcharts_sig[[2]], CIMLR_barcharts_sig[[3]],
-          CIMLR_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          ncol = 1, nrow = 3, labels = c("A", "B", "C"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "sig_Multiplot_CIMLR_barcharts.png",
        path = paste0(home, 
                      "/Results/single_algorithm/CIMLR/Supplement"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 2500, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1438,6 +1045,7 @@ Pheno_sunburst_CIMLR$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_CIMLR$
 Pheno_sunburst_CIMLR = Pheno_sunburst_CIMLR %>%
   dplyr::select(CIMLR, `ER status`) %>%
   group_by(CIMLR, `ER status`) %>%
+  summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_CIMLR = data.frame(stringsAsFactors = FALSE,
@@ -1461,75 +1069,6 @@ pie_CIMLR = plot_ly() %>%
   )
 pie_CIMLR
 rm(Pheno_sunburst_CIMLR, sunburstDF_CIMLR, sunburst_coloring_CIMLR, pie_CIMLR); gc()
-
-# Graphs ###
-library(igraph)
-
-aff_CNV_S = calculate_S(aff_CNV)
-aff_rna_S = calculate_S(aff_rna)
-aff_miRNA_S = calculate_S(aff_miRNA)
-aff_Methyl_S = calculate_S(aff_Methyl)
-aff_SNPs_S = calculate_S(aff_SNPs)
-aff_final_S = calculate_S(aff_final)
-
-list_aff_S = list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, 
-                  aff_SNPs_S, aff_final_S)
-names(list_aff_S) = c(paste0("CNV Original Affinity ", optN, "-NN Graph"),
-                      paste0("RNAseq Original Affinity ", optN, "-NN Graph"),
-                      paste0("miRNA Original Affinity ", optN, "-NN Graph"),
-                      paste0("Methylation Original Affinity ", optN, "-NN Graph"),
-                      paste0("SNPs Original Affinity ", optN, "-NN Graph"),
-                      paste0("Final Fused Affinity ", optN, "-NN Graph"))
-
-for (i in 1:length(list_aff_S)) {
-  
-  # Prepare the graph object
-  g <- graph_from_adjacency_matrix(list_aff_S[[i]], 
-                                   mode = "undirected", weighted = TRUE, diag = FALSE)
-  g <- delete_edges(g, E(g)[weight == 0])
-  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
-  nodes_data <- data.frame(name = V(g)$name) %>%
-    inner_join(clust_annot_pheno %>% dplyr::select(samID, CIMLR),
-               by = c("name" = "samID"))
-  
-  # Set CIMLR as a factor for coloring
-  nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-  V(g)$CIMLR <- nodes_data[[algorithm]] # modify `$CIMLR` manually
-  
-  # Set color based on CIMLR
-  V(g)$color <- fifelse(V(g)$CIMLR == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
-  
-  png(paste0(home, 
-             "/Results/single_algorithm/CIMLR/Supplement/",
-             names(list_aff_S)[i], ".png"),
-      width = 6000, height = 6000, res = 700)
-  
-  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
-  
-  # Plot the graph with a layout that spreads nodes well
-  plot(g, vertex.color = V(g)$color,
-       edge.width = E(g)$width,
-       vertex.size = 4, 
-       vertex.label = NA, 
-       edge.color = "gray85",
-       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
-       main = "")
-  
-  # Add title with reduced size using title() function
-  title(main = names(list_aff_S)[i], cex.main = 1.7)
-  
-  # Add a legend to the right of the plot
-  legend("bottomright", 
-         title="Node Color Legend",    
-         legend=c(paste0(algorithm, "1"),
-                  paste0(algorithm, "2")), 
-         fill=cluster_colors_heatmap,  
-         cex=0.7,      
-         box.lwd=1)  
-  
-  dev.off() 
-}
-rm(g, nodes_data)
 
 # Compare these CIMLR results with the CIMLR output from MOVICS ###
 load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
@@ -1555,13 +1094,10 @@ NMI_to_MOVICS_CIMLR = calculate_nmi_index(cluster_df1 = MOVICS_CIMLR %>%
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        num_neighbors_max = max(num_neighbors_range),
                        num_neighbors_step = neighbor_step,
-                       sigma_min = min(sigma_range),
-                       sigma_max = max(sigma_range),
-                       sigma_step = sigma_step,
-                       optimal_N = optN,
-                       optimal_sigma = optSigma,
-                       conclusion = conclusion, # if there is agreement, np_conclusion can also be used
-                       n_iter = n_iterations
+                       optimal_NN = optNN,
+                       conclusion1 = conclusion1,
+                       conclusion2 = conclusion2,
+                       conclusion = conclusion
 )
 
 # Put all parameters in a list

@@ -1096,3 +1096,74 @@ CIMLR_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 1, binary_flags =
   results[["LF"]] = LF
   return(results)
 }
+
+# Function to compute both Frobenius norm and Pearson correlation between matrices #####
+compute_matrix_similarity <- function(matrices) {
+  num_matrices <- length(matrices)
+  similarity_frobenius <- matrix(0, nrow = num_matrices, ncol = num_matrices)
+  similarity_pearson <- matrix(0, nrow = num_matrices, ncol = num_matrices)
+  
+  for (i in 1:num_matrices) {
+    for (j in 1:num_matrices) {
+      if (i != j) {
+        similarity_frobenius[i, j] <- frobenius_norm(matrices[[i]], matrices[[j]])
+        similarity_pearson[i, j] <- pearson_correlation(matrices[[i]], matrices[[j]])
+      }
+    }
+  }
+  
+  # Set row names and column names
+  
+  rownames(similarity_frobenius) <- colnames(similarity_frobenius) <- 
+    rownames(similarity_pearson) <- colnames(similarity_pearson) <- names(matrices)
+  
+  return(list(Frobenius = similarity_frobenius, Pearson = similarity_pearson))
+}
+
+# Variance and IQR for matrices #####
+choose_matrix_contrasts <- function(similarity_matrices) {
+  contrast_values <- list()
+  
+  for (name in names(similarity_matrices)) {
+    similarity_values <- as.vector(similarity_matrices[[name]])
+    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
+    
+    # Calculate measures of contrast
+    variance <- var(similarity_values)
+    iqr <- IQR(similarity_values)
+    contrast_metric <- variance + iqr
+    contrast_values[[name]] <- contrast_metric
+  }
+  
+  return(contrast_values)
+}
+
+# Skewness and kurtosis for matrices #####
+choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
+  skewness_kurtosis_values <- list()
+  
+  for (name in names(similarity_matrices)) {
+    similarity_values <- as.vector(similarity_matrices[[name]])
+    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
+    
+    # Calculate skewness and kurtosis
+    skewness_value <- skewness(similarity_values)
+    kurtosis_value <- kurtosis(similarity_values)
+    
+    # Calculate a combined metric: |skewness| + kurtosis
+    combined_metric <- abs(skewness_value) + kurtosis_value
+    skewness_kurtosis_values[[name]] <- combined_metric
+  }
+  
+  return(skewness_kurtosis_values)
+}
+
+# Min-max normalization for matrices similarity inspection #####
+# Min-max normalization to [0,1]
+minmax_normalize_values <- function(values) {
+  min_value <- min(values)
+  max_value <- max(values)
+  
+  normalized_values <- (values - min_value) / (max_value - min_value)
+  return(normalized_values)
+}
