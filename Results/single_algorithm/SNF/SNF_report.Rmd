@@ -28,6 +28,9 @@ cat(res, sep = '\n')
 # Main results on training data
 ## Multi-omics clustering
 The spectral clustering results using the final affinity matrix for $k = `r params[["ground_truth_k"]]`$ are shown below (pairwise distances heatmap):
+![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/aff_final_affinity_heatmap.png")`)
+
+The corresponding multi-omic heatmap is shown below:
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/default_SNF_comprehensive_heatmap-1.png")`)
 
 The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (when `r params$algorithm` subtypes are compared to the MOVICS consensus subtypes CS1, CS2) are:
@@ -95,7 +98,7 @@ MOVICS provides two model-free approaches for subtype prediction in validation c
 
 Here cosine similarity is used to compare external samples to class templates (here we use the up-regulated genes in the form of a binary matrix with two columns: cluster 1 / cluster 2 where an entry is 1 if the gene is up-regulated in the cluster or -1 otherwise). The nearest class for each sample is determined by the smallest distance (converted from cosine similarity here). Each sample's result includes the nearest class prediction, the distance to all templates, and the p-value of the prediction.
 
-The function randomly permutes the sample labels multiple times (here ``nPerm = 10000``) to generate a null distribution of similarity scores between samples and class templates. For each observed sample-to-template distance, the function compares it against the null distribution to calculate a p-value. This p-value indicates the likelihood that the observed match could have occurred by chance. The p-values are adjusted using the false discovery rate (FDR) method to control for multiple hypothesis testing, ensuring robust statistical inference.
+The function randomly permutes the sample labels multiple times (here ``nPerm = 10000``) to generate a null distribution of similarity scores between samples and class templates. For each observed sample-to-template distance, the function compares it against the null distribution to calculate a $p$-value. This $p$-value indicates the likelihood that the observed match could have occurred by chance. The $p$-values are adjusted using the false discovery rate (FDR) method to control for multiple hypothesis testing, ensuring robust statistical inference.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/ntp_expr_up_heatmap_transNEO-1.png")`)
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/pdf2png/ntp_expr_down_heatmap_transNEO-1.png")`)
@@ -225,7 +228,7 @@ In MOVICS, the SNF algorithm is run by default with $N_i = 30$, $\sigma = 0.5$ a
   <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and RNA-seq modalities</b>.</li>
   <li>SNF1 is associated with <b>ER+, PR+ samples</b> and have the majority of <b>ILC samples</b>.</li>
   <li>SNF2 has generally <b>higher immune system activity</b> compared to SNF1.</li>
-  <li>SNF1 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF2 has a high proportion of <em>TP53</em> <b>mutations</b>. SNF1 has a relatively high ration of <em>CDH1</em> mutations too.</li>
+  <li>SNF1 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF2 has a high proportion of <em>TP53</em> <b>mutations</b>. SNF1 has a relatively high ratio of <em>CDH1</em> mutations too.</li>
   <li>In terms of <b>drug sensitivity</b>, SNF1 seems to be more sensitive to <b>sorafenib and lapatinib</b> compared to SNF2, and less sensitive to <b>paclitaxel, doxorubicin, 5-fluorouracil and cisplatin</b>.</li>
   <li>Predicted SNF subtypes on the transNEO cohort are associated with lymph node status at diagnosis, ER status, grade, <b>pCR</b> (see table below), PAM50, iC10, type of regimen of neoadjuvant treatment, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
 </ol>

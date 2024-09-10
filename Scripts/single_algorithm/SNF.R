@@ -491,7 +491,97 @@ if (!sig_status_final){
 }
 
 # The choice of number of neighbors affects the final matrix more than sigma, which
-# also plays a role, according to parametric tests
+# also plays a role, according only to parametric tests
+
+# Pearson and Frobenius histograms for different nn AND sigma = 0.5
+Pearson_hist_matrix = compute_matrix_similarity(Fusions_filt)$Pearson
+Pearson_values <- Pearson_hist_matrix[lower.tri(Pearson_hist_matrix, diag = FALSE)]
+mean_Pearson_value <- mean(Pearson_values)
+median_Pearson_value <- median(Pearson_values)
+sd_Pearson_value <- sd(Pearson_values)
+
+Frobenius_hist_matrix = compute_matrix_similarity(Fusions_filt)$Frobenius
+Frobenius_values <- Frobenius_hist_matrix[lower.tri(Frobenius_hist_matrix, diag = FALSE)]
+mean_Frobenius_value <- mean(Frobenius_values)
+median_Frobenius_value <- median(Frobenius_values)
+sd_Frobenius_value <- sd(Frobenius_values)
+
+# Plot histogram of Pearson values
+library(ggplot2)
+ggplot(data = data.frame(Pearson_values), aes(x = Pearson_values)) +
+  geom_histogram(breaks = seq(0, 1.07, length.out = length(Pearson_values)),
+                 fill = "skyblue", color = "lightblue", size = 0.15) +
+  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
+  geom_vline(aes(xintercept = mean_Pearson_value, color = "Mean"), size = 0.2) + 
+  geom_vline(aes(xintercept = median_Pearson_value, color = "Median"), size = 0.2) + 
+  geom_vline(aes(xintercept = mean_Pearson_value - sd_Pearson_value, color = "Mean - SD"), 
+             linetype = "dashed", size = 0.2) + 
+  geom_vline(aes(xintercept = mean_Pearson_value + sd_Pearson_value, color = "Mean + SD"), 
+             linetype = "dashed", size = 0.2) +
+  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
+                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
+                                                "Density" = "darkblue")) +
+  labs(title = expression(paste("Histogram of Pearson values between affinity matrices for varying NN and ",
+                                sigma, " = 0.5")), 
+       x = "Affinity Matrix Pearson Values", y = "Frequency") +
+  scale_x_continuous(name = "Affinity Matrix Pearson Values", limits = c(0, 1.07),
+                     breaks = seq(0, 1.07, 0.1), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(linewidth = 0.25),
+        plot.title = element_text(face = "bold", size = 6.3),
+        axis.title = element_text(face = "bold", size = 5.8),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.2),
+        legend.text = element_text(size = 4.5),
+        legend.title = element_text(size = 5, face = "bold"),
+        legend.key.spacing.y = unit(1, "mm"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.box.background = element_rect(color = "black"))
+ggsave(filename = paste0(algorithm, "_matrix_Pearson_similarity_histogram.pdf"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/SNF/Supplement"), 
+       width = 2880, height = 1820, device = 'pdf', units = "px",
+       dpi = 700)
+dev.off()
+
+# Plot histogram of Frobenius values
+ggplot(data = data.frame(Frobenius_values), aes(x = Frobenius_values)) +
+  geom_histogram(breaks = seq(0, 2.7, length.out = length(Frobenius_values)),
+                 fill = "skyblue", color = "lightblue", size = 0.15) +
+  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
+  geom_vline(aes(xintercept = mean_Frobenius_value, color = "Mean"), size = 0.2) + 
+  geom_vline(aes(xintercept = median_Frobenius_value, color = "Median"), size = 0.2) + 
+  geom_vline(aes(xintercept = mean_Frobenius_value - sd_Frobenius_value, color = "Mean - SD"), 
+             linetype = "dashed", size = 0.2) + 
+  geom_vline(aes(xintercept = mean_Frobenius_value + sd_Frobenius_value, color = "Mean + SD"), 
+             linetype = "dashed", size = 0.2) +
+  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
+                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
+                                                "Density" = "darkblue")) +
+  labs(title = expression(paste("Histogram of Frobenius values between affinity matrices for varying NN and ",
+                                sigma, " = 0.5")), 
+       x = "Affinity Matrix Frobenius Values", y = "Frequency") +
+  scale_x_continuous(name = "Affinity Matrix Frobenius Values", limits = c(0, 2.7),
+                     breaks = seq(0, 2.7, 0.25), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(linewidth = 0.25),
+        plot.title = element_text(face = "bold", size = 6.3),
+        axis.title = element_text(face = "bold", size = 5.8),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.2),
+        legend.text = element_text(size = 4.5),
+        legend.title = element_text(size = 5, face = "bold"),
+        legend.key.spacing.y = unit(1, "mm"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.box.background = element_rect(color = "black"))
+ggsave(filename = paste0(algorithm, "_matrix_Frobenius_similarity_histogram.pdf"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/SNF/Supplement"), 
+       width = 2880, height = 1820, device = 'pdf', units = "px",
+       dpi = 700)
+dev.off()
 
 # We will therefore pick the median sigma, rounded down to 0.5, a value we actually used in affinities.
 # We then choose the nn value for which the
@@ -607,7 +697,7 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     clust_col = "Cluster",
                                     suffixes = c("_MOVICS", "_SNF"))
 
-# Very low statistics when compared to the MOVICS default SNF. Results differ
+# Very low statistics when compared to the MOVICS. Results differ
 
 # MOVICS-like analysis #####
 library(MOVICS)
@@ -707,7 +797,6 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
 # Similar to MOVICS: TP53 and PIK3CA patterns
 
 # Drug sensitivity comparison ###
-library(ggplot2)
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  moic.res    = plot_object,
                                 norm.expr   = plotdata$RNAseq,
@@ -1414,8 +1503,7 @@ dev.off()
 # Just significant ones now
 SNF_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(SNF, Race, Histology, 
-                                                       `ER status`, `PR status`) %>%
-  dplyr::mutate(SNF = paste0("MOVICS_", SNF))
+                                                       `ER status`, `PR status`)
 plotdata_bar_sig$SNF = factor(plotdata_bar_sig$SNF)
 voi_sig = setdiff(colnames(plotdata_bar_sig), "SNF")
 for (i in 1:length(voi_sig)) {
@@ -1466,6 +1554,7 @@ Pheno_sunburst_SNF$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_SNF$`ER 
 Pheno_sunburst_SNF = Pheno_sunburst_SNF %>%
   dplyr::select(SNF, `ER status`) %>%
   group_by(SNF, `ER status`) %>%
+  summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_SNF = data.frame(stringsAsFactors = FALSE,
