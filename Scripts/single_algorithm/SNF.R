@@ -314,8 +314,8 @@ print(sigma_summary)
 
 # Parametric ##
 # Reshape data for ANOVA
-nn_reshape <- reshape_SNF_Pearson_for_tests(nn_similarities)
-sigma_reshape <- reshape_SNF_Pearson_for_tests(sigma_similarities)
+nn_reshape <- reshape_Pearson_for_tests(nn_similarities)
+sigma_reshape <- reshape_Pearson_for_tests(sigma_similarities)
 
 # Perform ANOVA for nn
 anova_nn <- aov(Value ~ Factor, data = nn_reshape)
@@ -391,8 +391,8 @@ if (exists("conclusion4")) {
 
 # Non-parametric ##
 # Reshape data for Kruskal-Wallis Test
-nn_reshape <- reshape_SNF_Pearson_for_tests(nn_similarities)  
-sigma_reshape <- reshape_SNF_Pearson_for_tests(sigma_similarities)  
+nn_reshape <- reshape_Pearson_for_tests(nn_similarities)  
+sigma_reshape <- reshape_Pearson_for_tests(sigma_similarities)  
 
 # Perform Kruskal-Wallis test for nn
 kruskal_nn <- kruskal.test(Value ~ Factor, data = nn_reshape)
