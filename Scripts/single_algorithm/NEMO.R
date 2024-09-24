@@ -594,7 +594,14 @@ annCol = scheme$annCol
 annColors = scheme$annColors
 cluster_colors = scheme$clust.colors
 col.list = scheme$col.list
-var2comp = scheme$var2comp
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(NEMO_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(NEMO = paste0(algorithm, Cluster)) %>%
+  dplyr::select(NEMO, everything()) %>%
+  dplyr::select(-Cluster)
 rm(scheme); gc()
 cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                    "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c")
@@ -669,7 +676,7 @@ gc()
 clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          moic.res = plot_object,
                                          var2comp = var2comp,
-                                         strata = "Consensus Subtype",
+                                         strata = algorithm,
                                          factorVars = c("vital_status", "race_list", "ethnicity",
                                                         "history_of_neoadjuvant_treatment",
                                                         "primary_lymph_node_presentation_assessment",
@@ -682,7 +689,11 @@ clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          includeNA = FALSE,
                                          doWord = TRUE,
                                          tab.name = "Summary_of_clinical_variables",
-                                         res.path = paste0(home, "/Results/single_algorithm/NEMO/"))
+                                         res.path = paste0(home, "/Results/single_algorithm/NEMO/"),
+                                         output_pdf = TRUE,
+                                         pdf_level_col_width = c("5em", "5em"),
+                                         pdf_count_col_width = "5em",
+                                         pdf_tab_font_size = 5)
 
 # race_list, ER status, PR status, metastasis are sig
 
@@ -979,7 +990,7 @@ transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
                 NAT.regimen, Chemo.cycles,
                 aHER2.cycles, RCB.score, STAT1.gsva,
                 GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
-  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, `Consensus Subtype` = clust_up),
+  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, NEMO = clust_up),
              by = "Donor.ID")
 rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
 transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
@@ -1008,18 +1019,26 @@ transNEO_var2comp$iC10 = factor(transNEO_var2comp$iC10,
                                 levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                                 labels = paste("iC", seq(1, 10, 1), sep = ""))
 
-
+eval_moic_res_clinvar = transNEO_ntp_expr_up
+eval_moic_res_clinvar$clust.res$clust = factor(gsub(pattern = algorithm, 
+                                             x = eval_moic_res_clinvar$clust.res$clust,
+                                             replacement = ""))
+  
 transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
-                                                 moic.res = transNEO_ntp_expr_up,
+                                                 moic.res = eval_moic_res_clinvar,
                                                  var2comp = transNEO_var2comp,
-                                                 strata = "Consensus Subtype",
+                                                 strata = algorithm,
                                                  factorVars = c("ER.status", "HER2.status", "Grade.pre.NAT",
                                                                 "NAT.regimen", 
                                                                 "pCR.RD", "LN.status.at.diagnosis"),
                                                  includeNA = FALSE,
                                                  doWord = TRUE,
                                                  tab.name = "transNEO_Summary_of_clinical_variables",
-                                                 res.path = paste0(home, "/Results/single_algorithm/NEMO"))
+                                                 res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                 output_pdf = TRUE,
+                                                 pdf_level_col_width = c("5em", "5em"),
+                                                 pdf_count_col_width = "5em",
+                                                 pdf_tab_font_size = 5)
 
 # Run PAM ###
 RNGversion("4.2.2.")
