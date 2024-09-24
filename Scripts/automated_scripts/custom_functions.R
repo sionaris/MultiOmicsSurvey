@@ -23,7 +23,7 @@ pearson_correlation <- function(mat1, mat2) {
 }
 
 # Function to reshape Pearson similarity values for tests #####
-reshape_SNF_Pearson_for_tests <- function(similarities) {
+reshape_Pearson_for_tests <- function(similarities) {
   data <- data.frame()
   for (key in names(similarities)) {
     pearson_matrix <- similarities[[key]]$Pearson
@@ -488,13 +488,15 @@ pca_from_original_matrix = function (mydata = NULL,
   # Shape determination
   if (n_clust <= 6) {
     shapes = c(15:(15 + n_clust - 1))
+    shape_guide = "legend"
   } else {
-    shapes = 16
+    shapes = rep(16, n_clust)
+    shape_guide = "none"
   }
   
   ttt = M3C::pca(mydata = mydata,
                  labels = labels,
-                 legendtextsize = 2, legendtitle = "CIMLR Subtype", axistextsize = 4,
+                 legendtextsize = 2, legendtitle = paste(algorithm, "Subtype"), axistextsize = 4,
                  dotsize = 0.4)+
     aes(shape = as.character(labels), 
         size = as.character(labels),
@@ -508,7 +510,8 @@ pca_from_original_matrix = function (mydata = NULL,
                        labels = sort(unique(plot_df[, algorithm]))) +
     scale_shape_manual(name = algorithm, 
                        values = shapes, 
-                       labels = sort(unique(plot_df[, algorithm])))+
+                       labels = sort(unique(plot_df[, algorithm])),
+                       guide = shape_guide)+
     scale_color_manual(name = algorithm, 
                        limits = names(annColors[[algorithm]]),
                        values = annColors[[algorithm]], 
@@ -579,8 +582,10 @@ pca_from_sim_matrix = function (sim_matrix = NULL, algorithm = NULL, clust_res =
   # Shape determination
   if (n_clust <= 6) {
     shapes = c(15:(15 + n_clust - 1))
+    shape_guide = "legend"
   } else {
-    shapes = 16
+    shapes = rep(16, n_clust)
+    shape_guide = "none"
   }
   
   # Actual plot
@@ -596,7 +601,8 @@ pca_from_sim_matrix = function (sim_matrix = NULL, algorithm = NULL, clust_res =
                        labels = sort(unique(plot_df[, algorithm]))) +
     scale_shape_manual(name = algorithm, 
                        values = shapes, 
-                       labels = sort(unique(plot_df[, algorithm])))+
+                       labels = sort(unique(plot_df[, algorithm])),
+                       guide = shape_guide)+
     scale_color_manual(name = algorithm, 
                        limits = names(annColors[[algorithm]]),
                        values = annColors[[algorithm]], 
@@ -649,7 +655,18 @@ mds_from_original_matrix = function (matrix = NULL, dist_method = NULL, algorith
                  mutate(samID = rownames(.)), by = "samID") %>%
     dplyr::rename(MDS1 = V1, MDS2 = V2)
   
+  mds[[algorithm]] <- factor(paste0(algorithm, mds[[algorithm]]))
   clust_names = sort(unique(mds[[algorithm]]))
+  n_clust = length(clust_names)
+  
+  # Shape determination
+  if (n_clust <= 6) {
+    shapes = c(15:(15 + n_clust - 1))
+    shape_guide = "legend"
+  } else {
+    shapes = rep(16, n_clust)
+    shape_guide = "none"
+  }
   
   mdsplot = ggplot(mds, aes(x = MDS1, y = MDS2, color = !!sym(algorithm), 
                             shape = !!sym(algorithm))) +
@@ -658,6 +675,10 @@ mds_from_original_matrix = function (matrix = NULL, dist_method = NULL, algorith
     theme_classic() +
     scale_color_manual(name = algorithm, values = cluster_colors,
                        labels = clust_names)+
+    scale_shape_manual(name = algorithm, 
+                       values = shapes, 
+                       labels = clust_names,
+                       guide = shape_guide)+
     theme(plot.title = element_text(size = 4, face = "bold", vjust = 0.5, hjust = 0.5),
           axis.text = element_text(size = 3, hjust = 0.5, vjust = 0.5, 
                                    color = "black"),
@@ -1166,4 +1187,152 @@ minmax_normalize_values <- function(values) {
   
   normalized_values <- (values - min_value) / (max_value - min_value)
   return(normalized_values)
+}
+
+# NEMO modifications #####
+nemo.affinity.graph_mod = function (raw.data, k = NA, sigma = 0.5,
+                                      binary_flags = rep("No", length(raw.data)),
+                                      binary_distance = NULL) 
+{
+  if (is.na(k)) {
+    k = as.numeric(lapply(1:length(raw.data), function(i) round(ncol(raw.data[[i]])/NUM.NEIGHBORS.RATIO)))
+  }
+  else if (length(k) == 1) {
+    k = rep(k, length(raw.data))
+  }
+  sim.data = lapply(1:length(raw.data), function(i) {
+    if (binary_flags[i] == "No") {
+      affinityMatrix(dist2(as.matrix(t(raw.data[[i]])), as.matrix(t(raw.data[[i]]))), 
+                     k[i], sigma)
+    } else {
+      affinityMatrix(as.matrix(dist(as.matrix(t(raw.data[[i]])),
+                                    as.matrix(t(raw.data[[i]])),
+                                    method = binary_distance)), 
+                     k[i], sigma)
+    }
+  })
+  affinity.per.omic = lapply(1:length(raw.data), function(i) {
+    sim.datum = sim.data[[i]]
+    non.sym.knn = apply(sim.datum, 1, function(sim.row) {
+      returned.row = sim.row
+      threshold = sort(sim.row, decreasing = T)[k[i]]
+      returned.row[sim.row < threshold] = 0
+      row.sum = sum(returned.row)
+      returned.row[sim.row >= threshold] = returned.row[sim.row >= 
+                                                          threshold]/row.sum
+      return(returned.row)
+    })
+    sym.knn = non.sym.knn + t(non.sym.knn)
+    return(sym.knn)
+  })
+  patient.names = Reduce(union, lapply(raw.data, colnames))
+  num.patients = length(patient.names)
+  returned.affinity.matrix = matrix(0, ncol = num.patients, 
+                                    nrow = num.patients)
+  rownames(returned.affinity.matrix) = patient.names
+  colnames(returned.affinity.matrix) = patient.names
+  shared.omic.count = matrix(0, ncol = num.patients, nrow = num.patients)
+  rownames(shared.omic.count) = patient.names
+  colnames(shared.omic.count) = patient.names
+  for (j in 1:length(raw.data)) {
+    curr.omic.patients = colnames(raw.data[[j]])
+    returned.affinity.matrix[curr.omic.patients, curr.omic.patients] = returned.affinity.matrix[curr.omic.patients, 
+                                                                                                curr.omic.patients] + affinity.per.omic[[j]][curr.omic.patients, 
+                                                                                                                                             curr.omic.patients]
+    shared.omic.count[curr.omic.patients, curr.omic.patients] = shared.omic.count[curr.omic.patients, 
+                                                                                  curr.omic.patients] + 1
+  }
+  final.ret = returned.affinity.matrix/shared.omic.count
+  lower.tri.ret = final.ret[lower.tri(final.ret)]
+  final.ret[shared.omic.count == 0] = mean(lower.tri.ret[!is.na(lower.tri.ret)])
+  return(final.ret)
+}
+
+# Choose the best similarity matrix #####
+# Comprehensive function to evaluate and select the best similarity matrix
+# Function to evaluate a single similarity matrix and return a list of results
+evaluate_similarity_matrix <- function(matrix, k_isomap = 5) {
+  
+  # Load required libraries
+  library(Matrix)          # For sparse matrices
+  library(igraph)          # For graph-theoretical measures like modularity
+  library(entropy)         # For entropy calculations
+  library(RSpectra)        # For fast eigenvalue decomposition
+  library(vegan)           # For geodesic distances (Isomap)
+  library(stats)           # For dimensionality reduction (PCA)
+  
+  # Helper function: Spectral analysis
+  spectral_gap <- function(matrix) {
+    eig_vals <- eigs_sym(as.matrix(matrix), k = 10, which = "LM")$values
+    gap <- diff(eig_vals[1:2]) # Calculate the gap between the first two eigenvalues
+    return(gap)
+  }
+  
+  # Helper function: Matrix entropy
+  matrix_entropy <- function(matrix) {
+    matrix_prob <- matrix / sum(matrix)
+    ent <- entropy::entropy(matrix_prob, method = "ML") # Maximum Likelihood Entropy
+    return(ent)
+  }
+  
+  # Helper function: Manifold preservation using Isomap (geodesic distance, k-NN approach)
+  isomap_preservation <- function(matrix, k) {
+    distance_matrix <- as.dist(1 - matrix)  # Use 1 - similarity to compute distance
+    isomap_result <- vegan::isomap(dist = distance_matrix, ndim = 2, k = k)
+    geodesic_distances <- as.matrix(isomap_result$dist)
+    return(sum(geodesic_distances))  # Return sum of geodesic distances (lower is better)
+  }
+  
+  # Helper function: Graph modularity
+  graph_modularity <- function(matrix) {
+    graph <- igraph::graph.adjacency(as.matrix(matrix), mode = "undirected", weighted = TRUE)
+    clusters <- igraph::cluster_fast_greedy(graph)
+    modularity <- igraph::modularity(clusters)
+    return(modularity)
+  }
+  
+  # Helper function: Degree distribution skewness
+  degree_distribution_skew <- function(matrix) {
+    graph <- igraph::graph.adjacency(as.matrix(matrix), mode = "undirected", weighted = TRUE)
+    degree_values <- igraph::degree(graph)
+    skewness <- mean(degree_values)
+    return(skewness)
+  }
+  
+  # Perform all evaluations
+  spectral <- spectral_gap(matrix)
+  ent <- matrix_entropy(matrix)
+  iso_preserve <- isomap_preservation(matrix, k = k_isomap)
+  mod <- graph_modularity(matrix)
+  skew <- degree_distribution_skew(matrix)
+  
+  # Store the raw results in a list
+  raw_results <- list(
+    spectral_gap = spectral,
+    entropy = ent,
+    isomap_preservation = iso_preserve,
+    modularity = mod,
+    degree_skewness = skew
+  )
+  
+  # Normalize the results for ranking
+  normalized_results <- list(
+    spectral_gap = scale(spectral),
+    entropy = scale(-ent),  # Lower entropy is better, so negate it
+    isomap_preservation = scale(-iso_preserve),  # Lower is better
+    modularity = scale(mod),
+    degree_skewness = scale(-skew)  # Lower is better for skewness
+  )
+  
+  # Aggregate normalized scores: Higher total score indicates better matrix
+  total_score <- sum(unlist(normalized_results))
+  
+  # Return a list with raw metrics, normalized scores, and the total score
+  results <- list(
+    raw_metrics = raw_results,
+    normalized_scores = normalized_results,
+    total_score = total_score
+  )
+  
+  return(results)
 }

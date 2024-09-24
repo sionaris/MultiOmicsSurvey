@@ -1,3 +1,328 @@
+# runDEA: custom output name modification #####
+runDEA_mod = function (dea.method = c("deseq2", "edger", "limma"), expr = NULL, 
+                       moic.res = NULL, prefix = NULL, overwt = FALSE, sort.p = TRUE, 
+                       verbose = TRUE, res.path = getwd(), algorithm = "CS") 
+{
+  if (!is.element(dea.method, c("deseq2", "edger", "limma"))) {
+    stop("unsupported algorithm: dea.method should be one of 'deseq2', 'edger', or 'limma'.")
+  }
+  method <- dea.method[1]
+  comsam <- intersect(moic.res$clust.res$samID, colnames(expr))
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  }
+  else {
+    message(paste0("--", (nrow(moic.res$clust.res) - length(comsam)), 
+                   " samples mismatched from current subtypes."))
+  }
+  moic.res$clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+  expr <- expr[, comsam]
+  rundea_mod <- switch(method, deseq2 = twoclassdeseq2_mod, edger = twoclassedger_mod, 
+                   limma = twoclasslimma_mod)
+  if (method %in% c("deseq2", "edger")) {
+    message(paste0("--you choose ", method, " and please make sure an RNA-Seq count data was provided."))
+    rundea_mod(moic.res = moic.res, countsTable = expr, prefix = prefix, 
+           overwt = overwt, sort.p = sort.p, verbose = verbose, 
+           res.path = res.path, algorithm = algorithm)
+  }
+  else {
+    message(paste0("--you choose ", method, " and please make sure a microarray profile or a normalized expression data [FPKM or TPM without log2 transformation is recommended] was provided."))
+    rundea_mod(moic.res = moic.res, norm.expr = expr, prefix = prefix, 
+           overwt = overwt, sort.p = sort.p, verbose = verbose, 
+           res.path = res.path, algorithm = algorithm)
+  }
+}
+
+twoclassdeseq2_mod = function (moic.res = NULL, countsTable = NULL, prefix = NULL, 
+                               overwt = FALSE, sort.p = TRUE, verbose = TRUE, res.path = getwd(),
+                               algorithm = "CS") 
+{
+  createList <- function(moic.res = NULL) {
+    mo.method <- moic.res$mo.method
+    moic.res <- moic.res$clust.res
+    tumorsam <- moic.res$samID
+    sampleList = list()
+    treatsamList = list()
+    treatnameList <- c()
+    ctrlnameList <- c()
+    n.moic <- length(unique(moic.res$clust))
+    for (i in 1:n.moic) {
+      sampleList[[i]] <- tumorsam
+      treatsamList[[i]] = intersect(tumorsam, moic.res[which(moic.res$clust == 
+                                                               i), "samID"])
+      treatnameList[i] <- paste0(algorithm, i)
+      ctrlnameList[i] <- "Others"
+    }
+    return(list(sampleList, treatsamList, treatnameList, 
+                ctrlnameList, mo.method))
+  }
+  complist <- createList(moic.res = moic.res)
+  sampleList <- complist[[1]]
+  treatsamList <- complist[[2]]
+  treatnameList <- complist[[3]]
+  ctrlnameList <- complist[[4]]
+  mo.method <- complist[[5]]
+  allsamples <- colnames(countsTable)
+  options(warn = 1)
+  for (k in 1:length(sampleList)) {
+    samples <- sampleList[[k]]
+    treatsam <- treatsamList[[k]]
+    treatname <- treatnameList[k]
+    ctrlname <- ctrlnameList[k]
+    compname <- paste(treatname, "_vs_", ctrlname, sep = "")
+    tmp <- rep("others", times = length(allsamples))
+    names(tmp) <- allsamples
+    tmp[samples] <- "control"
+    tmp[treatsam] <- "treatment"
+    if (!is.null(prefix)) {
+      outfile <- file.path(res.path, paste(mo.method, 
+                                           "_", prefix, "_deseq2_test_result.", compname, 
+                                           ".txt", sep = ""))
+    }
+    else {
+      outfile <- file.path(res.path, paste(mo.method, 
+                                           "_deseq2_test_result.", compname, ".txt", sep = ""))
+    }
+    if (file.exists(outfile) & (overwt == FALSE)) {
+      cat(paste0("deseq2 of ", compname, " exists and skipped...\n"))
+      next
+    }
+    saminfo <- data.frame(Type = as.factor(tmp[samples]), 
+                          SampleID = samples, stringsAsFactors = FALSE)
+    cts <- countsTable[, samples]
+    coldata <- saminfo[samples, ]
+    dds <- quiet(DESeq2::DESeqDataSetFromMatrix(countData = cts, 
+                                                colData = coldata, design = as.formula("~ Type")))
+    dds$Type <- relevel(dds$Type, ref = "control")
+    dds <- quiet(DESeq2::DESeq(dds))
+    res <- DESeq2::results(dds, contrast = c("Type", "treatment", 
+                                             "control"))
+    if (sort.p) {
+      resData <- as.data.frame(res[order(res$padj), ])
+    }
+    else {
+      resData <- as.data.frame(res)
+    }
+    resData$id <- rownames(resData)
+    resData <- resData[, c("id", "baseMean", "log2FoldChange", 
+                           "lfcSE", "stat", "pvalue", "padj")]
+    colnames(resData) <- c("id", "baseMean", "log2fc", "lfcSE", 
+                           "stat", "pvalue", "padj")
+    resData$fc <- 2^resData$log2fc
+    if (verbose) {
+      resData <- resData[, c("id", "fc", "log2fc", "pvalue", 
+                             "padj")]
+    }
+    else {
+      resData <- resData[, c("id", "fc", "log2fc", "baseMean", 
+                             "lfcSE", "stat", "pvalue", "padj")]
+    }
+    write.table(resData, file = outfile, row.names = FALSE, 
+                sep = "\t", quote = FALSE)
+    cat(paste0("deseq2 of ", compname, " done...\n"))
+  }
+  options(warn = 0)
+}
+
+twoclassedger_mod = function (moic.res = NULL, countsTable = NULL, prefix = NULL, 
+                              overwt = FALSE, sort.p = TRUE, verbose = TRUE, res.path = getwd(),
+                              algorithm = "CS") 
+{
+  createList <- function(moic.res = NULL) {
+    mo.method <- moic.res$mo.method
+    moic.res <- moic.res$clust.res
+    tumorsam <- moic.res$samID
+    sampleList <- list()
+    treatsamList <- list()
+    treatnameList <- c()
+    ctrlnameList <- c()
+    n.moic <- length(unique(moic.res$clust))
+    for (i in 1:n.moic) {
+      sampleList[[i]] <- tumorsam
+      treatsamList[[i]] <- intersect(tumorsam, moic.res[which(moic.res$clust == 
+                                                                i), "samID"])
+      treatnameList[i] <- paste0(algorithm, i)
+      ctrlnameList[i] <- "Others"
+    }
+    return(list(sampleList, treatsamList, treatnameList, 
+                ctrlnameList, mo.method))
+  }
+  complist <- createList(moic.res = moic.res)
+  sampleList <- complist[[1]]
+  treatsamList <- complist[[2]]
+  treatnameList <- complist[[3]]
+  ctrlnameList <- complist[[4]]
+  mo.method <- complist[[5]]
+  allsamples <- colnames(countsTable)
+  options(warn = 1)
+  for (k in 1:length(sampleList)) {
+    samples <- sampleList[[k]]
+    treatsam <- treatsamList[[k]]
+    treatname <- treatnameList[k]
+    ctrlname <- ctrlnameList[k]
+    compname <- paste(treatname, "_vs_", ctrlname, sep = "")
+    tmp <- rep("others", times = length(allsamples))
+    names(tmp) <- allsamples
+    tmp[samples] <- "control"
+    tmp[treatsam] <- "treatment"
+    if (!is.null(prefix)) {
+      outfile <- file.path(res.path, paste(mo.method, 
+                                           "_", prefix, "_edger_test_result.", compname, 
+                                           ".txt", sep = ""))
+    }
+    else {
+      outfile <- file.path(res.path, paste(mo.method, 
+                                           "_edger_test_result.", compname, ".txt", sep = ""))
+    }
+    if (file.exists(outfile) & (overwt == FALSE)) {
+      cat(paste0("edger of ", compname, " exists and skipped...\n"))
+      next
+    }
+    saminfo <- data.frame(Type = tmp[samples], SampleID = samples, 
+                          stringsAsFactors = FALSE)
+    group = factor(saminfo$Type, levels = c("control", "treatment"))
+    design <- model.matrix(~group)
+    rownames(design) <- samples
+    y <- edgeR::DGEList(counts = countsTable[, samples], 
+                        group = saminfo$Type)
+    y <- edgeR::calcNormFactors(y)
+    y <- edgeR::estimateDisp(y, design, robust = TRUE)
+    fit <- edgeR::glmFit(y, design)
+    lrt <- edgeR::glmLRT(fit)
+    ordered_tags <- edgeR::topTags(lrt, n = 1e+05)
+    allDiff <- ordered_tags$table
+    allDiff <- allDiff[is.na(allDiff$FDR) == FALSE, ]
+    diff <- allDiff
+    diff$id <- rownames(diff)
+    resData <- diff[, c("id", "logFC", "logCPM", "LR", "PValue", 
+                        "FDR")]
+    colnames(resData) <- c("id", "log2fc", "logCPM", "LR", 
+                           "pvalue", "padj")
+    resData$fc <- 2^resData$log2fc
+    if (sort.p) {
+      resData <- as.data.frame(resData[order(resData$padj), 
+      ])
+    }
+    else {
+      resData <- as.data.frame(resData)
+    }
+    if (verbose) {
+      resData <- resData[, c("id", "fc", "log2fc", "pvalue", 
+                             "padj")]
+    }
+    else {
+      resData <- resData[, c("id", "fc", "log2fc", "logCPM", 
+                             "LR", "pvalue", "padj")]
+    }
+    write.table(resData, file = outfile, row.names = FALSE, 
+                sep = "\t", quote = FALSE)
+    cat(paste0("edger of ", compname, " done...\n"))
+  }
+  options(warn = 0)
+}
+
+twoclasslimma_mod = function (moic.res = NULL, norm.expr = NULL, prefix = NULL, 
+                              overwt = FALSE, sort.p = TRUE, verbose = TRUE, res.path = getwd(),
+                              algorithm = "CS") 
+{
+  createList <- function(moic.res = NULL) {
+    mo.method <- moic.res$mo.method
+    moic.res <- moic.res$clust.res
+    tumorsam <- moic.res$samID
+    sampleList <- list()
+    treatsamList <- list()
+    treatnameList <- c()
+    ctrlnameList <- c()
+    n.moic <- length(unique(moic.res$clust))
+    for (i in 1:n.moic) {
+      sampleList[[i]] <- tumorsam
+      treatsamList[[i]] <- intersect(tumorsam, moic.res[which(moic.res$clust == 
+                                                                i), "samID"])
+      treatnameList[i] <- paste0(algorithm, i)
+      ctrlnameList[i] <- "Others"
+    }
+    return(list(sampleList, treatsamList, treatnameList, 
+                ctrlnameList, mo.method))
+  }
+  complist <- createList(moic.res = moic.res)
+  sampleList <- complist[[1]]
+  treatsamList <- complist[[2]]
+  treatnameList <- complist[[3]]
+  ctrlnameList <- complist[[4]]
+  mo.method <- complist[[5]]
+  allsamples <- colnames(norm.expr)
+  if (max(norm.expr) < 25 | (max(norm.expr) >= 25 & min(norm.expr) < 
+                             0)) {
+    message("--expression profile seems to have been standardised (z-score or log transformation), no more action will be performed.")
+    gset <- norm.expr
+  }
+  if (max(norm.expr) >= 25 & min(norm.expr) >= 0) {
+    message("--log2 transformation done for expression data.")
+    gset <- log2(norm.expr + 1)
+  }
+  options(warn = 1)
+  for (k in 1:length(sampleList)) {
+    samples <- sampleList[[k]]
+    treatsam <- treatsamList[[k]]
+    treatname <- treatnameList[k]
+    ctrlname <- ctrlnameList[k]
+    compname <- paste(treatname, "_vs_", ctrlname, sep = "")
+    tmp <- rep("others", times = length(allsamples))
+    names(tmp) <- allsamples
+    tmp[samples] <- "control"
+    tmp[treatsam] <- "treatment"
+    if (!is.null(prefix)) {
+      outfile <- file.path(res.path, paste(mo.method, 
+                                           "_", prefix, "_limma_test_result.", compname, 
+                                           ".txt", sep = ""))
+    }
+    else {
+      outfile <- file.path(res.path, paste(mo.method, 
+                                           "_limma_test_result.", compname, ".txt", sep = ""))
+    }
+    if (file.exists(outfile) & (overwt == FALSE)) {
+      cat(paste0("limma of ", compname, " exists and skipped...\n"))
+      next
+    }
+    pd <- data.frame(Samples = names(tmp), Group = as.character(tmp), 
+                     stringsAsFactors = FALSE)
+    design <- model.matrix(~-1 + factor(pd$Group, levels = c("treatment", 
+                                                             "control")))
+    colnames(design) <- c("treatment", "control")
+    fit <- limma::lmFit(gset, design = design)
+    contrastsMatrix <- limma::makeContrasts(treatment - 
+                                              control, levels = c("treatment", "control"))
+    fit2 <- limma::contrasts.fit(fit, contrasts = contrastsMatrix)
+    fit2 <- limma::eBayes(fit2, 0.01)
+    resData <- limma::topTable(fit2, adjust = "fdr", sort.by = "B", 
+                               number = 1e+05)
+    resData <- as.data.frame(subset(resData, select = c("logFC", 
+                                                        "t", "B", "P.Value", "adj.P.Val")))
+    resData$id <- rownames(resData)
+    colnames(resData) <- c("log2fc", "t", "B", "pvalue", 
+                           "padj", "id")
+    resData$fc <- 2^resData$log2fc
+    if (sort.p) {
+      resData <- resData[order(resData$padj), ]
+    }
+    else {
+      resData <- as.data.frame(resData)
+    }
+    if (verbose) {
+      resData <- resData[, c("id", "fc", "log2fc", "pvalue", 
+                             "padj")]
+    }
+    else {
+      resData <- resData[, c("id", "fc", "log2fc", "t", 
+                             "B", "pvalue", "padj")]
+    }
+    write.table(resData, file = outfile, row.names = FALSE, 
+                sep = "\t", quote = FALSE)
+    cat(paste0("limma of ", compname, " done...\n"))
+  }
+  options(warn = 0)
+}
+
 # runMarker single algorithm #####
 
 # Just changing the CS labels when focusing on a single algorithm
@@ -6,7 +331,7 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
           p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", n.marker = 200, 
           doplot = TRUE, norm.expr = NULL, annCol = NULL, annColors = NULL, 
           clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                        "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), halfwidth = 3, 
+                        "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), halfwidth = 3, 
           centerFlag = TRUE, scaleFlag = TRUE, show_rownames = FALSE, 
           show_colnames = FALSE, color = c("#5bc0eb", "black", "#ECE700"), 
           fig.path = getwd(), fig.name = NULL, width = 8, height = 8, 
@@ -211,6 +536,90 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
   }
 }
 
+runMarker_single_algorithm_no_export = function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
+                                                                                                                                     "limma"), prefix = NULL, dat.path = getwd(), 
+                                                                              p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", n.marker = 200) 
+{
+  # Get the number of unique clusters
+  n.moic <- length(unique(moic.res$clust.res$clust))
+  mo.method <- moic.res$mo.method
+  
+  # Identify the pattern of DE files
+  DEpattern <- paste(mo.method, "_", ifelse(is.null(prefix), "", paste0(prefix, "_")), dea.method, ".*._vs_Others.txt$", sep = "")
+  DEfiles <- dir(dat.path, pattern = DEpattern)
+  
+  # Check for valid DE files
+  if (length(DEfiles) == 0) {
+    stop("no DEfiles!")
+  }
+  if (length(DEfiles) != n.moic) {
+    stop("not all the multi-omics clusters have DEfile!")
+  }
+  
+  # Ensure valid direction (up or down)
+  if (!is.element(dirct, c("up", "down"))) {
+    stop("dirct type error! Allowed values: 'up' or 'down'.")
+  }
+  
+  # Initialize genelist
+  genelist <- c()
+  
+  # Loop through DE files and extract gene lists based on direction
+  for (filek in DEfiles) {
+    DEres <- read.table(file.path(dat.path, filek), header = TRUE, sep = "\t", quote = "", stringsAsFactors = FALSE)
+    
+    if (nrow(DEres) < 2) {
+      stop(paste("Skipping file", filek, "because it has less than two rows of data."))
+    }
+    
+    DEres <- DEres[!duplicated(DEres[, 1]), ]
+    DEres <- DEres[!is.na(DEres[, 1]), ]
+    rownames(DEres) <- DEres[, 1]
+    DEres <- DEres[, -1]
+    
+    if (dirct == "up") {
+      genelist <- c(genelist, rownames(DEres[!is.na(DEres$padj) & DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & !is.na(DEres$log2fc) & DEres$log2fc > 0, ]))
+    }
+    if (dirct == "down") {
+      genelist <- c(genelist, rownames(DEres[!is.na(DEres$padj) & DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & !is.na(DEres$log2fc) & DEres$log2fc < 0, ]))
+    }
+  }
+  
+  # Remove duplicated genes from the list
+  unqlist <- setdiff(genelist, genelist[duplicated(genelist)])
+  
+  # Initialize templates slot
+  templates <- NULL
+  
+  # Loop through DE files again and create templates based on the filtered gene list
+  for (filek in DEfiles) {
+    DEres <- read.table(file.path(dat.path, filek), header = TRUE, sep = "\t", quote = "", stringsAsFactors = FALSE)
+    
+    if (nrow(DEres) < 2) {
+      stop(paste("Skipping file", filek, "because it has less than two rows of data."))
+    }
+    
+    DEres <- DEres[!duplicated(DEres[, 1]), ]
+    DEres <- DEres[!is.na(DEres[, 1]), ]
+    rownames(DEres) <- DEres[, 1]
+    DEres <- DEres[, -1]
+    
+    # Intersect unique gene list with DE results and add to templates
+    outk <- intersect(unqlist, rownames(DEres))
+    if (length(outk) > 0) {
+      tmp <- data.frame(probe = outk, 
+                        class = sub("_vs_Others.txt", "", sub(".*.result.", "", filek)), 
+                        dirct = dirct, 
+                        padj = DEres[outk, "padj"],  # Add the adjusted p-values
+                        stringsAsFactors = FALSE)
+      templates <- rbind.data.frame(templates, tmp, stringsAsFactors = FALSE)
+    }
+  }
+  
+  # Return only the templates slot
+  return(templates)
+}
+
 
 # runGSEA #####
 
@@ -222,7 +631,7 @@ runGSEA_mod <- function (moic.res = NULL, dea.method = c("deseq2", "edger",
           nPerm = 1000, minGSSize = 10, maxGSSize = 500, p.cutoff = 0.05, 
           p.adj.cutoff = 0.05, gsva.method = "gsva", norm.method = "mean", 
           clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                        "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), color = NULL, 
+                        "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), color = NULL, 
           fig.name = NULL, fig.path = getwd(), width = 15, height = 10, name = NULL) 
 {
   comsam <- intersect(moic.res$clust.res$samID, colnames(norm.expr))
@@ -447,7 +856,7 @@ runGSEA_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger",
                              nPerm = 1000, minGSSize = 10, maxGSSize = 500, p.cutoff = 0.05, 
                              p.adj.cutoff = 0.05, gsva.method = "gsva", norm.method = "mean", 
                              clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                                           "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), color = NULL, 
+                                           "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), color = NULL, 
                              fig.name = NULL, fig.path = getwd(), width = 15, height = 10, name = NULL) 
 {
   comsam <- intersect(moic.res$clust.res$samID, colnames(norm.expr))
@@ -673,7 +1082,7 @@ runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = 
                              nPerm = 1000, minGSSize = 10, maxGSSize = 500, p.cutoff = 0.05, 
                              p.adj.cutoff = 0.05, gsva.method = "gsva", norm.method = "mean", 
                              clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                                           "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), color = NULL, 
+                                           "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), color = NULL, 
                              fig.name = NULL, fig.path = getwd(), width = 15, height = 10, name = NULL) 
 {
   comsam <- intersect(moic.res$clust.res$samID, colnames(norm.expr))
@@ -903,7 +1312,7 @@ runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = 
 # Added three library calls in the beginning of the function definition
 compAgree2 = function (moic.res = NULL, subt2comp = NULL, doPlot = TRUE, 
                        clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                                     "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), box.width = 0.1, 
+                                     "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), box.width = 0.1, 
                        fig.name = NULL, fig.path = getwd(), width = 6, height = 5) 
 {
   library(ggplot2)
@@ -1170,7 +1579,7 @@ compClinvar2 = function (moic.res = NULL, var2comp = NULL, strata = NULL, factor
 }
 
 # compClinvar single algorithm #####
-compClinvar_single_algorithm = function (algorithm_name = "CS",
+compClinvar_single_algorithm_wordOnly = function (algorithm_name = "CS",
                                          moic.res = NULL, var2comp = NULL, strata = NULL, factorVars = NULL, 
                          nonnormalVars = NULL, exactVars = NULL, includeNA = FALSE, 
                          doWord = TRUE, tab.name = NULL, res.path = getwd(), ...) 
@@ -1246,6 +1655,155 @@ compClinvar_single_algorithm = function (algorithm_name = "CS",
   return(list(compTab = comtable))
 }
 
+compClinvar_single_algorithm <- function(algorithm_name = "CS",
+                                         moic.res = NULL,
+                                         var2comp = NULL,
+                                         strata = NULL,
+                                         factorVars = NULL,
+                                         nonnormalVars = NULL,
+                                         exactVars = NULL,
+                                         includeNA = FALSE,
+                                         doWord = TRUE,
+                                         tab.name = NULL,
+                                         res.path = getwd(),
+                                         output_pdf = FALSE,  # Default to not produce PDF unless specified
+                                         pdf_level_col_width = c("15em", "15em"),  # Default width for first two columns
+                                         pdf_count_col_width = "10em",  # Default width for remaining columns
+                                         pdf_tab_font_size = 8  # Default font size for PDF
+) {
+  library(knitr)
+  library(kableExtra)
+  library(rmarkdown)
+  library(officer)  # For Word document generation
+  library(stringr)   # For string wrapping
+  
+  # Prepare data for the table
+  dat <- moic.res$clust.res
+  colnames(dat)[which(colnames(dat) == "clust")] <- "Subtype"
+  dat$Subtype <- paste0(algorithm_name, dat$Subtype)
+  com_sam <- intersect(dat$samID, rownames(var2comp))
+  
+  if (length(com_sam) == nrow(dat)) {
+    message("--all samples matched.")
+  } else {
+    message(paste0(
+      "--",
+      (nrow(dat) - length(com_sam)),
+      " samples mismatched from current subtypes."
+    ))
+  }
+  
+  dat <- cbind.data.frame(Subtype = dat[com_sam, "Subtype", drop = FALSE], var2comp[com_sam, , drop = FALSE])
+  
+  if (is.null(strata)) {
+    strata <- "Subtype"
+  }
+  if (!is.element(strata, colnames(dat))) {
+    stop("fail to find this strata in var2comp. Consider using NULL by default.")
+  }
+  
+  # Run the table creation with error handling for warnings
+  warn <- character(0)
+  tryCatch({
+    stabl <- jstable::CreateTableOne2(
+      vars = setdiff(colnames(dat), strata),
+      strata = strata,
+      data = dat,
+      factorVars = factorVars,
+      nonnormal = nonnormalVars,
+      exact = exactVars,
+      includeNA = includeNA,
+      showAllLevels = TRUE
+    )
+  }, warning = function(w) {
+    warn <<- append(warn, conditionMessage(w))
+  })
+  
+  if (length(warn) > 0 && grepl("NA", warn, fixed = TRUE)) {
+    set.seed(19991018)
+    stabl <- jstable::CreateTableOne2(
+      vars = setdiff(colnames(dat), strata),
+      strata = strata,
+      data = dat,
+      factorVars = factorVars,
+      nonnormal = nonnormalVars,
+      exact = exactVars,
+      includeNA = includeNA,
+      showAllLevels = TRUE,
+      argsExact = list(simulate.p.value = TRUE)
+    )
+  }
+  
+  # Prepare the table
+  comtable <- as.data.frame(stabl)
+  comtable <- cbind.data.frame(var = rownames(stabl), comtable)
+  rownames(comtable) <- NULL
+  colnames(comtable)[1] <- " "
+  comtable[is.na(comtable)] <- ""
+  comtable <- comtable[, setdiff(colnames(comtable), "sig")]
+  
+  # Remove underscores and wrap the first column entries (variables) to 10 characters
+  comtable$` ` <- stringr::str_wrap(stringr::str_replace_all(comtable$` `, "_", " "), width = 10)
+  
+  if (is.null(tab.name)) {
+    outFile <- "summarization_of_clinical_variables_stratified_by_current_subtype"
+  } else {
+    outFile <- tab.name
+  }
+  
+  # Create the PDF output using rmarkdown
+  if (output_pdf) {
+    # Create a temporary Rmarkdown file
+    rmd_file <- tempfile(fileext = ".Rmd")
+    rmd_content <- paste0(
+      "---\n",
+      "title: '", outFile, "'\n",
+      "output:\n  pdf_document:\n    toc: true\n    number_sections: true\n    latex_engine: xelatex\n",
+      "header-includes:\n  - \\usepackage{fontspec}\n  - \\setmainfont{Arial}\n",
+      "---\n\n",
+      "```{r, echo=FALSE, message=FALSE, warning=FALSE}\n",
+      "library(knitr)\n",
+      "library(kableExtra)\n\n",
+      "# Display table with custom column width for the first two columns and remaining columns\n",
+      "kable(comtable, caption = 'Summarization of clinical variables stratified by subtype') %>%\n",
+      "  kable_styling(latex_options = c('striped', 'scale_down', 'repeat_header'), full_width = FALSE, font_size = ", pdf_tab_font_size, ") %>%\n",
+      "  column_spec(1, width = '", pdf_level_col_width[1], "') %>%\n",  # Set width of the first column
+      "  column_spec(2, width = '", pdf_level_col_width[2], "') %>%\n",  # Set width of the second column
+      "  column_spec(3:", ncol(comtable), ", width = '", pdf_count_col_width, "')\n",  # Set width for remaining columns
+      "```\n"
+    )
+    
+    # Write the Rmarkdown content to a file
+    writeLines(rmd_content, rmd_file)
+    
+    # Render the PDF from Rmarkdown
+    pdf_file <- file.path(res.path, paste0(outFile, ".pdf"))
+    rmarkdown::render(rmd_file, output_file = pdf_file)
+    
+    message("PDF created at: ", pdf_file)
+  }
+  
+  # Create a Word document if doWord is TRUE
+  if (doWord) {
+    my_doc <- officer::read_docx() %>%
+      officer::body_add_par(value = paste0("Table: ", outFile), style = "heading 1") %>%
+      officer::body_add_table(value = comtable, style = "table_template") %>%
+      officer::body_add_par(value = "Note: Clinical variables stratified by current subtype.")
+    
+    word_file <- file.path(res.path, paste0(outFile, ".docx"))
+    print(my_doc, target = word_file)
+    message("Word document created at: ", word_file)
+  }
+  
+  return(list(compTab = comtable))
+}
+
+
+
+
+
+
+
 # compMut single algorithm #####
 compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mut.matrix = NULL, freq.cutoff = 0.05, 
                                      test.method = "fisher", p.adj.method = "BH", doWord = TRUE, 
@@ -1254,7 +1812,8 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
                                      mut.col = "#21498D", bg.col = "#dcddde", p.cutoff = 0.05, 
                                      p.adj.cutoff = 0.05, clust.col = c("#2EC4B6", "#E71D36", 
                                                                         "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
-                                                                        "#9D4EDD"), width = 8, height = 4) 
+                                                                        "#9D4EDD", "#f09c6c", "#09f3b3"), width = 8, height = 4,
+                                     simulate.p.value = FALSE) 
 {
   library(MOVICS)
   if (!is.element(test.method, c("fisher", "chisq"))) {
@@ -1343,7 +1902,8 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
     out[k, 1:(ncol(out) - 1)] <- freqpct
     if (test.method == "fisher") {
       out[k, "pvalue"] <- as.numeric(fisher.test(x, y, 
-                                                 workspace = 1e+08)$p.value)
+                                                 workspace = 2e+09,
+                                                 simulate.p.value = simulate.p.value)$p.value)
     }
     else {
       out[k, "pvalue"] <- as.numeric(chisq.test(x, y)$p.value)
@@ -1393,7 +1953,7 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
     sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
                                           decreasing = FALSE), "samID"]
     colvec <- clust.col[1:length(unique(moic.res$clust.res$clust))]
-    names(colvec) <- paste0(algorithm_name, unique(moic.res$clust.res$clust))
+    names(colvec) <- paste0(algorithm_name, sort(unique(moic.res$clust.res$clust)))
     if (!is.null(annCol) & !is.null(annColors)) {
       annCol <- annCol[sam.order, , drop = FALSE]
       annCol$Subtype <- paste0(algorithm_name, moic.res$clust.res[sam.order, 
@@ -1460,8 +2020,8 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
 compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, norm.expr = NULL, drugs = c("Cisplatin", 
                                                                                       "Paclitaxel"), tissueType = "all", test.method = "nonparametric", 
                                          clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                                                       "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), prefix = NULL, 
-                                         seed = 123456, fig.path = getwd(), width = 5, height = 5) 
+                                                       "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), prefix = NULL, 
+                                         seed = 123456, fig.path = getwd(), width = 5, height = 5, notch = TRUE) 
 {
   library(MOVICS)
   if (!is.element(test.method, c("nonparametric", "parametric"))) {
@@ -1481,7 +2041,7 @@ compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL,
   sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
                                         decreasing = FALSE), "samID"]
   colvec <- clust.col[1:length(unique(moic.res$clust.res$clust))]
-  names(colvec) <- paste0(algorithm_name, unique(moic.res$clust.res$clust))
+  names(colvec) <- paste0(algorithm_name, sort(unique(moic.res$clust.res$clust)))
   annCol <- data.frame(Subtype = paste0(algorithm_name, moic.res$clust.res[sam.order, 
                                                                  "clust"]), samID = sam.order, row.names = sam.order, 
                        stringsAsFactors = FALSE)
@@ -1549,13 +2109,13 @@ compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL,
     p <- ggplot(data = predictedBoxdat[[drug]], aes(x = Subtype, 
                                                     y = Est.IC50, fill = Subtype)) + scale_fill_manual(values = colvec) + 
       geom_violin(alpha = 0.4, position = position_dodge(width = 0.75), 
-                  size = 0.8, color = "black") + geom_boxplot(notch = TRUE, 
+                  size = 0.8, color = "black") + geom_boxplot(notch = notch, 
                                                               outlier.size = -1, color = "black", lwd = 0.8, alpha = 0.7) + 
       geom_point(shape = 21, size = 2, position = position_jitterdodge(), 
                  color = "black", alpha = 1) + theme_classic() + 
       ylab(bquote("Estimated IC"[50] ~ "of" ~ .(drug))) + 
       xlab("") + theme(axis.text.x = element_text(angle = 45, 
-                                                  hjust = 1, size = 12), axis.ticks = element_line(size = 0.2, 
+                                                  hjust = 1, size = 12), axis.ticks = element_line(linewidth = 0.2, 
                                                                                                    color = "black"), axis.ticks.length = unit(0.2, 
                                                                                                                                               "cm"), legend.position = "none", axis.title = element_text(size = 15), 
                        axis.text = element_text(size = 10)) + ggpubr::stat_compare_means(method = statistic, 
@@ -1578,7 +2138,7 @@ compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL,
 compAgree_single_algorithm = function (algorithm_name = "CS",
                                        moic.res = NULL, subt2comp = NULL, doPlot = TRUE, 
                        clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                                     "#FFA5AB", "#011627", "#023E8A", "#9D4EDD"), box.width = 0.1, 
+                                     "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), box.width = 0.1, 
                        fig.name = NULL, fig.path = getwd(), width = 6, height = 5) 
 {
   library(ggplot2)
@@ -1771,7 +2331,7 @@ runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = 
           gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
           halfwidth = 1, annCol = NULL, annColors = NULL, clust.col = c("#2EC4B6", 
                                                                         "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
-                                                                        "#023E8A", "#9D4EDD"), distance = "euclidean", linkage = "ward.D", 
+                                                                        "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), distance = "euclidean", linkage = "ward.D", 
           show_rownames = TRUE, show_colnames = FALSE, color = c("#366A9B", 
                                                                  "#4E98DE", "#DDDDDD", "#FBCFA7", "#F79C4A"), fig.path = getwd(), 
           fig.name = NULL, width = 8, height = 8, ...) 
@@ -1876,7 +2436,7 @@ runGSVA_mod_4.4_single_algorithm <- function (algorithm_name = "CS",
                              gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
                              halfwidth = 1, annCol = NULL, annColors = NULL, clust.col = c("#2EC4B6", 
                                                                                            "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
-                                                                                           "#023E8A", "#9D4EDD"), distance = "euclidean", linkage = "ward.D", 
+                                                                                           "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), distance = "euclidean", linkage = "ward.D", 
                              show_rownames = TRUE, show_colnames = FALSE, color = c("#366A9B", 
                                                                                     "#4E98DE", "#DDDDDD", "#FBCFA7", "#F79C4A"), fig.path = getwd(), 
                              fig.name = NULL, width = 8, height = 8, ...) 
@@ -1982,7 +2542,7 @@ runMarker_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger"
                        n.marker = 200, doplot = TRUE, norm.expr = NULL, 
                        annCol = NULL, annColors = NULL, clust.col = c("#2EC4B6", 
                                                                       "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
-                                                                      "#023E8A", "#9D4EDD"), halfwidth = 3, centerFlag = TRUE, 
+                                                                      "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), halfwidth = 3, centerFlag = TRUE, 
                        scaleFlag = TRUE, show_rownames = FALSE, show_colnames = FALSE, 
                        color = c("#5bc0eb", "black", "#ECE700"), fig.path = getwd(), 
                        fig.name = NULL, width = 8, height = 8, ...) {
@@ -2128,7 +2688,7 @@ runMarker_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger"
 compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d", 
                           surv.cut = NULL, xyrs.est = NULL, clust.col = c("#2EC4B6", 
                                                                           "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
-                                                                          "#023E8A", "#9D4EDD"), p.adjust.method = "BH", surv.median.line = "none", 
+                                                                          "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), p.adjust.method = "BH", surv.median.line = "none", 
                           fig.name = NULL, fig.path = getwd()) 
 {
   if (!all(is.element(c("futime", "fustat"), colnames(surv.info)))) {
@@ -2407,7 +2967,7 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
                              clust.method.row = c("ward.D", "ward.D", "ward.D", "ward.D", 
                                                   "ward.D", "ward.D"), clust.col = c("#2EC4B6", "#E71D36", 
                                                                                      "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
-                                                                                     "#9D4EDD"), color = rep(list(c("#00FF00", "#000000", 
+                                                                                     "#9D4EDD", "#f09c6c", "#09f3b3"), color = rep(list(c("#00FF00", "#000000", 
                                                                                                                     "#FF0000")), length(data)), annCol = NULL, annColors = NULL, 
                              annRow = NULL, width = 6, height = 4, fig.path = getwd(), 
                              fig.name = "moheatmap") 
@@ -2426,7 +2986,7 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
     stop("current verision of MOVICS needs at least 2 omics data.")
   }
   colvec <- clust.col[1:length(unique(clust.res$clust))]
-  names(colvec) <- paste0(algorithm_name, unique(clust.res$clust))
+  names(colvec) <- paste0(algorithm_name, sort(unique(clust.res$clust)))
   if (!is.null(annCol) & !is.null(annColors)) {
     annCol <- annCol[colnames(data[[1]]), , drop = FALSE]
     annCol$Subtype <- paste0(algorithm_name, clust.res[colnames(data[[1]]), "clust"])
@@ -2571,4 +3131,425 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
   invisible(dev.off())
   draw(ht_list, merge_legend = TRUE, heatmap_legend_side = "right")
   options(warn = defaultW)
+}
+
+# NTP modification for subscript out of bounds error #####
+runNTP_mod = function (expr = NULL, templates = NULL, scaleFlag = TRUE, centerFlag = TRUE, 
+                       nPerm = 1000, distance = "cosine", seed = 123456, verbose = TRUE, 
+                       doPlot = FALSE, fig.path = getwd(), fig.name = "ntpheatmap", 
+                       width = 5, height = 5, algorithm_name = "CS") 
+{
+  library(MOVICS)
+  if (!is.element(distance, c("cosine", "pearson", "spearman", 
+                              "kendall"))) {
+    stop("the argument of distance should be one of cosine, pearson, spearman, or kendall.")
+  }
+  com_feat <- intersect(rownames(expr), templates$probe)
+  message(paste0("--original template has ", nrow(templates), 
+                 " biomarkers and ", length(com_feat), " are matched in external expression profile."))
+  expr <- expr[com_feat, , drop = FALSE]
+  templates <- templates[which(templates$probe %in% com_feat), 
+                         , drop = FALSE]
+  if (is.element(0, as.numeric(table(templates$class)))) {
+    stop("at least one class has no probes/genes matched in template file!")
+  }
+  emat <- t(scale(t(expr), scale = scaleFlag, center = centerFlag))
+  if (doPlot) {
+    outFig <- paste0(fig.name, ".pdf")
+    ntp.res <- ntp_mod(emat = emat, templates = templates, doPlot = doPlot, 
+                   nPerm = nPerm, distance = distance, nCores = 1, 
+                   seed = seed, verbose = verbose)
+    invisible(dev.copy2pdf(file = file.path(fig.path, outFig), 
+                           width = width, height = height))
+  } else {
+    ntp.res <- ntp_mod(emat = emat, templates = templates, doPlot = doPlot, 
+                   nPerm = nPerm, distance = distance, nCores = 1, 
+                   seed = seed, verbose = verbose)
+  }
+  ntp.res[, setdiff(colnames(ntp.res), "prediction")] <- round(ntp.res[, 
+                                                                       setdiff(colnames(ntp.res), "prediction")], 4)
+  ex.moic.res <- data.frame(samID = rownames(ntp.res), clust = gsub(algorithm_name, 
+                                                                    "", ntp.res$prediction), row.names = rownames(ntp.res), 
+                            stringsAsFactors = FALSE)
+  return(list(ntp.res = ntp.res, clust.res = ex.moic.res, 
+              mo.method = "NTP"))
+}
+
+ntp_mod = function (emat, templates, nPerm = 1000, distance = "cosine", 
+                    nCores = 1, seed = NULL, verbose = getOption("verbose"), 
+                    doPlot = FALSE) 
+{
+  library(CMScaller)
+  if (class(emat)[1] == "ExpressionSet") 
+    emat <- suppressPackageStartupMessages(Biobase::exprs(emat))
+  if (is.data.frame(emat) | is.vector(emat)) 
+    emat <- as.matrix(emat)
+  if (is.null(rownames(emat))) 
+    stop("missing emat rownames, check input")
+  if (is.null(templates$class) | is.null(templates$probe)) {
+    stop("missing columns in templates, check input")
+  }
+  if (is.character(templates$class)) 
+    templates$class <- factor(templates$class)
+  if (is.factor(templates$probe) | is.integer(templates$probe)) {
+    warning("templates$probe coerced to character", call. = FALSE)
+    templates$probe <- as.character(templates$probe)
+  }
+  if (is.character(distance) & isTRUE(verbose)) {
+    message(paste0(distance, " correlation distance"))
+  }
+  keepP <- stats::complete.cases(emat)
+  if (sum(!keepP) > 0) {
+    if (isTRUE(verbose)) 
+      message(paste0(sum(!keepP), "/", length(keepP), 
+                     " features NA, discarded"))
+    emat <- emat[keepP, , drop = FALSE]
+  }
+  keepT <- templates$probe %in% rownames(emat)
+  if (sum(!keepT) > 0) {
+    if (isTRUE(verbose)) 
+      message(paste0(sum(!keepT), "/", length(keepT), 
+                     " templates features not in emat, discarded"))
+    templates <- templates[keepT, ]
+  }
+  if (min(table(templates$class)) < 2) {
+    message("<2 matched features/class")
+    stop("check templates$probe is matchable against rownames(emat)", 
+         call. = FALSE)
+  }
+  if (min(table(templates$class)) < 5) {
+    warning("<5 matched features/class - unstable predictions", 
+            call. = FALSE)
+  }
+  N <- ncol(emat)
+  K <- nlevels(templates$class)
+  S <- nrow(templates)
+  P <- nrow(emat)
+  # cat("N = ", N, ", K = ", K, ", S = ", S, ", P = ", P, "\n", sep = "")
+  class.names <- levels(templates$class)
+  templates$class <- as.numeric(templates$class)
+  emat.mean <- round(mean(emat), 2)
+  if (abs(emat.mean) > 1) {
+    isnorm <- " <- check feature centering!"
+    emat.sd <- round(stats::sd(emat), 2)
+    warning(paste0("emat mean=", emat.mean, "; sd=", emat.sd, 
+                   isnorm), call. = FALSE)
+  }
+  feat.class <- paste(range(table(templates$class)), collapse = "-")
+  if (isTRUE(verbose)) 
+    message(paste0(N, " samples; ", K, " classes; ", feat.class, 
+                   " features/class"))
+  mm <- match(templates$probe, rownames(emat), nomatch = 0)
+  mm <- mm[mm > 0]  # Remove unmatched probes
+  # cat("The length of mm is ", length(mm), "\n")
+  if (!all(rownames(emat)[mm] == templates$probe)) {
+    stop("error matching probes, check rownames(emat) and templates$probe")
+  }
+  pReplace <- length(templates$probe) > length(unique(templates$probe))
+  tmat <- matrix(rep(templates$class, K), ncol = K)
+  for (k in seq_len(K)) tmat[, k] <- as.numeric(tmat[, k] == 
+                                                  k)
+  if (K == 2) 
+    tmat[tmat == 0] <- -1
+  if (!distance %in% c("cosine", "pearson", "spearman", "kendall")) 
+    stop("invalid distance method")
+  if (distance == "cosine") {
+    simFun <- function(x, y) corCosine(x, y)
+  } else {
+    simFun <- function(x, y) {
+      stats::cor(x, y, method = distance)
+    }
+  }
+  # cat("The dimensions of tmat are ", paste(dim(tmat), sep = " x "), "\n")
+  ntpFUN <- function(n) {
+    n.sim <- as.vector(simFun(emat[mm, n, drop = FALSE], 
+                              tmat))
+    n.sim.perm.max <- apply(simFun(matrix(emat[, n][sample.int(P, 
+                                                               S * nPerm, replace = TRUE)], ncol = nPerm), tmat), 
+                            1, max)
+    n.ntp <- which.max(n.sim)
+    n.sim.ranks <- rank(-c(n.sim[n.ntp], (n.sim.perm.max)))
+    n.pval <- n.sim.ranks[1]/length(n.sim.ranks)
+    return(c(n.ntp, CMScaller:::simToDist(n.sim), n.pval))
+  }
+  # ntpFUN <- function(n, iter) {
+  #   tryCatch({
+  #     # Ensure n is within valid column index range
+  #     if (n > ncol(emat)) {
+  #       stop(paste("Column index out of bounds at iteration:", iter))
+  #     }
+  #     
+  #     # Debugging: Print dimensions of emat
+  #     message(paste("Iteration:", iter))
+  #     cat("The dimensions of the subset are: ", print(dim(emat[mm, n, drop = FALSE])), "\n")  # Print dimensions of the subsetting
+  #     
+  #     # Adjust simFun to work with conformable matrices
+  #     # Now we are only selecting the nth sample column
+  #     n.sim <- as.vector(simFun(emat[mm, n, drop = FALSE], tmat))  # Correct dimension match
+  #     
+  #     # Adjust the permutation step to ensure valid matrix dimensions
+  #     n.sim.perm.max <- apply(simFun(matrix(emat[, n][sample.int(P, min(S, P) * nPerm, replace = TRUE)], ncol = nPerm), tmat), 1, max)
+  #     
+  #     # Compute the maximum similarity and rank
+  #     n.ntp <- which.max(n.sim)
+  #     n.sim.ranks <- rank(-c(n.sim[n.ntp], (n.sim.perm.max)))
+  #     n.pval <- n.sim.ranks[1] / length(n.sim.ranks)
+  #     
+  #     return(c(n.ntp, CMScaller:::simToDist(n.sim), n.pval))
+  #     
+  #   }, error = function(e) {
+  #     message(paste("Error encountered during iteration:", iter))
+  #     message("Error message:", conditionMessage(e))
+  #     return(NULL)  # Return NULL or handle the error gracefully
+  #   })
+  # }
+  if (!is.null(seed)) {
+    set.seed(seed)
+    nCores <- 1
+  }
+  existParallel <- CMScaller:::packageExists("parallel")
+  existSnow <- CMScaller:::packageExists("snow")
+  if ((existParallel | existParallel) & nCores != 1) {
+    funVal <- vector(mode = "numeric", length = 2 + K)
+    if (.Platform$OS.type == "windows") {
+      nSlaves <- ifelse(nCores == 0, as.numeric(Sys.getenv("NUMBER_OF_PROCESSORS")), 
+                        nCores)
+      if (nSlaves == 0) 
+        nSlaves <- parallel::detectCores()
+      if (isTRUE(verbose)) 
+        message(paste0("parallel; ", nSlaves, " sockets pkg:snow", 
+                       "; ", nPerm, " permutation(s)..."))
+      nParts <- split(seq_len(N), cut(seq_len(N), nSlaves, 
+                                      labels = FALSE))
+      cl <- snow::makeCluster(nSlaves, type = "SOCK")
+      res <- snow::parLapply(cl, nParts, function(n) vapply(n, 
+                                                            ntpFUN, funVal))
+      snow::stopCluster(cl)
+      res <- data.frame(t(do.call(cbind, res)))
+    }
+    else {
+      nCores <- ifelse(nCores == 0, parallel::detectCores(), 
+                       nCores)
+      if (isTRUE(verbose)) 
+        message(paste0("parallel; ", nCores, " cores pkg:parallel", 
+                       "; ", nPerm, " permutation(s)..."))
+      options(mc.cores = nCores)
+      nParts <- split(seq_len(N), cut(seq_len(N), nCores, 
+                                      labels = FALSE))
+      res <- parallel::mclapply(nParts, function(n) vapply(n, 
+                                                           ntpFUN, funVal))
+      res <- data.frame(t(do.call(cbind, res)))
+    }} else {
+      if (isTRUE(verbose)) 
+        message(paste0("serial processing; ", nPerm, " permutation(s)..."))
+      res <- lapply(seq_len(N), ntpFUN)
+      res <- data.frame(do.call(rbind, res))
+    }
+  # } else {
+  #   if (isTRUE(verbose)) 
+  #     message(paste0("serial processing; ", nPerm, " permutation(s)..."))
+  #   # Perform matching and ensure templates$probe matches rownames(emat)
+  #   templates$probe <- tolower(trimws(templates$probe))
+  #   rownames(emat) <- tolower(trimws(rownames(emat)))
+  #   # Wrap the entire lapply call inside tryCatch for additional error handling
+  #   res <- tryCatch({
+  #     lapply(seq_len(N), function(i) {
+  #       message(paste("Running iteration:", i))
+  #       ntpFUN(i, iter = i)
+  #     })
+  #   }, error = function(e) {
+  #     message("Error in the lapply call:")
+  #     message(conditionMessage(e))
+  #     return(NULL)
+  #   })
+  #   res <- data.frame(do.call(rbind, res))
+  # }
+  colnames(res) <- c("prediction", paste0("d.", class.names), 
+                     "p.value")
+  res$prediction <- factor(class.names[res$prediction], levels = class.names)
+  rownames(res) <- colnames(emat)
+  res$p.value[res$p.value < 1/nPerm] <- 1/nPerm
+  res$FDR <- stats::p.adjust(res$p.value, "fdr")
+  if (isTRUE(doPlot)) {
+    subHeatmap_mod(emat = emat, res = res, templates = templates)
+  }
+  if (isTRUE(verbose)) {
+    message("predicted samples/class (FDR<0.05)")
+    print(table(suppressMessages(CMScaller::subSetNA(res, FDR = 0.05))$prediction, 
+                useNA = "always"))
+  }
+  return(res)
+}
+
+subHeatmap_mod <- function (emat, res, templates, keepN = TRUE, labRow = NULL, 
+                            classCol = getOption("subClassCol"), 
+                            heatCol = colorRampPalette(c("dodgerblue4", "white", "deeppink4"))(100),
+                            # heatCol = rev(colorRampPalette(viridisLite::magma(10))(255)),
+                            N = ncol(emat), ...) 
+{
+  library(MOVICS)
+  library(CMScaller)
+  
+  # Check if a package is installed, if not, install it
+  if (!requireNamespace("dlfUtils", quietly = TRUE)) {
+    
+    # Check if the 'remotes' package is installed
+    if (!requireNamespace("remotes", quietly = TRUE)) {
+      message("Installing 'remotes' package...")
+      install.packages("remotes")
+    }
+    
+    # Install 'dlfUtils' from GitHub
+    message("Installing 'dlfUtils' from GitHub...")
+    remotes::install_github("daynefiler/dlfUtils")
+    
+    # Load the installed 'dlfUtils' package
+    library(dlfUtils)
+  } else {
+    # If 'dlfUtils' is already installed, load it
+    library(dlfUtils)
+  }
+  
+  # Convert rownames and templates$probe to lowercase and trim whitespace
+  message("Standardizing rownames of emat and templates...")
+  rownames(emat) <- tolower(trimws(rownames(emat)))
+  templates$probe <- tolower(trimws(templates$probe))
+  
+  # Check if emat/res match
+  message("Checking if emat and res dimensions match...")
+  if (!all(colnames(emat) == rownames(res))) {
+    stop("Error: emat and res do not match in dimensions or names")
+  }
+  
+  # Initial subsetting of emat and res based on keepN
+  emat <- emat[, keepN]
+  res <- res[keepN, ]
+  
+  class <- res$prediction
+  K <- nlevels(class)
+  
+  # Check for duplicates in templates
+  message("Checking for duplicated rows in templates...")
+  if (length(which(duplicated(templates$probe))) > 1) {
+    message(paste("Number of duplicated rows to be removed:", sum(duplicated(templates$probe))))
+  }
+  templates <- templates[!duplicated(templates$probe), ]
+  rownames(templates) <- templates$probe
+  
+  
+  # Intersect templates and emat rownames
+  P <- intersect(rownames(emat), rownames(templates))
+  
+  # Debug: Check if intersection is working as expected
+  if (length(P) == 0) {
+    stop("Error: No intersecting rownames between emat and templates")
+  }
+  
+  templates <- templates[P, ]
+  rownames(templates) = P
+  
+  # Ensure emat has the same rownames as ordered templates
+  message("Subsetting and adjusting emat using rownames of templates...")
+  
+  # Debugging: Find mismatched rownames
+  unmatched_in_templates <- setdiff(rownames(templates), rownames(emat))
+  unmatched_in_emat <- setdiff(rownames(emat), rownames(templates))
+  
+  if (length(unmatched_in_templates) > 0) {
+    message("Unmatched rownames in templates that are not in emat:")
+    print(unmatched_in_templates)
+  }
+  
+  if (length(unmatched_in_emat) > 0) {
+    message("Unmatched rownames in emat that are not in templates:")
+    print(unmatched_in_emat)
+  }
+  
+  if (length(unmatched_in_templates) > 0 || length(unmatched_in_emat) > 0) {
+    stop("Error: some rownames in templates do not match rownames in emat")
+  }
+  
+  emat <- ematAdjust(emat[rownames(templates), , drop = FALSE])
+  
+  # Ensure heatCol is valid
+  if (is.null(heatCol)) {
+    heatCol <- subData[["hmCol"]]
+    message("Using default heatCol from subData")
+  }
+  
+  # Dynamically calculate breaks to have one more than the number of colors
+  pMax <- 3
+  breaks <- seq(-pMax, pMax, length.out = length(heatCol) + 1)  # Ensure correct number of breaks
+  
+  # Ensure the data is within the pMax range
+  emat[emat > pMax] <- pMax
+  emat[emat < -pMax] <- -pMax
+  
+  # Plot heatmap and class predictions
+  message("Preparing heatmap plot...")
+  xx <- seq(0, 1, length.out = ncol(emat) + 1)
+  yy <- seq(0, 1, length.out = nrow(emat) + 1)
+  graphics::image(x = xx, y = yy, z = t(emat), yaxt = "n", 
+                  xaxt = "n", useRaster = TRUE, col = heatCol, breaks = breaks, 
+                  xlab = "class predictions", ylab = "template features", ...)
+  
+  # Plot class rectangles
+  xb <- cumsum(c(0, (sapply(split(res$prediction, res$prediction), length) / length(res$prediction))))
+  xl <- xb[-(K + 1)]
+  xr <- xb[-1]
+  yy <- dlfUtils::line2user(line = 1:0, side = 1)
+  yy <- seq(yy[1], yy[2], length = 3)
+  
+  graphics::rect(xleft = xl, xright = xr, ybottom = yy[1], 
+                 ytop = yy[2], col = classCol, xpd = TRUE, border = FALSE, 
+                 lwd = 0.75)
+  
+  # Plot class labels
+  xxl <- xl + (xr - xl) / 2
+  graphics::text(xxl, yy[1], pos = 1, levels(class), adj = 0, 
+                 xpd = TRUE, cex = 0.75)
+  
+  # Plot p-values if available
+  if (min(res$p.value) < 1) {
+    py <- abs(res$p.value[N])
+    px <- (seq_along(N) / length(N)) - 1 / length(N) / 2
+    py <- (py * (yy[2] - yy[1])) + yy[1]
+    
+    graphics::rect(xleft = xx[-length(xx)], xright = xx[-1], 
+                   ybottom = yy[1], ytop = py, border = FALSE, xpd = NA, 
+                   col = "white", lwd = 2)
+    
+    graphics::rect(xleft = xl, xright = xr, ybottom = yy[1], 
+                   ytop = yy[2], col = NA, xpd = TRUE, lwd = 0.75)
+    
+    graphics::text(0, yy[1], pos = 2, expression(italic(p) - 
+                                                   value), xpd = TRUE, cex = 0.75)
+    graphics::text(x = 1, y = c(yy[1], yy[2]), c(0, 1), 
+                   pos = c(4), xpd = TRUE, cex = 0.75)
+    graphics::text(4, 2, paste(bquote(italic(p) - value)))
+  }
+  
+  # Plot the class bars on the side of the heatmap
+  xx <- dlfUtils::line2user(line = 1:0, side = 2)
+  xx <- seq(xx[1], xx[2], length = 3)
+  yy <- c(0, cumsum(sapply(split(templates$probe, templates$class), 
+                           length) / length(templates$probe)))
+  yb <- yy[-(K + 1)]
+  yt <- yy[-1]
+  
+  graphics::rect(xleft = xx[1], xright = xx[2], ybottom = yb, 
+                 ytop = yt, col = classCol, xpd = NA, lwd = 0.75)
+  
+  # Add row labels if labRow is not NULL
+  if (!is.null(labRow)) {
+    message("Adding row labels...")
+    textfun <- function(..., cex.text) graphics::text(..., 
+                                                      xpd = TRUE, cex = 0.75)
+    id <- templates[, labRow]
+    yy <- seq(0 + (1 / nrow(templates) / 2), 1 - (1 / nrow(templates) / 2), 
+              length.out = nrow(templates))
+    textfun(1, yy, id, pos = 4, adj = 1)
+  }
+  
+  message("Heatmap plotting complete.")
 }
