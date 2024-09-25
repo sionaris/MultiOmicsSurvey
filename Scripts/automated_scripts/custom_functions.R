@@ -710,6 +710,7 @@ mds_from_original_matrix = function (matrix = NULL, dist_method = NULL, algorith
 
 # create single barchart #####
 create_annot_barchart = function (plotdata = NULL, fill = NULL,
+                                  na.action = "na.omit",
                                   chifit = NULL, algorithm = NULL,
                                   text_y = NULL, rect_ymin = NULL,
                                   rect_ymax = NULL, x_annot = NULL,
@@ -719,6 +720,14 @@ create_annot_barchart = function (plotdata = NULL, fill = NULL,
                                   legend.text.size = NULL,
                                   x.axis.text.size = NULL) {
   library(ggplot2)
+  
+  if (na.action == "na.omit") {
+    plotdata = plotdata[-which(is.na(plotdata[, fill])), ]
+  } else if (na.action == "keep") {
+    plotdata = plotdata
+  } else {
+    stop("The na.action argument should either be set to 'na.omit' OR 'keep'.")
+  }
   
   barchart = ggplot(plotdata, aes(fill=!!sym(fill), x=!!sym(algorithm))) + 
     geom_bar(position="stack", stat="count", width = 0.4) +
