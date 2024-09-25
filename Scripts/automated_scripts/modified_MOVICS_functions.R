@@ -3553,3 +3553,212 @@ subHeatmap_mod <- function (emat, res, templates, keepN = TRUE, labRow = NULL,
   
   message("Heatmap plotting complete.")
 }
+
+# Modified gain definition for FGA #####
+compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, ga_column = NULL,
+                        cnathreshold = 0.2, test.method = "nonparametric", barcolor = c("#008B8A", 
+                                                                                        "#F2042C", "#21498D"), clust.col = c("#2EC4B6", "#E71D36", 
+                                                                                                                             "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
+                                                                                                                             "#9D4EDD", "#f09c6c", "#09f3b3"), 
+                        fig.path = getwd(), fig.name = NULL, width = 8, 
+                        height = 4, prefix = "") 
+{
+  library(patchwork)
+  
+  if (!all(is.element(c("sample", "chrom", "start", "end", "value"), colnames(segment)))) {
+    stop("segment data must have the following columns: sample, chrom, start, end, value.")
+  }
+  
+  if (iscopynumber) {
+    segment$value <- log2(segment$value / 2)
+  }
+  
+  comsam <- intersect(moic.res$clust.res$samID, unique(segment$sample))
+  
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  } else {
+    message(paste0("--", (nrow(moic.res$clust.res) - length(comsam)), 
+                   " samples mismatched from current subtypes."))
+  }
+  
+  if (!is.element(test.method, c("nonparametric", "parametric"))) {
+    stop("test.method can be one of nonparametric or parametric.")
+  }
+  
+  clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+  segment <- segment[which(segment$sample %in% comsam), ]
+  n.moic <- length(unique(clust.res$clust))
+  segment$bases <- segment$end - segment$start
+  
+  display.progress <- function(index, totalN, breakN = 20) {
+    if (index %% ceiling(totalN / breakN) == 0) {
+      cat(paste(round(index * 100 / totalN), "% ", sep = ""))
+    }
+  }
+  
+  std <- function(x, na.rm = TRUE) {
+    if (na.rm) {
+      x <- as.numeric(na.omit(x))
+      sd(x) / sqrt(length(x))
+    } else {
+      sd(x) / sqrt(length(x))
+    }
+  }
+  
+  outTab <- data.frame()
+  
+  for (i in 1:length(unique(segment$sample))) {
+    display.progress(index = i, totalN = length(unique(segment$sample)))
+    tmp <- segment[segment$sample == names(table(segment$sample))[i], ]
+    
+    # If `ga_column` is not NULL, use it to classify gains/losses/normal
+    if (!is.null(ga_column) && ga_column %in% colnames(segment)) {
+      tmp$classification <- tmp[[ga_column]]
+      
+      # Use the classification in the specified column
+      FGA <- sum(tmp[tmp$classification %in% c("gain", "loss"), "bases"]) / sum(tmp[, "bases"])
+      FGG <- sum(tmp[tmp$classification == "gain", "bases"]) / sum(tmp[, "bases"])
+      FGL <- sum(tmp[tmp$classification == "loss", "bases"]) / sum(tmp[, "bases"])
+      
+    } else {
+      # Proceed with the original logic if `ga_column` is NULL
+      if (length(tmp[abs(tmp$value) > cnathreshold, "bases"][6]) == 0) {
+        FGA = 0
+      } else {
+        FGA = sum(tmp[abs(tmp$value) > cnathreshold, "bases"]) / sum(tmp[, "bases"])
+      }
+      
+      if (length(tmp[tmp$value > cnathreshold, "bases"][6]) == 0) {
+        FGG = 0
+      } else {
+        FGG = sum(tmp[tmp$value > cnathreshold, "bases"]) / sum(tmp[, "bases"])
+      }
+      
+      if (length(tmp[tmp$value < (-cnathreshold), "bases"][6]) == 0) {
+        FGL = 0
+      } else {
+        FGL = sum(tmp[tmp$value < (-cnathreshold), "bases"]) / sum(tmp[, "bases"])
+      }
+    }
+    
+    # Store results for each sample
+    tmp_out <- data.frame(samID = names(table(segment$sample))[i], 
+                          FGA = FGA, FGG = FGG, FGL = FGL, stringsAsFactors = FALSE)
+    outTab <- rbind.data.frame(outTab, tmp_out, stringsAsFactors = FALSE)
+  }
+  
+  outTab$Subtype <- paste0(prefix, clust.res[outTab$samID, "clust"])
+  
+  # Summarize FGA, FGG, and FGL by Subtype
+  summaryFGA <- outTab %>% group_by(Subtype) %>% dplyr::summarize(mean = mean(FGA, na.rm = TRUE), se = std(FGA, na.rm = TRUE))
+  summaryFGG <- outTab %>% group_by(Subtype) %>% dplyr::summarize(mean = mean(FGG, na.rm = TRUE), se = std(FGG, na.rm = TRUE))
+  summaryFGL <- outTab %>% group_by(Subtype) %>% dplyr::summarize(mean = mean(FGL, na.rm = TRUE), se = std(FGL, na.rm = TRUE))
+  
+  summaryFGGL <- data.frame(rbind.data.frame(summaryFGG, summaryFGL), 
+                            class = rep(c("FGG", "FGL"), c(nrow(summaryFGG), nrow(summaryFGL))), 
+                            stringsAsFactors = FALSE)
+  
+  # Statistical tests based on number of subtypes
+  if (n.moic == 2 & test.method == "nonparametric") {
+    statistic <- "wilcox.test"
+    FGA.test <- wilcox.test(outTab$FGA ~ outTab$Subtype)$p.value
+    FGG.test <- wilcox.test(outTab$FGG ~ outTab$Subtype)$p.value
+    FGL.test <- wilcox.test(outTab$FGL ~ outTab$Subtype)$p.value
+  } else if (n.moic == 2 & test.method == "parametric") {
+    statistic <- "t.test"
+    FGA.test <- t.test(outTab$FGA ~ outTab$Subtype)$p.value
+    FGG.test <- t.test(outTab$FGG ~ outTab$Subtype)$p.value
+    FGL.test <- t.test(outTab$FGL ~ outTab$Subtype)$p.value
+  } else if (n.moic > 2 & test.method == "nonparametric") {
+    statistic <- "kruskal.test"
+    FGA.test <- kruskal.test(outTab$FGA ~ outTab$Subtype)$p.value
+    FGG.test <- kruskal.test(outTab$FGG ~ outTab$Subtype)$p.value
+    FGL.test <- kruskal.test(outTab$FGL ~ outTab$Subtype)$p.value
+    pairwise.FGA.test <- pairwise.wilcox.test(outTab$FGA, outTab$Subtype, p.adjust.method = "BH")
+    pairwise.FGG.test <- pairwise.wilcox.test(outTab$FGG, outTab$Subtype, p.adjust.method = "BH")
+    pairwise.FGL.test <- pairwise.wilcox.test(outTab$FGL, outTab$Subtype, p.adjust.method = "BH")
+  } else if (n.moic > 2 & test.method == "parametric") {
+    statistic <- "anova"
+    FGA.test <- summary(aov(outTab$FGA ~ outTab$Subtype))[[1]][["Pr(>F)"]][1]
+    FGG.test <- summary(aov(outTab$FGG ~ outTab$Subtype))[[1]][["Pr(>F)"]][1]
+    FGL.test <- summary(aov(outTab$FGL ~ outTab$Subtype))[[1]][["Pr(>F)"]][1]
+    pairwise.FGA.test <- pairwise.t.test(outTab$FGA, outTab$Subtype, p.adjust.method = "BH")
+    pairwise.FGG.test <- pairwise.t.test(outTab$FGG, outTab$Subtype, p.adjust.method = "BH")
+    pairwise.FGL.test <- pairwise.t.test(outTab$FGL, outTab$Subtype, p.adjust.method = "BH")
+  }
+  FGA.col <- barcolor[1]
+  FGG.col <- barcolor[2]
+  FGL.col <- barcolor[3]
+  p1 <- ggplot(summaryFGA, aes(x = Subtype, y = mean, fill = rep("0", 
+                                                                 nrow(summaryFGA)))) + geom_bar(stat = "identity") + 
+    geom_errorbar(aes(ymax = mean + se, ymin = mean - se), 
+                  position = position_dodge(0.9), width = 0.15) + 
+    annotate(geom = "text", x = n.moic/2 + 0.5, y = as.numeric(summaryFGA[which.max(summaryFGA$mean), 
+                                                                          "mean"]), size = 8, angle = 90, fontface = "bold", 
+             label = cut(FGA.test, c(0, 0.001, 0.01, 0.05, 0.1, 
+                                     1), labels = c("****", "***", "**", "*", "."))) + 
+    scale_x_discrete(name = "", position = "top") + theme_bw() + 
+    theme(axis.line.y = element_line(linewidth = 0.8), axis.ticks.y = element_line(linewidth = 0.2), 
+          axis.text.y = element_blank(), axis.title.x = element_text(vjust = -0.3, 
+                                                                     size = 12), axis.text.x = element_text(size = 10, 
+                                                                                                            color = "black"), plot.margin = unit(c(0.3, 
+                                                                                                                                                   -1.7, 0.3, 0.3), "lines"), legend.title = element_blank()) + 
+    coord_flip() + scale_fill_manual(values = FGA.col, breaks = c("0"), 
+                                     labels = c("Copy number-altered genome")) + scale_y_reverse(expand = c(0.01, 
+                                                                                                            0), name = "FGA (Fraction of Genome Altered)", position = "left")
+  p2 <- ggplot(summaryFGGL, aes(x = Subtype, y = ifelse(class == 
+                                                          "FGG", mean, -mean), fill = class)) + geom_bar(stat = "identity") + 
+    geom_errorbar(data = summaryFGGL[summaryFGGL$class == 
+                                       "FGG", ], aes(ymax = mean + se, ymin = mean - se), 
+                  position = position_dodge(0.9), width = 0.15) + 
+    geom_errorbar(data = summaryFGGL[summaryFGGL$class == 
+                                       "FGL", ], aes(ymax = -mean - se, ymin = -mean + 
+                                                       se), position = position_dodge(0.9), width = 0.15) + 
+    annotate(geom = "text", x = n.moic/2 + 0.5, y = -as.numeric(summaryFGL[which.max(summaryFGL$mean), 
+                                                                           "mean"]), size = 8, angle = 90, fontface = "bold", 
+             label = cut(FGL.test, c(0, 0.001, 0.01, 0.05, 0.1, 
+                                     1), labels = c("****", "***", "**", "*", "."))) + 
+    annotate(geom = "text", x = n.moic/2 + 0.5, y = as.numeric(summaryFGG[which.max(summaryFGG$mean), 
+                                                                          "mean"]), size = 8, angle = 90, fontface = "bold", 
+             label = cut(FGG.test, c(0, 0.001, 0.01, 0.05, 0.1, 
+                                     1), labels = c("****", "***", "**", "*", "."))) + 
+    scale_x_discrete(name = "") + theme_bw() + theme(axis.line.y = element_line(linewidth = 0.8), 
+                                                     axis.ticks.y = element_line(linewidth = 0.2), axis.text.y = element_blank(), 
+                                                     axis.title.x = element_text(vjust = -0.3, size = 12), 
+                                                     axis.text.x = element_text(size = 10, color = "black"), 
+                                                     plot.margin = unit(c(0.3, 0.3, 0.3, -1), "lines"), legend.title = element_blank()) + 
+    coord_flip() + scale_fill_manual(values = c(FGL.col, 
+                                                FGG.col), breaks = c("FGL", "FGG"), labels = c("Copy number-lost genome", 
+                                                                                               "Copy number-gained genome")) + scale_y_continuous(expand = c(0.01, 
+                                                                                                                                                             0), name = "FGL or FGG (Fraction of Genome Lost or Gained)")
+  pp <- ggplot() + geom_label(data = summaryFGGL, aes(label = Subtype, 
+                                                      x = Subtype, fill = Subtype), y = 0.5, color = "white", 
+                              size = 0.9 * 11/.pt, hjust = 0.4, vjust = 0.5) + scale_fill_manual(values = clust.col) + 
+    theme_minimal() + theme(axis.line.y = element_blank(), 
+                            axis.ticks.y = element_blank(), axis.text.y = element_blank(), 
+                            axis.title.y = element_blank(), axis.title.x = element_blank(), 
+                            plot.margin = unit(c(0.3, 0, 0.3, 0), "lines")) + guides(fill = "none") + 
+    coord_flip() + scale_y_reverse()
+  pal <- p1 + pp + p2 + plot_layout(widths = c(7, 1, 7), guides = "collect") & 
+    theme(legend.position = "top")
+  if (is.null(fig.name)) {
+    outFig <- "barplot of FGA.pdf"
+  }
+  else {
+    outFig <- paste0(fig.name, ".pdf")
+  }
+  ggsave(file.path(fig.path, outFig), width = width, height = height)
+  print(pal)
+  if (n.moic > 2) {
+    return(list(summary = outTab, FGA.p.value = FGA.test, 
+                pairwise.FGA.test = pairwise.FGA.test, FGG.p.value = FGG.test, 
+                pairwise.FGG.test = pairwise.FGG.test, FGL.p.value = FGL.test, 
+                pairwise.FGL.test = pairwise.FGL.test, test.method = statistic))
+  }
+  else {
+    return(list(summary = outTab, FGA.p.value = FGA.test, 
+                FGG.p.value = FGG.test, FGL.p.value = FGL.test, 
+                test.method = statistic))
+  }
+}
