@@ -6,3 +6,11 @@ desc_list[["MOVICS"]] = "MOVICS is used to perform multi-omics integrative clust
 # SNF
 desc_list[["SNF"]] = "SNF approaches the multi-omic problem by constructing networks of samples (e.g., patients) for each available data type and then efficiently fusing these into one network that represents the full spectrum of underlying data."
 
+# CIMLR
+desc_list[["CIMLR"]] = ""
+
+# PINSPlus
+desc_list[["PINSPlus"]] = ""
+
+# NEMO
+desc_list[["NEMO"]] = "NEMO processes data by taking matrices from multiple omics types and calculating similarity matrices for each type using a radial basis function kernel. These matrices consider the Euclidean distance between sample profiles and adjust for density differences using a normalization factor (identical to the SNF approach until here). NEMO then creates a relative similarity matrix for each omic to adjust similarities based on local neighborhood data, making the comparison between different omics more consistent. The algorithm averages these relative similarity matrices to form an **Average Relative Similarity matrix**. This Average Relative Similarity matrix, which treats similarities as transition probabilities (akin to a random walk on a graph), is used for spectral clustering. The number of clusters is determined using a variant of the eigengap method, optimized to enhance the prognostic value by possibly suggesting a higher number of clusters."

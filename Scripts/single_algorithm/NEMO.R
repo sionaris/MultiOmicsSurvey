@@ -1533,11 +1533,11 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        num_neighbors_step = neighbor_step,
                        sigma_min = min(sigma_range),
                        sigma_max = max(sigma_range),
+                       eigengap_k = num.clusters,
                        sigma_step = sigma_step,
                        optimal_N = optN,
                        optimal_sigma = optSigma,
-                       conclusion = conclusion, # if there is agreement, np_conclusion can also be used
-                       n_iter = n_iterations
+                       conclusion = conclusion
 )
 
 # Put all parameters in a list

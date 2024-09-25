@@ -1,0 +1,21 @@
+There are two hyperparameters in NEMO: the number of neighbors ($nn$) and the regularization parameter $\sigma$.
+
+Here, we used a range of number of neighbors values $[ `r hyperparameters[["num_neighbors_min"]]`, `r hyperparameters[["num_neighbors_max"]]` ]$ with a step size of `r hyperparameters[["num_neighbors_step"]]`, and $\sigma$ values ranging from $`r hyperparameters[["sigma_min"]]`$ to $`r hyperparameters[["sigma_max"]]`$ with a step size of $`r hyperparameters[["sigma_step"]]`$.
+
+We compared the final <b>ARS matrices</b> (Average Relative Similarity matrices) for all combinations of $nn$ and $sigma$ (Pearson and Frobenius similarities between matrices). <b>Automatic conclusion:</b> `r hyperparameters[["conclusion"]]` 
+
+The corresponding histogram of Pearson correlations is shown below:
+
+![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_matrix_Pearson_similarity_histogram-1.png")`)
+
+We chose the optimal hyperparameter values based on two custom metrics. 
+
+For all $nn$ and $\sigma$, we calculated:
+<ol>
+  <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each ARS matrix as an indication of spread.</li>
+  <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li>
+  <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li>
+  <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li>
+</ol>
+
+This led to us to pick $nn = `r hyperparameters[["optimal_N"]]`$ and $\sigma = `r hyperparameters[["optimal_sigma"]]`$.

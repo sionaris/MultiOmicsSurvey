@@ -1,0 +1,120 @@
+1. The input to NEMO is a set of data matrices of $n$ subjects (samples or patients). Given $L$ omics, let $X_l$ denote the data matrix for omic $l$. $X_l$ has dimensions $p_l \times n$, where $p_l$ is the number of features for omic $l$. $P = \sum_l p_l$ is the total number of features.
+
+2. Denote by $x_{li}$ the profile of sample $i$ in omic $l$ (column $i$ in $X_l$). Let $\eta_{li}$ denote its $nn$ nearest neighbors within omic $l$, where Euclidean distance is used to measure profile closeness. For omic $l$, an $n \times n$ similarity matrix $S_l$ is defined as follows:
+
+   $$
+   S_l (i, j) = \frac{1}{\sqrt{2\pi} \sigma_{ijl}} \exp \left(- \frac{||x_{li} - x_{lj}||^2}{2 \sigma^2_{ijl}} \right)
+   $$
+
+   where $\sigma^2_{ijl}$ is defined by:
+
+   $$
+   \sigma^2_{ijl} = \frac{1}{3} \left(\frac{1}{nn} \sum_{r \in \eta_{li}}||x_{li} - x_{lr}||^2 + \frac{1}{nn} \sum_{r \in \eta_{lj}}||x_{lj} - x_{lr}||^2 + ||x_{li} - x_{lj}||^2\right)
+   $$
+
+   This similarity measure is based on the RBF kernel, and $\sigma^2_{ijl}$ is a normalizing factor, which controls for the density of samples by averaging the squared distance of the $i$-th and $j$-th samples to their nearest neighbors and the squared distance between these two samples ($nn$: number of nearest neighbors).
+
+3. Next, NEMO defines the relative similarity matrix, $RS_l$, for each omic:
+
+   $$
+   RS_l(i,j) = \frac{S_l(i,j)}{\sum_{r \in n_{li}} S_l(i, r)} \cdot I(j \in n_{li}) + \frac{S_l(i,j)}{\sum_{r \in n_{lj}} S_l(r,j)} \cdot I(i \in n_{lj})
+   $$
+
+   where $I$ is the indicator function. $RS_l(i,j)$ measures the similarity between $i$ and $j$ relative to $i$'s $nn$ nearest neighbors and to $j$'s $nn$ nearest neighbors. Since different omics have different data distributions, the relative similarity is more comparable between omics than the original similarity matrix $S$.
+
+4. In the next step, NEMO calculates the $n \times n$ average similarity matrix $ARS$ as:
+
+   $$
+   ARS = \frac{1}{L} \sum_l RS_l
+   $$
+
+   $RS_l$ can be viewed as defining a transition probability between samples, such that the probability to move between samples is proportional to their similarity. Such transition distributions are widely used to describe random walks on graphs. $ARS$ is therefore a mixture of these distributions.
+
+5. Given $ARS$, the clusters are calculated by performing spectral clustering on $ARS$. NEMO uses the spectral clustering variant that is based on the eigenvectors of the normalized Laplacian, developed by Ng et al. \cite{Ng_spectral}.
+
+   To determine the number of clusters, NEMO uses a modified eigengap method. The number of clusters is set to $\arg\text{max}_i (\lambda_{i+1} - \lambda_i) \cdot i$, where $\lambda$ are $ARS$ eigenvalues. This objective maintains the idea of the eigengap while encouraging the solution to have a higher number of clusters, which is observed to improve the prognostic value for cancer data.
+
+6. **Full Process:**
+    1. **Symmetrization of the Affinity Matrix:**
+        - The matrix $ARS$ is symmetrized by computing:
+
+          $$
+          ARS_{\text{sym}} = \frac{ARS + ARS^T}{2}
+          $$
+
+          ensuring that the affinity matrix is symmetric.
+
+        - The diagonal elements of the affinity matrix $ARS$ are set to 0, i.e.,
+
+          $$
+          \text{diag}(ARS) = 0
+          $$
+
+          ensuring that self-affinities are excluded from the analysis.
+
+    2. **Computation of the Degree Matrix:**
+        - The degree matrix $D$ is computed based on the row sums of the affinity matrix $ARS$. Each element of $D$ is the sum of affinities for each node:
+
+          $$
+          D_{ii} = \sum_j ARS_{ij}
+          $$
+
+        - For rows with zero degree (i.e., no connections), the degree is set to a small positive number to avoid computational issues, i.e.,
+
+          $$
+          D_{ii} = \epsilon \text{ if } D_{ii} = 0
+          $$
+
+          where $\epsilon \approx 2.22 \cdot 10^{-16}$.
+
+    3. **Computation of the Normalized Laplacian:**
+        - The graph Laplacian $L$ is computed as:
+
+          $$
+          L = D - ARS
+          $$
+
+        - The Laplacian is then normalized using the degree matrix. The normalization step uses the formula:
+
+          $$
+          L_{\text{norm}} = D^{-1/2} L D^{-1/2}
+          $$
+
+          ensuring that the Laplacian is scale-invariant and works properly with spectral clustering.
+
+    4. **Eigenvalue Decomposition:**
+        - The eigenvalues and eigenvectors of the normalized Laplacian $L_{\text{norm}}$ are computed. The eigenvalues are sorted in ascending order, and the corresponding eigenvectors are rearranged to match this order.
+
+    5. **Eigengap Calculation:**
+        - The eigengap is the difference between consecutive eigenvalues, calculated as:
+
+          $$
+          \text{eigengap}_i = |\lambda_{i+1} - \lambda_i|
+          $$
+
+        - The function calculates the eigengap for each pair of consecutive eigenvalues.
+
+    6. **Maximizing the Eigengap:**
+        - The eigengap is scaled by multiplying it by the index of the eigenvalue difference:
+
+          $$
+          \text{eigengap}_i = i \cdot |\lambda_{i+1} - \lambda_i|
+          $$
+
+        - The function then selects the largest eigengap value for the candidate number of clusters and returns the corresponding number of clusters.
+
+7. If not specified, the number of neighbors is set to $nn = \frac{\# samples}{\# clusters}$ or $nn = \frac{\#samples}{6}$ if the number of clusters is unknown.
+
+## Partial Datasets
+
+- NEMO can handle samples that were measured on only a subset of omics. Specifically, NEMO requires that each pair of samples has at least one omic on which they were both measured.
+
+- Under these conditions, $RS_l$ is computed as in the full-data scenario, but $ARS$ is averaged on the observed values. Denote by $JM(i, j)$ the omic types available for both samples. Then:
+
+  $$
+  ARS(i,j) = \frac{1}{|JM(i,j)|} \sum_{l \in JM(I,j)} RS_l(i, j)
+  $$
+
+- NEMO requires that **all samples that have measurements for some omic, have measurements for the same set of features in that omic**, so each $X_l$ is a full matrix. When patients have different measured features, intersection or imputation of missing values is required.
+
+- On partial datasets, each omic $l$ may have a different number of samples. The number $k$ of nearest neighbors is chosen per omic: $nn = \frac{\text{#}samples(l)}{6}$.
