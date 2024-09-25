@@ -672,10 +672,18 @@ dev.off()
 gc()
 
 # Clinical variables ###
+# Remove unknown levels for statistical tests
+var2comp_nonas = var2comp
+for (i in 1:ncol(var2comp)) {
+  nas = which(var2comp[, i] == "Unknown")
+  var2comp_nonas[nas, i] = NA
+}
+rm(nas); gc()
+
 # Statistical comparisons
 clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          moic.res = plot_object,
-                                         var2comp = var2comp,
+                                         var2comp = var2comp_nonas,
                                          strata = algorithm,
                                          factorVars = c("vital_status", "race_list", "ethnicity",
                                                         "history_of_neoadjuvant_treatment",
@@ -812,6 +820,204 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                name = "normalized RNA-seq")
 dev.off()
 
+# DMEA ###
+dmea = runDEA_mod(dea.method = "limma", # we use normalized data as input
+                  expr = plotdata$Methylation,
+                  moic.res = plot_object,
+                  prefix = "dmea_",
+                  sort.p = TRUE,
+                  overwt = TRUE,
+                  verbose = TRUE,
+                  res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                  algorithm = algorithm)
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+methyl.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                               moic.res = plot_object,
+                                               dea.method    = "limma", # name of DEA method
+                                               prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                               dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                               res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                               p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                               p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                               dirct         = "up", # direction of dysregulation in expression
+                                               n.marker      = 100, # number of biomarkers for each subtype
+                                               doplot        = TRUE, # generate diagonal heatmap
+                                               norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                               annCol        = annCol, # sample annotation in heatmap
+                                               annColors     = annColors, # colors for sample annotation
+                                               show_rownames = TRUE, # show no rownames (biomarker name)
+                                               centerFlag = F,
+                                               scaleFlag = F,
+                                               halfwidth = 3,
+                                               fig.name      = "hypermethylated_biomarkers_heatmap",
+                                               fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                               width = 14,
+                                               height = 12,
+                                               fontsize_row = 0, # 3 default
+                                               name = "normalized Methylation")
+dev.off()
+
+# # 2. Down-regulated markers
+methyl.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                                 moic.res = plot_object,
+                                                 dea.method    = "limma", # name of DEA method
+                                                 prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                                 dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                                 res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                                 p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                 p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                 dirct         = "down", # direction of dysregulation in expression
+                                                 n.marker      = 100, # number of biomarkers for each subtype
+                                                 doplot        = TRUE, # generate diagonal heatmap
+                                                 norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                                 annCol        = annCol, # sample annotation in heatmap
+                                                 annColors     = annColors, # colors for sample annotation
+                                                 show_rownames = TRUE, # show no rownames (biomarker name)
+                                                 centerFlag = F,
+                                                 scaleFlag = F,
+                                                 halfwidth = 3,
+                                                 fig.name      = "hypomethylated_biomarkers_heatmap",
+                                                 fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                 width = 14,
+                                                 height = 12,
+                                                 fontsize_row = 0, # 3 default
+                                                 name = "normalized Methylation")
+dev.off()
+
+# DmiREA ###
+dmiRea = runDEA_mod(dea.method = "limma", # we use normalized data as input
+                    expr = plotdata$miRNA,
+                    moic.res = plot_object,
+                    prefix = "dmiRea_",
+                    sort.p = TRUE,
+                    overwt = TRUE,
+                    verbose = TRUE,
+                    res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                    algorithm = algorithm)
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+miRNA.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                              moic.res = plot_object,
+                                              dea.method    = "limma", # name of DEA method
+                                              prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                              dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                              dirct         = "up", # direction of dysregulation in expression
+                                              n.marker      = 100, # number of biomarkers for each subtype
+                                              doplot        = TRUE, # generate diagonal heatmap
+                                              norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                              annCol        = annCol, # sample annotation in heatmap
+                                              annColors     = annColors, # colors for sample annotation
+                                              show_rownames = TRUE, # show no rownames (biomarker name)
+                                              centerFlag = F,
+                                              scaleFlag = F,
+                                              halfwidth = 3,
+                                              fig.name      = "upregulated_miRNA_biomarkers_heatmap",
+                                              fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                              width = 14,
+                                              height = 12,
+                                              fontsize_row = 0, # 3 default
+                                              name = "normalized miRNA")
+dev.off()
+
+# # 2. Down-regulated markers
+miRNA.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                                moic.res = plot_object,
+                                                dea.method    = "limma", # name of DEA method
+                                                prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                                dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                                res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                                p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                dirct         = "down", # direction of dysregulation in expression
+                                                n.marker      = 100, # number of biomarkers for each subtype
+                                                doplot        = TRUE, # generate diagonal heatmap
+                                                norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                                annCol        = annCol, # sample annotation in heatmap
+                                                annColors     = annColors, # colors for sample annotation
+                                                show_rownames = TRUE, # show no rownames (biomarker name)
+                                                centerFlag = F,
+                                                scaleFlag = F,
+                                                halfwidth = 3,
+                                                fig.name      = "downregulated_miRNA_biomarkers_heatmap",
+                                                fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                width = 14,
+                                                height = 12,
+                                                fontsize_row = 0, # 3 default
+                                                name = "normalized miRNA")
+dev.off()
+
+# DCNVA ###
+dCNVea = runDEA_mod(dea.method = "limma", # we use normalized data as input
+                    expr = plotdata$CNV,
+                    moic.res = plot_object,
+                    prefix = "dCNVea_",
+                    sort.p = TRUE,
+                    overwt = TRUE,
+                    verbose = TRUE,
+                    res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                    algorithm = algorithm)
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+CNV.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                            moic.res = plot_object,
+                                            dea.method    = "limma", # name of DEA method
+                                            prefix        = "dCNVea_", # MUST be the same of argument in runDEA()
+                                            dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                            res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                            p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                            p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                            dirct         = "up", # direction of dysregulation in expression
+                                            n.marker      = 100, # number of biomarkers for each subtype
+                                            doplot        = TRUE, # generate diagonal heatmap
+                                            norm.expr     = plotdata$CNV, # use normalized expression as heatmap input
+                                            annCol        = annCol, # sample annotation in heatmap
+                                            annColors     = annColors, # colors for sample annotation
+                                            show_rownames = TRUE, # show no rownames (biomarker name)
+                                            centerFlag = F,
+                                            scaleFlag = F,
+                                            halfwidth = 3,
+                                            fig.name      = "upregulated_CNV_biomarkers_heatmap",
+                                            fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                            width = 14,
+                                            height = 12,
+                                            fontsize_row = 0, # 3 default
+                                            name = "normalized CNV")
+dev.off()
+
+# # 2. Down-regulated markers
+CNV.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                              moic.res = plot_object,
+                                              dea.method    = "limma", # name of DEA method
+                                              prefix        = "dCNVea_", # MUST be the same of argument in runDEA()
+                                              dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                              dirct         = "down", # direction of dysregulation in expression
+                                              n.marker      = 100, # number of biomarkers for each subtype
+                                              doplot        = TRUE, # generate diagonal heatmap
+                                              norm.expr     = plotdata$CNV, # use normalized expression as heatmap input
+                                              annCol        = annCol, # sample annotation in heatmap
+                                              annColors     = annColors, # colors for sample annotation
+                                              show_rownames = TRUE, # show no rownames (biomarker name)
+                                              centerFlag = F,
+                                              scaleFlag = F,
+                                              halfwidth = 3,
+                                              fig.name      = "downregulated_CNV_biomarkers_heatmap",
+                                              fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                              width = 14,
+                                              height = 12,
+                                              fontsize_row = 0, # 3 default
+                                              name = "normalized CNV")
+dev.off()
+
 # GSEA ###
 # Load MSigDb file
 MSIGDB.FILE <- paste0(home, "/Resources/Pathways/GO-BP_c5.go.bp.v2024.1.Hs.symbols.gmt")
@@ -892,6 +1098,77 @@ gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             name          = "GSVA scores")
 dev.off()
 
+# Fraction Genome Altered ###
+library(SummarizedExperiment)
+CNVrds = readRDS("Resources/TCGA/CNV_full.rds")
+
+# Extract sample names
+samples <- colnames(CNVrds)
+
+# Extract genomic ranges information (chrom, start, end)
+chrom <- as.character(seqnames(rowRanges(CNVrds)))
+start <- start(rowRanges(CNVrds))
+end <- end(rowRanges(CNVrds))
+
+# Extract copy number values (as a matrix, with rows as regions and columns as samples)
+copy_number_values <- assay(CNVrds, "copy_number")
+
+sample_data <- list()
+for (i in 1:length(samples)) {
+  df <- data.frame(
+    sample = samples[i],
+    chrom = chrom,
+    start = start,
+    end = end,
+    value = copy_number_values[, i],
+    ploidy = rep(mean(copy_number_values[, i], na.rm = TRUE), 
+                 length(copy_number_values[, i]))
+  )
+  
+  df_filtered <- df[!is.na(df$value), ]
+  sample_data[[i]] <- df_filtered
+}
+
+# Combine all sample data frames into one large data frame
+fga_df <- do.call(rbind, sample_data)
+
+rm(sample_data, samples, chrom, start, end, copy_number_values, df,
+   df_filtered); gc()
+
+# Add a custom genome-altered column
+fga_df$ga = NA
+fga_df$ga = ifelse(fga_df$value > 2, "gain", 
+                   ifelse(fga_df$value < 2, "loss", "normal"))
+
+# Use COSMIC criteria
+fga_df$COSMIC_ga = NA
+fga_df$COSMIC_ga = ifelse(fga_df$ploidy <= 2.7 & fga_df$value >= 5, "gain", 
+                        ifelse(fga_df$ploidy > 2.7 & fga_df$value >= 9, "gain",
+                               ifelse(fga_df$ploidy <= 2.7 & fga_df$value == 0, "loss",
+                                      ifelse(fga_df$ploidy > 2.7 & 
+                                               fga_df$value < fga_df$ploidy - 2.7, "loss", "normal"))))
+
+fga.NEMO <- compFGA_mod(moic.res     = plot_object,
+                           segment      = fga_df,
+                           iscopynumber = TRUE, 
+                           test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
+                           fig.path     = paste0(home, "/Results/single_algorithm/NEMO"),
+                           fig.name     = paste0("FGA_barplot_", algorithm),
+                           prefix = algorithm,
+                           width = 16,
+                           ga_column = "ga", # genome altered column
+                           clust.col = cluster_colors)
+
+fga.NEMO.COSMIC <- compFGA_mod(moic.res     = plot_object,
+                        segment      = fga_df,
+                        iscopynumber = TRUE, 
+                        test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
+                        fig.path     = paste0(home, "/Results/single_algorithm/NEMO"),
+                        fig.name     = paste0("COSMIC_criteria_FGA_barplot_", algorithm),
+                        prefix = algorithm,
+                        width = 16,
+                        ga_column = "COSMIC_ga", # genome altered column
+                        clust.col = cluster_colors)
 # Evaluation #####
 # Run Nearest Template Prediction in transNEO cohort ###
 # Load transNEO data
@@ -1298,20 +1575,30 @@ unbiased.cv.test = function(x, string, digits = 3) {
               value = round(as.numeric(CV), digits)))
 }
 
-voi = colnames(clust_annot_pheno)[1:11]
+clust_annot_pheno_nonas = clust_annot_pheno
+for(i in 1:ncol(clust_annot_pheno_nonas)) {
+  clust_annot_pheno_nonas[, i] = as.character(clust_annot_pheno_nonas[, i])
+  nas = which(clust_annot_pheno_nonas[, i] == "Unknown")
+  clust_annot_pheno_nonas[nas, i] = NA
+  clust_annot_pheno_nonas[, i] = factor(clust_annot_pheno_nonas[, i])
+}
+rm(nas); gc()
+
+voi = colnames(clust_annot_pheno_nonas)[1:11]
 output = as.data.frame(matrix(NA, nrow = 0, ncol = 4))
 for (v in 1:length(voi)){
-  test = suppressWarnings(chisq.test(table(clust_annot_pheno[, algorithm], 
-                                           clust_annot_pheno[, voi[v]])))
+  keepers = which(!is.na(clust_annot_pheno_nonas[, voi[v]]))
+  test = suppressWarnings(chisq.test(table(clust_annot_pheno_nonas[keepers, algorithm], 
+                                           clust_annot_pheno_nonas[keepers, voi[v]])))
   chifit_p = test$p.value
   chifit_xsq = test$statistic
-  chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno[, algorithm], 
-                                                      clust_annot_pheno[, voi[v]]),
+  chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno_nonas[keepers, algorithm], 
+                                                      clust_annot_pheno_nonas[keepers, voi[v]]),
                                                 string = voi[v],
                                                 digits = 3)$value)
   comparison = paste0(voi[v], " vs ", algorithm, " cluster")
   output = rbind(output, c(comparison, chifit_p, chifit_xsq, chifit_cv))
-  rm(test, comparison, chifit_p, chifit_xsq, chifit_cv)
+  rm(test, comparison, chifit_p, chifit_xsq, chifit_cv, keepers)
 }
 colnames(output) = c("Comparison", "p-value", "Statistic", "Cramer's V")
 
@@ -1323,20 +1610,21 @@ openxlsx::write.xlsx(output,
 
 # Bar chart generation
 NEMO_barcharts = list()
-plotdata_bar = clust_annot_pheno
+plotdata_bar = clust_annot_pheno_nonas
 plotdata_bar[[algorithm]] = factor(plotdata_bar[[algorithm]])
 for (i in 1:length(voi)) {
   chifit = output
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
   NEMO_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
+                                              na.action = "na.omit",
                                               chifit = chifit,
                                               algorithm = algorithm,
-                                              barchart_ylim = 650,
-                                              text_y = 600, rect_ymin = 500,
-                                              rect_ymax = 620, x_annot = 5.5,
-                                              v_gap = 35, rect_xmin = 5,
-                                              rect_xmax = 6, 
+                                              barchart_ylim = 500,
+                                              text_y = 420, rect_ymin = 320,
+                                              rect_ymax = 450, x_annot = 5.5,
+                                              v_gap = 35, rect_xmin = 4.5,
+                                              rect_xmax = 6.5, 
                                               annot_text_size = 2.25,
                                               legend.text.size = 5,
                                               x.axis.text.size = 5) +
@@ -1370,9 +1658,9 @@ dev.off()
 
 # Just significant ones now
 NEMO_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(NEMO, Race, Histology, 
-                                                       `ER status`, `PR status`,
-                                                       `Vital status`)
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(NEMO, Race, Histology, 
+                                                             `ER status`, `PR status`,
+                                                             `HER2 status`)
 plotdata_bar_sig$NEMO = factor(plotdata_bar_sig$NEMO)
 voi_sig = setdiff(colnames(plotdata_bar_sig), "NEMO")
 for (i in 1:length(voi_sig)) {
@@ -1380,13 +1668,14 @@ for (i in 1:length(voi_sig)) {
   loc = which(grepl(voi_sig[i], chifit$Comparison))
   chifit = chifit[loc, ]
   NEMO_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                  na.action = "na.omit",
                                                   chifit = chifit,
                                                   algorithm = algorithm,
-                                                  barchart_ylim = 650,
-                                                  text_y = 600, rect_ymin = 500,
-                                                  rect_ymax = 620, x_annot = 5.5,
-                                                  v_gap = 35, rect_xmin = 5,
-                                                  rect_xmax = 6, 
+                                                  barchart_ylim = 500,
+                                                  text_y = 420, rect_ymin = 320,
+                                                  rect_ymax = 450, x_annot = 5.5,
+                                                  v_gap = 35, rect_xmin = 4.5,
+                                                  rect_xmax = 6.5, 
                                                   annot_text_size = 2.25,
                                                   legend.text.size = 5,
                                                   x.axis.text.size = 5) +
@@ -1420,19 +1709,25 @@ Pheno_sunburst_NEMO = clust_annot_pheno
 Pheno_sunburst_NEMO$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_NEMO$`ER status`)
 Pheno_sunburst_NEMO$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_NEMO$`ER status`)
 Pheno_sunburst_NEMO$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_NEMO$`ER status`)
+Pheno_sunburst_NEMO$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                          Pheno_sunburst_NEMO$`HER2 status`)
+Pheno_sunburst_NEMO$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_NEMO$`HER2 status`)
+Pheno_sunburst_NEMO$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_NEMO$`HER2 status`)
 Pheno_sunburst_NEMO = Pheno_sunburst_NEMO %>%
-  dplyr::select(NEMO, `ER status`, `Vital status`) %>%
-  group_by(NEMO, `ER status`, `Vital status`) %>%
+  dplyr::select(NEMO, `ER status`, `HER2 status`) %>%
+  group_by(NEMO, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_NEMO = data.frame(stringsAsFactors = FALSE,
                                     colors = tolower(gplots::col2hex(c(cluster_colors, 
                                                                        "#C11D9C", "#0F1682",  "grey40",
-                                                                       "lightpink1", "black", "grey40"))),
+                                                                       "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                       "hotpink4", "grey40"))),
                                     labels = c(paste0("NEMO", c(1:9)),
                                                "ER-", "ER+", "Unkn ER status",
-                                               "Alive", "Dead", "Unknown"))
+                                               "HER2-", "HER2+", "Indeterminate",
+                                               "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_NEMO = as.sunburstDF(Pheno_sunburst_NEMO, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_NEMO, by = "labels")
@@ -1547,7 +1842,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
               NMI_to_MOVICS_NEMO = NMI_to_MOVICS_NEMO, ARI_to_MOVICS_NEMO = ARI_to_MOVICS_NEMO,
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
-              sessionInfo = sessionInfo(), home = home)
+              sessionInfo = sessionInfo(), home = home, transNEO_var2comp = transNEO_var2comp)
 
 # Render the R Markdown document with the parameters
 rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/NEMO/NEMO_report.Rmd"), 

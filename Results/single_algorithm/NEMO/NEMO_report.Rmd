@@ -63,15 +63,33 @@ The MOVICS package provides a function ``compMut()`` which applies independent t
 <b>Comparison with MOVICS NEMO subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/Oncoprints/pdf2png/MOVICS_NEMO_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
-## Differential Gene Expression Analysis (DGEA)
+## Differential Analysis
 DGEA is performed in order to compare the expression of the two identified consensus subtypes using the __limma__ package.
 
 In order to identify subtype-specific markers, we find the markers that are up-regulated in `r paste0(params$algorithm, 1)` vs. all other clusters and the ones which are down-regulated in `r paste0(params$algorithm, 1)` vs. all other clusters etc.
 
 In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
-<b>Up-regulated markers</b>
+<b>Up-regulated gene expression markers</b>
 ![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+Similarly we produce markers for CNV, miRNA and Methylation data:
+<b>Up-regulated CNV markers</b>
+![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_CNV_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+<b>Up-regulated methylation markers</b>
+![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/hypermethylated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+<b>Up-regulated miRNA markers</b>
+![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_miRNA_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+Additionally, we produce a plot for the fraction of genome altered (FGA) for every subtype and distinguish between gains and losses. The first plot below defines gain as the presence of **more than 2 copies** for a segment, while the second one uses the [COSMIC scheme of defining gain and loss](https://cancer.sanger.ac.uk/cosmic/help/cnv/overview), which also takes average ploidy into account.
+
+<b>FGA plot</b>
+![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/FGA_barplot_NEMO-1.png")`)
+
+<b>COSMIC criteria FGA plot</b>
+![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/COSMIC_criteria_FGA_barplot_NEMO-1.png")`)
 
 ## Gene Set Enrichment Analysis
 
@@ -224,23 +242,69 @@ In MOVICS, the NEMO algorithm is run by default with $nn = \frac{n}{6}$ and $\si
 
 # Conclusions
 <ol>
-  <li>The identified NEMO subtypes are associated with <b>vital status, history of neoadjuvant treatment, PR status, ER status, HER2 status, ER and PR cell level percentages, and histological type</b>.</li>
-  <li>The identified NEMO subtypes are similar to the MOVICS NEMO subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS_NEMO`, <b>NMI:</b> `r params$NMI_to_MOVICS_NEMO`).</li>
-  <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and RNA-seq modalities</b>.</li>
-  <li>NEMO1 is associated with <b>ER+, PR+ samples</b> and have the majority of <b>ILC samples</b>.</li>
-  <li>NEMO2 has generally <b>higher immune system activity</b> compared to NEMO1.</li>
-  <li>NEMO1 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and NEMO2 has a high proportion of <em>TP53</em> <b>mutations</b>. NEMO1 has a relatively high ratio of <em>CDH1</em> mutations too.</li>
-  <li>In terms of <b>drug sensitivity</b>, NEMO1 seems to be more sensitive to <b>sorafenib and lapatinib</b> compared to NEMO2, and less sensitive to <b>paclitaxel, doxorubicin, 5-fluorouracil and cisplatin</b>.</li>
-  <li>Predicted NEMO subtypes on the transNEO cohort are associated with lymph node status at diagnosis, ER status, grade, <b>pCR</b> (see table below), PAM50, iC10, type of regimen of neoadjuvant treatment, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
+  <li>NEMO identifies `r params$hyperparameters$eigengap_k` subtypes in the data.</li>
+  <li>The identified NEMO subtypes are associated with <b>race, PR status, ER status, HER2 status, no. of lymph nodes positive (by H&E), ER and PR cell level percentages</b>, as determined by statistical tests in ``MOVICS::compClinvar()``.</li>
+  <li>The identified NEMO subtypes are not particularly similar to the MOVICS NEMO subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS_NEMO`, <b>NMI:</b> `r params$NMI_to_MOVICS_NEMO`).</li>
+  <li>When looking at the <b>comprehensive multi-omic heatmap</b>, we observe noticeable omic patterns for some of the NEMO subtypes:
+    <ul>
+      <li><b>Subtypes 1 and 3 are predominantly ER+</b> and have similar expression and methylation profiles, but different CNV profiles.</li>
+      <li><b>Subtype 2 is predominantly ER-</b> and has different expression, CNV and methylation profiles than most other subtypes.</li>
+      <li>Subtype 5 has a distinctly different expression and methylation profile than the rest of the subtypes, relatively similar to Subtype 2. That may be due to the roughly equal distribution of ER+ and ER- in this subtype.</li>
+      <li><b>Subtype 9 is heavily mutated</b> compared to all other subtypes.</li>
+    </ul>
+  <li>Based on the dimensionality reduction plots of the original matrices, a clearer separation of samples is noticed on the <b>methylation, miRNA and SNPs modalities</b>.</li>
+  <li>Although NEMO1 and NEMO3 are both predominantly ER+, NEMO1 has the majority of <b>ILC samples</b> and a noticeably lower percentage of <em>TP53</em> mutations (<b>NEMO1:</b> 8.4%, <b>NEMO2</b>: 20.8%). Roughly <b>50%</b> of NEMO1 samples have mutations in <em>PIK3CA</em>, compared to only <b>12.5%</b> in NEMO3.</li>
+  <li>NEMO2 has a high percentage of <em>TP53</em> mutations (71.7%).</li>
+  <li>NEMO8 and NEMO9 are heavily mutated (although small in sample size: 32 and 39 respectively) compared to the rest of the subtypes in most of the identified significant genes:
+    <ul>
+      <li>NEMO9 has a percentage of mutated samples higher than **12%** for all identified genes. The highest proportions are observed in <em>TTN</em> (**60.5%**), <em><PIK3CA</em> (**50.0%**) and <em>MUC16</em> (**44.7%**).</li>
+      <li>NEMO8 is not as hevily burdened, but has high proportions of mutated samples in <em>TP53</em> (**53.1%**), <em>TTN</em> (**43.8%**) and <em>PIK3CA</em> (**40.6%**).</li>
+    </ul>
+  </li>
+  <li>According to the **naïve FGA plots**, __the gain patterns are significantly different across NEMO subtypes__, while according to the more conservative **COSMIC FGA plots**, __the loss patterns are significantly different across NEMO subtypes__. Both FGA plots agree on **significant differences across subtypes regarding overall FGA**.</li>
+  <li>In terms of pathways:
+    <ul>
+      <li>NEMO1 has up-regulated **extracellular component pathways**, **microtubule bundle formation pathways** and **axoneme pathways** compared to all other subtypes.</li>
+      <li>NEMO2 has up-regulated **nucleotide synthesis and metabolism pathways** as well as **cell division pathways** (see corresponding [file](`r paste0(params$home,"/Results/single_algorithm/NEMO/_dgea__limma_test_result.NEMO2_unique_upexpr_pathway.txt")`) as well).</li>
+      <li>NEMO3 demonstrates increased **cytokinesis** and **ubiquitin-dependent pathways**.</li>
+      <li>NEMO5 is associated with **negative regulation of VEGF** and **miRNA-mediated gene silencing by inhibition of translation**.</li>
+      <li>NEMO9 is associated with **increased immune activity**.</li>
+    </ul>
+  </li>
+  <li>NEMO3 has generally <b>lower immune system activity</b> compared to all other subtypes.</li>
+  <li>Overall, NEMO subtypes exhibit high agremeent scores with ER status as seen in the **Subtype Agreement plot**.</li>
+  <li>Predicted NEMO subtypes on the transNEO cohort are associated with ER status, HER2 status grade, <b>pCR</b> (see table below), PAM50, iC10, type of regimen of neoadjuvant treatment, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
 </ol>
 
 ```{r resp_table, echo=FALSE, eval=TRUE}
 # Create the data frame
-data_resp <- data.frame(
-  Response = c("pCR", "Residual Disease"),
-  NEMO1 = c("13 (14.0%)", "80 (86.0%)"),
-  NEMO2 = c("28 (46.7%)", "32 (53.3%)")
-)
+table_data <- table(params$transNEO_var2comp$NEMO, params$transNEO_var2comp$pCR.RD)
+
+# Calculate percentages
+percentage_data <- 100 * prop.table(table_data, 1)
+
+# Create a function to format the output as "count (percentage%)"
+format_response <- function(counts, percentages) {
+  paste0(counts, " (", round(percentages, 1), "%)")
+}
+
+# Initialize an empty data frame
+data_resp <- data.frame(Response = c("pCR", "Residual Disease"))
+
+# Loop over the NEMO groups to fill the data frame
+for (nemo_group in rownames(table_data)) {
+  pcr_counts <- table_data[nemo_group, "pCR"]
+  rd_counts <- table_data[nemo_group, "Residual Disease"]
+  
+  pcr_percent <- percentage_data[nemo_group, "pCR"]
+  rd_percent <- percentage_data[nemo_group, "Residual Disease"]
+  
+  # Add the formatted values to the data frame
+  data_resp[[nemo_group]] <- c(
+    format_response(pcr_counts, pcr_percent),
+    format_response(rd_counts, rd_percent)
+  )
+}
 
 # Print the table using knitr::kable
 knitr::kable(data_resp, caption = "Response rates across transNEO NEMO subtypes")
