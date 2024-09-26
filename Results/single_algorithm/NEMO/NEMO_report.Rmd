@@ -29,7 +29,7 @@ The modified eigengap method of NEMO, determined that $k = `r params[["hyperpara
 
 # Main results on training data
 ## Multi-omics clustering
-The spectral clustering results using the final **ARS** matrix for $k = `r params[["hyperparameters"]][["eigengap_k"]]`$ are shown below (pairwise distances heatmap):
+The spectral clustering results using the final **ARS** matrix for $k = `r params[["hyperparameters"]][["eigengap_k"]]`$ are shown below:
 ![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/ARS_heatmap.png")`)
 
 The corresponding multi-omic heatmap is shown below:
