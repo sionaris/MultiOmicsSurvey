@@ -666,7 +666,7 @@ getMoHeatmap_single_algorithm(algorithm_name = algorithm,
                               annColors     = annColors, # annotation color
                               width         = 20, # width of each subheatmap
                               height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/NEMO"),
+                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
@@ -723,8 +723,8 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                                             data_types, "_eval_on_", evaluation_source,
                                                             "_oncoprint"),
                                       tab.name     = "Independent test between subtype and mutation",
-                                      fig.path     = paste0(home, "/Results/single_algorithm/NEMO"),
-                                      res.path     = paste0(home, "/Results/single_algorithm/NEMO"),
+                                      fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
+                                      res.path     = paste0(home, "/Results/single_algorithm/", algorithm),
                                       simulate.p.value = TRUE)
 
 # Drug sensitivity comparison ###
@@ -738,7 +738,7 @@ drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  test.method = "nonparametric", # statistical testing method
                                                  prefix      = "Violin_plot_of_IC50",
                                                  seed = 123,
-                                                 fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                  width = 10,
                                                  notch     = TRUE)
 
@@ -750,7 +750,7 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
                                                 doPlot    = TRUE,
                                                 box.width = 0.2,
                                                 fig.name  = "Classification_agreement",
-                                                fig.path  = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                fig.path  = paste0(home, "/Results/single_algorithm/", algorithm),
                                                 width     = 12)
 dev.off()
 
@@ -762,7 +762,7 @@ dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
               sort.p = TRUE,
               overwt = TRUE,
               verbose = TRUE,
-              res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+              res.path = paste0(home, "/Results/single_algorithm/", algorithm),
               algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
@@ -771,8 +771,8 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              moic.res = plot_object,
                                              dea.method    = "limma", # name of DEA method
                                              prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                             dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                             res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                             dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                             res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                              dirct         = "up", # direction of dysregulation in expression
@@ -786,7 +786,7 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              scaleFlag = F,
                                              halfwidth = 3,
                                              fig.name      = "upregulated_biomarkers_heatmap",
-                                             fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                             fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                              width = 14,
                                              height = 12,
                                              fontsize_row = 0, # 3 default
@@ -798,8 +798,8 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                moic.res = plot_object,
                                                dea.method    = "limma", # name of DEA method
                                                prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                               dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                               res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                               dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                               res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                                p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                dirct         = "down", # direction of dysregulation in expression
@@ -813,7 +813,7 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                scaleFlag = F,
                                                halfwidth = 3,
                                                fig.name      = "downregulated_biomarkers_heatmap",
-                                               fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
                                                height = 12,
                                                fontsize_row = 0, # 3 default
@@ -828,7 +828,7 @@ dmea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                   sort.p = TRUE,
                   overwt = TRUE,
                   verbose = TRUE,
-                  res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                  res.path = paste0(home, "/Results/single_algorithm/", algorithm),
                   algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
@@ -837,8 +837,8 @@ methyl.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                moic.res = plot_object,
                                                dea.method    = "limma", # name of DEA method
                                                prefix        = "dmea_", # MUST be the same of argument in runDEA()
-                                               dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                               res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                               dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                               res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                                p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                dirct         = "up", # direction of dysregulation in expression
@@ -852,7 +852,7 @@ methyl.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                scaleFlag = F,
                                                halfwidth = 3,
                                                fig.name      = "hypermethylated_biomarkers_heatmap",
-                                               fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
                                                height = 12,
                                                fontsize_row = 0, # 3 default
@@ -864,8 +864,8 @@ methyl.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                  moic.res = plot_object,
                                                  dea.method    = "limma", # name of DEA method
                                                  prefix        = "dmea_", # MUST be the same of argument in runDEA()
-                                                 dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                                 res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                                 dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                                 res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                                  p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                  p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                  dirct         = "down", # direction of dysregulation in expression
@@ -879,7 +879,7 @@ methyl.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                  scaleFlag = F,
                                                  halfwidth = 3,
                                                  fig.name      = "hypomethylated_biomarkers_heatmap",
-                                                 fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                  width = 14,
                                                  height = 12,
                                                  fontsize_row = 0, # 3 default
@@ -894,7 +894,7 @@ dmiRea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                     sort.p = TRUE,
                     overwt = TRUE,
                     verbose = TRUE,
-                    res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                    res.path = paste0(home, "/Results/single_algorithm/", algorithm),
                     algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
@@ -903,8 +903,8 @@ miRNA.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                               moic.res = plot_object,
                                               dea.method    = "limma", # name of DEA method
                                               prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
-                                              dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                              res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                               p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                               p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                               dirct         = "up", # direction of dysregulation in expression
@@ -918,7 +918,7 @@ miRNA.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                               scaleFlag = F,
                                               halfwidth = 3,
                                               fig.name      = "upregulated_miRNA_biomarkers_heatmap",
-                                              fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                               width = 14,
                                               height = 12,
                                               fontsize_row = 0, # 3 default
@@ -930,8 +930,8 @@ miRNA.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                 moic.res = plot_object,
                                                 dea.method    = "limma", # name of DEA method
                                                 prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
-                                                dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                                res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                                dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                                res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                                 p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                 p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                 dirct         = "down", # direction of dysregulation in expression
@@ -945,7 +945,7 @@ miRNA.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                 scaleFlag = F,
                                                 halfwidth = 3,
                                                 fig.name      = "downregulated_miRNA_biomarkers_heatmap",
-                                                fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                 width = 14,
                                                 height = 12,
                                                 fontsize_row = 0, # 3 default
@@ -960,7 +960,7 @@ dCNVea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                     sort.p = TRUE,
                     overwt = TRUE,
                     verbose = TRUE,
-                    res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                    res.path = paste0(home, "/Results/single_algorithm/", algorithm),
                     algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
@@ -969,8 +969,8 @@ CNV.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                             moic.res = plot_object,
                                             dea.method    = "limma", # name of DEA method
                                             prefix        = "dCNVea_", # MUST be the same of argument in runDEA()
-                                            dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                            res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                            dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                            res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                             p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                             p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                             dirct         = "up", # direction of dysregulation in expression
@@ -984,7 +984,7 @@ CNV.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                             scaleFlag = F,
                                             halfwidth = 3,
                                             fig.name      = "upregulated_CNV_biomarkers_heatmap",
-                                            fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                            fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                             width = 14,
                                             height = 12,
                                             fontsize_row = 0, # 3 default
@@ -996,8 +996,8 @@ CNV.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                               moic.res = plot_object,
                                               dea.method    = "limma", # name of DEA method
                                               prefix        = "dCNVea_", # MUST be the same of argument in runDEA()
-                                              dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                              res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                               p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                               p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                               dirct         = "down", # direction of dysregulation in expression
@@ -1011,7 +1011,7 @@ CNV.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                               scaleFlag = F,
                                               halfwidth = 3,
                                               fig.name      = "downregulated_CNV_biomarkers_heatmap",
-                                              fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                               width = 14,
                                               height = 12,
                                               fontsize_row = 0, # 3 default
@@ -1029,8 +1029,8 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             moic.res     = plot_object,
                                             dea.method   = "limma", # name of DEA method
                                             prefix       = "dgea_", # MUST be the same of argument in runDEA()
-                                            dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                            res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                            dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                            res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                             msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                             norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                             dirct        = "up", # direction of dysregulation in pathway
@@ -1044,7 +1044,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             nPerm = 10000,
                                             minGSSize = 5, # default: 10
                                             maxGSSize = 500,
-                                            fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                            fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                             width = 14, height = 18) # default 12
 
 # GSEA down-regulated
@@ -1054,8 +1054,8 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               moic.res     = plot_object,
                                               dea.method   = "limma", # name of DEA method
                                               prefix       = "dgea_", # MUST be the same of argument in runDEA()
-                                              dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
-                                              res.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path to save marker files
+                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                               msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                               norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                               dirct        = "down", # direction of dysregulation in pathway
@@ -1069,7 +1069,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               nPerm = 10000,
                                               minGSSize = 5, # default: 10
                                               maxGSSize = 500,
-                                              fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                               width = 14, height = 18) # default 12
 
 # Gene set variation analysis #####
@@ -1085,7 +1085,7 @@ gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             gsva.method   = "gsva", # method to calculate single sample enrichment score
                                             annCol        = annCol,
                                             annColors     = annColors,
-                                            fig.path      = paste0(home, "/Results/single_algorithm/NEMO"),
+                                            fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
                                             fig.name      = "gene_sets_of_interest_heatmap",
                                             centerFlag    = F,
                                             scaleFlag     = F,
@@ -1105,7 +1105,7 @@ fga.NEMO <- compFGA_mod(moic.res     = plot_object,
                            segment      = fga_df,
                            iscopynumber = TRUE, 
                            test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
-                           fig.path     = paste0(home, "/Results/single_algorithm/NEMO"),
+                           fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
                            fig.name     = paste0("FGA_barplot_", algorithm),
                            prefix = algorithm,
                            width = 16,
@@ -1116,7 +1116,7 @@ fga.NEMO.COSMIC <- compFGA_mod(moic.res     = plot_object,
                         segment      = fga_df,
                         iscopynumber = TRUE, 
                         test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
-                        fig.path     = paste0(home, "/Results/single_algorithm/NEMO"),
+                        fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
                         fig.name     = paste0("COSMIC_criteria_FGA_barplot_", algorithm),
                         prefix = algorithm,
                         width = 16,
@@ -1133,7 +1133,7 @@ dgea.marker.up_full <- runMarker_single_algorithm_no_export(algorithm_name = alg
                                              moic.res = plot_object,
                                              dea.method    = "limma", # name of DEA method
                                              prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                             dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                             dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                              dirct         = "up", # direction of dysregulation in expression
@@ -1144,7 +1144,7 @@ dgea.marker.down_full <- runMarker_single_algorithm_no_export(algorithm_name = a
                                                               moic.res = plot_object,
                                                               dea.method    = "limma", # name of DEA method
                                                               prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                                              dat.path      = paste0(home, "/Results/single_algorithm/NEMO"), # path of DEA files
+                                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
                                                               p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                               p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                               dirct         = "down", # direction of dysregulation in expression
@@ -1178,7 +1178,7 @@ transNEO_ntp_expr_up = runNTP_mod(
   doPlot = TRUE,
   height = 8,
   width = 12,
-  fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
 timestamp() # 16 min
 
@@ -1195,7 +1195,7 @@ transNEO_ntp_expr_down = runNTP_mod(
   doPlot = TRUE,
   height = 8,
   width = 12,
-  fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_down_heatmap_transNEO")
 
 
@@ -1264,7 +1264,7 @@ transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                  includeNA = FALSE,
                                                  doWord = TRUE,
                                                  tab.name = "transNEO_Summary_of_clinical_variables",
-                                                 res.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                                                 res.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                  output_pdf = TRUE,
                                                  pdf_level_col_width = c("5em", "5em"),
                                                  pdf_count_col_width = "5em",
@@ -1300,7 +1300,7 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           subt2.lab = "NTP TCGA",
                           height = 8,
                           width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_NTP_TCGA"))
 
 # consensus TCGA vs PAM TCGA
@@ -1311,7 +1311,7 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           subt2.lab = "PAM TCGA",
                           height = 8,
                           width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
 # NTP transNEO vs PAM transNEO
@@ -1323,7 +1323,7 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           subt2.lab = "transNEO PAM",
                           height = 8,
                           width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/NEMO"),
+                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = "kappa_NTP_vs_PAM_transNEO")
 
 # Export consensus clustering object
