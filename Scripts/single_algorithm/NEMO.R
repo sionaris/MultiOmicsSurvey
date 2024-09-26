@@ -1099,54 +1099,7 @@ gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
 dev.off()
 
 # Fraction Genome Altered ###
-library(SummarizedExperiment)
-CNVrds = readRDS("Resources/TCGA/CNV_full.rds")
-
-# Extract sample names
-samples <- colnames(CNVrds)
-
-# Extract genomic ranges information (chrom, start, end)
-chrom <- as.character(seqnames(rowRanges(CNVrds)))
-start <- start(rowRanges(CNVrds))
-end <- end(rowRanges(CNVrds))
-
-# Extract copy number values (as a matrix, with rows as regions and columns as samples)
-copy_number_values <- assay(CNVrds, "copy_number")
-
-sample_data <- list()
-for (i in 1:length(samples)) {
-  df <- data.frame(
-    sample = samples[i],
-    chrom = chrom,
-    start = start,
-    end = end,
-    value = copy_number_values[, i],
-    ploidy = rep(mean(copy_number_values[, i], na.rm = TRUE), 
-                 length(copy_number_values[, i]))
-  )
-  
-  df_filtered <- df[!is.na(df$value), ]
-  sample_data[[i]] <- df_filtered
-}
-
-# Combine all sample data frames into one large data frame
-fga_df <- do.call(rbind, sample_data)
-
-rm(sample_data, samples, chrom, start, end, copy_number_values, df,
-   df_filtered); gc()
-
-# Add a custom genome-altered column
-fga_df$ga = NA
-fga_df$ga = ifelse(fga_df$value > 2, "gain", 
-                   ifelse(fga_df$value < 2, "loss", "normal"))
-
-# Use COSMIC criteria
-fga_df$COSMIC_ga = NA
-fga_df$COSMIC_ga = ifelse(fga_df$ploidy <= 2.7 & fga_df$value >= 5, "gain", 
-                        ifelse(fga_df$ploidy > 2.7 & fga_df$value >= 9, "gain",
-                               ifelse(fga_df$ploidy <= 2.7 & fga_df$value == 0, "loss",
-                                      ifelse(fga_df$ploidy > 2.7 & 
-                                               fga_df$value < fga_df$ploidy - 2.7, "loss", "normal"))))
+readRDS("Resources/TCGA/fga_df.rds")
 
 fga.NEMO <- compFGA_mod(moic.res     = plot_object,
                            segment      = fga_df,
