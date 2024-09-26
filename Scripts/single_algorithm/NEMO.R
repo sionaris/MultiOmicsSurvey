@@ -463,13 +463,13 @@ library(ggplot2)
 ggplot(data = data.frame(Pearson_values), aes(x = Pearson_values)) +
   geom_histogram(breaks = seq(0, 1.07, length.out = length(Pearson_values)),
                  fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
-  geom_vline(aes(xintercept = mean_Pearson_value, color = "Mean"), size = 0.2) + 
-  geom_vline(aes(xintercept = median_Pearson_value, color = "Median"), size = 0.2) + 
+  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
+  geom_vline(aes(xintercept = mean_Pearson_value, color = "Mean"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = median_Pearson_value, color = "Median"), linewidth = 0.2) + 
   geom_vline(aes(xintercept = mean_Pearson_value - sd_Pearson_value, color = "Mean - SD"), 
-             linetype = "dashed", size = 0.2) + 
+             linetype = "dashed", linewidth = 0.2) + 
   geom_vline(aes(xintercept = mean_Pearson_value + sd_Pearson_value, color = "Mean + SD"), 
-             linetype = "dashed", size = 0.2) +
+             linetype = "dashed", linewidth = 0.2) +
   scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
                                                 "Mean - SD" = "grey25", "Mean + SD" = "grey25",
                                                 "Density" = "darkblue")) +
@@ -501,13 +501,13 @@ dev.off()
 ggplot(data = data.frame(Frobenius_values), aes(x = Frobenius_values)) +
   geom_histogram(breaks = seq(0, 47, length.out = length(Frobenius_values)),
                  fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
-  geom_vline(aes(xintercept = mean_Frobenius_value, color = "Mean"), size = 0.2) + 
-  geom_vline(aes(xintercept = median_Frobenius_value, color = "Median"), size = 0.2) + 
+  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
+  geom_vline(aes(xintercept = mean_Frobenius_value, color = "Mean"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = median_Frobenius_value, color = "Median"), linewidth = 0.2) + 
   geom_vline(aes(xintercept = mean_Frobenius_value - sd_Frobenius_value, color = "Mean - SD"), 
-             linetype = "dashed", size = 0.2) + 
+             linetype = "dashed", linewidth = 0.2) + 
   geom_vline(aes(xintercept = mean_Frobenius_value + sd_Frobenius_value, color = "Mean + SD"), 
-             linetype = "dashed", size = 0.2) +
+             linetype = "dashed", linewidth = 0.2) +
   scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
                                                 "Mean - SD" = "grey25", "Mean + SD" = "grey25",
                                                 "Density" = "darkblue")) +
