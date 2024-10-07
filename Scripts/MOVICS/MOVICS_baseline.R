@@ -531,23 +531,68 @@ rownames(var2comp) = var2comp$Sample.ID
 var2comp = var2comp %>% 
   dplyr::select(-Sample.ID)
 
+# Remove unknown levels for statistical tests
+var2comp_nonas = var2comp
+for (i in 1:ncol(var2comp)) {
+  nas = which(var2comp[, i] == "Unknown")
+  var2comp_nonas[nas, i] = NA
+  empties = which(var2comp[, i] == "")
+  var2comp_nonas[empties, i] = NA
+}
+rm(nas, empties); gc()
+
 # Statistical comparisons
-clin_comp = compClinvar(moic.res = consensus,
-                        var2comp = var2comp,
-                        strata = "Consensus Subtype",
-                        factorVars = c("vital_status", "race_list", "ethnicity",
-                                       "history_of_neoadjuvant_treatment",
-                                       "primary_lymph_node_presentation_assessment",
-                                       "histological_type", "menopause_status",
-                                       "breast_carcinoma_progesterone_receptor_status",
-                                       "breast_carcinoma_estrogen_receptor_status",
-                                       "lab_proc_her2_neu_immunohistochemistry_receptor_status",
-                                       "distant_metastasis_present_ind2",
-                                       "stage_event_pathologic_stage"),
-                        includeNA = FALSE,
-                        doWord = TRUE,
-                        tab.name = "Summary_of_clinical_variables",
-                        res.path = paste0(home, "/Results/MOVICS_baseline/"))
+clin_comp = compClinvar_single_algorithm(algorithm_name = "CS",
+                                         moic.res = consensus,
+                                         var2comp = var2comp_nonas,
+                                         strata = "Consensus Subtype",
+                                         factorVars = c("vital_status", "race_list", "ethnicity",
+                                                        "history_of_neoadjuvant_treatment",
+                                                        "primary_lymph_node_presentation_assessment",
+                                                        "histological_type", "menopause_status",
+                                                        "breast_carcinoma_progesterone_receptor_status",
+                                                        "breast_carcinoma_estrogen_receptor_status",
+                                                        "lab_proc_her2_neu_immunohistochemistry_receptor_status",
+                                                        "distant_metastasis_present_ind2",
+                                                        "stage_event_pathologic_stage"),
+                                         nonnormalVars = c("days_to_birth", "days_to_death",
+                                                           "days_to_last_known_alive", 
+                                                           "days_to_last_followup",
+                                                           "age_at_initial_pathologic_diagnosis",
+                                                           "er_level_cell_percentage_category",
+                                                           "progesterone_receptor_level_cell_percent_category",
+                                                           "number_of_lymphnodes_positive_by_ihc",
+                                                           "number_of_lymphnodes_positive_by_he"),
+                                         includeNA = FALSE,
+                                         doWord = TRUE,
+                                         tab.name = "Summary_of_clinical_variables",
+                                         res.path = paste0(home, "/Results/MOVICS_baseline/"),
+                                         output_pdf = TRUE,
+                                         pdf_level_col_width = c("7em", "10em"),
+                                         pdf_count_col_width = "10em",
+                                         pdf_pval_col_width = "3em",
+                                         pdf_test_col_width = "8em",
+                                         pdf_tab_font_size = 9)
+
+clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = "CS",
+                                                         moic.res = consensus,
+                                                         var2comp = var2comp_nonas %>%
+                                                           dplyr::select(number_of_lymphnodes_positive_by_ihc,
+                                                                         number_of_lymphnodes_positive_by_he,
+                                                                         `Consensus Subtype`),
+                                                         strata = "Consensus Subtype",
+                                                         ordinalVars = c("number_of_lymphnodes_positive_by_ihc",
+                                                                         "number_of_lymphnodes_positive_by_he"),
+                                                         includeNA = FALSE,
+                                                         tab.name = "Summary of ordinal clinical variables",
+                                                         res.path = paste0(home, "/Results/MOVICS_baseline/"),
+                                                         output_pdf = TRUE,
+                                                         pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
+                                                         pdf_level_col_width = c("7em", "10em"),
+                                                         pdf_count_col_width = "10em",
+                                                         pdf_pval_col_width = "3em",
+                                                         pdf_test_col_width = "8em",
+                                                         pdf_tab_font_size = 9)
 
 # Color annotation #####
 # set color for each omics data
@@ -759,8 +804,8 @@ subtype_agreement <- compAgree2(moic.res  = consensus,
                                 width     = 12)
 
 # DGEA #####
-dgea = runDEA(dea.method = "limma", # we use normalized data as input
-              expr = input$RNAseq,
+dgea = runDEA(dea.method = "limma", # we use count data as input
+              expr = plotdata$RNAseq,
               moic.res = consensus,
               prefix = "dgea_",
               sort.p = TRUE,
@@ -770,7 +815,6 @@ dgea = runDEA(dea.method = "limma", # we use normalized data as input
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
-dev.off()
 dgea.marker.up <- runMarker_mod_4.4(moic.res = consensus,
                             dea.method    = "limma", # name of DEA method
                             prefix        = "dgea_", # MUST be the same of argument in runDEA()
@@ -781,7 +825,7 @@ dgea.marker.up <- runMarker_mod_4.4(moic.res = consensus,
                             dirct         = "up", # direction of dysregulation in expression
                             n.marker      = 100, # number of biomarkers for each subtype
                             doplot        = TRUE, # generate diagonal heatmap
-                            norm.expr     = input$RNAseq, # use normalized expression as heatmap input
+                            norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
                             annCol        = annCol, # sample annotation in heatmap
                             annColors     = annColors, # colors for sample annotation
                             show_rownames = TRUE, # show no rownames (biomarker name)
@@ -807,7 +851,7 @@ dgea.marker.down <- runMarker_mod_4.4(moic.res = consensus,
                             dirct         = "down", # direction of dysregulation in expression
                             n.marker      = 100, # number of biomarkers for each subtype
                             doplot        = TRUE, # generate diagonal heatmap
-                            norm.expr     = input$RNAseq, # use normalized expression as heatmap input
+                            norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
                             annCol        = annCol, # sample annotation in heatmap
                             annColors     = annColors, # colors for sample annotation
                             show_rownames = TRUE, # show no rownames (biomarker name)
@@ -820,6 +864,132 @@ dgea.marker.down <- runMarker_mod_4.4(moic.res = consensus,
                             height = 12,
                             fontsize_row = 3,
                             name = "normalized RNA-seq")
+dev.off()
+
+# DMEA ###
+dmea = runDEA(dea.method = "limma", # we use normalized data as input
+                  expr = plotdata$Methylation,
+                  moic.res = consensus,
+                  prefix = "dmea_",
+                  sort.p = TRUE,
+                  overwt = TRUE,
+                  verbose = TRUE,
+                  res.path = paste0(home, "/Results/MOVICS_baseline"))
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+methyl.marker.up <- runMarker_mod_4.4(moic.res = consensus,
+                                               dea.method    = "limma", # name of DEA method
+                                               prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                               dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
+                                               res.path      = paste0(home, "/Results/MOVICS_baseline"), # path to save marker files
+                                               p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                               p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                               dirct         = "up", # direction of dysregulation in expression
+                                               n.marker      = 100, # number of biomarkers for each subtype
+                                               doplot        = TRUE, # generate diagonal heatmap
+                                               norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                               annCol        = annCol, # sample annotation in heatmap
+                                               annColors     = annColors, # colors for sample annotation
+                                               show_rownames = TRUE, # show no rownames (biomarker name)
+                                               centerFlag = F,
+                                               scaleFlag = F,
+                                               halfwidth = 3,
+                                               fig.name      = "hypermethylated_biomarkers_heatmap",
+                                               fig.path = paste0(home, "/Results/MOVICS_baseline"),
+                                               width = 14,
+                                               height = 12,
+                                               fontsize_row = 3, # 3 default
+                                               name = "normalized Methylation")
+dev.off()
+
+# # 2. Down-regulated markers
+methyl.marker.down <- runMarker_mod_4.4(moic.res = consensus,
+                                                 dea.method    = "limma", # name of DEA method
+                                                 prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                                 dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
+                                                 res.path      = paste0(home, "/Results/MOVICS_baseline"), # path to save marker files
+                                                 p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                 p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                 dirct         = "down", # direction of dysregulation in expression
+                                                 n.marker      = 100, # number of biomarkers for each subtype
+                                                 doplot        = TRUE, # generate diagonal heatmap
+                                                 norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                                 annCol        = annCol, # sample annotation in heatmap
+                                                 annColors     = annColors, # colors for sample annotation
+                                                 show_rownames = TRUE, # show no rownames (biomarker name)
+                                                 centerFlag = F,
+                                                 scaleFlag = F,
+                                                 halfwidth = 3,
+                                                 fig.name      = "hypomethylated_biomarkers_heatmap",
+                                                 fig.path = paste0(home, "/Results/MOVICS_baseline"),
+                                                 width = 14,
+                                                 height = 12,
+                                                 fontsize_row = 3, # 3 default
+                                                 name = "normalized Methylation")
+dev.off()
+
+# DmiREA ###
+dmiRea = runDEA(dea.method = "limma", # we use normalized data as input
+                    expr = plotdata$miRNA,
+                    moic.res = consensus,
+                    prefix = "dmiRea_",
+                    sort.p = TRUE,
+                    overwt = TRUE,
+                    verbose = TRUE,
+                    res.path = paste0(home, "/Results/MOVICS_baseline"))
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+miRNA.marker.up <- runMarker_mod_4.4(moic.res = consensus,
+                                              dea.method    = "limma", # name of DEA method
+                                              prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                              dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
+                                              res.path      = paste0(home, "/Results/MOVICS_baseline"), # path to save marker files
+                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                              dirct         = "up", # direction of dysregulation in expression
+                                              n.marker      = 100, # number of biomarkers for each subtype
+                                              doplot        = TRUE, # generate diagonal heatmap
+                                              norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                              annCol        = annCol, # sample annotation in heatmap
+                                              annColors     = annColors, # colors for sample annotation
+                                              show_rownames = TRUE, # show no rownames (biomarker name)
+                                              centerFlag = F,
+                                              scaleFlag = F,
+                                              halfwidth = 3,
+                                              fig.name      = "upregulated_miRNA_biomarkers_heatmap",
+                                              fig.path = paste0(home, "/Results/MOVICS_baseline"),
+                                              width = 14,
+                                              height = 12,
+                                              fontsize_row = 3, # 3 default
+                                              name = "normalized miRNA")
+dev.off()
+
+# # 2. Down-regulated markers
+miRNA.marker.down <- runMarker_mod_4.4(moic.res = consensus,
+                                                dea.method    = "limma", # name of DEA method
+                                                prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                                dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
+                                                res.path      = paste0(home, "/Results/MOVICS_baseline"), # path to save marker files
+                                                p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                dirct         = "down", # direction of dysregulation in expression
+                                                n.marker      = 100, # number of biomarkers for each subtype
+                                                doplot        = TRUE, # generate diagonal heatmap
+                                                norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                                annCol        = annCol, # sample annotation in heatmap
+                                                annColors     = annColors, # colors for sample annotation
+                                                show_rownames = TRUE, # show no rownames (biomarker name)
+                                                centerFlag = F,
+                                                scaleFlag = F,
+                                                halfwidth = 3,
+                                                fig.name      = "downregulated_miRNA_biomarkers_heatmap",
+                                                fig.path = paste0(home, "/Results/MOVICS_baseline"),
+                                                width = 14,
+                                                height = 12,
+                                                fontsize_row = 3, # 3 default
+                                                name = "normalized miRNA")
 dev.off()
 
 # GSEA #####
@@ -835,17 +1005,17 @@ gsea.up <- runGSEA_mod_4.4(moic.res     = consensus,
                        dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
                        res.path      = paste0(home, "/Results/MOVICS_baseline"), # path to save marker files
                        msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
-                       norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
+                       norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                        dirct        = "up", # direction of dysregulation in pathway
                        n.path       = 20,
                        p.cutoff     = 0.05, # p cutoff to identify significant pathways
-                       p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                       p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                        gsva.method  = "gsva", # method to calculate single sample enrichment score
                        name         = "GSVA scores", # name for colorbar
                        norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
                        fig.name     = "upregulated_pathway_heatmap",
                        nPerm = 10000,
-                       minGSSize = 10,
+                       minGSSize = 5,
                        maxGSSize = 500,
                        fig.path = paste0(home, "/Results/MOVICS_baseline"),
                        width = 14, height = 12)
@@ -859,20 +1029,134 @@ gsea.down <- runGSEA_mod_4.4(moic.res     = consensus,
                            dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
                            res.path      = paste0(home, "/Results/MOVICS_baseline"), # path to save marker files
                            msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
-                           norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
+                           norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                            dirct        = "down", # direction of dysregulation in pathway
                            n.path       = 20,
                            p.cutoff     = 0.05, # p cutoff to identify significant pathways
-                           p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                           p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                            gsva.method  = "gsva", # method to calculate single sample enrichment score
                            name         = "GSVA scores", # name for colorbar
                            norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
                            fig.name     = "downregulated_pathway_heatmap",
                            nPerm = 10000,
-                           minGSSize = 10,
+                           minGSSize = 5,
                            maxGSSize = 500,
                            fig.path = paste0(home, "/Results/MOVICS_baseline"),
                            width = 14, height = 12)
+
+# Hierarchical clustering of pathways for representative pathways
+library(pathfindR)
+library(fastcluster)
+
+# Get unique pathways for each subtype
+GSEAfiles_up <- sort(dir(paste0(home, "/Results/MOVICS_baseline"), 
+                 pattern = "unique_upexpr_pathway.txt$"))
+GSEAfiles_down <- sort(dir(paste0(home, "/Results/MOVICS_baseline"), 
+                    pattern = "unique_downexpr_pathway.txt$"))
+
+unique_upexpr_pathways = list()
+for (i in 1:length(gsea.up$gsea.list)) {
+  unique_upexpr_pathways[[i]] = data.table::fread(paste0(paste0(home, "/Results/MOVICS_baseline"), 
+                                                         "/", GSEAfiles_up[i]),
+                                                  header = TRUE, sep = "\t")
+}
+
+unique_downexpr_pathways = list()
+for (i in 1:length(gsea.down$gsea.list)) {
+  unique_downexpr_pathways[[i]] = data.table::fread(paste0(paste0(home, "/Results/MOVICS_baseline"), 
+                                                         "/", GSEAfiles_down[i]),
+                                                  header = TRUE, sep = "\t")
+}
+
+names(unique_downexpr_pathways) = names(unique_upexpr_pathways) = names(gsea.up$gsea.list)
+
+# Filter GSEA input
+gsea.up_unique = gsea.up
+for (i in 1:length(unique_upexpr_pathways)) {
+  unq = unique_upexpr_pathways[[i]]$V1
+  gsea.up_unique$gsea.list[[i]]@result = gsea.up_unique$gsea.list[[i]]@result[gsea.up_unique$gsea.list[[i]]@result$ID %in%
+                                                                  unq, ]
+}
+
+gsea.down_unique = gsea.down
+for (i in 1:length(unique_downexpr_pathways)) {
+  unq = unique_downexpr_pathways[[i]]$V1
+  gsea.down_unique$gsea.list[[i]]@result = gsea.down_unique$gsea.list[[i]]@result[gsea.down_unique$gsea.list[[i]]@result$ID %in%
+                                                                  unq, ]
+}
+
+rm(unq); gc()
+
+hclust_input_up = prepare_gsea_output_for_hclust(gsea_output = gsea.up_unique, 
+                                              dgea_output_name_style = "dgea_", 
+                                              dea.method = "limma", 
+                                              mo.method = "consensusMOIC",
+                                              dat.path = paste0(home, "/Results/MOVICS_baseline"), 
+                                              dgea_padj_cutoff = 0.05,
+                                              logfc_cutoff = 0,
+                                              pathway_padj_cutoff = 0.05)
+
+hclust_input_down = prepare_gsea_output_for_hclust(gsea_output = gsea.down_unique, 
+                                                 dgea_output_name_style = "dgea_", 
+                                                 dea.method = "limma", 
+                                                 mo.method = "consensusMOIC",
+                                                 dat.path = paste0(home, "/Results/MOVICS_baseline"), 
+                                                 dgea_padj_cutoff = 0.05,
+                                                 logfc_cutoff = 0,
+                                                 pathway_padj_cutoff = 0.05)
+
+hclust_input = c(hclust_input_up, hclust_input_down)
+names(hclust_input) = c(paste0(rep("up_", length(hclust_input_up)), 
+                             names(hclust_input_up)),
+                        paste0(rep("down_", length(hclust_input_down)), 
+                               names(hclust_input_down)))
+
+rm(hclust_input_down, hclust_input_up); gc()
+
+# Load doParallel if not already loaded
+library(parallel)
+library(foreach)
+library(doParallel)
+
+# Set up the number of cores to use: minimum of length(hclust_input) or 5
+cl <- makeCluster(min(length(hclust_input), 5))
+registerDoParallel(cl)
+
+# Use foreach with parallel processing
+timestamp()
+hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", "fastcluster")) %dopar% {
+  RNGversion("4.2.2")
+  set.seed(123)
+  source("Scripts/automated_scripts/fast_pathfindR_hclust.R")
+  cluster_enriched_terms_fast(hclust_input[[i]],
+                         method = "hierarchical", plot_clusters_graph = FALSE,
+                         use_description = FALSE, use_active_snw_genes = FALSE)
+}
+timestamp() # ~1h
+stopCluster(cl)
+gc()
+names(hclust_output) = names(hclust_input)
+
+# Plot pathway heatmaps
+hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
+                                                norm.expr = plotdata$RNAseq, 
+                                                representative = TRUE, moic.res = consensus,
+                                                subtype_prefix = "CS", n.path = 20, msigdb.path = MSIGDB.FILE,
+                                                norm.method = "mean", dirct = "up",
+                                                fig.name = "upregulated_pathway_heatmap",
+                                                name = "GSVA scores",
+                                                fig.path = paste0(home, "/Results/MOVICS_baseline"), 
+                                                width = 15, height = 10, gsva.method = "gsva")
+
+hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
+                                                norm.expr = plotdata$RNAseq, 
+                                                representative = TRUE, moic.res = consensus,
+                                                subtype_prefix = "CS", n.path = 20, msigdb.path = MSIGDB.FILE,
+                                                norm.method = "mean", dirct = "down",
+                                                fig.name = "downregulated_pathway_heatmap",
+                                                name = "GSVA scores",
+                                                fig.path = paste0(home, "/Results/MOVICS_baseline"), 
+                                                width = 15, height = 10, gsva.method = "gsva")
 
 # Gene set variation analysis #####
 # locate ABSOLUTE path of gene set file
@@ -881,7 +1165,7 @@ GSET.FILE <- paste0(home, "/Resources/Pathways/gene_sets_of_interest.gmt")
 RNGversion("4.2.2")
 set.seed(123)
 gsva.res = runGSVA_mod_4.4(moic.res      = consensus,
-                   norm.expr     = input$RNAseq,
+                   norm.expr     = plotdata$RNAseq,
                    gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
                    gsva.method   = "gsva", # method to calculate single sample enrichment score
                    annCol        = annCol,
@@ -898,20 +1182,76 @@ gsva.res = runGSVA_mod_4.4(moic.res      = consensus,
                    width         = 12,
                    name          = "GSVA scores")
 
+# Fraction Genome Altered ###
+library(ggplot2)
+fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
+
+fga.MOVICS <- compFGA_mod(moic.res     = consensus,
+                       segment      = fga_df,
+                       iscopynumber = TRUE, 
+                       test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
+                       fig.path     = paste0(home, "/Results/MOVICS_baseline"),
+                       fig.name     = paste0("FGA_barplot_", algorithm),
+                       prefix = "CS",
+                       width = 16,
+                       ga_column = "ga", # genome altered column
+                       clust.col = scheme$clust.colors,
+                       title = "FGA plot: simple criteria")
+
+fga.MOVICS.COSMIC <- compFGA_mod(moic.res     = consensus,
+                              segment      = fga_df,
+                              iscopynumber = TRUE, 
+                              test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
+                              fig.path     = paste0(home, "/Results/MOVICS_baseline"),
+                              fig.name     = paste0("COSMIC_criteria_FGA_barplot_", algorithm),
+                              prefix = "CS",
+                              width = 16,
+                              ga_column = "COSMIC_ga", # genome altered column
+                              clust.col = scheme$clust.colors,
+                              title = "FGA plot: COSMIC criteria")
+
+rm(fga_df); gc()
+
 # Run Nearest Template Prediction in transNEO cohort #####
 
 # Load transNEO data
 transNEO_mm_inputs = readRDS("Resources/transNEO/transNEO_multimodal_inputs.rds")
-transcr = transNEO_mm_inputs$`RNAseq log2(TPM+1)`[, 1:153]
-rownames(transcr) = transNEO_mm_inputs$`RNAseq log2(TPM+1)`$Hugo
+transcr = readRDS("Resources/transNEO/log2.norm.counts.plus1_transNEO.rds")
+
+# get as many templates as possible
+dgea.marker.up_1000 <- runMarker_single_algorithm_no_export(algorithm_name = algorithm,
+                                                            moic.res = consensus,
+                                                            n.marker = 1000,
+                                                            dea.method    = "limma", # name of DEA method
+                                                            prefix        = "dgea_", # MUST be the same of argument in runDEA()
+                                                            dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
+                                                            p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                            p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                            norm.expr = plotdata$RNAseq,
+                                                            dirct         = "up" # direction of dysregulation in expression
+)
+
+# 2. Down-regulated markers
+dgea.marker.down_1000 <- runMarker_single_algorithm_no_export(algorithm_name = algorithm,
+                                                              moic.res = consensus,
+                                                              n.marker = 1000,
+                                                              dea.method    = "limma", # name of DEA method
+                                                              prefix        = "dgea_", # MUST be the same of argument in runDEA()
+                                                              dat.path      = paste0(home, "/Results/MOVICS_baseline"), # path of DEA files
+                                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                              norm.expr = plotdata$RNAseq,
+                                                              dirct         = "down" # direction of dysregulation in expression
+)
 
 # Up-regulated expression features
 RNGversion("4.2.2")
+timestamp()
 transNEO_ntp_expr_up = runNTP(
-  expr = as.matrix(transcr),
-  templates = dgea.marker.up$templates,
-  scaleFlag = TRUE, 
-  centerFlag = TRUE, 
+  expr = transcr,
+  templates = dgea.marker.up_1000$templates,
+  scaleFlag = TRUE,
+  centerFlag = TRUE,
   nPerm = 10000,
   seed = 123,
   distance = "cosine", # default
@@ -920,13 +1260,15 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/MOVICS_baseline"),
   fig.name = "ntp_expr_up_heatmap_transNEO")
-dev.off()
+timestamp() # 2.5 min
 
+# down-regulated
 RNGversion("4.2.2")
+timestamp()
 transNEO_ntp_expr_down = runNTP(
-  expr = as.matrix(transcr),
-  templates = dgea.marker.down$templates,
-  scaleFlag = TRUE, 
+  expr = transcr,
+  templates = dgea.marker.down_1000$templates,
+  scaleFlag = TRUE,
   centerFlag = TRUE,
   nPerm = 10000,
   seed = 123,
@@ -936,7 +1278,7 @@ transNEO_ntp_expr_down = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/MOVICS_baseline"),
   fig.name = "ntp_expr_down_heatmap_transNEO")
-dev.off()
+timestamp() # 2.5 min
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -989,16 +1331,62 @@ transNEO_var2comp$iC10 = factor(transNEO_var2comp$iC10,
                                 labels = paste("iC", seq(1, 10, 1), sep = ""))
 
 
-transNEO_clincomp = compClinvar2(moic.res = transNEO_ntp_expr_up,
-                                 var2comp = transNEO_var2comp,
-                                 strata = "Consensus Subtype",
-                                 factorVars = c("ER.status", "HER2.status", "Grade.pre.NAT",
-                                                "NAT.regimen", 
-                                                "pCR.RD", "LN.status.at.diagnosis"),
-                                 includeNA = FALSE,
-                                 doWord = TRUE,
-                                 tab.name = "transNEO_Summary_of_clinical_variables",
-                                 res.path = paste0(home, "/Results/MOVICS_baseline"))
+# Remove unknown levels for statistical tests
+transNEO_var2comp_nonas = transNEO_var2comp
+for (i in 1:ncol(transNEO_var2comp)) {
+  nas = which(transNEO_var2comp[, i] == "Unknown")
+  transNEO_var2comp_nonas[nas, i] = NA
+  empties = which(transNEO_var2comp[, i] == "")
+  transNEO_var2comp_nonas[empties, i] = NA
+}
+rm(nas, empties); gc()
+
+transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = "CS",
+                                                 moic.res = transNEO_ntp_expr_up,
+                                                 var2comp = transNEO_var2comp_nonas %>%
+                                                   mutate(`Consensus Subtype` = paste0("CS", `Consensus Subtype`)),
+                                                 strata = "Consensus Subtype",
+                                                 factorVars = c("ER.status", "HER2.status",
+                                                                "NAT.regimen", 
+                                                                "pCR.RD", "LN.status.at.diagnosis"),
+                                                 nonnormalVars = c("Age",
+                                                                   "RCB.score", "STAT1.gsva", "GGI.gsva",
+                                                                   "ESC.gsva", "TMB", "HRD.sum",
+                                                                   "Grade.pre.NAT", "Chemo.cycle", "aHER2.cycles"),
+                                                 includeNA = FALSE,
+                                                 doWord = TRUE,
+                                                 tab.name = "transNEO_Summary_of_clinical_variables",
+                                                 res.path = paste0(home, "/Results/MOVICS_baseline"),
+                                                 output_pdf = TRUE,
+                                                 pdf_level_col_width = c("7em", "10em"),
+                                                 pdf_count_col_width = "10em",
+                                                 pdf_pval_col_width = "3em",
+                                                 pdf_test_col_width = "8em",
+                                                 pdf_tab_font_size = 9)
+
+# transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
+# transNEO_ntp_expr_up_ord$clust.res$clust = gsub(algorithm, "", transNEO_ntp_expr_up_ord$clust.res$clust)
+transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name = "CS",
+                                                                 moic.res = transNEO_ntp_expr_up,
+                                                                 var2comp = transNEO_var2comp_nonas %>%
+                                                                   dplyr::select(Grade.pre.NAT, 
+                                                                                 Chemo.cycles, 
+                                                                                 aHER2.cycles,
+                                                                                 `Consensus Subtype`),
+                                                                 strata = "Consensus Subtype",
+                                                                 ordinalVars = c("Grade.pre.NAT",
+                                                                                 "Chemo.cycles",
+                                                                                 "aHER2.cycles"),
+                                                                 includeNA = FALSE,
+                                                                 tab.name = "transNEO Summary of ordinal clinical variables",
+                                                                 res.path = paste0(home, "/Results/MOVICS_baseline"),
+                                                                 output_pdf = TRUE,
+                                                                 pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
+                                                                 pdf_level_col_width = c("7em", "10em"),
+                                                                 pdf_count_col_width = "10em",
+                                                                 pdf_pval_col_width = "3em",
+                                                                 pdf_test_col_width = "8em",
+                                                                 pdf_tab_font_size = 9)
 
 # Run PAM
 RNGversion("4.2.2.")
@@ -1013,14 +1401,14 @@ transNEO_pam = runPAM(train.expr = input$RNAseq,
 RNGversion("4.2.2.")
 set.seed(123)
 TCGA.ntp.pred = runNTP(expr = input$RNAseq[, consensus$clust.res$samID],
-                       templates = dgea.marker.up$templates,
-                       doPlot = F)
+                       templates = dgea.marker.up_1000$templates, distance = "cosine",
+                       doPlot = F, nPerm = 10000)
 
 TCGA.pam.pred = runPAM(train.expr = input$RNAseq[, consensus$clust.res$samID],
                        moic.res = consensus,
                        test.expr = input$RNAseq[, consensus$clust.res$samID])
 
-# consensus TCGA vs NTP TCGA # FAILS
+# consensus TCGA vs NTP TCGA
 runKappa(subt1 = consensus$clust.res$clust,
          subt2 = as.numeric(TCGA.ntp.pred$clust.res$clust),
          subt1.lab = "Consensus",
@@ -1073,7 +1461,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               citation = citation, home = home, optk = optk$N.clust,
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
-              hyperparameters = hyperparameters, 
+              hyperparameters = hyperparameters, transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo())
 
 rmarkdown::render(paste0(getwd(), "/Results/MOVICS_baseline/MOVICS_baseline_report.Rmd"), 
