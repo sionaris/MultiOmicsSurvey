@@ -1,11 +1,10 @@
 # This script is used to determine the optimal choice of pseudocount for transNEO
-# TPM data, using the approach that we applied on the TCGA data
+# normalized counts data, using the approach that we applied on the TCGA data
 
-# Import transNEO TPM, clinical and raw count data from the Resources/transNEO folder
+# Import transNEO clinical and raw count data from the Resources/transNEO folder
 library(dplyr)
 library(DESeq2)
 transNEO_mm_inputs = readRDS("Resources/transNEO/transNEO_multimodal_inputs.rds")
-tpm_transNEO = readRDS("Resources/transNEO/TPM.rds")
 raw_counts_transNEO = readRDS("Resources/transNEO/raw_counts.rds")
 
 # Convert raw counts to matrix
@@ -59,5 +58,5 @@ sf = c(avg_pCR_size_factor, avg_RD_size_factor)
 pseudocount_RNA = max(c(1, abs(1/min(sf) - 1/max(sf)))) # 1
 
 # We proceed with the log2(norm.counts + 1) transformation
-log2TPMplus1_transNEO = log2(tpm_transNEO + pseudocount_RNA)
-saveRDS(log2TPMplus1_transNEO, "Resources/transNEO/log2TPMplus1_transNEO.rds")
+log2.norm.counts.plus1_transNEO = log2(normalized_counts + pseudocount_RNA)
+saveRDS(log2.norm.counts.plus1_transNEO, "Resources/transNEO/log2.norm.counts.plus1_transNEO.rds")
