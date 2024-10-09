@@ -633,7 +633,7 @@ CIMLR_clust_res = clust_annot_pheno %>% dplyr::select(samID, CIMLR) %>%
   mutate(CIMLR = paste0("MOVICS_", CIMLR))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "CIMLR", 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -641,7 +641,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "CIMLR", 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -649,7 +649,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "CIMLR", 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -658,7 +658,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "CIMLR", 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -666,7 +666,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "CIMLR", 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -694,7 +694,7 @@ create_MO_heatmap(matrix = cimlr_matrix, algorithm = "CIMLR",
 
 # Bar charts with clinical variables of interest ###
 CIMLR_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(CIMLR = paste0("MOVICS_", CIMLR))
 plotdata_bar$CIMLR = factor(plotdata_bar$CIMLR)
 for (i in 1:length(voi)) {
@@ -703,6 +703,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   CIMLR_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                chifit = chifit,
+                                               na.action = "na.omit",
                                                algorithm = "CIMLR",
                                                barchart_ylim = 650,
                                                text_y = 630, rect_ymin = 530,
@@ -739,7 +740,7 @@ dev.off()
 
 # Just significant ones now
 CIMLR_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(CIMLR, Race, `Menopausal status`, 
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(CIMLR, Race, `Menopausal status`, 
                                                        `ER status`, `PR status`, `HER2 status`) %>%
   dplyr::mutate(CIMLR = paste0("MOVICS_", CIMLR))
 plotdata_bar_sig$CIMLR = factor(plotdata_bar_sig$CIMLR)
@@ -750,6 +751,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   CIMLR_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                    chifit = chifit,
+                                                   na.action = "na.omit",
                                                    algorithm = "CIMLR",
                                                    barchart_ylim = 650,
                                                    text_y = 630, rect_ymin = 530,
@@ -830,7 +832,6 @@ pie_CIMLR = plot_ly() %>%
 pie_CIMLR
 rm(Pheno_sunburst_CIMLR, sunburstDF_CIMLR, sunburst_coloring_CIMLR, pie_CIMLR); gc()
 
-
 # See concordance with the final consensus
 CS_comp_list[["CIMLR"]]$table = table(clust_annot_pheno2$CIMLR, 
                                       paste0("CS", clust_annot_pheno2$clust))
@@ -862,7 +863,7 @@ PINSPlus_clust_res = clust_annot_pheno %>% dplyr::select(samID, PINSPlus) %>%
   mutate(PINSPlus = paste0("MOVICS_", PINSPlus))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "PINSPlus", 
                          clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -870,7 +871,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "PINSPlus", 
                          clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -878,7 +879,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "PINSPlus", 
                          clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -887,7 +888,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "PINSPlus", 
                          clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -895,7 +896,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "PINSPlus", 
                          clust_res = PINSPlus_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -904,7 +905,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 PINSPlus_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(PINSPlus = paste0("MOVICS_", PINSPlus))
 plotdata_bar$PINSPlus = factor(plotdata_bar$PINSPlus)
 for (i in 1:length(voi)) {
@@ -913,6 +914,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   PINSPlus_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                   chifit = chifit,
+                                                  na.action = "na.omit",
                                                   algorithm = "PINSPlus",
                                                   barchart_ylim = 650,
                                                   text_y = 630, rect_ymin = 530,
@@ -949,8 +951,9 @@ dev.off()
 
 # Just significant ones now
 PINSPlus_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(PINSPlus, `ER status`, `PR status`, `HER2 status`,
-                                                       Histology) %>%
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(PINSPlus, `Lymph node status`,
+                                                             `ER status`, `PR status`, `HER2 status`,
+                                                       Histology, Stage) %>%
   dplyr::mutate(PINSPlus = paste0("MOVICS_", PINSPlus))
 plotdata_bar_sig$PINSPlus = factor(plotdata_bar_sig$PINSPlus)
 voi_sig = setdiff(colnames(plotdata_bar_sig), "PINSPlus")
@@ -960,6 +963,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   PINSPlus_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                       chifit = chifit,
+                                                      na.action = "na.omit",
                                                       algorithm = "PINSPlus",
                                                       barchart_ylim = 650,
                                                       text_y = 630, rect_ymin = 530,
@@ -982,12 +986,12 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(PINSPlus_barcharts_sig[[1]], PINSPlus_barcharts_sig[[2]], PINSPlus_barcharts_sig[[3]],
-          PINSPlus_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          PINSPlus_barcharts_sig[[4]], PINSPlus_barcharts_sig[[5]], PINSPlus_barcharts_sig[[6]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "sig_Multiplot_PINSPlus_barcharts.png",
        path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/PINSPlus_extra"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 5500, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1063,7 +1067,7 @@ NEMO_clust_res = clust_annot_pheno %>% dplyr::select(samID, NEMO) %>%
   mutate(NEMO = paste0("MOVICS_", NEMO))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "NEMO", 
                          clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1071,7 +1075,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "NEMO", 
                          clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1079,7 +1083,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "NEMO", 
                          clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1088,7 +1092,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "NEMO", 
                          clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1096,7 +1100,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "NEMO", 
                          clust_res = NEMO_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1105,7 +1109,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 NEMO_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(NEMO = paste0("MOVICS_", NEMO))
 plotdata_bar$NEMO = factor(plotdata_bar$NEMO)
 for (i in 1:length(voi)) {
@@ -1114,6 +1118,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   NEMO_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                               chifit = chifit,
+                                              na.action = "na.omit",
                                               algorithm = "NEMO",
                                               barchart_ylim = 650,
                                               text_y = 630, rect_ymin = 530,
@@ -1150,7 +1155,7 @@ dev.off()
 
 # Just significant ones now
 NEMO_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(NEMO, Race, Histology, 
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(NEMO, Race, Histology, 
                                                        `ER status`, `PR status`, `Stage`) %>%
   dplyr::mutate(NEMO = paste0("MOVICS_", NEMO))
 plotdata_bar_sig$NEMO = factor(plotdata_bar_sig$NEMO)
@@ -1161,6 +1166,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   NEMO_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                   chifit = chifit,
+                                                  na.action = "na.omit",
                                                   algorithm = "NEMO",
                                                   barchart_ylim = 650,
                                                   text_y = 630, rect_ymin = 530,
@@ -1284,7 +1290,7 @@ COCA_clust_res = clust_annot_pheno %>% dplyr::select(samID, COCA) %>%
   mutate(COCA = paste0("MOVICS_", COCA))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "COCA", 
                          clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1292,7 +1298,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "COCA", 
                          clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1300,7 +1306,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "COCA", 
                          clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1309,7 +1315,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "COCA", 
                          clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1317,7 +1323,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "COCA", 
                          clust_res = COCA_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1326,7 +1332,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 COCA_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(COCA = paste0("MOVICS_", COCA))
 plotdata_bar$COCA = factor(plotdata_bar$COCA)
 for (i in 1:length(voi)) {
@@ -1335,6 +1341,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   COCA_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                               chifit = chifit,
+                                              na.action = "na.omit",
                                               algorithm = "COCA",
                                               barchart_ylim = 700,
                                               text_y = 680, rect_ymin = 580,
@@ -1459,7 +1466,7 @@ MoCluster_clust_res = clust_annot_pheno %>% dplyr::select(samID, MoCluster) %>%
   mutate(MoCluster = paste0("MOVICS_", MoCluster))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "MoCluster", 
                          clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1467,7 +1474,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "MoCluster", 
                          clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1475,7 +1482,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "MoCluster", 
                          clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1484,7 +1491,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "MoCluster", 
                          clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1492,7 +1499,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "MoCluster", 
                          clust_res = MoCluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1501,7 +1508,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 MoCluster_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(MoCluster = paste0("MOVICS_", MoCluster))
 plotdata_bar$MoCluster = factor(plotdata_bar$MoCluster)
 for (i in 1:length(voi)) {
@@ -1510,6 +1517,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   MoCluster_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                    chifit = chifit,
+                                                   na.action = "na.omit",
                                                    algorithm = "MoCluster",
                                                    barchart_ylim = 650,
                                                    text_y = 630, rect_ymin = 530,
@@ -1546,8 +1554,8 @@ dev.off()
 
 # Just significant ones now
 MoCluster_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(MoCluster, Race, `Menopausal status`, 
-                                                       `ER status`, `PR status`, Histology, Metastasis) %>%
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(MoCluster, Race, Histology,
+                                                       `ER status`, `PR status`) %>%
   dplyr::mutate(MoCluster = paste0("MOVICS_", MoCluster))
 plotdata_bar_sig$MoCluster = factor(plotdata_bar_sig$MoCluster)
 voi_sig = setdiff(colnames(plotdata_bar_sig), "MoCluster")
@@ -1557,6 +1565,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   MoCluster_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                        chifit = chifit,
+                                                       na.action = "na.omit",
                                                        algorithm = "MoCluster",
                                                        barchart_ylim = 650,
                                                        text_y = 630, rect_ymin = 530,
@@ -1593,31 +1602,18 @@ Pheno_sunburst_MoCluster = clust_annot_pheno
 Pheno_sunburst_MoCluster$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_MoCluster$`ER status`)
 Pheno_sunburst_MoCluster$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_MoCluster$`ER status`)
 Pheno_sunburst_MoCluster$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_MoCluster$`ER status`)
-Pheno_sunburst_MoCluster$`Menopausal status` = gsub("Unknown", "Unkn Meno status", 
-                                                    Pheno_sunburst_MoCluster$`Menopausal status`)
-Pheno_sunburst_MoCluster$`Menopausal status` = gsub("Indeterminate", "Indeterminate Meno", 
-                                                    Pheno_sunburst_MoCluster$`Menopausal status`)
-Pheno_sunburst_MoCluster$Metastasis = gsub("Unknown", "Unkn metast. status", Pheno_sunburst_MoCluster$Metastasis)
-Pheno_sunburst_MoCluster$Metastasis = gsub("Yes", "Metastatic", Pheno_sunburst_MoCluster$Metastasis)
-Pheno_sunburst_MoCluster$Metastasis = gsub("No", "Non-metastatic", Pheno_sunburst_MoCluster$Metastasis)
 
 Pheno_sunburst_MoCluster = Pheno_sunburst_MoCluster %>%
-  dplyr::select(MoCluster, `ER status`, `Menopausal status`, Metastasis) %>%
-  group_by(MoCluster, `ER status`, `Menopausal status`, Metastasis) %>%
+  dplyr::select(MoCluster, `ER status`) %>%
+  group_by(MoCluster, `ER status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_MoCluster = data.frame(stringsAsFactors = FALSE,
                                          colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                            "#C11D9C", "#0F1682",  "grey40",
-                                                                            "mistyrose2", "#FAA476",
-                                                                            "#DC3977", "#7C1D6F", "grey40",
-                                                                            "deeppink4", "cadetblue2", "grey40"))),
+                                                                            "#C11D9C", "#0F1682",  "grey40"))),
                                          labels = c("MoCluster1", "MoCluster2",
-                                                    "ER-", "ER+", "Unkn ER status",
-                                                    "Indeterminate Meno", "Pre-menopausal", 
-                                                    "Perimenopausal", "Post-menopausal", "Unkn Meno status",
-                                                    "Metastatic", "Non-metastatic", "Unkn metast. status"))
+                                                    "ER-", "ER+", "Unkn ER status"))
 
 sunburstDF_MoCluster = as.sunburstDF(Pheno_sunburst_MoCluster, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_MoCluster, by = "labels")
@@ -1687,7 +1683,7 @@ LRAcluster_clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster) %>
   mutate(LRAcluster = paste0("MOVICS_", LRAcluster))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "LRAcluster", 
                          clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1695,7 +1691,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "LRAcluster", 
                          clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1703,7 +1699,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "LRAcluster", 
                          clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1712,7 +1708,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "LRAcluster", 
                          clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1720,7 +1716,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "LRAcluster", 
                          clust_res = LRAcluster_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1729,7 +1725,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 LRAcluster_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(LRAcluster = paste0("MOVICS_", LRAcluster))
 plotdata_bar$LRAcluster = factor(plotdata_bar$LRAcluster)
 for (i in 1:length(voi)) {
@@ -1738,6 +1734,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   LRAcluster_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                     chifit = chifit,
+                                                    na.action = "na.omit",
                                                     algorithm = "LRAcluster",
                                                     barchart_ylim = 650,
                                                     text_y = 630, rect_ymin = 530,
@@ -1774,8 +1771,8 @@ dev.off()
 
 # Just significant ones now
 LRAcluster_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(LRAcluster, `ER status`, `PR status`, 
-                                                       `HER2 status`, Histology) %>%
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(LRAcluster, `ER status`, `PR status`, 
+                                                       `HER2 status`, Histology, Stage) %>%
   dplyr::mutate(LRAcluster = paste0("MOVICS_", LRAcluster))
 plotdata_bar_sig$LRAcluster = factor(plotdata_bar_sig$LRAcluster)
 voi_sig = setdiff(colnames(plotdata_bar_sig), "LRAcluster")
@@ -1785,6 +1782,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   LRAcluster_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                         chifit = chifit,
+                                                        na.action = "na.omit",
                                                         algorithm = "LRAcluster",
                                                         barchart_ylim = 650,
                                                         text_y = 630, rect_ymin = 530,
@@ -1807,12 +1805,12 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(LRAcluster_barcharts_sig[[1]], LRAcluster_barcharts_sig[[2]], LRAcluster_barcharts_sig[[3]],
-          LRAcluster_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          LRAcluster_barcharts_sig[[4]], LRAcluster_barcharts_sig[[5]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "sig_Multiplot_LRAcluster_barcharts.png",
        path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/LRAcluster_extra"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 5500, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1909,7 +1907,7 @@ ConsensusClustering_clust_res = clust_annot_pheno %>% dplyr::select(samID, Conse
   mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "ConsensusClustering", 
                          clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1917,7 +1915,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "ConsensusClustering", 
                          clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1925,7 +1923,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "ConsensusClustering", 
                          clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1934,7 +1932,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "ConsensusClustering", 
                          clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1942,7 +1940,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "ConsensusClustering", 
                          clust_res = ConsensusClustering_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -1951,7 +1949,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 ConsensusClustering_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(ConsensusClustering = gsub("ConsensusClustering", "CC", ConsensusClustering)) %>%
   dplyr::mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering))
 plotdata_bar$ConsensusClustering = factor(plotdata_bar$ConsensusClustering)
@@ -1961,6 +1959,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   ConsensusClustering_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                              chifit = chifit,
+                                                             na.action = "na.omit",
                                                              algorithm = "ConsensusClustering",
                                                              barchart_ylim = 650,
                                                              text_y = 630, rect_ymin = 530,
@@ -1997,7 +1996,7 @@ dev.off()
 
 # Just significant ones now
 ConsensusClustering_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(ConsensusClustering, `ER status`, 
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(ConsensusClustering, `ER status`, 
                                                        `PR status`, `HER2 status`, Histology) %>%
   dplyr::mutate(ConsensusClustering = gsub("ConsensusClustering", "CC", ConsensusClustering)) %>%
   dplyr::mutate(ConsensusClustering = paste0("MOVICS_", ConsensusClustering))
@@ -2009,6 +2008,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   ConsensusClustering_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                                  chifit = chifit,
+                                                                 na.action = "na.omit",
                                                                  algorithm = "ConsensusClustering",
                                                                  barchart_ylim = 650,
                                                                  text_y = 630, rect_ymin = 530,
@@ -2114,7 +2114,7 @@ IntNMF_clust_res = clust_annot_pheno %>% dplyr::select(samID, IntNMF) %>%
   mutate(IntNMF = paste0("MOVICS_", IntNMF))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "IntNMF", 
                          clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2122,7 +2122,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "IntNMF", 
                          clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2130,7 +2130,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "IntNMF", 
                          clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2139,7 +2139,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "IntNMF", 
                          clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2147,7 +2147,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "IntNMF", 
                          clust_res = IntNMF_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2156,7 +2156,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 IntNMF_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(IntNMF = paste0("MOVICS_", IntNMF))
 plotdata_bar$IntNMF = factor(plotdata_bar$IntNMF)
 for (i in 1:length(voi)) {
@@ -2165,6 +2165,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   IntNMF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                 chifit = chifit,
+                                                na.action = "na.omit",
                                                 algorithm = "IntNMF",
                                                 barchart_ylim = 650,
                                                 text_y = 630, rect_ymin = 530,
@@ -2201,7 +2202,7 @@ dev.off()
 
 # Just significant ones now
 IntNMF_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(IntNMF, Histology, Stage,
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(IntNMF, Histology, Stage, `Lymph node status`,
                                                        `ER status`, `PR status`, `HER2 status`) %>%
   dplyr::mutate(IntNMF = paste0("MOVICS_", IntNMF))
 plotdata_bar_sig$IntNMF = factor(plotdata_bar_sig$IntNMF)
@@ -2212,6 +2213,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   IntNMF_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                     chifit = chifit,
+                                                    na.action = "na.omit",
                                                     algorithm = "IntNMF",
                                                     barchart_ylim = 650,
                                                     text_y = 630, rect_ymin = 530,
@@ -2234,8 +2236,8 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(IntNMF_barcharts_sig[[1]], IntNMF_barcharts_sig[[2]], IntNMF_barcharts_sig[[3]],
-          IntNMF_barcharts_sig[[4]], IntNMF_barcharts_sig[[5]], 
-          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          IntNMF_barcharts_sig[[4]], IntNMF_barcharts_sig[[5]], IntNMF_barcharts_sig[[6]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "sig_Multiplot_IntNMF_barcharts.png",
        path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/IntNMF_extra"), 
@@ -2320,7 +2322,7 @@ iClusterBayes_clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBay
   mutate(iClusterBayes = paste0("MOVICS_", iClusterBayes))
 
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = "iClusterBayes", 
                          clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2328,7 +2330,7 @@ pca_from_original_matrix(mydata = input$RNAseq,
                          title_add = "RNA-seq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = "iClusterBayes", 
                          clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2336,7 +2338,7 @@ pca_from_original_matrix(mydata = input$miRNA,
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
+pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = "iClusterBayes", 
                          clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2345,7 +2347,7 @@ pca_from_original_matrix(mydata = input$CNV,
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = "iClusterBayes", 
                          clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2353,7 +2355,7 @@ mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = "iClusterBayes", 
                          clust_res = iClusterBayes_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
@@ -2362,7 +2364,7 @@ pca_from_original_matrix(mydata = input$Methylation,
 
 # Bar charts with clinical variables of interest ###
 iClusterBayes_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(iClusterBayes = paste0("MOVICS_", iClusterBayes))
 plotdata_bar$iClusterBayes = factor(plotdata_bar$iClusterBayes)
 for (i in 1:length(voi)) {
@@ -2371,6 +2373,7 @@ for (i in 1:length(voi)) {
   chifit = chifit[loc, ]
   iClusterBayes_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                                        chifit = chifit,
+                                                       na.action = "na.omit",
                                                        algorithm = "iClusterBayes",
                                                        barchart_ylim = 650,
                                                        text_y = 630, rect_ymin = 530,
@@ -2407,7 +2410,7 @@ dev.off()
 
 # Just the significant ones
 iClusterBayes_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(iClusterBayes, Histology, Stage,
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(iClusterBayes, Histology, Stage,
                                                        `ER status`, `PR status`, `HER2 status`) %>%
   dplyr::mutate(iClusterBayes = paste0("MOVICS_", iClusterBayes))
 plotdata_bar_sig$iClusterBayes = factor(plotdata_bar_sig$iClusterBayes)
@@ -2418,6 +2421,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   iClusterBayes_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                            chifit = chifit,
+                                                           na.action = "na.omit",
                                                            algorithm = "iClusterBayes",
                                                            barchart_ylim = 650,
                                                            text_y = 630, rect_ymin = 530,
