@@ -14,7 +14,12 @@ library(data.table)
 library(colorspace)
 
 load("Results/MOVICS_baseline/MO_comparisons/MO_comparisons_MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_env.RData")
-# source("Scripts/automated_scripts/custom_functions.R")
+source("Scripts/automated_scripts/custom_functions.R")
+source("Scripts/automated_scripts/modified_MOVICS_functions.R")
+
+# Ensure reproducibility
+RNGversion("4.2.2")
+set.seed(123)
 
 # Chi-square tests between clusterings and clinical variables #####
 # Bias-corrected Cramer's V calculation using package rcompanion:
@@ -36,23 +41,33 @@ for(algorithm in algorithms) {
   clust_annot_pheno[[algorithm]] = paste0(algorithm, clust_annot_pheno[[algorithm]])
 }
 
+clust_annot_pheno_nonas = clust_annot_pheno
+for(i in 1:ncol(clust_annot_pheno_nonas)) {
+  clust_annot_pheno_nonas[, i] = as.character(clust_annot_pheno_nonas[, i])
+  nas = which(clust_annot_pheno_nonas[, i] == "Unknown")
+  clust_annot_pheno_nonas[nas, i] = NA
+  clust_annot_pheno_nonas[, i] = factor(clust_annot_pheno_nonas[, i])
+}
+rm(nas); gc()
+
 # Variables of interest
-voi = setdiff(colnames(clust_annot_pheno), algorithms)
+voi = setdiff(colnames(clust_annot_pheno_nonas), c(algorithms, "samID"))
 
 for (a in 1:length(algorithms)) {
   output = as.data.frame(matrix(NA, nrow = 0, ncol = 4))
   for (v in 1:length(voi)){
-    test = suppressWarnings(chisq.test(table(clust_annot_pheno[, algorithms[a]], 
-                                             clust_annot_pheno[, voi[v]])))
+    keepers = which(!is.na(clust_annot_pheno_nonas[, voi[v]]))
+    test = suppressWarnings(chisq.test(table(clust_annot_pheno_nonas[keepers, algorithms[a]], 
+                                             clust_annot_pheno_nonas[keepers, voi[v]])))
     chifit_p = test$p.value
     chifit_xsq = test$statistic
-    chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno[, algorithms[a]], 
-                                                        clust_annot_pheno[, voi[v]]),
+    chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno_nonas[keepers, algorithms[a]], 
+                                                        clust_annot_pheno_nonas[keepers, voi[v]]),
                                                   string = voi[i],
                                                   digits = 3)$value)
     comparison = paste0(voi[v], " vs ", algorithms[a], " cluster")
     output = rbind(output, c(comparison, chifit_p, chifit_xsq, chifit_cv))
-    rm(test, comparison, chifit_p, chifit_xsq, chifit_cv)
+    rm(test, comparison, chifit_p, chifit_xsq, chifit_cv, keepers)
   }
   colnames(output) = c("Comparison", "p-value", "Statistic", "Cramer's V")
   chisq_outputs[[a]] = output
@@ -272,7 +287,7 @@ pca_from_sim_matrix(sim_matrix = aff_rna, algorithm = "SNF", clust_res = snf_clu
 
 # SNPs
 pca_from_sim_matrix(sim_matrix = aff_mut, algorithm = "SNF", clust_res = snf_clust_res,
-                    cluster_colors = c("#2EC4B6", "#E71D36"), 
+                    cluster_colors = c("#2EC4B6", "#E71D36"),
                     output_path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/SNF_extra"), 
                     title_add = "SNPs")
 
@@ -378,18 +393,17 @@ names(barchart_scales) = c("Stage", "Lymph node status", "ER status", "PR status
 
 # Bar charts with clinical variables of interest ###
 SNF_barcharts = list()
-plotdata_bar = clust_annot_pheno %>%
+plotdata_bar = clust_annot_pheno_nonas %>%
   dplyr::mutate(SNF = paste0("MOVICS_", SNF))
 plotdata_bar$SNF = factor(plotdata_bar$SNF)
 
-# IMPORTANT: REMOVE samID from voi
-voi = voi[!voi=="samID"]
 for (i in 1:length(voi)) {
   chifit = chisq_outputs[["SNF"]]
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
   SNF_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                              chifit = chifit,
+                                             na.action = "na.omit",
                                              algorithm = "SNF",
                                              barchart_ylim = 650,
                                              text_y = 630, rect_ymin = 530,
@@ -426,7 +440,7 @@ dev.off()
 
 # Just significant ones now
 SNF_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(SNF, Race, Histology, 
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(SNF, Race, Histology, 
                                                        `ER status`, `PR status`, Stage) %>%
   dplyr::mutate(SNF = paste0("MOVICS_", SNF))
 plotdata_bar_sig$SNF = factor(plotdata_bar_sig$SNF)
@@ -437,6 +451,7 @@ for (i in 1:length(voi_sig)) {
   chifit = chifit[loc, ]
   SNF_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                              chifit = chifit,
+                                             na.action = "na.omit",
                                              algorithm = "SNF",
                                              barchart_ylim = 650,
                                              text_y = 630, rect_ymin = 530,
