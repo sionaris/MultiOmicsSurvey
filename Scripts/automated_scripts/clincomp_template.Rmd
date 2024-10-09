@@ -1,0 +1,45 @@
+---
+title: "`r params$tab_name`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{fontspec}
+  - \setmainfont{Arial}
+params:
+  tab_name: "Title"
+  results_table: NULL
+  n_subtypes: 2
+  pdf_level_col_width: "10em"
+  pdf_count_col_width: "8em"
+  pdf_pval_col_width: "5em"
+  pdf_test_col_width: "5em"
+  pdf_tab_font_size: 8
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
+# Generate the kable with custom column width for specific columns
+kbl <- kable(params$results_table, align = c('l', 'c', rep('c', params$n_subtypes), 'c', 'c'), 
+             caption = params$tab_name) %>%
+  kable_styling(latex_options = c('striped', 'scale_down', 'repeat_header', 'hold_position'), 
+                full_width = FALSE, font_size = params$pdf_tab_font_size) %>%
+  column_spec(1, width = params$pdf_level_col_width) %>%
+  column_spec(2, width = params$pdf_level_col_width)
+
+# Dynamically add column_spec for subtype columns
+for (i in 1:params$n_subtypes) {
+  kbl <- kbl %>% column_spec(2 + i, width = params$pdf_count_col_width)
+}
+
+# Add column_spec for p-value and test columns
+kbl <- kbl %>%
+  column_spec(2 + params$n_subtypes + 1, width = params$pdf_pval_col_width) %>%
+  column_spec(2 + params$n_subtypes + 2, width = params$pdf_test_col_width)
+
+# Print the final table
+kbl
