@@ -783,7 +783,7 @@ oncoprint <- compMut(moic.res  = consensus,
 # Drug sensitivity comparison #####
 # TPM matrix prior to log2 transformation is recommended. Here we used the normalized input
 drug_sensitivity <- compDrugsen(moic.res    = consensus,
-                                norm.expr   = input$RNAseq,
+                                norm.expr   = plotdata$RNAseq,
                                 drugs       = c("Cisplatin", "Paclitaxel", "Lapatinib",
                                                 "Doxorubicin", "5-Fluorouracil",
                                                 "Sorafenib"), # a vector of names of drug in GDSC
@@ -1186,7 +1186,7 @@ gsva.res = runGSVA_mod_4.4(moic.res      = consensus,
 library(ggplot2)
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
 
-fga.MOVICS <- compFGA_mod(moic.res     = consensus,
+fga.MOVICS <- compFGA_optimized(moic.res     = consensus,
                        segment      = fga_df,
                        iscopynumber = TRUE, 
                        test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -1198,7 +1198,7 @@ fga.MOVICS <- compFGA_mod(moic.res     = consensus,
                        clust.col = scheme$clust.colors,
                        title = "FGA plot: simple criteria")
 
-fga.MOVICS.COSMIC <- compFGA_mod(moic.res     = consensus,
+fga.MOVICS.COSMIC <- compFGA_optimized(moic.res     = consensus,
                               segment      = fga_df,
                               iscopynumber = TRUE, 
                               test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
