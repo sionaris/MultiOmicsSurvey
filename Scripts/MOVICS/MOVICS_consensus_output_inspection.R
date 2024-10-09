@@ -134,8 +134,9 @@ names(oncoprints) = names(moic.res.list)
 # Drug sensitivity comparisons #####
 drug_sensitivities = list()
 for (i in 1:length(moic.res.list)) {
-  drug_sensitivities[[i]] <- compDrugsen(moic.res    = moic.res.list[[i]],
-                                  norm.expr   = input$RNAseq,
+  drug_sensitivities[[i]] <- compDrugsen_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                          moic.res    = moic.res.list[[i]],
+                                  norm.expr   = plotdata$RNAseq,
                                   drugs       = c("Cisplatin", "Paclitaxel", "Lapatinib",
                                                   "Doxorubicin", "5-Fluorouracil",
                                                   "Sorafenib"), # a vector of names of drug in GDSC
@@ -151,7 +152,8 @@ names(drug_sensitivities) = names(moic.res.list)
 # Agreement with other subtypes #####
 subtype_agreements = list()
 for (i in 1:length(moic.res.list)) {
-  subtype_agreements[[i]] <- compAgree2(moic.res  = moic.res.list[[i]],
+  subtype_agreements[[i]] <- compAgree_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                       moic.res  = moic.res.list[[i]],
                                   subt2comp = annCol[, c("Stage", "ER status", "PR status",
                                                          "HER2 status", "Metastasis")],
                                   doPlot    = TRUE,
@@ -167,10 +169,10 @@ names(subtype_agreements) = names(moic.res.list)
 
 # DGEA
 comp_dgea = comp_dgea.marker.up = comp_dgea.marker.down = list()
-# No significant genes for COCA (just 1 down-regulated, for i = 6)
-for (i in 1:length(moic.res.list)) {
+# No significant genes for COCA (just 1 down-regulated, for i = 5)
+for (i in c(1:4, 6:10)) {
   comp_dgea[[i]] = runDEA(dea.method = "limma",
-                          expr = input$RNAseq,
+                          expr = plotdata$RNAseq,
                           moic.res = moic.res.list[[i]],
                           prefix = "dgea_",
                           sort.p = TRUE,
@@ -191,7 +193,7 @@ for (i in 1:length(moic.res.list)) {
                                                          dirct         = "up", # direction of dysregulation in expression
                                                          n.marker      = 100, # number of biomarkers for each subtype
                                                          doplot        = TRUE, # generate diagonal heatmap
-                                                         norm.expr     = input$RNAseq, # use normalized expression as heatmap input
+                                                         norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
                                                          annCol        = annCol, # sample annotation in heatmap
                                                          annColors     = annColors, # colors for sample annotation
                                                          show_rownames = TRUE, # show no rownames (biomarker name)
@@ -204,7 +206,7 @@ for (i in 1:length(moic.res.list)) {
                                                          width = 14,
                                                          height = 12,
                                                          fontsize_row = 3,
-                                                         name = "normalised RNA-seq")
+                                                         name = "normalized RNA-seq")
   
   # 2. Down-regulated markers
   comp_dgea.marker.down[[i]] <- runMarker_single_algorithm(algorithm_name = names(moic.res.list)[i],
@@ -218,7 +220,7 @@ for (i in 1:length(moic.res.list)) {
                                                            dirct         = "down", # direction of dysregulation in expression
                                                            n.marker      = 100, # number of biomarkers for each subtype
                                                            doplot        = TRUE, # generate diagonal heatmap
-                                                           norm.expr     = input$RNAseq, # use normalized expression as heatmap input
+                                                           norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
                                                            annCol        = annCol, # sample annotation in heatmap
                                                            annColors     = annColors, # colors for sample annotation
                                                            show_rownames = TRUE, # show no rownames (biomarker name)
@@ -231,7 +233,144 @@ for (i in 1:length(moic.res.list)) {
                                                            width = 14,
                                                            height = 12,
                                                            fontsize_row = 3,
-                                                           name = "normalised RNA-seq")
+                                                           name = "normalized RNA-seq")
+}
+
+# DMEA
+comp_dmea = comp_dmea.marker.up = comp_dmea.marker.down = list()
+for (i in 1:length(moic.res.list)) {
+  comp_dmea[[i]] = runDEA(dea.method = "limma",
+                          expr = plotdata$Methylation,
+                          moic.res = moic.res.list[[i]],
+                          prefix = "dmea_",
+                          sort.p = TRUE,
+                          overwt = TRUE,
+                          verbose = TRUE,
+                          res.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"))
+  
+  # Identify unique subtype biomarkers
+  # 1. Up-regulated markers
+  comp_dmea.marker.up[[i]] <- runMarker_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                         moic.res = moic.res.list[[i]],
+                                                         dea.method    = "limma", # name of DEA method
+                                                         prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                                         dat.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"), # path of DEA files
+                                                         res.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"), # path to save marker files
+                                                         p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                         p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                         dirct         = "up", # direction of dysregulation in expression
+                                                         n.marker      = 100, # number of biomarkers for each subtype
+                                                         doplot        = TRUE, # generate diagonal heatmap
+                                                         norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                                         annCol        = annCol, # sample annotation in heatmap
+                                                         annColors     = annColors, # colors for sample annotation
+                                                         show_rownames = TRUE, # show no rownames (biomarker name)
+                                                         centerFlag = F,
+                                                         scaleFlag = F,
+                                                         halfwidth = 3,
+                                                         fig.name      = paste0(names(moic.res.list)[i], 
+                                                                                "_hypermethylated_biomarkers_heatmap"),
+                                                         fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"),
+                                                         width = 14,
+                                                         height = 12,
+                                                         fontsize_row = 3,
+                                                         name = "normalized Methylation")
+  
+  # 2. Down-regulated markers
+  comp_dmea.marker.down[[i]] <- runMarker_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                           moic.res = moic.res.list[[i]],
+                                                           dea.method    = "limma", # name of DEA method
+                                                           prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                                           dat.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"), # path of DEA files
+                                                           res.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"), # path to save marker files
+                                                           p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                           p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                           dirct         = "down", # direction of dysregulation in expression
+                                                           n.marker      = 100, # number of biomarkers for each subtype
+                                                           doplot        = TRUE, # generate diagonal heatmap
+                                                           norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                                           annCol        = annCol, # sample annotation in heatmap
+                                                           annColors     = annColors, # colors for sample annotation
+                                                           show_rownames = TRUE, # show no rownames (biomarker name)
+                                                           centerFlag = F,
+                                                           scaleFlag = F,
+                                                           halfwidth = 3,
+                                                           fig.name      = paste0(names(moic.res.list)[i], 
+                                                                                  "_hypomethylated_biomarkers_heatmap"),
+                                                           fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DMEA"),
+                                                           width = 14,
+                                                           height = 12,
+                                                           fontsize_row = 3,
+                                                           name = "normalized Methylation")
+}
+
+# DmiREA
+comp_dmiRea = comp_dmiRea.marker.up = comp_dmiRea.marker.down = list()
+# Same COCA issue
+for (i in c(1:4, 6:10)) {
+  comp_dmiRea[[i]] = runDEA(dea.method = "limma",
+                          expr = plotdata$miRNA,
+                          moic.res = moic.res.list[[i]],
+                          prefix = "dmiRea_",
+                          sort.p = TRUE,
+                          overwt = TRUE,
+                          verbose = TRUE,
+                          res.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"))
+  
+  # Identify unique subtype biomarkers
+  # 1. Up-regulated markers
+  comp_dmiRea.marker.up[[i]] <- runMarker_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                         moic.res = moic.res.list[[i]],
+                                                         dea.method    = "limma", # name of DEA method
+                                                         prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                                         dat.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"), # path of DEA files
+                                                         res.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"), # path to save marker files
+                                                         p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                         p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                         dirct         = "up", # direction of dysregulation in expression
+                                                         n.marker      = 100, # number of biomarkers for each subtype
+                                                         doplot        = TRUE, # generate diagonal heatmap
+                                                         norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                                         annCol        = annCol, # sample annotation in heatmap
+                                                         annColors     = annColors, # colors for sample annotation
+                                                         show_rownames = TRUE, # show no rownames (biomarker name)
+                                                         centerFlag = F,
+                                                         scaleFlag = F,
+                                                         halfwidth = 3,
+                                                         fig.name      = paste0(names(moic.res.list)[i], 
+                                                                                "_upregulated_miRNA_biomarkers_heatmap"),
+                                                         fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"),
+                                                         width = 14,
+                                                         height = 12,
+                                                         fontsize_row = 3,
+                                                         name = "normalized miRNA")
+  
+  # 2. Down-regulated markers
+  comp_dmiRea.marker.down[[i]] <- runMarker_single_algorithm(algorithm_name = names(moic.res.list)[i],
+                                                           moic.res = moic.res.list[[i]],
+                                                           dea.method    = "limma", # name of DEA method
+                                                           prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                                           dat.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"), # path of DEA files
+                                                           res.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"), # path to save marker files
+                                                           p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                           p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                           dirct         = "down", # direction of dysregulation in expression
+                                                           n.marker      = 100, # number of biomarkers for each subtype
+                                                           doplot        = TRUE, # generate diagonal heatmap
+                                                           norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                                           annCol        = annCol, # sample annotation in heatmap
+                                                           annColors     = annColors, # colors for sample annotation
+                                                           show_rownames = TRUE, # show no rownames (biomarker name)
+                                                           centerFlag = F,
+                                                           scaleFlag = F,
+                                                           halfwidth = 3,
+                                                           fig.name      = paste0(names(moic.res.list)[i], 
+                                                                                  "_hypomethylated_biomarkers_heatmap"),
+                                                           fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"),
+                                                           width = 14,
+                                                           height = 12,
+                                                           fontsize_row = 3,
+                                                           name = "normalized miRNA")
 }
 
 # Pathways
@@ -250,18 +389,18 @@ for (i in c(1:4, 6:10)) {
                                                         dat.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DGEA"), # path of DEA files
                                                         res.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), # path to save marker files
                                                         msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
-                                                        norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
+                                                        norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                                         dirct        = "up", # direction of dysregulation in pathway
                                                         n.path       = 20,
                                                         p.cutoff     = 0.05, # p cutoff to identify significant pathways
-                                                        p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                                                        p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                                         gsva.method  = "gsva", # method to calculate single sample enrichment score
                                                         name         = "GSVA scores", # name for colorbar
                                                         norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
                                                         fig.name     = paste0(names(moic.res.list)[i], 
                                                                               "_upregulated_pathway_heatmap"),
                                                         nPerm = 10000,
-                                                        minGSSize = 10,
+                                                        minGSSize = 5,
                                                         maxGSSize = 500,
                                                         fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"),
                                                         width = 14, height = 12)
@@ -275,18 +414,18 @@ for (i in c(1:4, 6:10)) {
                                                           dat.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DGEA"), # path of DEA files
                                                           res.path      = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), # path to save marker files
                                                           msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
-                                                          norm.expr    = input$RNAseq, # use normalized expression to calculate enrichment score
+                                                          norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                                           dirct        = "down", # direction of dysregulation in pathway
                                                           n.path       = 20,
                                                           p.cutoff     = 0.05, # p cutoff to identify significant pathways
-                                                          p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                                                          p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                                           gsva.method  = "gsva", # method to calculate single sample enrichment score
                                                           name         = "GSVA scores", # name for colorbar
                                                           norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
                                                           fig.name     = paste0(names(moic.res.list)[i], 
                                                                                 "_downregulated_pathway_heatmap"),
                                                           nPerm = 10000,
-                                                          minGSSize = 10,
+                                                          minGSSize = 5,
                                                           maxGSSize = 500,
                                                           fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"),
                                                           width = 14, height = 12)
@@ -305,7 +444,7 @@ for (i in c(1:4, 6:10)) {
   set.seed(123)
   comp_gsva.res[[i]] = runGSVA_mod_4.4_single_algorithm(algorithm_name = names(moic.res.list)[i],
                                                          moic.res     = moic.res.list[[i]],
-                                                         norm.expr     = input$RNAseq,
+                                                         norm.expr     = plotdata$RNAseq,
                                                          gset.gmt.path = GSET.FILE, # ABSOLUTE path of gene set file
                                                          gsva.method   = "gsva", # method to calculate single sample enrichment score
                                                          annCol        = annCol,
@@ -627,3 +766,212 @@ ggsave(filename = "biology_and_clust_comparisons_across_algorithms.pdf",
        width = 5300, height = 4300, device = 'pdf', units = "px",
        dpi = 700)
 dev.off()
+
+# Hierarchical clustering of pathways
+library(pathfindR)
+library(fastcluster)
+
+GSEAfiles_up = GSEAfiles_down = unique_upexpr_pathways = unique_downexpr_pathways = 
+  hclust_input_up = hclust_input_down = comp_gsea.up_unique = comp_gsea.down_unique = list()
+
+comp_gsea.up = c(comp_gsea.up[1:4], list(COCA = NULL), comp_gsea.up[5:9])
+comp_gsea.down = c(comp_gsea.down[1:4], list(COCA = NULL), comp_gsea.down[5:9])
+
+for (i in c(1:4, 6:10)) {
+  # Get unique pathways for each subtype
+  GSEAfiles_up[[i]] <- sort(dir(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), 
+                                pattern = paste0("^", names(comp_gsea.up)[i], ".*_unique_upexpr_pathway.txt$")))
+  GSEAfiles_down[[i]] <- sort(dir(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), 
+                                  pattern = paste0("^", names(comp_gsea.down)[i], ".*_unique_downexpr_pathway.txt$")))
+  
+  unique_upexpr_pathways[[i]] = list()
+  for (j in 1:length(comp_gsea.up[[i]]$gsea.list)) {
+    unique_upexpr_pathways[[i]][[j]] = data.table::fread(paste0(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), 
+                                                                "/", GSEAfiles_up[[i]][j]),
+                                                         header = TRUE, sep = "\t")
+  }
+  
+  unique_downexpr_pathways[[i]] = list()
+  for (j in 1:length(comp_gsea.down[[i]]$gsea.list)) {
+    unique_downexpr_pathways[[i]][[j]] = data.table::fread(paste0(paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), 
+                                                                  "/", GSEAfiles_down[[i]][j]),
+                                                           header = TRUE, sep = "\t")
+  }
+  
+  names(unique_downexpr_pathways[[i]]) = names(unique_upexpr_pathways[[i]]) = names(comp_gsea.down[[i]]$gsea.list)
+  
+  # Filter GSEA input
+  comp_gsea.up_unique[[i]] = comp_gsea.up[[i]]
+  for (j in 1:length(unique_upexpr_pathways[[i]])) {
+    unq = unique_upexpr_pathways[[i]][[j]]$V1
+    comp_gsea.up_unique[[i]]$gsea.list[[j]]@result = comp_gsea.up_unique[[i]]$gsea.list[[j]]@result[comp_gsea.up_unique[[i]]$gsea.list[[j]]@result$ID %in%
+                                                                                                      unq, ]
+  }
+  
+  comp_gsea.down_unique[[i]] = comp_gsea.down[[i]]
+  for (j in 1:length(unique_downexpr_pathways[[i]])) {
+    unq = unique_downexpr_pathways[[i]][[j]]$V1
+    comp_gsea.down_unique[[i]]$gsea.list[[j]]@result = comp_gsea.down_unique[[i]]$gsea.list[[j]]@result[comp_gsea.down_unique[[i]]$gsea.list[[j]]@result$ID %in%
+                                                                                                     unq, ]
+  }
+  
+  rm(unq); gc()
+  
+  hclust_input_up[[i]] = prepare_gsea_output_for_hclust(gsea_output = comp_gsea.up_unique[[i]], 
+                                                        dgea_output_name_style = "dgea_", 
+                                                        dea.method = "limma", 
+                                                        mo.method = names(comp_gsea.up)[i],
+                                                        dat.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DGEA"), 
+                                                        dgea_padj_cutoff = 0.05,
+                                                        logfc_cutoff = 0,
+                                                        pathway_padj_cutoff = 0.05)
+  
+  hclust_input_down[[i]] = prepare_gsea_output_for_hclust(gsea_output = comp_gsea.down_unique[[i]], 
+                                                          dgea_output_name_style = "dgea_", 
+                                                          dea.method = "limma", 
+                                                          mo.method = names(comp_gsea.up)[i],
+                                                          dat.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DGEA"), 
+                                                          dgea_padj_cutoff = 0.05,
+                                                          logfc_cutoff = 0,
+                                                          pathway_padj_cutoff = 0.05)
+  
+  hclust_input[[i]] = c(hclust_input_up[[i]], hclust_input_down[[i]])
+}
+
+names(hclust_input) = names(comp_gsea.up)
+hclust_input <- lapply(seq_along(hclust_input), function(i) {
+  if (length(hclust_input[[i]]) != 0) {
+    names(hclust_input[[i]]) <- c(
+      paste0("up_", names(hclust_input)[i], 1),
+      paste0("up_", names(hclust_input)[i], 2),
+      paste0("down_", names(hclust_input)[i], 1),
+      paste0("down_", names(hclust_input)[i], 2)
+    )
+  }
+  hclust_input[[i]]
+})
+names(hclust_input) = names(comp_gsea.up)
+
+hclust_output = list()
+
+# Load doParallel if not already loaded
+library(parallel)
+library(foreach)
+library(doParallel)
+
+# Set up the number of cores to use: minimum of length(hclust_input) or 5
+cl <- makeCluster(min(length(hclust_input[[1]]), 5))
+registerDoParallel(cl)
+
+timestamp()
+
+for (j in c(1:4, 6:10)) {
+  
+  # Parallel processing for each sub-element of hclust_input[[j]]
+  hclust_output[[j]] <- foreach(i = 1:length(hclust_input[[j]]), .packages = c("pathfindR", "fastcluster")) %dopar% {
+    RNGversion("4.2.2")
+    set.seed(123)
+    source("Scripts/automated_scripts/fast_pathfindR_hclust.R")
+    cluster_enriched_terms_fast(hclust_input[[j]][[i]],
+                                method = "hierarchical", plot_clusters_graph = FALSE,
+                                use_description = FALSE, use_active_snw_genes = FALSE)
+  }
+  
+  # Set names of sub-elements
+  names(hclust_output[[j]]) <- names(hclust_input[[j]])
+}
+
+timestamp() #~ 10h
+stopCluster(cl)
+gc()
+
+names(hclust_output) = names(hclust_input)
+
+# Export as .xslx
+library(openxlsx)
+for (i in c(1:4, 6:10)) {
+  wb = createWorkbook()
+  for (j in 1:length(hclust_output[[i]])) {
+    addWorksheet(wb, names(hclust_output[[i]])[j])
+    writeData(wb, names(hclust_output[[i]])[j], hclust_output[[i]][[j]])
+  }
+  saveWorkbook(wb, file = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA/",
+                                 names(hclust_output)[i], "_representative_pathways.xlsx"),
+               overwrite = TRUE); rm(wb)
+}
+gc()
+
+# Set up the number of cores to use: 5
+cl <- makeCluster(5)
+registerDoParallel(cl)
+
+# Define the task for parallel processing
+hclust_pathway_plots <- foreach(i = c(1:4, 6:10), .packages = c("ComplexHeatmap", "pathfindR", "dplyr", "GSVA")) %:%
+  foreach(dirct = c("up", "down"), .combine = c, .packages = c("ComplexHeatmap", "pathfindR", "dplyr", "GSVA")) %dopar% {
+    
+    # Set the appropriate subset of hclust_output based on "up" or "down"
+    gsea.lists <- hclust_output[[i]][grepl(dirct, names(hclust_output[[i]]))]
+    
+    # Dynamically set the figure name based on the direction (up/down) and the algorithm name
+    fig.name <- paste0(names(moic.res.list)[i], "_", dirct, "_regulated_pathway_heatmap")
+    
+    # Plot pathway heatmaps
+    plot_pathway_heatmaps(gsea.lists = gsea.lists, 
+                          norm.expr = plotdata$RNAseq, 
+                          representative = TRUE, moic.res = moic.res.list[[i]],
+                          subtype_prefix = names(moic.res.list)[i], 
+                          n.path = 20, msigdb.path = MSIGDB.FILE,
+                          norm.method = "mean", dirct = dirct,
+                          fig.name = fig.name,
+                          name = "GSVA scores",
+                          fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/GSEA"), 
+                          width = 15, height = 10, gsva.method = "gsva")
+  }
+
+# Stop the parallel cluster after work is done
+stopCluster(cl)
+gc()
+
+# The result is a list of heatmap objects for each index in moic.res.list
+# Each entry contains both up and down regulated heatmaps
+hclust_pathway_plots_up <- lapply(hclust_pathway_plots, function(x) x[[1]])
+hclust_pathway_plots_down <- lapply(hclust_pathway_plots, function(x) x[[2]])
+
+# Fraction Genome Altered ###
+fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
+
+# Parallel loop using foreach
+fga.MOVICS <- list()
+fga.MOVICS.COSMIC <- list()
+
+for (i in 1:length(moic.res.list)) {
+  fga.MOVICS[[i]] = compFGA_optimized(moic.res     = moic.res.list[[i]],
+                                segment      = fga_df,
+                                iscopynumber = TRUE, 
+                                test.method  = "nonparametric", # Wilcoxon test
+                                fig.path     = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/FGA"),
+                                fig.name     = paste0("FGA_barplot_", names(moic.res.list)[i]),
+                                prefix       = names(moic.res.list)[i],
+                                width        = 16,
+                                ga_column    = "ga",
+                                clust.col    = c("#2EC4B6", "#E71D36"),
+                                title        = paste0(names(moic.res.list)[i], " FGA plot: simple criteria"))
+  
+  fga.MOVICS.COSMIC[[i]] = compFGA_optimized(moic.res     = moic.res.list[[i]],
+                                       segment      = fga_df,
+                                       iscopynumber = TRUE, 
+                                       test.method  = "nonparametric", # Wilcoxon test
+                                       fig.path     = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/FGA"),
+                                       fig.name     = paste0("COSMIC_criteria_FGA_barplot_", names(moic.res.list)[i]),
+                                       prefix       = names(moic.res.list)[i],
+                                       width        = 16,
+                                       ga_column    = "COSMIC_ga", # COSMIC genome altered column
+                                       clust.col    = c("#2EC4B6", "#E71D36"),
+                                       title        = paste0(names(moic.res.list)[i], " FGA plot: COSMIC criteria"))
+  
+  cat("Done with", names(moic.res.list)[i], "\n")
+}
+
+# Clean up memory
+rm(fga_df)
+gc()
