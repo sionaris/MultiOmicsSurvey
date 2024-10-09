@@ -1137,6 +1137,16 @@ stopCluster(cl)
 gc()
 names(hclust_output) = names(hclust_input)
 
+# Export
+library(openxlsx)
+wb = createWorkbook()
+for (j in 1:length(hclust_output)) {
+  addWorksheet(wb, names(hclust_output)[j])
+  writeData(wb, names(hclust_output)[j], hclust_output[[j]])
+}
+saveWorkbook(wb, file = paste0(home, "/Results/MOVICS_baseline/MOVICS_representative_pathways.xlsx"),
+             overwrite = TRUE); rm(wb)
+
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
