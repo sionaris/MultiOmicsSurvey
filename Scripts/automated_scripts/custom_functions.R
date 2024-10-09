@@ -1345,3 +1345,172 @@ evaluate_similarity_matrix <- function(matrix, k_isomap = 5) {
   
   return(results)
 }
+
+# Compute silhouettes #####
+compute_silhouette <- function(cluster_df, similarity_matrix, normalize_matrix = FALSE) {
+  library(MOVICS)
+  
+  # Check if required columns are in cluster_df
+  if (!all(c("samID", "Cluster") %in% colnames(cluster_df))) {
+    stop("cluster_df must contain 'samID' and 'Cluster' columns.")
+  }
+  
+  # Check if the rownames of the similarity matrix match the samID in cluster_df
+  if (!all(rownames(similarity_matrix) %in% cluster_df$samID) || 
+      !all(cluster_df$samID %in% rownames(similarity_matrix))) {
+    stop("The rownames and colnames of similarity_matrix must match the 'samID' column in cluster_df.")
+  }
+  
+  # Ensure the similarity matrix is symmetric
+  similarity_matrix <- (similarity_matrix + t(similarity_matrix)) / 2
+  diag(similarity_matrix) <- 0  # Set diagonal to 0 (no self-similarity)
+  
+  # Optionally normalize the similarity matrix
+  if (normalize_matrix) {
+    normalize <- function(X) X / rowSums(X)
+    similarity_matrix <- normalize(similarity_matrix)
+  }
+  
+  cluster_id <- 1:length(unique(cluster_df$Cluster))
+  sil <- matrix(NA, nrow(cluster_df), 3, dimnames = list(cluster_df$samID, 
+                                                           c("cluster", "neighbor", "sil_width")))
+  for (j in 1:2) {
+    index <- (cluster_df$Cluster == cluster_id[j])
+    Nj <- sum(index)
+    sil[index, "cluster"] <- cluster_id[j]
+    dindex <- rbind(apply(similarity_matrix[!index, index, 
+                                            drop = FALSE], 2, function(r) tapply(r, cluster_df$Cluster[!index], 
+                                                                                 mean)))
+    maxC <- apply(dindex, 2, which.max)
+    sil[index, "neighbor"] <- cluster_id[-j][maxC]
+    s.i <- if (Nj > 1) {
+      a.i <- colSums(similarity_matrix[index, index])/(Nj - 
+                                                         1)
+      b.i <- dindex[cbind(maxC, seq(along = maxC))]
+      ifelse(a.i != b.i, (a.i - b.i)/pmax(b.i, a.i), 0)
+    }
+    else {
+      0
+    }
+    sil[index, "sil_width"] <- s.i
+  }
+  attr(sil, "Ordered") <- FALSE
+  class(sil) <- "silhouette"
+  
+  return(sil)
+}
+
+# Helper function: Linear quantile scaling normalization
+linear_quantile_normalize <- function(matrix, norm_quant = 0.05) {
+  # Check if norm_quant is within the acceptable range
+  if (norm_quant >= 0.5 || norm_quant < 0) {
+    stop("norm_quant must be a number between 0 and 0.5")
+  }
+  
+  # Extract off-diagonal values
+  off_diag_values <- matrix[upper.tri(matrix, diag = FALSE)]
+  
+  # Remove NA values if present
+  off_diag_values <- na.omit(off_diag_values)
+  
+  # Ensure there are off-diagonal values to work with
+  if (length(off_diag_values) == 0) {
+    stop("All off-diagonal values are NA or constant.")
+  }
+  
+  # Step 1: Define the lower and upper quantiles
+  m_i <- quantile(off_diag_values, norm_quant / 2, na.rm = TRUE)  # q/2 quantile
+  m_a <- quantile(off_diag_values, 1 - norm_quant / 2, na.rm = TRUE)  # 1 - q/2 quantile
+  
+  # Step 2: Linearly scale each value x_i to x'_i
+  scaled_values <- (off_diag_values - m_i) / (m_a - m_i)
+  
+  # Ensure no NAs were introduced during scaling
+  if (any(is.na(scaled_values))) {
+    stop("NA values found after scaling the matrix. Check the matrix input.")
+  }
+  
+  # Replace off-diagonal values in the matrix with scaled values
+  matrix[upper.tri(matrix, diag = FALSE)] <- scaled_values
+  
+  # Symmetrize the matrix (since it's a similarity matrix)
+  matrix <- (matrix + t(matrix)) / 2
+  
+  return(matrix)
+}
+
+# Helper function: Divide by quantile normalization
+divide_by_quantile_normalize <- function(matrix, norm_quant = 0.05) {
+  # Check if norm_quant is within the acceptable range
+  if (norm_quant >= 0.5 || norm_quant < 0) {
+    stop("norm_quant must be a number between 0 and 0.5")
+  }
+  
+  # Extract off-diagonal values
+  off_diag_values <- matrix[upper.tri(matrix, diag = FALSE)]
+  
+  # Remove NA values if present
+  off_diag_values <- na.omit(off_diag_values)
+  
+  # Ensure there are off-diagonal values to work with
+  if (length(off_diag_values) == 0) {
+    stop("All off-diagonal values are NA or constant.")
+  }
+  
+  # Step 1: Find the chosen quantile
+  chosen_quantile <- quantile(off_diag_values, 1 - norm_quant, na.rm = TRUE)
+  
+  # Step 2: Divide off-diagonal values by the chosen quantile
+  scaled_values <- off_diag_values / chosen_quantile
+  
+  # Ensure no NAs were introduced during scaling
+  if (any(is.na(scaled_values))) {
+    stop("NA values found after dividing by quantile. Check the matrix input.")
+  }
+  
+  # Replace off-diagonal values in the matrix with scaled values
+  matrix[upper.tri(matrix, diag = FALSE)] <- scaled_values
+  
+  # Symmetrize the matrix (since it's a similarity matrix)
+  matrix <- (matrix + t(matrix)) / 2
+  
+  return(matrix)
+}
+
+# Main function: Wrapper for both normalization methods
+transform_affinity_matrix <- function(similarity_matrix, norm_quant = 0.05, norm_method = "linear quantile scaling", threshold = 100) {
+  # Step 1: Calculate statistics before modifying the matrix
+  diag_values <- diag(similarity_matrix)  # Diagonal values (self-similarity)
+  
+  # Get off-diagonal values only
+  off_diag_values <- similarity_matrix[upper.tri(similarity_matrix, diag = FALSE)]
+  
+  # Calculate average and median for off-diagonal values
+  avg_off_diag <- mean(off_diag_values, na.rm = TRUE)
+  median_off_diag <- median(off_diag_values, na.rm = TRUE)
+  
+  # Calculate average for diagonal values
+  avg_diag <- mean(diag_values, na.rm = TRUE)
+  
+  # Step 2: Check if transformation makes sense based on the criterion
+  if (avg_diag > threshold * avg_off_diag && avg_diag > threshold * median_off_diag) {
+    message("The average diagonal value is more than ", threshold, 
+            " times the average and median of off-diagonal values. Transformation is recommended.")
+  } else {
+    warning("The transformation might not be necessary based on the current matrix values.")
+  }
+  
+  # Step 3: Now set the diagonal to 0 (no self-similarity)
+  diag(similarity_matrix) <- 0
+  
+  # Step 4: Apply the chosen normalization method
+  if (norm_method == "linear quantile scaling") {
+    similarity_matrix <- linear_quantile_normalize(similarity_matrix, norm_quant)
+  } else if (norm_method == "divide by quantile") {
+    similarity_matrix <- divide_by_quantile_normalize(similarity_matrix, norm_quant)
+  } else {
+    stop("Invalid norm_method. Choose either 'linear quantile scaling' or 'divide by quantile'.")
+  }
+  
+  return(similarity_matrix)
+}

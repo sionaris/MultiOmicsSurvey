@@ -537,36 +537,63 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
 }
 
 runMarker_single_algorithm_no_export = function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
-                                                                                                                                     "limma"), prefix = NULL, dat.path = getwd(), 
-                                                                              p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", n.marker = 200) 
+                                                                                                        "limma"), prefix = NULL, dat.path = getwd(), 
+                                                 p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", n.marker = 200, 
+                                                 doplot = TRUE, norm.expr = NULL, annCol = NULL, annColors = NULL, 
+                                                 clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
+                                                               "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), halfwidth = 3, 
+                                                 centerFlag = TRUE, scaleFlag = TRUE, show_rownames = FALSE, 
+                                                 show_colnames = FALSE, color = c("#5bc0eb", "black", "#ECE700"), 
+                                                 fig.path = getwd(), fig.name = NULL, width = 8, height = 8, 
+                                                 ...) 
 {
-  # Get the number of unique clusters
   n.moic <- length(unique(moic.res$clust.res$clust))
   mo.method <- moic.res$mo.method
-  
-  # Identify the pattern of DE files
-  DEpattern <- paste(mo.method, "_", ifelse(is.null(prefix), "", paste0(prefix, "_")), dea.method, ".*._vs_Others.txt$", sep = "")
+  DEpattern <- paste(mo.method, "_", ifelse(is.null(prefix), 
+                                            "", paste0(prefix, "_")), dea.method, ".*._vs_Others.txt$", 
+                     sep = "")
   DEfiles <- dir(dat.path, pattern = DEpattern)
-  
-  # Check for valid DE files
   if (length(DEfiles) == 0) {
     stop("no DEfiles!")
   }
   if (length(DEfiles) != n.moic) {
     stop("not all the multi-omics clusters have DEfile!")
   }
-  
-  # Ensure valid direction (up or down)
   if (!is.element(dirct, c("up", "down"))) {
-    stop("dirct type error! Allowed values: 'up' or 'down'.")
+    stop("dirct type error! Allowed value contains c('up', 'down').")
   }
   
-  # Initialize genelist
   genelist <- c()
-  
-  # Loop through DE files and extract gene lists based on direction
   for (filek in DEfiles) {
-    DEres <- read.table(file.path(dat.path, filek), header = TRUE, sep = "\t", quote = "", stringsAsFactors = FALSE)
+    DEres <- read.table(file.path(dat.path, filek), header = TRUE, 
+                        row.names = NULL, sep = "\t", quote = "", stringsAsFactors = FALSE)
+    
+    # Check if the DEres is empty or has only one gene
+    if (nrow(DEres) < 2) {
+      stop(paste("Skipping file", filek, "because it has less than two rows of data."))
+    }
+    
+    DEres <- DEres[!duplicated(DEres[, 1]), ]
+    DEres <- DEres[!is.na(DEres[, 1]), ]
+    rownames(DEres) <- DEres[, 1]
+    DEres <- DEres[, -1]
+    
+    if (dirct == "up") {
+      genelist <- c(genelist, rownames(DEres[!is.na(DEres$padj) & 
+                                               DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & 
+                                               !is.na(DEres$log2fc) & DEres$log2fc > 0, ]))
+    }
+    if (dirct == "down") {
+      genelist <- c(genelist, rownames(DEres[!is.na(DEres$padj) & 
+                                               DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & 
+                                               !is.na(DEres$log2fc) & DEres$log2fc < 0, ]))
+    }
+  }
+  unqlist <- setdiff(genelist, genelist[duplicated(genelist)])
+  marker <- list()
+  for (filek in DEfiles) {
+    DEres <- read.table(file.path(dat.path, filek), header = TRUE, 
+                        row.names = NULL, sep = "\t", quote = "", stringsAsFactors = FALSE)
     
     if (nrow(DEres) < 2) {
       stop(paste("Skipping file", filek, "because it has less than two rows of data."))
@@ -578,48 +605,111 @@ runMarker_single_algorithm_no_export = function (algorithm_name = "CS", moic.res
     DEres <- DEres[, -1]
     
     if (dirct == "up") {
-      genelist <- c(genelist, rownames(DEres[!is.na(DEres$padj) & DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & !is.na(DEres$log2fc) & DEres$log2fc > 0, ]))
+      outk <- intersect(unqlist, rownames(DEres[!is.na(DEres$padj) & 
+                                                  DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & 
+                                                  !is.na(DEres$log2fc) & DEres$log2fc > 0, ]))
+      outk <- DEres[outk, ]
+      outk <- outk[order(outk$log2fc, decreasing = TRUE), 
+      ]
+      if (nrow(outk) > n.marker) {
+        marker[[filek]] <- outk[1:n.marker, ]
+      }
+      else {
+        marker[[filek]] <- outk
+      }
+      marker$dirct <- "up"
     }
     if (dirct == "down") {
-      genelist <- c(genelist, rownames(DEres[!is.na(DEres$padj) & DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & !is.na(DEres$log2fc) & DEres$log2fc < 0, ]))
+      outk <- intersect(unqlist, rownames(DEres[!is.na(DEres$padj) & 
+                                                  DEres$pvalue < p.cutoff & DEres$padj < p.adj.cutoff & 
+                                                  !is.na(DEres$log2fc) & DEres$log2fc < 0, ]))
+      outk <- DEres[outk, ]
+      outk <- outk[order(outk$log2fc, decreasing = FALSE), 
+      ]
+      if (nrow(outk) > n.marker) {
+        marker[[filek]] <- outk[1:n.marker, ]
+      }
+      else {
+        marker[[filek]] <- outk
+      }
+      marker$dirct <- "down"
     }
   }
   
-  # Remove duplicated genes from the list
-  unqlist <- setdiff(genelist, genelist[duplicated(genelist)])
-  
-  # Initialize templates slot
   templates <- NULL
-  
-  # Loop through DE files again and create templates based on the filtered gene list
   for (filek in DEfiles) {
-    DEres <- read.table(file.path(dat.path, filek), header = TRUE, sep = "\t", quote = "", stringsAsFactors = FALSE)
-    
-    if (nrow(DEres) < 2) {
-      stop(paste("Skipping file", filek, "because it has less than two rows of data."))
-    }
-    
-    DEres <- DEres[!duplicated(DEres[, 1]), ]
-    DEres <- DEres[!is.na(DEres[, 1]), ]
-    rownames(DEres) <- DEres[, 1]
-    DEres <- DEres[, -1]
-    
-    # Intersect unique gene list with DE results and add to templates
-    outk <- intersect(unqlist, rownames(DEres))
-    if (length(outk) > 0) {
-      tmp <- data.frame(probe = outk, 
+    tmp <- NULL
+    if (!is.null(marker[[filek]]) && nrow(marker[[filek]]) > 0) {
+      tmp <- data.frame(probe = rownames(marker[[filek]]), 
                         class = sub("_vs_Others.txt", "", sub(".*.result.", "", filek)), 
-                        dirct = dirct, 
-                        padj = DEres[outk, "padj"],  # Add the adjusted p-values
-                        stringsAsFactors = FALSE)
+                        dirct = marker$dirct, stringsAsFactors = FALSE)
+    }
+    if (!is.null(tmp)) {
       templates <- rbind.data.frame(templates, tmp, stringsAsFactors = FALSE)
     }
   }
   
-  # Return only the templates slot
-  return(templates)
+  if (doplot) {
+    if (is.null(norm.expr)) {
+      stop("please provide a matrix or data.frame of normalized expression data with rows for genes and columns for samples; FPKM or TPM without log2 transformation is recommended.")
+    }
+    comsam <- intersect(moic.res$clust.res$samID, colnames(norm.expr))
+    if (length(comsam) == nrow(moic.res$clust.res)) {
+      message("--all samples matched.")
+    }
+    else {
+      message(paste0("--", (nrow(moic.res$clust.res) - 
+                              length(comsam)), " samples mismatched from current subtypes."))
+    }
+    moic.res$clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+    norm.expr <- norm.expr[, comsam]
+    
+    sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
+                                          decreasing = FALSE), "samID"]
+    colvec <- clust.col[1:n.moic]
+    names(colvec) <- paste0(algorithm_name, 1:n.moic)
+    if (!is.null(annCol) & !is.null(annColors)) {
+      annCol <- annCol[sam.order, , drop = FALSE]
+      annCol$Subtype <- paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                                  "clust"])
+      annColors[["Subtype"]] <- colvec
+    }
+    else {
+      annCol <- data.frame(Subtype = paste0(algorithm_name, moic.res$clust.res[sam.order, 
+                                                                               "clust"]), row.names = sam.order, stringsAsFactors = FALSE)
+      annColors <- list(Subtype = colvec)
+    }
+    if (max(norm.expr) < 25 | (max(norm.expr) >= 25 & min(norm.expr) < 
+                               0)) {
+      message("--expression profile seems to have been standardised (z-score or log transformation), no more action will be performed.")
+      gset <- norm.expr
+    }
+    if (max(norm.expr) >= 25 & min(norm.expr) >= 0) {
+      message("--log2 transformation done for expression data.")
+      gset <- log2(norm.expr + 1)
+    }
+    standarize.fun <- function(indata = NULL, halfwidth = NULL, 
+                               centerFlag = TRUE, scaleFlag = TRUE) {
+      outdata = t(scale(t(indata), center = centerFlag, 
+                        scale = scaleFlag))
+      if (!is.null(halfwidth)) {
+        outdata[outdata > halfwidth] = halfwidth
+        outdata[outdata < (-halfwidth)] = -halfwidth
+      }
+      return(outdata)
+    }
+    plotdata <- standarize.fun(gset[intersect(templates$probe, 
+                                              rownames(gset)), sam.order], halfwidth = halfwidth, 
+                               centerFlag = centerFlag, scaleFlag = scaleFlag)
+    
+    return(list(unqlist = unqlist, templates = templates, 
+                dirct = dirct, plotdata = plotdata, annCol = annCol, annColors = annColors))
+  }
+  else {
+    return(list(unqlist = unqlist, templates = templates, 
+                dirct = dirct))
+  }
 }
-
 
 # runGSEA #####
 
@@ -1666,16 +1756,18 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
                                          doWord = TRUE,
                                          tab.name = NULL,
                                          res.path = getwd(),
-                                         output_pdf = FALSE,  # Default to not produce PDF unless specified
-                                         pdf_level_col_width = c("15em", "15em"),  # Default width for first two columns
-                                         pdf_count_col_width = "10em",  # Default width for remaining columns
-                                         pdf_tab_font_size = 8  # Default font size for PDF
+                                         output_pdf = FALSE,  
+                                         pdf_level_col_width = c("15em", "15em"),  
+                                         pdf_count_col_width = "10em",  
+                                         pdf_pval_col_width = "8em",  
+                                         pdf_test_col_width = "8em",  
+                                         pdf_tab_font_size = 8 
 ) {
   library(knitr)
   library(kableExtra)
   library(rmarkdown)
-  library(officer)  # For Word document generation
-  library(stringr)   # For string wrapping
+  library(officer)  
+  library(stringr)
   
   # Prepare data for the table
   dat <- moic.res$clust.res
@@ -1741,9 +1833,7 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
   colnames(comtable)[1] <- " "
   comtable[is.na(comtable)] <- ""
   comtable <- comtable[, setdiff(colnames(comtable), "sig")]
-  
-  # Remove underscores and wrap the first column entries (variables) to 10 characters
-  comtable$` ` <- stringr::str_wrap(stringr::str_replace_all(comtable$` `, "_", " "), width = 10)
+  comtable$` ` <- gsub("_", " ", comtable$` `)
   
   if (is.null(tab.name)) {
     outFile <- "summarization_of_clinical_variables_stratified_by_current_subtype"
@@ -1764,12 +1854,23 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
       "```{r, echo=FALSE, message=FALSE, warning=FALSE}\n",
       "library(knitr)\n",
       "library(kableExtra)\n\n",
-      "# Display table with custom column width for the first two columns and remaining columns\n",
-      "kable(comtable, caption = 'Summarization of clinical variables stratified by subtype') %>%\n",
-      "  kable_styling(latex_options = c('striped', 'scale_down', 'repeat_header'), full_width = FALSE, font_size = ", pdf_tab_font_size, ") %>%\n",
-      "  column_spec(1, width = '", pdf_level_col_width[1], "') %>%\n",  # Set width of the first column
-      "  column_spec(2, width = '", pdf_level_col_width[2], "') %>%\n",  # Set width of the second column
-      "  column_spec(3:", ncol(comtable), ", width = '", pdf_count_col_width, "')\n",  # Set width for remaining columns
+      
+      "# Display table with custom column width for specific columns\n",
+      "kable(comtable, align = c('l', 'c', rep('c', ncol(comtable)-2)), caption = 'Summarization of clinical variables stratified by subtype') %>%\n",
+      "  kable_styling(latex_options = c('striped', 'scale_down', 'repeat_header', 'hold_position'), full_width = FALSE, font_size = ", pdf_tab_font_size, ") %>%\n",
+      
+      # Set width for the first two columns
+      "  column_spec(1, width = '", pdf_level_col_width[1], "') %>%\n",
+      "  column_spec(2, width = '", pdf_level_col_width[2], "') %>%\n",
+      
+      # Apply pdf_count_col_width to all columns except the last two
+      "  column_spec(3:", ncol(comtable)-2, ", width = '", pdf_count_col_width, "') %>%\n",
+      
+      # Set width for the second-to-last column (p-value column)
+      "  column_spec(", ncol(comtable)-1, ", width = '", pdf_pval_col_width, "') %>%\n",
+      
+      # Set width for the last column (test column)
+      "  column_spec(", ncol(comtable), ", width = '", pdf_test_col_width, "')\n",
       "```\n"
     )
     
@@ -1798,11 +1899,137 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
   return(list(compTab = comtable))
 }
 
-
-
-
-
-
+compClinvar_ordinal_single_algorithm <- function(algorithm_name = "CS",
+                                                 moic.res = NULL,
+                                                 var2comp = NULL,
+                                                 strata = NULL,
+                                                 ordinalVars = NULL,
+                                                 includeNA = FALSE,
+                                                 tab.name = NULL,
+                                                 res.path = getwd(),
+                                                 output_pdf = TRUE,
+                                                 pdf_template_loc = getwd(),  # New argument for the template location
+                                                 pdf_level_col_width = c("10em", "12em"),  
+                                                 pdf_count_col_width = "8em",  
+                                                 pdf_pval_col_width = "5em",  
+                                                 pdf_test_col_width = "5em",  
+                                                 pdf_tab_font_size = 8 
+) {
+  library(knitr)
+  library(kableExtra)
+  library(rmarkdown)
+  library(clinfun)
+  
+  # Prepare data for the table
+  dat <- moic.res$clust.res
+  colnames(dat)[which(colnames(dat) == "clust")] <- "Subtype"
+  dat$Subtype <- paste0(algorithm_name, dat$Subtype)
+  com_sam <- intersect(dat$samID, rownames(var2comp))
+  
+  indices <- which(colnames(var2comp) %in% ordinalVars)
+  ordinalVars <- gsub("_", " ", ordinalVars)
+  colnames(var2comp)[indices] <- ordinalVars
+  
+  if (length(com_sam) == nrow(dat)) {
+    message("--all samples matched.")
+  } else {
+    message(paste0("--", (nrow(dat) - length(com_sam)), " samples mismatched from current subtypes."))
+  }
+  
+  dat <- cbind.data.frame(Subtype = dat[com_sam, "Subtype", drop = FALSE], var2comp[com_sam, , drop = FALSE])
+  
+  if (is.null(strata)) {
+    strata <- "Subtype"
+  }
+  if (!is.element(strata, colnames(dat))) {
+    stop("fail to find this strata in var2comp. Consider using NULL by default.")
+  }
+  
+  # Prepare unique subtypes and explicitly assign them to columns
+  unique_subtypes <- sort(unique(dat$Subtype))
+  
+  # Convert Subtype column to an ordered factor
+  dat$Subtype <- factor(dat$Subtype, levels = unique_subtypes, ordered = TRUE)
+  
+  # Create a results table with proper column names for subtypes
+  results_table <- data.frame(Variable = character(),
+                              Levels = character(),
+                              stringsAsFactors = FALSE)
+  
+  # Add columns for each unique subtype (SNF1, SNF2, etc.)
+  for (subtype in unique_subtypes) {
+    results_table[[subtype]] <- character(0)  # Add empty columns for each subtype
+  }
+  
+  # Add columns for p-value and test result
+  results_table$p <- character(0)  # Use character type to handle both numbers and empty strings
+  results_table$test <- character(0)
+  
+  # Perform JT test for each ordinal variable
+  for (var in ordinalVars) {
+    # Filter the dataset to exclude rows where the current variable is NA
+    filtered_dat <- dat[!is.na(dat[[var]]), ]
+    
+    # Now calculate total counts after filtering NA for each subtype
+    total_counts <- table(filtered_dat$Subtype)
+    
+    levels_var <- sort(unique(filtered_dat[[var]]))
+    test_result <- jonckheere.test(x = as.numeric(filtered_dat[[var]]), g = filtered_dat$Subtype, nperm = 10000)
+    
+    # Add rows to the table for each level of the ordinal variable
+    first_row <- TRUE
+    for (level in levels_var) {
+      row <- list(Variable = ifelse(first_row, paste0(var, " (%)"), ""),  # Add "(%)" to the variable name
+                  Levels = level)
+      
+      # Count occurrences for each group and calculate percentages based on **filtered data**
+      for (group in unique_subtypes) {
+        count <- sum(filtered_dat$Subtype == group & filtered_dat[[var]] == level, na.rm = TRUE)
+        total_in_group <- total_counts[group]  # Total count for this subtype in the filtered data
+        percentage <- if (total_in_group > 0) (count / total_in_group) * 100 else 0  # Calculate percentage safely
+        row[[group]] <- paste0(count, " (", sprintf("%.1f", percentage), ")")  # Format: count (percentage)
+      }
+      
+      # Add p-value and test only in the first row for this variable
+      row$p <- ifelse(first_row, round(test_result$p.value, 4), "")  # Use empty string instead of NA
+      row$test <- ifelse(first_row, "JT", "")
+      
+      results_table <- rbind(results_table, as.data.frame(row, stringsAsFactors = FALSE))
+      first_row <- FALSE  # After the first row, the variable name is not repeated
+    }
+  }
+  
+  # Reorder the columns to be: Variable, Levels, SNF1, SNF2, ..., p, test
+  results_table <- results_table[, c("Variable", "Levels", unique_subtypes, "p", "test")]
+  
+  # PDF generation
+  if (output_pdf) {
+    # Check if the template file exists in the provided location
+    rmd_template <- file.path(pdf_template_loc)
+    if (!file.exists(rmd_template)) {
+      stop("The Rmarkdown template was not found at the specified location: ", pdf_template_loc)
+    }
+    
+    # Pass parameters dynamically to the Rmarkdown render function
+    pdf_file <- file.path(res.path, paste0(tab.name, ".pdf"))
+    rmarkdown::render(rmd_template, 
+                      output_file = pdf_file,
+                      params = list(
+                        tab_name = tab.name,
+                        results_table = results_table,
+                        n_subtypes = length(unique_subtypes),
+                        pdf_level_col_width = pdf_level_col_width[1],
+                        pdf_count_col_width = pdf_count_col_width,
+                        pdf_pval_col_width = pdf_pval_col_width,
+                        pdf_test_col_width = pdf_test_col_width,
+                        pdf_tab_font_size = pdf_tab_font_size
+                      ))
+    
+    message("PDF created at: ", pdf_file)
+  }
+  
+  return(list(compTab = results_table))
+}
 
 # compMut single algorithm #####
 compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mut.matrix = NULL, freq.cutoff = 0.05, 
@@ -3148,6 +3375,7 @@ runNTP_mod = function (expr = NULL, templates = NULL, scaleFlag = TRUE, centerFl
   message(paste0("--original template has ", nrow(templates), 
                  " biomarkers and ", length(com_feat), " are matched in external expression profile."))
   expr <- expr[com_feat, , drop = FALSE]
+  rownames(expr) = com_feat
   templates <- templates[which(templates$probe %in% com_feat), 
                          , drop = FALSE]
   if (is.element(0, as.numeric(table(templates$class)))) {
@@ -3561,7 +3789,7 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
                                                                                                                              "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
                                                                                                                              "#9D4EDD", "#f09c6c", "#09f3b3"), 
                         fig.path = getwd(), fig.name = NULL, width = 8, 
-                        height = 4, prefix = "") 
+                        height = 4, prefix = "", title = NULL) 
 {
   library(patchwork)
   
@@ -3612,7 +3840,7 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
     display.progress(index = i, totalN = length(unique(segment$sample)))
     tmp <- segment[segment$sample == names(table(segment$sample))[i], ]
     
-    # If `ga_column` is not NULL, use it to classify gains/losses/normal
+    # If ga_column is not NULL, use it to classify gains/losses/normal
     if (!is.null(ga_column) && ga_column %in% colnames(segment)) {
       tmp$classification <- tmp[[ga_column]]
       
@@ -3622,7 +3850,7 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
       FGL <- sum(tmp[tmp$classification == "loss", "bases"]) / sum(tmp[, "bases"])
       
     } else {
-      # Proceed with the original logic if `ga_column` is NULL
+      # Proceed with the original logic if ga_column is NULL
       if (length(tmp[abs(tmp$value) > cnathreshold, "bases"][6]) == 0) {
         FGA = 0
       } else {
@@ -3690,48 +3918,57 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
   FGA.col <- barcolor[1]
   FGG.col <- barcolor[2]
   FGL.col <- barcolor[3]
-  p1 <- ggplot(summaryFGA, aes(x = Subtype, y = mean, fill = rep("0", 
-                                                                 nrow(summaryFGA)))) + geom_bar(stat = "identity") + 
-    geom_errorbar(aes(ymax = mean + se, ymin = mean - se), 
+  p1 <- ggplot(summaryFGA, aes(x = Subtype, y = mean, fill = rep("0", nrow(summaryFGA)))) + 
+    geom_bar(stat = "identity") + 
+    geom_errorbar(aes(ymax = mean + se, ymin = mean - se), position = position_dodge(0.9), width = 0.15) + 
+    geom_text(aes(label = cut(FGA.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", "."))), 
+              x = n.moic / 2 + 0.5, 
+              y = as.numeric(summaryFGA[which.max(summaryFGA$mean), "mean"]), 
+              size = 8, angle = 90, fontface = "bold") + 
+    scale_x_discrete(name = "", position = "top") + 
+    theme_bw() + 
+    theme(axis.line.y = element_line(linewidth = 0.8), 
+          axis.ticks.y = element_line(linewidth = 0.2), 
+          axis.text.y = element_blank(), 
+          axis.title.x = element_text(vjust = -0.3, size = 12), 
+          axis.text.x = element_text(size = 10, color = "black"), 
+          plot.margin = unit(c(0.3, -1.7, 0.3, 0.3), "lines"), 
+          legend.title = element_blank()) + 
+    coord_flip() + 
+    scale_fill_manual(values = FGA.col, breaks = c("0"), labels = c("Copy number-altered genome")) + 
+    scale_y_reverse(expand = c(0.01, 0), name = "FGA (Fraction of Genome Altered)", position = "left")
+  
+  p2 <- ggplot(summaryFGGL, aes(x = Subtype, y = ifelse(class == "FGG", mean, -mean), fill = class)) + 
+    geom_bar(stat = "identity") + 
+    geom_errorbar(data = summaryFGGL[summaryFGGL$class == "FGG", ], 
+                  aes(ymax = mean + se, ymin = mean - se), 
                   position = position_dodge(0.9), width = 0.15) + 
-    annotate(geom = "text", x = n.moic/2 + 0.5, y = as.numeric(summaryFGA[which.max(summaryFGA$mean), 
-                                                                          "mean"]), size = 8, angle = 90, fontface = "bold", 
-             label = cut(FGA.test, c(0, 0.001, 0.01, 0.05, 0.1, 
-                                     1), labels = c("****", "***", "**", "*", "."))) + 
-    scale_x_discrete(name = "", position = "top") + theme_bw() + 
-    theme(axis.line.y = element_line(linewidth = 0.8), axis.ticks.y = element_line(linewidth = 0.2), 
-          axis.text.y = element_blank(), axis.title.x = element_text(vjust = -0.3, 
-                                                                     size = 12), axis.text.x = element_text(size = 10, 
-                                                                                                            color = "black"), plot.margin = unit(c(0.3, 
-                                                                                                                                                   -1.7, 0.3, 0.3), "lines"), legend.title = element_blank()) + 
-    coord_flip() + scale_fill_manual(values = FGA.col, breaks = c("0"), 
-                                     labels = c("Copy number-altered genome")) + scale_y_reverse(expand = c(0.01, 
-                                                                                                            0), name = "FGA (Fraction of Genome Altered)", position = "left")
-  p2 <- ggplot(summaryFGGL, aes(x = Subtype, y = ifelse(class == 
-                                                          "FGG", mean, -mean), fill = class)) + geom_bar(stat = "identity") + 
-    geom_errorbar(data = summaryFGGL[summaryFGGL$class == 
-                                       "FGG", ], aes(ymax = mean + se, ymin = mean - se), 
+    geom_errorbar(data = summaryFGGL[summaryFGGL$class == "FGL", ], 
+                  aes(ymax = -mean - se, ymin = -mean + se), 
                   position = position_dodge(0.9), width = 0.15) + 
-    geom_errorbar(data = summaryFGGL[summaryFGGL$class == 
-                                       "FGL", ], aes(ymax = -mean - se, ymin = -mean + 
-                                                       se), position = position_dodge(0.9), width = 0.15) + 
-    annotate(geom = "text", x = n.moic/2 + 0.5, y = -as.numeric(summaryFGL[which.max(summaryFGL$mean), 
-                                                                           "mean"]), size = 8, angle = 90, fontface = "bold", 
-             label = cut(FGL.test, c(0, 0.001, 0.01, 0.05, 0.1, 
-                                     1), labels = c("****", "***", "**", "*", "."))) + 
-    annotate(geom = "text", x = n.moic/2 + 0.5, y = as.numeric(summaryFGG[which.max(summaryFGG$mean), 
-                                                                          "mean"]), size = 8, angle = 90, fontface = "bold", 
-             label = cut(FGG.test, c(0, 0.001, 0.01, 0.05, 0.1, 
-                                     1), labels = c("****", "***", "**", "*", "."))) + 
-    scale_x_discrete(name = "") + theme_bw() + theme(axis.line.y = element_line(linewidth = 0.8), 
-                                                     axis.ticks.y = element_line(linewidth = 0.2), axis.text.y = element_blank(), 
-                                                     axis.title.x = element_text(vjust = -0.3, size = 12), 
-                                                     axis.text.x = element_text(size = 10, color = "black"), 
-                                                     plot.margin = unit(c(0.3, 0.3, 0.3, -1), "lines"), legend.title = element_blank()) + 
-    coord_flip() + scale_fill_manual(values = c(FGL.col, 
-                                                FGG.col), breaks = c("FGL", "FGG"), labels = c("Copy number-lost genome", 
-                                                                                               "Copy number-gained genome")) + scale_y_continuous(expand = c(0.01, 
-                                                                                                                                                             0), name = "FGL or FGG (Fraction of Genome Lost or Gained)")
+    geom_text(aes(label = cut(FGL.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", "."))), 
+              x = n.moic / 2 + 0.5, 
+              y = -as.numeric(summaryFGL[which.max(summaryFGL$mean), "mean"]), 
+              size = 8, angle = 90, fontface = "bold") + 
+    geom_text(aes(label = cut(FGG.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", "."))), 
+              x = n.moic / 2 + 0.5, 
+              y = as.numeric(summaryFGG[which.max(summaryFGG$mean), "mean"]), 
+              size = 8, angle = 90, fontface = "bold") + 
+    scale_x_discrete(name = "") + 
+    theme_bw() + 
+    theme(axis.line.y = element_line(linewidth = 0.8), 
+          axis.ticks.y = element_line(linewidth = 0.2), 
+          axis.text.y = element_blank(), 
+          axis.title.x = element_text(vjust = -0.3, size = 12), 
+          axis.text.x = element_text(size = 10, color = "black"), 
+          plot.margin = unit(c(0.3, 0.3, 0.3, -1), "lines"), 
+          legend.title = element_blank()) + 
+    coord_flip() + 
+    scale_fill_manual(values = c(FGL.col, FGG.col), 
+                      breaks = c("FGL", "FGG"), 
+                      labels = c("Copy number-lost genome", "Copy number-gained genome")) + 
+    scale_y_continuous(expand = c(0.01, 0), name = "FGL or FGG (Fraction of Genome Lost or Gained)")
+  
   pp <- ggplot() + geom_label(data = summaryFGGL, aes(label = Subtype, 
                                                       x = Subtype, fill = Subtype), y = 0.5, color = "white", 
                               size = 0.9 * 11/.pt, hjust = 0.4, vjust = 0.5) + scale_fill_manual(values = clust.col) + 
@@ -3742,6 +3979,15 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
     coord_flip() + scale_y_reverse()
   pal <- p1 + pp + p2 + plot_layout(widths = c(7, 1, 7), guides = "collect") & 
     theme(legend.position = "top")
+  if (!is.null(title)) {
+    pal = pal +
+      theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.5, vjust = 0))+
+      labs(title = title)
+  } else {
+    pal = pal +
+      theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.5, vjust = 0))+
+      labs(title = "FGA barplot")
+  }
   if (is.null(fig.name)) {
     outFig <- "barplot of FGA.pdf"
   }
@@ -3761,4 +4007,421 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
                 FGG.p.value = FGG.test, FGL.p.value = FGL.test, 
                 test.method = statistic))
   }
+}
+
+compFGA_optimized <- function(moic.res = NULL, segment = NULL, iscopynumber = FALSE, ga_column = NULL,
+                              cnathreshold = 0.2, test.method = "nonparametric", barcolor = c("#008B8A", 
+                                                                                              "#F2042C", "#21498D"), 
+                              clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", 
+                                            "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), 
+                              fig.path = getwd(), fig.name = NULL, width = 8, height = 4, 
+                              prefix = "", title = NULL) {
+  
+  library(patchwork)
+  library(dplyr)
+  
+  # Check required columns
+  required_cols <- c("sample", "chrom", "start", "end", "value")
+  if (!all(required_cols %in% colnames(segment))) {
+    stop("segment data must have the following columns: sample, chrom, start, end, value.")
+  }
+  
+  n.moic <- length(unique(moic.res$clust.res$clust))
+  
+  # Convert copy number to log2 ratio if needed
+  if (iscopynumber) {
+    segment$value <- log2(segment$value / 2)
+  }
+  
+  # Match samples and subset data
+  comsam <- intersect(moic.res$clust.res$samID, unique(segment$sample))
+  clust.res <- moic.res$clust.res[comsam, , drop = FALSE]
+  segment <- segment[segment$sample %in% comsam, ]
+  
+  # Add 'bases' column for segment length
+  segment <- segment %>%
+    mutate(bases = end - start)
+  
+  # Classification based on the given column or value thresholds
+  if (!is.null(ga_column) && ga_column %in% colnames(segment)) {
+    segment <- segment %>%
+      mutate(classification = .data[[ga_column]])
+    
+    fga_summary <- segment %>%
+      group_by(sample) %>%
+      summarize(FGA = sum(bases[classification %in% c("gain", "loss")]) / sum(bases),
+                FGG = sum(bases[classification == "gain"]) / sum(bases),
+                FGL = sum(bases[classification == "loss"]) / sum(bases))
+  } else {
+    fga_summary <- segment %>%
+      group_by(sample) %>%
+      summarize(FGA = sum(bases[abs(value) > cnathreshold]) / sum(bases),
+                FGG = sum(bases[value > cnathreshold]) / sum(bases),
+                FGL = sum(bases[value < -cnathreshold]) / sum(bases))
+  }
+  
+  # Error bars
+  std <- function(x, na.rm = TRUE) {
+    if (na.rm) {
+      x <- as.numeric(na.omit(x))
+      sd(x) / sqrt(length(x))
+    } else {
+      sd(x) / sqrt(length(x))
+    }
+  }
+  
+  # Add Subtype information
+  outTab <- fga_summary %>%
+    mutate(Subtype = paste0(prefix, clust.res[sample, "clust"]))
+  
+  # Summarize by Subtype
+  summaryFGA <- outTab %>%
+    group_by(Subtype) %>%
+    summarize(mean = mean(FGA, na.rm = TRUE), se = std(FGA, na.rm = TRUE))
+  
+  summaryFGG <- outTab %>%
+    group_by(Subtype) %>%
+    summarize(mean = mean(FGG, na.rm = TRUE), se = std(FGG, na.rm = TRUE))
+  
+  summaryFGL <- outTab %>%
+    group_by(Subtype) %>%
+    summarize(mean = mean(FGL, na.rm = TRUE), se = std(FGL, na.rm = TRUE))
+  
+  summaryFGGL <- data.frame(rbind.data.frame(summaryFGG, summaryFGL), 
+                            class = rep(c("FGG", "FGL"), c(nrow(summaryFGG), nrow(summaryFGL))), 
+                            stringsAsFactors = FALSE)
+  
+  # Statistical tests
+  if (n.moic == 2 & test.method == "nonparametric") {
+    statistic <- "wilcox.test"
+    FGA.test <- wilcox.test(outTab$FGA ~ outTab$Subtype)$p.value
+    FGG.test <- wilcox.test(outTab$FGG ~ outTab$Subtype)$p.value
+    FGL.test <- wilcox.test(outTab$FGL ~ outTab$Subtype)$p.value
+  } else if (n.moic == 2 & test.method == "parametric") {
+    statistic <- "t.test"
+    FGA.test <- t.test(outTab$FGA ~ outTab$Subtype)$p.value
+    FGG.test <- t.test(outTab$FGG ~ outTab$Subtype)$p.value
+    FGL.test <- t.test(outTab$FGL ~ outTab$Subtype)$p.value
+  } else if (n.moic > 2 & test.method == "nonparametric") {
+    statistic <- "kruskal.test"
+    FGA.test <- kruskal.test(outTab$FGA ~ outTab$Subtype)$p.value
+    FGG.test <- kruskal.test(outTab$FGG ~ outTab$Subtype)$p.value
+    FGL.test <- kruskal.test(outTab$FGL ~ outTab$Subtype)$p.value
+  } else if (n.moic > 2 & test.method == "parametric") {
+    statistic <- "anova"
+    FGA.test <- summary(aov(outTab$FGA ~ outTab$Subtype))[[1]][["Pr(>F)"]][1]
+    FGG.test <- summary(aov(outTab$FGG ~ outTab$Subtype))[[1]][["Pr(>F)"]][1]
+    FGL.test <- summary(aov(outTab$FGL ~ outTab$Subtype))[[1]][["Pr(>F)"]][1]
+  }
+  
+  # Plotting
+  FGA.col <- barcolor[1]
+  FGG.col <- barcolor[2]
+  FGL.col <- barcolor[3]
+  p1 <- ggplot(summaryFGA, aes(x = Subtype, y = mean, fill = rep("0", nrow(summaryFGA)))) + 
+    geom_bar(stat = "identity") + 
+    geom_errorbar(aes(ymax = mean + se, ymin = mean - se), position = position_dodge(0.9), width = 0.15) + 
+    annotate("text", x = n.moic / 2 + 0.5, y = max(summaryFGA$mean, na.rm = TRUE), 
+             label = cut(FGA.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", ".")), 
+             size = 8, angle = 90, fontface = "bold") + 
+    scale_x_discrete(name = "", position = "top") + 
+    theme_bw() + 
+    theme(axis.line.y = element_line(linewidth = 0.8), 
+          axis.ticks.y = element_line(linewidth = 0.2), 
+          axis.text.y = element_blank(), 
+          axis.title.x = element_text(vjust = -0.3, size = 12), 
+          axis.text.x = element_text(size = 10, color = "black"), 
+          plot.margin = unit(c(0.3, -1.7, 0.3, 0.3), "lines"), 
+          legend.title = element_blank()) + 
+    coord_flip() + 
+    scale_fill_manual(values = FGA.col, breaks = c("0"), labels = c("Copy number-altered genome")) + 
+    scale_y_reverse(expand = c(0.01, 0), name = "FGA (Fraction of Genome Altered)", position = "left")
+  
+  p2 <- ggplot(summaryFGGL, aes(x = Subtype, y = ifelse(class == "FGG", mean, -mean), fill = class)) + 
+    geom_bar(stat = "identity") + 
+    geom_errorbar(data = summaryFGGL[summaryFGGL$class == "FGG", ], 
+                  aes(ymax = mean + se, ymin = mean - se), position = position_dodge(0.9), width = 0.15) + 
+    geom_errorbar(data = summaryFGGL[summaryFGGL$class == "FGL", ], 
+                  aes(ymax = -mean - se, ymin = -mean + se), position = position_dodge(0.9), width = 0.15) + 
+    annotate("text", x = n.moic / 2 + 0.5, y = max(summaryFGG$mean, na.rm = TRUE), 
+             label = cut(FGG.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", ".")), 
+             size = 8, angle = 90, fontface = "bold") + 
+    annotate("text", x = n.moic / 2 + 0.5, y = -max(summaryFGL$mean, na.rm = TRUE), 
+             label = cut(FGL.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", ".")), 
+             size = 8, angle = 90, fontface = "bold") + 
+    scale_x_discrete(name = "") + 
+    theme_bw() + 
+    theme(axis.line.y = element_line(linewidth = 0.8), 
+          axis.ticks.y = element_line(linewidth = 0.2), 
+          axis.text.y = element_blank(), 
+          axis.title.x = element_text(vjust = -0.3, size = 12), 
+          axis.text.x = element_text(size = 10, color = "black"), 
+          plot.margin = unit(c(0.3, 0.3, 0.3, -1), "lines"), 
+          legend.title = element_blank()) + 
+    coord_flip() + 
+    scale_fill_manual(values = c(FGL.col, FGG.col), 
+                      breaks = c("FGL", "FGG"), 
+                      labels = c("Copy number-lost genome", "Copy number-gained genome")) + 
+    scale_y_continuous(expand = c(0.01, 0), name = "FGL or FGG (Fraction of Genome Lost or Gained)")
+  
+  # Combine plots
+  pp <- ggplot() + geom_label(data = summaryFGGL, aes(label = Subtype, 
+                                                      x = Subtype, fill = Subtype), y = 0.5, color = "white", 
+                              size = 0.9 * 11/.pt, hjust = 0.4, vjust = 0.5) + 
+    scale_fill_manual(values = clust.col) + 
+    theme_minimal() + 
+    theme(axis.line.y = element_blank(), axis.ticks.y = element_blank(), 
+          axis.text.y = element_blank(), axis.title.y = element_blank(), 
+          axis.title.x = element_blank(), plot.margin = unit(c(0.3, 0, 0.3, 0), "lines")) + 
+    guides(fill = "none") + coord_flip() + scale_y_reverse()
+  
+  pal <- p1 + pp + p2 + plot_layout(widths = c(7, 1, 7), guides = "collect") & 
+    theme(legend.position = "top")
+  
+  if (!is.null(title)) {
+    pal <- pal + theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.5, vjust = 0)) + 
+      labs(title = title)
+  } else {
+    pal <- pal + theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.5, vjust = 0)) + 
+      labs(title = "FGA barplot")
+  }
+  
+  if (is.null(fig.name)) {
+    outFig <- "barplot of FGA.pdf"
+  } else {
+    outFig <- paste0(fig.name, ".pdf")
+  }
+  
+  ggsave(file.path(fig.path, outFig), width = width, height = height)
+  print(pal)
+  
+  if (n.moic > 2) {
+    return(list(summary = outTab, FGA.p.value = FGA.test, FGG.p.value = FGG.test, FGL.p.value = FGL.test))
+  } else {
+    return(list(summary = outTab, FGA.p.value = FGA.test, FGG.p.value = FGG.test, FGL.p.value = FGL.test))
+  }
+}
+
+# Prepare GSEA output for hierarchical clustering #####
+prepare_gsea_output_for_hclust = function (gsea_output, dgea_output_name_style = "", 
+                                           dea.method = "", mo.method = "",
+                                           dat.path = "", dgea_padj_cutoff = 0.05,
+                                           pathway_padj_cutoff = 0.05,
+                                           logfc_cutoff = 0) {
+  
+  # Load corresponding DGEA files
+  n.moic = length(gsea_output$gsea.list)
+  DEpattern <- paste(mo.method, "_", ifelse(is.null(dgea_output_name_style), 
+                                            "", paste0(dgea_output_name_style, "_")), dea.method, ".*._vs_Others.txt$", 
+                     sep = "")
+  DEfiles <- dir(dat.path, pattern = DEpattern)
+  
+  # Input validity checks
+  if (length(DEfiles) == 0) {
+    stop("no DEfiles!")
+  }
+  if (length(DEfiles) != n.moic) {
+    stop("not all multi-omics clusters have DEfile!")
+  }
+  
+  # DGEA input list
+  dgea_sets = list()
+  for (i in 1:length(DEfiles)) {
+    dgea_sets[[i]] = data.table::fread(paste0(dat.path, "/", DEfiles[i]),
+                                       header = TRUE, sep = "\t")
+    # dgea_sets[[i]][, 2:ncol(dgea_sets[[i]])] = lapply(dgea_sets[[i]][, 2:ncol(dgea_sets[[i]])], as.numeric)
+    # dgea_sets[[i]][, 1] = as.character(dgea_sets[[i]][, 1])
+  }
+  names(dgea_sets) = names(gsea_output$gsea.list)
+  
+  # Prepare output list
+  hclust_input_dfs = list()
+  
+  for (i in 1:n.moic) {
+    
+    subtype_id = names(dgea_sets)[i]
+    
+    # Significant pathway results for a particular subtype
+    result_object = gsea_output$gsea.list[[subtype_id]]@result %>%
+      dplyr::filter(p.adjust < pathway_padj_cutoff)
+    
+    # signficantly deregulated genes
+    sig_up = dgea_sets[[subtype_id]]$id[dgea_sets[[subtype_id]]$log2fc > abs(logfc_cutoff) & 
+                                          dgea_sets[[subtype_id]]$padj < dgea_padj_cutoff]
+    sig_down = dgea_sets[[subtype_id]]$id[dgea_sets[[subtype_id]]$log2fc < -abs(logfc_cutoff) &
+                                            dgea_sets[[subtype_id]]$padj < dgea_padj_cutoff]
+    
+    # Prepare output data frame
+    hclust_input_dfs[[subtype_id]] = data.frame(
+      ID = result_object$ID,
+      Down_regulated = sapply(result_object$ID, function(pathway) {
+        
+        # Filter genes in the pathway with logFC < 0 and p-values passing cutoff
+        genes <- unlist(strsplit(gsea_output$gsea.list[[subtype_id]]@geneSets[[pathway]], "/"))
+        down_genes <- intersect(genes, sig_down)
+        paste(down_genes, collapse = ", ")
+      }),
+      Up_regulated = sapply(result_object$ID, function(pathway) {
+        # Filter genes in the pathway with logFC > 0 and p-values passing cutoff
+        genes <- unlist(strsplit(gsea_output$gsea.list[[subtype_id]]@geneSets[[pathway]], "/"))
+        up_genes <- intersect(genes, sig_up)
+        paste(up_genes, collapse = ", ")
+      }),
+      NES = result_object$NES,
+      lowest_p = result_object$p.adjust
+    )
+  }
+  
+  return(hclust_input_dfs)
+}
+
+plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL, 
+                                 representative = TRUE, moic.res = NULL,
+                                 clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
+                                               "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"),
+                                 subtype_prefix = "CS", n.path = 10, msigdb.path = NULL,
+                                 norm.method = "mean", dirct = NULL, color = NULL,
+                                 fig.name = NULL, fig.path = getwd(), width = 15, height = 10, name = NULL,
+                                 gsva.method = "gsva") {
+  
+  if (!(is.logical(representative) && length(representative) == 1)) {
+    stop("The 'representative' argument must either be TRUE or FALSE")
+  }
+  
+  if (representative) {
+    fig.name = paste0("representative_", fig.name)
+    
+    gsea.lists = lapply(gsea.lists, function (x) {
+      x = x %>%
+        dplyr::filter(Status == "Representative")
+    })
+    
+    if (dirct == "up") {
+      gsea.lists = lapply(gsea.lists, function (x) {
+        x = x %>%
+          dplyr::arrange(lowest_p, desc(NES))
+      })
+    } else {
+      gsea.lists = lapply(gsea.lists, function (x) {
+        x = x %>%
+          dplyr::arrange(lowest_p, NES)
+      })
+    }
+  }
+  
+  msigdb <- try(clusterProfiler::read.gmt(msigdb.path), 
+                silent = TRUE)
+  if (class(msigdb) == "try-error") {
+    stop("please provide correct ABSOLUTE PATH for MSigDB file.")
+  }
+  
+  standarize.fun <- function(indata = NULL, halfwidth = NULL, 
+                             centerFlag = TRUE, scaleFlag = TRUE) {
+    outdata = t(scale(t(indata), center = centerFlag, scale = scaleFlag))
+    if (!is.null(halfwidth)) {
+      outdata[outdata > halfwidth] = halfwidth
+      outdata[outdata < (-halfwidth)] = -halfwidth
+    }
+    return(outdata)
+  }
+  
+  rowmean <- function(x) {
+    return(apply(x, 1, mean))
+  }
+  
+  rowmedian <- function(x) {
+    return(apply(x, 1, median))
+  }
+  
+  if (max(norm.expr) < 25 | (max(norm.expr) >= 25 & min(norm.expr) < 
+                             0)) {
+    message("--expression profile seems to have been standardised (z-score or log transformation), no more action will be performed.")
+    gset <- norm.expr
+  }
+  
+  if (max(norm.expr) >= 25 & min(norm.expr) >= 0) {
+    message("--log2 transformation done for expression data.")
+    gset <- log2(norm.expr + 1)
+  }
+  
+  n.moic = length(unique(moic.res$clust.res$clust))
+  
+  pathway <- pathcore <- list()
+  pathnum <- c()
+  for (filek in 1:length(gsea.lists)) {
+    if (nrow(gsea.lists[[filek]]) > n.path) {
+      pathway[[filek]] <- gsea.lists[[filek]][1:n.path, ]
+    }
+    else {
+      pathway[[filek]] <- gsea.lists[[filek]]
+    }
+    
+    pathnum <- c(pathnum, nrow(pathway[[filek]]))
+    pathway[[filek]]$dirct <- dirct
+    for (i in pathway[[filek]]$ID) {
+      pathcore[[i]] <- msigdb[which(msigdb[, 1] %in% 
+                                      i), "gene"]
+    }
+  }
+  
+  sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
+                                        decreasing = FALSE), "samID"]
+  colvec <- clust.col[1:n.moic]
+  names(colvec) <- paste0(subtype_prefix, 1:n.moic)
+  annCol <- data.frame(Subtype = paste0(subtype_prefix, moic.res$clust.res[sam.order, 
+                                                                           "clust"]), row.names = sam.order, stringsAsFactors = FALSE)
+  annColors <- list(Subtype = colvec)
+  es <- GSVA::gsva(param = GSVA::gsvaParam(exprData = as.matrix(gset[, rownames(annCol), 
+                                                                     drop = FALSE]),
+                                           geneSets = pathcore
+  ))
+  es.backup <- es
+  es <- standarize.fun(es, halfwidth = 1, centerFlag = TRUE, 
+                       scaleFlag = TRUE)
+  message(gsva.method, " done...")
+  esm <- data.frame(row.names = rownames(es))
+  if (norm.method == "mean") {
+    for (i in paste0(subtype_prefix, 1:n.moic)) {
+      esm <- cbind.data.frame(esm, data.frame(rowmean(es[, 
+                                                         rownames(annCol[which(annCol$Subtype == i), 
+                                                                         , drop = FALSE])])))
+    }
+  }
+  if (norm.method == "median") {
+    for (i in paste0(subtype_prefix, 1:n.moic)) {
+      esm <- cbind.data.frame(esm, data.frame(rowmedian(es[, 
+                                                           rownames(annCol[which(annCol$Subtype == i), 
+                                                                           , drop = FALSE])])))
+    }
+  }
+  colnames(esm) <- paste0(subtype_prefix, 1:n.moic)
+  annRow <- data.frame(Subtype = rep(paste0(subtype_prefix, 1:n.moic), 
+                                     pathnum), row.names = rownames(esm), stringsAsFactors = FALSE)
+  if (is.null(color)) {
+    mapcolor <- (grDevices::colorRampPalette(c("#0000FF", 
+                                               "#8080FF", "#FFFFFF", "#FF8080", "#FF0000")))(64)
+  }
+  else {
+    mapcolor <- (grDevices::colorRampPalette(color))(64)
+  }
+  hm <- ComplexHeatmap::pheatmap(mat = as.matrix(esm), cluster_rows = FALSE, name = name,
+                                 cluster_cols = FALSE, show_rownames = TRUE, show_colnames = TRUE, 
+                                 annotation_row = annRow, annotation_colors = annColors, 
+                                 annotation_names_row = FALSE, legend = TRUE, color = mapcolor, 
+                                 border_color = "black", legend_breaks = c(-1, -0.5, 
+                                                                           0, 0.5, 1), legend_labels = c(-1, -0.5, 0, 0.5, 
+                                                                                                         1), cellwidth = 15, cellheight = 10)
+  ComplexHeatmap::draw(hm, annotation_legend_side = "left", heatmap_legend_side = "left")
+  if (is.null(fig.name)) {
+    outFig <- paste0("gseaheatmap_using_", dirct, "regulated_pathways.pdf")
+  }
+  else {
+    outFig <- paste0(fig.name, "_using_", dirct, "regulated_pathways.pdf")
+  }
+  pdf(file.path(fig.path, outFig), width = width, height = height)
+  ComplexHeatmap::draw(hm, annotation_legend_side = "left", heatmap_legend_side = "left")
+  invisible(dev.off())
+  message("heatmap done...")
+  return(list(gsea.list = gsea.lists, raw.es = es.backup, scaled.es = es, 
+              grouped.es = esm, heatmap = hm))
 }
