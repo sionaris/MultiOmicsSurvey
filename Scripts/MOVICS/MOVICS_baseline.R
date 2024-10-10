@@ -1401,7 +1401,7 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
 # Run PAM
 RNGversion("4.2.2.")
 set.seed(123)
-transNEO_pam = runPAM(train.expr = input$RNAseq,
+transNEO_pam = runPAM(train.expr = plotdata$RNAseq,
                       moic.res   = consensus,
                       test.expr  = as.matrix(transcr))
 
@@ -1410,13 +1410,13 @@ transNEO_pam = runPAM(train.expr = input$RNAseq,
 # Get predictions for TCGA (discovery cohort)
 RNGversion("4.2.2.")
 set.seed(123)
-TCGA.ntp.pred = runNTP(expr = input$RNAseq[, consensus$clust.res$samID],
+TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, consensus$clust.res$samID],
                        templates = dgea.marker.up_1000$templates, distance = "cosine",
                        doPlot = F, nPerm = 10000)
 
-TCGA.pam.pred = runPAM(train.expr = input$RNAseq[, consensus$clust.res$samID],
+TCGA.pam.pred = runPAM(train.expr = plotdata$RNAseq[, consensus$clust.res$samID],
                        moic.res = consensus,
-                       test.expr = input$RNAseq[, consensus$clust.res$samID])
+                       test.expr = plotdata$RNAseq[, consensus$clust.res$samID])
 
 # consensus TCGA vs NTP TCGA
 runKappa(subt1 = consensus$clust.res$clust,
@@ -1438,7 +1438,7 @@ runKappa(subt1 = consensus$clust.res$clust,
          fig.path = paste0(home, "/Results/MOVICS_baseline"),
          fig.name = "kappa_consensus_vs_PAM_TCGA")
 
-# NTP transNEO vs PAM transNEO # FAILS
+# NTP transNEO vs PAM transNEO
 runKappa(subt1 = as.numeric(transNEO_ntp_expr_up$clust.res$clust),
          subt2 = as.numeric(transNEO_pam$clust.res$clust),
          subt1.lab = "transNEO NTP",

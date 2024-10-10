@@ -130,7 +130,7 @@ Likewise, these identified specific pathways should pass the significance thresh
 We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/MOVICS_baseline/MOVICS_representative_pathways.xlsx")`):
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/representative_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
-For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest.
+For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest. We focus on immune pathways here.
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
 
