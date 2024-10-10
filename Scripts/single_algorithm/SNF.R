@@ -1539,7 +1539,7 @@ runKappa_single_algorithm(algorithm_name = algorithm,
          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
          fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
-# NTP transNEO vs PAM transNEO # FAILS
+# NTP transNEO vs PAM transNEO
 runKappa_single_algorithm(algorithm_name = algorithm,
                            subt1 = as.numeric(gsub(algorithm, "",
                                                    transNEO_ntp_expr_up$clust.res$clust)),
