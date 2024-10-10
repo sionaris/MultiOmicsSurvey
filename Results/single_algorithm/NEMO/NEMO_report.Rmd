@@ -278,7 +278,7 @@ In MOVICS, the NEMO algorithm is run by default with $nn = \frac{n}{6}$ and $\si
 
 ```{r resp_table, echo=FALSE, eval=TRUE}
 # Create the data frame
-table_data <- table(params$transNEO_var2comp$NEMO, params$transNEO_var2comp$pCR.RD)
+table_data <- table(params$transNEO_var2comp[[params$algorithm]], params$transNEO_var2comp[[params$algorithm]])
 
 # Calculate percentages
 percentage_data <- 100 * prop.table(table_data, 1)
@@ -291,23 +291,23 @@ format_response <- function(counts, percentages) {
 # Initialize an empty data frame
 data_resp <- data.frame(Response = c("pCR", "Residual Disease"))
 
-# Loop over the NEMO groups to fill the data frame
-for (nemo_group in rownames(table_data)) {
-  pcr_counts <- table_data[nemo_group, "pCR"]
-  rd_counts <- table_data[nemo_group, "Residual Disease"]
+# Loop over the groups to fill the data frame
+for (alg_group in rownames(table_data)) {
+  pcr_counts <- table_data[alg_group, "pCR"]
+  rd_counts <- table_data[alg_group, "Residual Disease"]
   
-  pcr_percent <- percentage_data[nemo_group, "pCR"]
-  rd_percent <- percentage_data[nemo_group, "Residual Disease"]
+  pcr_percent <- percentage_data[alg_group, "pCR"]
+  rd_percent <- percentage_data[alg_group, "Residual Disease"]
   
   # Add the formatted values to the data frame
-  data_resp[[nemo_group]] <- c(
+  data_resp[[alg_group]] <- c(
     format_response(pcr_counts, pcr_percent),
     format_response(rd_counts, rd_percent)
   )
 }
 
 # Print the table using knitr::kable
-knitr::kable(data_resp, caption = "Response rates across transNEO NEMO subtypes")
+knitr::kable(data_resp, caption = paste0("Response rates across transNEO", params$algorithm, " subtypes"))
 ```
 
 # Session info
