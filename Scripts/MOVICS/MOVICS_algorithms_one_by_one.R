@@ -1588,12 +1588,12 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(MoCluster_barcharts_sig[[1]], MoCluster_barcharts_sig[[2]], MoCluster_barcharts_sig[[3]],
-          MoCluster_barcharts_sig[[4]], MoCluster_barcharts_sig[[5]], MoCluster_barcharts_sig[[6]],
-          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
+          MoCluster_barcharts_sig[[4]],
+          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = "sig_Multiplot_MoCluster_barcharts.png",
        path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/MoCluster_extra"), 
-       width = 5500, height = 7000, device = 'png', units = "px",
+       width = 5500, height = 5500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 

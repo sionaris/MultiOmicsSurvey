@@ -1,2 +1,7 @@
 probe	class	dirct
 TACO1	CS1	down
+MRPL58	CS1	down
+PSMC5	CS1	down
+NDUFAF2	CS1	down
+ZNF622	CS1	down
+PTRH2	CS1	down

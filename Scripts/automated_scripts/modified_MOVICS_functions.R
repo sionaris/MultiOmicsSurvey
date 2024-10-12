@@ -4118,12 +4118,14 @@ compFGA_optimized <- function(moic.res = NULL, segment = NULL, iscopynumber = FA
   FGA.col <- barcolor[1]
   FGG.col <- barcolor[2]
   FGL.col <- barcolor[3]
+  
   p1 <- ggplot(summaryFGA, aes(x = Subtype, y = mean, fill = rep("0", nrow(summaryFGA)))) + 
     geom_bar(stat = "identity") + 
     geom_errorbar(aes(ymax = mean + se, ymin = mean - se), position = position_dodge(0.9), width = 0.15) + 
-    annotate("text", x = n.moic / 2 + 0.5, y = max(summaryFGA$mean, na.rm = TRUE), 
-             label = cut(FGA.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", ".")), 
-             size = 8, angle = 90, fontface = "bold") + 
+    geom_text(aes(x = n.moic / 2 + 0.5, y = max(mean, na.rm = TRUE), 
+                  label = cut(FGA.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), 
+                              labels = c("****", "***", "**", "*", "."))), 
+              size = 8, angle = 90, fontface = "bold") + 
     scale_x_discrete(name = "", position = "top") + 
     theme_bw() + 
     theme(axis.line.y = element_line(linewidth = 0.8), 
@@ -4143,12 +4145,14 @@ compFGA_optimized <- function(moic.res = NULL, segment = NULL, iscopynumber = FA
                   aes(ymax = mean + se, ymin = mean - se), position = position_dodge(0.9), width = 0.15) + 
     geom_errorbar(data = summaryFGGL[summaryFGGL$class == "FGL", ], 
                   aes(ymax = -mean - se, ymin = -mean + se), position = position_dodge(0.9), width = 0.15) + 
-    annotate("text", x = n.moic / 2 + 0.5, y = max(summaryFGG$mean, na.rm = TRUE), 
-             label = cut(FGG.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", ".")), 
-             size = 8, angle = 90, fontface = "bold") + 
-    annotate("text", x = n.moic / 2 + 0.5, y = -max(summaryFGL$mean, na.rm = TRUE), 
-             label = cut(FGL.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), labels = c("****", "***", "**", "*", ".")), 
-             size = 8, angle = 90, fontface = "bold") + 
+    geom_text(aes(x = n.moic / 2 + 0.5, y = max(mean, na.rm = TRUE), 
+                  label = cut(FGG.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), 
+                              labels = c("****", "***", "**", "*", "."))), 
+              size = 8, angle = 90, fontface = "bold") + 
+    geom_text(aes(x = n.moic / 2 + 0.5, y = -max(mean, na.rm = TRUE), 
+                  label = cut(FGL.test, c(0, 0.001, 0.01, 0.05, 0.1, 1), 
+                              labels = c("****", "***", "**", "*", "."))), 
+              size = 8, angle = 90, fontface = "bold") + 
     scale_x_discrete(name = "") + 
     theme_bw() + 
     theme(axis.line.y = element_line(linewidth = 0.8), 

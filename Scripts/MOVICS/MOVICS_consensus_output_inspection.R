@@ -169,8 +169,8 @@ names(subtype_agreements) = names(moic.res.list)
 
 # DGEA
 comp_dgea = comp_dgea.marker.up = comp_dgea.marker.down = list()
-# No significant genes for COCA (just 1 down-regulated, for i = 5)
-for (i in c(1:4, 6:10)) {
+# No significant genes for COCA (just 5 down-regulated, for i = 5)
+for (i in length(moic.res.list)) {
   comp_dgea[[i]] = runDEA(dea.method = "limma",
                           expr = plotdata$RNAseq,
                           moic.res = moic.res.list[[i]],
@@ -307,7 +307,7 @@ for (i in 1:length(moic.res.list)) {
 # DmiREA
 comp_dmiRea = comp_dmiRea.marker.up = comp_dmiRea.marker.down = list()
 # Same COCA issue
-for (i in c(1:4, 6:10)) {
+for (i in length(moic.res.list)) {
   comp_dmiRea[[i]] = runDEA(dea.method = "limma",
                           expr = plotdata$miRNA,
                           moic.res = moic.res.list[[i]],
@@ -365,13 +365,17 @@ for (i in c(1:4, 6:10)) {
                                                            scaleFlag = F,
                                                            halfwidth = 3,
                                                            fig.name      = paste0(names(moic.res.list)[i], 
-                                                                                  "_hypomethylated_biomarkers_heatmap"),
+                                                                                  "_downregulated_miRNA_biomarkers_heatmap"),
                                                            fig.path = paste0(home, "/Results/MOVICS_baseline/MO_comparisons/DmiREA"),
                                                            width = 14,
                                                            height = 12,
                                                            fontsize_row = 3,
                                                            name = "normalized miRNA")
 }
+names(comp_dgea) = names(comp_dgea.marker.down) = names(comp_dgea.marker.up) = 
+  names(comp_dmea) = names(comp_dmea.marker.down) = names(comp_dmea.marker.up) = 
+  names(comp_dmiRea) = names(comp_dmiRea.marker.down) = names(comp_dmiRea.marker.up) =
+  names(moic.res.list)
 
 # Pathways
 MSIGDB.FILE <- paste0(home, "/Resources/Pathways/GO-BP_c5.go.bp.v2024.1.Hs.symbols.gmt")
@@ -941,11 +945,11 @@ hclust_pathway_plots_down <- lapply(hclust_pathway_plots, function(x) x[[2]])
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
 
 # Parallel loop using foreach
-fga.MOVICS <- list()
-fga.MOVICS.COSMIC <- list()
+comp_fga.MOVICS <- list()
+comp_fga.MOVICS.COSMIC <- list()
 
 for (i in 1:length(moic.res.list)) {
-  fga.MOVICS[[i]] = compFGA_optimized(moic.res     = moic.res.list[[i]],
+  comp_fga.MOVICS[[i]] = compFGA_optimized(moic.res     = moic.res.list[[i]],
                                 segment      = fga_df,
                                 iscopynumber = TRUE, 
                                 test.method  = "nonparametric", # Wilcoxon test
@@ -957,7 +961,7 @@ for (i in 1:length(moic.res.list)) {
                                 clust.col    = c("#2EC4B6", "#E71D36"),
                                 title        = paste0(names(moic.res.list)[i], " FGA plot: simple criteria"))
   
-  fga.MOVICS.COSMIC[[i]] = compFGA_optimized(moic.res     = moic.res.list[[i]],
+  comp_fga.MOVICS.COSMIC[[i]] = compFGA_optimized(moic.res     = moic.res.list[[i]],
                                        segment      = fga_df,
                                        iscopynumber = TRUE, 
                                        test.method  = "nonparametric", # Wilcoxon test

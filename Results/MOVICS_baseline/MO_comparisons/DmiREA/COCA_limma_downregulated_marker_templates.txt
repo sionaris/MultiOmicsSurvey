@@ -1,0 +1,4 @@
+probe	class	dirct
+hsa-mir-6764	CS1	down
+hsa-mir-454	CS1	down
+hsa-mir-610	CS1	down
