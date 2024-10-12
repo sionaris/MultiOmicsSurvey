@@ -743,7 +743,7 @@ dev.off()
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[, colSums(mat != 0) > 0])
 plotdata <- lapply(plotdata, t)
-heatmap_plotdata = getStdiz(
+plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
   centerFlag = c(F, F, F, F, F),
@@ -755,7 +755,7 @@ plot_object = list(clust.res = SNF_clusters %>%
 
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = heatmap_plotdata,
+                              data          = plotdata,
              row.title     = names(heatmap_plotdata),
              is.binary     = c(T,F,F,F,F), 
              legend.name   = c("SNPs",
