@@ -1306,7 +1306,8 @@ fga.SNF <- compFGA_optimized(moic.res     = plot_object,
                         prefix = algorithm,
                         width = 16,
                         ga_column = "ga", # genome altered column
-                        clust.col = cluster_colors)
+                        clust.col = cluster_colors,
+                        title = paste0(algorithm, " FGA plot: simple criteria"))
 
 fga.SNF.COSMIC <- compFGA_optimized(moic.res     = plot_object,
                                segment      = fga_df,
@@ -1317,7 +1318,8 @@ fga.SNF.COSMIC <- compFGA_optimized(moic.res     = plot_object,
                                prefix = algorithm,
                                width = 16,
                                ga_column = "COSMIC_ga", # genome altered column
-                               clust.col = cluster_colors)
+                               clust.col = cluster_colors,
+                               title = paste0(algorithm, " FGA plot: COSMIC criteria"))
 
 rm(fga_df); gc()
 
