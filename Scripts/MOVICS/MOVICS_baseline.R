@@ -690,7 +690,7 @@ plotdata <- lapply(lapply(input, as.matrix),
                    function(mat) mat[rowSums(mat != 0) > 0, ])
 
 # Use halfwidth for beter coloring in heatmap
-heatmap_plotdata = getStdiz(
+plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
   centerFlag = c(F, F, F, F, F),
@@ -706,7 +706,7 @@ scheme = list(col.list = col.list,
 saveRDS(scheme, "Resources/scheme.rds")
 
 # comprehensive heatmap (may take a while)
-getMoHeatmap(data          = heatmap_plotdata,
+getMoHeatmap(data          = plotdata,
              row.title     = names(plotdata),
              is.binary     = c(T,F,F,F,F), 
              legend.name   = c("SNPs",
