@@ -199,7 +199,7 @@ MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand I
     <li><b>69.5% of CS1 samples are ER+</b>, while <b>83% of CS2 samples are ER+</b>.</li>
     <li><b>59.6% of CS1 samples are PR+</b>, while <b>73.6% of CS2 samples are PR+</b>.</li>
     <li>There are significant differences in the <b>FGA</b> bars of the two subtypes. </li>
-    <li>CS1 is associated with <u>increased predicted sensitivity</u> to <b>paclitaxel</b> and <u>decreased predicted sensitivity</u> to <b>sorafenib</b>.</li>
+    <li>CS1 is associated with <u>decreased predicted sensitivity</u> to <b>sorafenib</b>.</li>
     <li> Oncoprint showed association of CS1 with <em>TP53</em> mutations.</li>
   </ul></li>
   <li>CS1 and CS2 labels in transNEO are associated with clinical variables of interest including <b>pCR</b>, lymph node status at diagnosis, ER status, PAM50, iC10, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, HRD sum. With respect to <b>pCR</b>:</li>
