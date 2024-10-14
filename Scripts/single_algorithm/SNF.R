@@ -690,14 +690,14 @@ ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
                                     cluster_df2 = SNF_clusters,
                                     sample_col = "Sample.ID",
                                     clust_col = "Cluster",
-                                    suffixes = c(paste0("_MOVICS_", algorithm),
+                                    suffixes = c("_MOVICS_CS",
                                                  paste0("_", algorithm)))
 
 NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     cluster_df2 = SNF_clusters,
                                     sample_col = "Sample.ID",
                                     clust_col = "Cluster",
-                                    suffixes = c(paste0("_MOVICS_", algorithm),
+                                    suffixes = c("_MOVICS_CS",
                                                  paste0("_", algorithm)))
 
 # Very low statistics when compared to the MOVICS. Results differ
