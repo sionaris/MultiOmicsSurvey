@@ -144,17 +144,18 @@ library(ggplot2)
 ggplot(data = data.frame(S_Pearson_values), aes(x = S_Pearson_values)) +
   geom_histogram(breaks = seq(0, 1, length.out = 37),
                  fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
-  geom_vline(aes(xintercept = S_mean_Pearson_value, color = "Mean"), size = 0.2) + 
-  geom_vline(aes(xintercept = S_median_Pearson_value, color = "Median"), size = 0.2) + 
+  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
+  geom_vline(aes(xintercept = S_mean_Pearson_value, color = "Mean"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = S_median_Pearson_value, color = "Median"), linewidth = 0.2) + 
   geom_vline(aes(xintercept = S_mean_Pearson_value - S_sd_Pearson_value, color = "Mean - SD"), 
-             linetype = "dashed", size = 0.2) + 
+             linetype = "dashed", linewidth = 0.2) + 
   geom_vline(aes(xintercept = S_mean_Pearson_value + S_sd_Pearson_value, color = "Mean + SD"), 
-             linetype = "dashed", size = 0.2) +
+             linetype = "dashed", linewidth = 0.2) +
   scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
                                                 "Mean - SD" = "grey25", "Mean + SD" = "grey25",
                                                 "Density" = "darkblue")) +
-  labs(title = "Histogram of Pearson values between S matrices for different values of Nearest Neighbors", 
+  labs(title = expression(bold(paste("Histogram of Pearson values between ",
+                                     "S matrices for different values of Nearest Neighbors"))), 
        x = "S Matrix Pearson Values", y = "Frequency") +
   scale_x_continuous(name = "S Matrix Pearson Values", limits = c(0, 1),
                      breaks = seq(0, 1, 0.1), expand = c(0, 0)) +
@@ -172,7 +173,7 @@ ggplot(data = data.frame(S_Pearson_values), aes(x = S_Pearson_values)) +
         legend.box.background = element_rect(color = "black"))
 ggsave(filename = paste0(algorithm, "_S_matrix_Pearson_similarity_histogram.pdf"),
   path = paste0(home, 
-                "/Results/single_algorithm/CIMLR/Supplement"), 
+                "/Results/single_algorithm/", algorithm, "/Supplement"), 
   width = 2880, height = 1820, device = 'pdf', units = "px",
   dpi = 700)
 dev.off()
@@ -191,7 +192,8 @@ ggplot(data = data.frame(S_Frobenius_values), aes(x = S_Frobenius_values)) +
   scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
                                                 "Mean - SD" = "grey25", "Mean + SD" = "grey25",
                                                 "Density" = "darkblue")) +
-  labs(title = "Histogram of Frobenius values between S matrices for different values of Nearest Neighbors", 
+  labs(title = expression(bold(paste("Histogram of Frobenius values between ",
+                                     "S matrices for different values of Nearest Neighbors"))), 
        x = "S Matrix Frobenius Values", y = "Frequency") +
   scale_x_continuous(name = "S Matrix Frobenius Values", limits = c(0, 2),
                      breaks = seq(0, 2, 0.2), expand = c(0, 0)) +
@@ -209,7 +211,7 @@ ggplot(data = data.frame(S_Frobenius_values), aes(x = S_Frobenius_values)) +
         legend.box.background = element_rect(color = "black"))
 ggsave(filename = paste0(algorithm, "_S_matrix_Frobenius_similarity_histogram.pdf"),
        path = paste0(home, 
-                     "/Results/single_algorithm/CIMLR/Supplement"), 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
        width = 2880, height = 1820, device = 'pdf', units = "px",
        dpi = 700)
 dev.off()
@@ -316,15 +318,47 @@ ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
                                     cluster_df2 = CIMLR_clusters,
                                     sample_col = "Sample.ID",
                                     clust_col = "Cluster",
-                                    suffixes = c("_MOVICS", "_CIMLR"))
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
 
 NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     cluster_df2 = CIMLR_clusters,
                                     sample_col = "Sample.ID",
                                     clust_col = "Cluster",
-                                    suffixes = c("_MOVICS", "_CIMLR"))
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
 
 # Very low statistics when compared to the MOVICS. Results differ
+
+# Import coloring scheme
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(CIMLR_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(CIMLR = paste0(algorithm, Cluster)) %>%
+  dplyr::select(CIMLR, everything()) %>%
+  dplyr::select(-Cluster)
+rm(scheme); gc()
+
+# Silhouette
+cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
+dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
+sil = compute_silhouette(cluster_df = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID),
+                         similarity_matrix = cimlr_matrix,
+                         normalize_matrix = TRUE)
+
+getSilhouette(sil      = sil,
+              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+              fig.name = "Silhouette",
+              height   = 5.5,
+              width    = 5)
+dev.off()
 
 # MOVICS-like analysis #####
 library(MOVICS)
@@ -332,7 +366,7 @@ library(ComplexHeatmap)
 
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[rowSums(mat != 0) > 0, ])
-heatmap_plotdata = getStdiz(
+plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
   centerFlag = c(F, F, F, F, F),
@@ -344,7 +378,7 @@ plot_object = list(clust.res = CIMLR_clusters %>%
 
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = heatmap_plotdata,
+                              data          = plotdata,
                               row.title     = names(heatmap_plotdata),
                               is.binary     = c(T,F,F,F,F), 
                               legend.name   = c("SNPs",
@@ -364,17 +398,27 @@ getMoHeatmap_single_algorithm(algorithm_name = algorithm,
                               annColors     = annColors, # annotation color
                               width         = 20, # width of each subheatmap
                               height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/CIMLR"),
+                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
 # Clinical variables ###
+# Remove unknown levels for statistical tests
+var2comp_nonas = var2comp
+for (i in 1:ncol(var2comp)) {
+  nas = which(var2comp[, i] == "Unknown")
+  var2comp_nonas[nas, i] = NA
+  empties = which(var2comp[, i] == "")
+  var2comp_nonas[empties, i] = NA
+}
+rm(nas, empties); gc()
+
 # Statistical comparisons
 clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          moic.res = plot_object,
-                                         var2comp = var2comp,
-                                         strata = "Consensus Subtype",
+                                         var2comp = var2comp_nonas,
+                                         strata = algorithm,
                                          factorVars = c("vital_status", "race_list", "ethnicity",
                                                         "history_of_neoadjuvant_treatment",
                                                         "primary_lymph_node_presentation_assessment",
@@ -384,12 +428,44 @@ clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                         "lab_proc_her2_neu_immunohistochemistry_receptor_status",
                                                         "distant_metastasis_present_ind2",
                                                         "stage_event_pathologic_stage"),
+                                         nonnormalVars = c("days_to_birth", "days_to_death",
+                                                           "days_to_last_known_alive", 
+                                                           "days_to_last_followup",
+                                                           "age_at_initial_pathologic_diagnosis",
+                                                           "er_level_cell_percentage_category",
+                                                           "progesterone_receptor_level_cell_percent_category",
+                                                           "number_of_lymphnodes_positive_by_ihc",
+                                                           "number_of_lymphnodes_positive_by_he"),
                                          includeNA = FALSE,
                                          doWord = TRUE,
                                          tab.name = "Summary_of_clinical_variables",
-                                         res.path = paste0(home, "/Results/single_algorithm/CIMLR/"))
+                                         res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
+                                         output_pdf = TRUE,
+                                         pdf_level_col_width = c("7em", "10em"),
+                                         pdf_count_col_width = "10em",
+                                         pdf_pval_col_width = "3em",
+                                         pdf_test_col_width = "8em",
+                                         pdf_tab_font_size = 9)
 
-# race_list, ER status, PR status, metastasis are sig
+clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
+                                                         moic.res = plot_object,
+                                                         var2comp = var2comp_nonas %>%
+                                                           dplyr::select(number_of_lymphnodes_positive_by_ihc,
+                                                                         number_of_lymphnodes_positive_by_he,
+                                                                         CIMLR),
+                                                         strata = algorithm,
+                                                         ordinalVars = c("number_of_lymphnodes_positive_by_ihc",
+                                                                         "number_of_lymphnodes_positive_by_he"),
+                                                         includeNA = FALSE,
+                                                         tab.name = "Summary of ordinal clinical variables",
+                                                         res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
+                                                         output_pdf = TRUE,
+                                                         pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
+                                                         pdf_level_col_width = c("7em", "10em"),
+                                                         pdf_count_col_width = "10em",
+                                                         pdf_pval_col_width = "3em",
+                                                         pdf_test_col_width = "8em",
+                                                         pdf_tab_font_size = 9)
 
 # Oncoprint ###
 oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
@@ -408,8 +484,8 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                                             data_types, "_eval_on_", evaluation_source,
                                                             "_oncoprint"),
                                       tab.name     = "Independent test between subtype and mutation",
-                                      fig.path     = paste0(home, "/Results/single_algorithm/CIMLR"),
-                                      res.path     = paste0(home, "/Results/single_algorithm/CIMLR"))
+                                      fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
+                                      res.path     = paste0(home, "/Results/single_algorithm/", algorithm))
 
 # Similar to MOVICS: TP53 and PIK3CA patterns
 
@@ -424,7 +500,7 @@ drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  test.method = "nonparametric", # statistical testing method
                                                  prefix      = "Violin_plot_of_IC50",
                                                  seed = 123,
-                                                 fig.path = paste0(home, "/Results/single_algorithm/CIMLR"))
+                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm))
 
 # Agreement with other subtypes ###
 subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
@@ -434,19 +510,20 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
                                                 doPlot    = TRUE,
                                                 box.width = 0.2,
                                                 fig.name  = "Classification_agreement",
-                                                fig.path  = paste0(home, "/Results/single_algorithm/CIMLR"),
+                                                fig.path  = paste0(home, "/Results/single_algorithm/", algorithm),
                                                 width     = 12)
 dev.off()
 
 # DGEA ###
-dgea = runDEA(dea.method = "limma", # we use normalized data as input
+dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
               expr = plotdata$RNAseq,
               moic.res = plot_object,
               prefix = "dgea_",
               sort.p = TRUE,
               overwt = TRUE,
               verbose = TRUE,
-              res.path = paste0(home, "/Results/single_algorithm/CIMLR"))
+              res.path = paste0(home, "/Results/single_algorithm/", 
+                                algorithm),algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
@@ -454,8 +531,8 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              moic.res = plot_object,
                                              dea.method    = "limma", # name of DEA method
                                              prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                             dat.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path of DEA files
-                                             res.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path to save marker files
+                                             dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                             res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                              dirct         = "up", # direction of dysregulation in expression
@@ -469,7 +546,7 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              scaleFlag = F,
                                              halfwidth = 3,
                                              fig.name      = "upregulated_biomarkers_heatmap",
-                                             fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                                             fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                              width = 14,
                                              height = 12,
                                              fontsize_row = 3,
@@ -481,8 +558,8 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                moic.res = plot_object,
                                                dea.method    = "limma", # name of DEA method
                                                prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                               dat.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path of DEA files
-                                               res.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path to save marker files
+                                               dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                               res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                                p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                dirct         = "down", # direction of dysregulation in expression
@@ -496,11 +573,143 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                scaleFlag = F,
                                                halfwidth = 3,
                                                fig.name      = "downregulated_biomarkers_heatmap",
-                                               fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
                                                height = 12,
                                                fontsize_row = 3,
                                                name = "normalized RNA-seq")
+dev.off()
+
+# DMEA ###
+dmea = runDEA_mod(dea.method = "limma", # we use normalized data as input
+                  expr = plotdata$Methylation,
+                  moic.res = plot_object,
+                  prefix = "dmea_",
+                  sort.p = TRUE,
+                  overwt = TRUE,
+                  verbose = TRUE,
+                  res.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                  algorithm = algorithm)
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+methyl.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                               moic.res = plot_object,
+                                               dea.method    = "limma", # name of DEA method
+                                               prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                               dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                               res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
+                                               p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                               p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                               dirct         = "up", # direction of dysregulation in expression
+                                               n.marker      = 100, # number of biomarkers for each subtype
+                                               doplot        = TRUE, # generate diagonal heatmap
+                                               norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                               annCol        = annCol, # sample annotation in heatmap
+                                               annColors     = annColors, # colors for sample annotation
+                                               show_rownames = TRUE, # show no rownames (biomarker name)
+                                               centerFlag = F,
+                                               scaleFlag = F,
+                                               halfwidth = 3,
+                                               fig.name      = "hypermethylated_biomarkers_heatmap",
+                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                                               width = 14,
+                                               height = 12,
+                                               fontsize_row = 0, # 3 default
+                                               name = "normalized Methylation")
+dev.off()
+
+# # 2. Down-regulated markers
+methyl.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                                 moic.res = plot_object,
+                                                 dea.method    = "limma", # name of DEA method
+                                                 prefix        = "dmea_", # MUST be the same of argument in runDEA()
+                                                 dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                                 res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
+                                                 p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                 p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                 dirct         = "down", # direction of dysregulation in expression
+                                                 n.marker      = 100, # number of biomarkers for each subtype
+                                                 doplot        = TRUE, # generate diagonal heatmap
+                                                 norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
+                                                 annCol        = annCol, # sample annotation in heatmap
+                                                 annColors     = annColors, # colors for sample annotation
+                                                 show_rownames = TRUE, # show no rownames (biomarker name)
+                                                 centerFlag = F,
+                                                 scaleFlag = F,
+                                                 halfwidth = 3,
+                                                 fig.name      = "hypomethylated_biomarkers_heatmap",
+                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                                                 width = 14,
+                                                 height = 12,
+                                                 fontsize_row = 0, # 3 default
+                                                 name = "normalized Methylation")
+dev.off()
+
+# DmiREA ###
+dmiRea = runDEA_mod(dea.method = "limma", # we use normalized data as input
+                    expr = plotdata$miRNA,
+                    moic.res = plot_object,
+                    prefix = "dmiRea_",
+                    sort.p = TRUE,
+                    overwt = TRUE,
+                    verbose = TRUE,
+                    res.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                    algorithm = algorithm)
+
+# # Identify unique subtype biomarkers
+# # 1. Up-regulated markers
+miRNA.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                              moic.res = plot_object,
+                                              dea.method    = "limma", # name of DEA method
+                                              prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
+                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                              dirct         = "up", # direction of dysregulation in expression
+                                              n.marker      = 100, # number of biomarkers for each subtype
+                                              doplot        = TRUE, # generate diagonal heatmap
+                                              norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                              annCol        = annCol, # sample annotation in heatmap
+                                              annColors     = annColors, # colors for sample annotation
+                                              show_rownames = TRUE, # show no rownames (biomarker name)
+                                              centerFlag = F,
+                                              scaleFlag = F,
+                                              halfwidth = 3,
+                                              fig.name      = "upregulated_miRNA_biomarkers_heatmap",
+                                              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                                              width = 14,
+                                              height = 12,
+                                              fontsize_row = 0, # 3 default
+                                              name = "normalized miRNA")
+dev.off()
+
+# # 2. Down-regulated markers
+miRNA.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
+                                                moic.res = plot_object,
+                                                dea.method    = "limma", # name of DEA method
+                                                prefix        = "dmiRea_", # MUST be the same of argument in runDEA()
+                                                dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                                res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
+                                                p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                dirct         = "down", # direction of dysregulation in expression
+                                                n.marker      = 100, # number of biomarkers for each subtype
+                                                doplot        = TRUE, # generate diagonal heatmap
+                                                norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
+                                                annCol        = annCol, # sample annotation in heatmap
+                                                annColors     = annColors, # colors for sample annotation
+                                                show_rownames = TRUE, # show no rownames (biomarker name)
+                                                centerFlag = F,
+                                                scaleFlag = F,
+                                                halfwidth = 3,
+                                                fig.name      = "downregulated_miRNA_biomarkers_heatmap",
+                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                                                width = 14,
+                                                height = 12,
+                                                fontsize_row = 0, # 3 default
+                                                name = "normalized miRNA")
 dev.off()
 
 # GSEA ###
@@ -514,14 +723,14 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             moic.res     = plot_object,
                                             dea.method   = "limma", # name of DEA method
                                             prefix       = "dgea_", # MUST be the same of argument in runDEA()
-                                            dat.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path of DEA files
-                                            res.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path to save marker files
+                                            dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                            res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                             msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                             norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                             dirct        = "up", # direction of dysregulation in pathway
                                             n.path       = 20,
                                             p.cutoff     = 0.05, # p cutoff to identify significant pathways
-                                            p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                                            p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                             gsva.method  = "gsva", # method to calculate single sample enrichment score
                                             name         = "GSVA scores", # name for colorbar
                                             norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
@@ -529,7 +738,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             nPerm = 10000,
                                             minGSSize = 10,
                                             maxGSSize = 500,
-                                            fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                                            fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                             width = 14, height = 12)
 
 # GSEA down-regulated
@@ -539,14 +748,14 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               moic.res     = plot_object,
                                               dea.method   = "limma", # name of DEA method
                                               prefix       = "dgea_", # MUST be the same of argument in runDEA()
-                                              dat.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path of DEA files
-                                              res.path      = paste0(home, "/Results/single_algorithm/CIMLR"), # path to save marker files
+                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                              res.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path to save marker files
                                               msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                               norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                               dirct        = "down", # direction of dysregulation in pathway
                                               n.path       = 20,
                                               p.cutoff     = 0.05, # p cutoff to identify significant pathways
-                                              p.adj.cutoff = 0.1, # padj cutoff to identify significant pathways
+                                              p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                               gsva.method  = "gsva", # method to calculate single sample enrichment score
                                               name         = "GSVA scores", # name for colorbar
                                               norm.method  = "mean", # normalization method to calculate subtype-specific enrichment score
@@ -554,7 +763,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               nPerm = 10000,
                                               minGSSize = 10,
                                               maxGSSize = 500,
-                                              fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                                              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                               width = 14, height = 12)
 
 # Gene set variation analysis #####
@@ -570,7 +779,7 @@ gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             gsva.method   = "gsva", # method to calculate single sample enrichment score
                                             annCol        = annCol,
                                             annColors     = annColors,
-                                            fig.path      = paste0(home, "/Results/single_algorithm/CIMLR"),
+                                            fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
                                             fig.name      = "gene_sets_of_interest_heatmap",
                                             centerFlag    = F,
                                             scaleFlag     = F,
@@ -583,20 +792,198 @@ gsva.res = runGSVA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             name          = "GSVA scores")
 dev.off()
 
+# Hierarchical clustering of pathways
+library(pathfindR)
+library(fastcluster)
+
+# Get unique pathways for each subtype
+GSEAfiles_up <- sort(dir(paste0(home, "/Results/single_algorithm/", algorithm), 
+                         pattern = "unique_upexpr_pathway.txt$"))
+GSEAfiles_down <- sort(dir(paste0(home, "/Results/single_algorithm/", algorithm), 
+                           pattern = "unique_downexpr_pathway.txt$"))
+
+unique_upexpr_pathways = list()
+for (i in 1:length(gsea.up$gsea.list)) {
+  unique_upexpr_pathways[[i]] = data.table::fread(paste0(paste0(home, "/Results/single_algorithm/", algorithm), 
+                                                         "/", GSEAfiles_up[i]),
+                                                  header = TRUE, sep = "\t")
+}
+
+unique_downexpr_pathways = list()
+for (i in 1:length(gsea.down$gsea.list)) {
+  unique_downexpr_pathways[[i]] = data.table::fread(paste0(paste0(home, "/Results/single_algorithm/", algorithm), 
+                                                           "/", GSEAfiles_down[i]),
+                                                    header = TRUE, sep = "\t")
+}
+
+names(unique_downexpr_pathways) = names(unique_upexpr_pathways) = names(gsea.up$gsea.list)
+
+# Filter GSEA input
+gsea.up_unique = gsea.up
+for (i in 1:length(unique_upexpr_pathways)) {
+  unq = unique_upexpr_pathways[[i]]$V1
+  gsea.up_unique$gsea.list[[i]]@result = gsea.up_unique$gsea.list[[i]]@result[gsea.up_unique$gsea.list[[i]]@result$ID %in%
+                                                                                unq, ]
+}
+
+gsea.down_unique = gsea.down
+for (i in 1:length(unique_downexpr_pathways)) {
+  unq = unique_downexpr_pathways[[i]]$V1
+  gsea.down_unique$gsea.list[[i]]@result = gsea.down_unique$gsea.list[[i]]@result[gsea.down_unique$gsea.list[[i]]@result$ID %in%
+                                                                                    unq, ]
+}
+
+rm(unq); gc()
+
+hclust_input_up = prepare_gsea_output_for_hclust(gsea_output = gsea.up_unique, 
+                                                 dgea_output_name_style = "dgea_", 
+                                                 dea.method = "limma", 
+                                                 mo.method = "",
+                                                 dat.path = paste0(home, "/Results/single_algorithm/", algorithm), 
+                                                 dgea_padj_cutoff = 0.05,
+                                                 logfc_cutoff = 0,
+                                                 pathway_padj_cutoff = 0.05)
+
+hclust_input_down = prepare_gsea_output_for_hclust(gsea_output = gsea.down_unique, 
+                                                   dgea_output_name_style = "dgea_", 
+                                                   dea.method = "limma", 
+                                                   mo.method = "",
+                                                   dat.path = paste0(home, "/Results/single_algorithm/", algorithm), 
+                                                   dgea_padj_cutoff = 0.05,
+                                                   logfc_cutoff = 0,
+                                                   pathway_padj_cutoff = 0.05)
+
+hclust_input = c(hclust_input_up, hclust_input_down)
+names(hclust_input) = c(paste0(rep("up_", length(hclust_input_up)), 
+                               names(hclust_input_up)),
+                        paste0(rep("down_", length(hclust_input_down)), 
+                               names(hclust_input_down)))
+
+rm(hclust_input_down, hclust_input_up); gc()
+
+# Load doParallel if not already loaded
+library(parallel)
+library(foreach)
+library(doParallel)
+
+# Set up the number of cores to use: minimum of length(hclust_input) or 5
+cl <- makeCluster(min(length(hclust_input), 5))
+registerDoParallel(cl)
+
+# Use foreach with parallel processing
+timestamp()
+hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", "fastcluster")) %dopar% {
+  RNGversion("4.2.2")
+  set.seed(123)
+  source("Scripts/automated_scripts/fast_pathfindR_hclust.R")
+  cluster_enriched_terms_fast(hclust_input[[i]],
+                              method = "hierarchical", plot_clusters_graph = FALSE,
+                              use_description = FALSE, use_active_snw_genes = FALSE)
+}
+timestamp() # ~1h
+stopCluster(cl)
+gc()
+names(hclust_output) = names(hclust_input)
+
+# Export
+library(openxlsx)
+wb = createWorkbook()
+for (j in 1:length(hclust_output)) {
+  addWorksheet(wb, names(hclust_output)[j])
+  writeData(wb, names(hclust_output)[j], hclust_output[[j]])
+}
+saveWorkbook(wb, file = paste0(home, "/Results/single_algorithm/", algorithm, "/", 
+                               algorithm, "_representative_pathways.xlsx"),
+             overwrite = TRUE); rm(wb)
+
+# Plot pathway heatmaps
+hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
+                                                norm.expr = plotdata$RNAseq, 
+                                                representative = TRUE, moic.res = plot_object,
+                                                subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
+                                                norm.method = "mean", dirct = "up",
+                                                fig.name = "upregulated_pathway_heatmap",
+                                                name = "GSVA scores",
+                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm), 
+                                                width = 15, height = 10, gsva.method = "gsva")
+
+hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
+                                                  norm.expr = plotdata$RNAseq, 
+                                                  representative = TRUE, moic.res = plot_object,
+                                                  subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
+                                                  norm.method = "mean", dirct = "down",
+                                                  fig.name = "downregulated_pathway_heatmap",
+                                                  name = "GSVA scores",
+                                                  fig.path = paste0(home, "/Results/single_algorithm/", algorithm), 
+                                                  width = 15, height = 10, gsva.method = "gsva")
+
+# Fraction Genome Altered ###
+fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
+
+fga.SNF <- compFGA_optimized(moic.res     = plot_object,
+                             segment      = fga_df,
+                             iscopynumber = TRUE, 
+                             test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
+                             fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
+                             fig.name     = paste0("FGA_barplot_", algorithm),
+                             prefix = algorithm,
+                             width = 16,
+                             ga_column = "ga", # genome altered column
+                             clust.col = cluster_colors,
+                             title = paste0(algorithm, " FGA plot: simple criteria"))
+
+fga.SNF.COSMIC <- compFGA_optimized(moic.res     = plot_object,
+                                    segment      = fga_df,
+                                    iscopynumber = TRUE, 
+                                    test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
+                                    fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
+                                    fig.name     = paste0("COSMIC_criteria_FGA_barplot_", algorithm),
+                                    prefix = algorithm,
+                                    width = 16,
+                                    ga_column = "COSMIC_ga", # genome altered column
+                                    clust.col = cluster_colors,
+                                    title = paste0(algorithm, " FGA plot: COSMIC criteria"))
+
+rm(fga_df); gc()
+
 # Evaluation #####
 # Run Nearest Template Prediction in transNEO cohort ###
 # Load transNEO data
 transNEO_mm_inputs = readRDS("Resources/transNEO/transNEO_multimodal_inputs.rds")
-transcr = transNEO_mm_inputs$`RNAseq log2(TPM+1)`[, 1:153]
-rownames(transcr) = transNEO_mm_inputs$`RNAseq log2(TPM+1)`$Hugo
+transcr = readRDS("Resources/transNEO/log2.norm.counts.plus1_transNEO.rds")
+
+# get as many templates as possible
+dgea.marker.up_1000 <- runMarker_single_algorithm_no_export(algorithm_name = algorithm,
+                                                            moic.res = plot_object,
+                                                            n.marker = 1000,
+                                                            dea.method    = "limma", # name of DEA method
+                                                            prefix        = "dgea_", # MUST be the same of argument in runDEA()
+                                                            dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                                            p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                            p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                            norm.expr = plotdata$RNAseq,
+                                                            dirct         = "up" # direction of dysregulation in expression
+)
+
+# 2. Down-regulated markers
+dgea.marker.down_1000 <- runMarker_single_algorithm_no_export(algorithm_name = algorithm,
+                                                              moic.res = plot_object,
+                                                              n.marker = 1000,
+                                                              dea.method    = "limma", # name of DEA method
+                                                              prefix        = "dgea_", # MUST be the same of argument in runDEA()
+                                                              dat.path      = paste0(home, "/Results/single_algorithm/", algorithm), # path of DEA files
+                                                              p.cutoff      = 0.05, # p cutoff to identify significant DEGs
+                                                              p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
+                                                              norm.expr = plotdata$RNAseq,
+                                                              dirct         = "down" # direction of dysregulation in expression
+)
 
 # Up-regulated expression features
-dgea.marker.up[["templates"]][["class"]] = gsub("CS", algorithm, 
-                                                dgea.marker.up[["templates"]][["class"]])
 RNGversion("4.2.2")
+timestamp()
 transNEO_ntp_expr_up = runNTP(
-  expr = as.matrix(transcr),
-  templates = dgea.marker.up$templates,
+  expr = transcr,
+  templates = dgea.marker.up_1000$templates,
   scaleFlag = TRUE,
   centerFlag = TRUE,
   nPerm = 10000,
@@ -605,26 +992,27 @@ transNEO_ntp_expr_up = runNTP(
   doPlot = TRUE,
   height = 8,
   width = 12,
-  fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
+timestamp() # 4 min
 
 # down-regulated
-dgea.marker.down[["templates"]][["class"]] = gsub("CS", algorithm, 
-                                                  dgea.marker.down[["templates"]][["class"]])
 RNGversion("4.2.2")
+timestamp()
 transNEO_ntp_expr_down = runNTP(
-  expr = as.matrix(transcr),
-  templates = dgea.marker.down$templates,
-  scaleFlag = TRUE, # already standardised
-  centerFlag = TRUE, # -//-
+  expr = transcr,
+  templates = dgea.marker.down_1000$templates,
+  scaleFlag = TRUE,
+  centerFlag = TRUE,
   nPerm = 10000,
   seed = 123,
   distance = "cosine", # default
   doPlot = TRUE,
   height = 8,
   width = 12,
-  fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_down_heatmap_transNEO")
+timestamp() # 2.5 min
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -647,7 +1035,7 @@ transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
                 NAT.regimen, Chemo.cycles,
                 aHER2.cycles, RCB.score, STAT1.gsva,
                 GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
-  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, `Consensus Subtype` = clust_up),
+  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, CIMLR = clust_up),
              by = "Donor.ID")
 rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
 transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
@@ -676,18 +1064,61 @@ transNEO_var2comp$iC10 = factor(transNEO_var2comp$iC10,
                                 levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                                 labels = paste("iC", seq(1, 10, 1), sep = ""))
 
+# Remove unknown levels for statistical tests
+transNEO_var2comp_nonas = transNEO_var2comp
+for (i in 1:ncol(transNEO_var2comp)) {
+  nas = which(transNEO_var2comp[, i] == "Unknown")
+  transNEO_var2comp_nonas[nas, i] = NA
+  empties = which(transNEO_var2comp[, i] == "")
+  transNEO_var2comp_nonas[empties, i] = NA
+}
+rm(nas, empties); gc()
 
 transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                  moic.res = transNEO_ntp_expr_up,
-                                                 var2comp = transNEO_var2comp,
-                                                 strata = "Consensus Subtype",
-                                                 factorVars = c("ER.status", "HER2.status", "Grade.pre.NAT",
+                                                 var2comp = transNEO_var2comp_nonas,
+                                                 strata = algorithm,
+                                                 factorVars = c("ER.status", "HER2.status",
                                                                 "NAT.regimen", 
                                                                 "pCR.RD", "LN.status.at.diagnosis"),
+                                                 nonnormalVars = c("Age",
+                                                                   "RCB.score", "STAT1.gsva", "GGI.gsva",
+                                                                   "ESC.gsva", "TMB", "HRD.sum",
+                                                                   "Grade.pre.NAT", "Chemo.cycle", "aHER2.cycles"),
                                                  includeNA = FALSE,
                                                  doWord = TRUE,
                                                  tab.name = "transNEO_Summary_of_clinical_variables",
-                                                 res.path = paste0(home, "/Results/single_algorithm/CIMLR"))
+                                                 res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
+                                                 output_pdf = TRUE,
+                                                 pdf_level_col_width = c("7em", "10em"),
+                                                 pdf_count_col_width = "10em",
+                                                 pdf_pval_col_width = "3em",
+                                                 pdf_test_col_width = "8em",
+                                                 pdf_tab_font_size = 9)
+
+transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
+transNEO_ntp_expr_up_ord$clust.res$clust = gsub(algorithm, "", transNEO_ntp_expr_up_ord$clust.res$clust)
+transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
+                                                                 moic.res = transNEO_ntp_expr_up_ord,
+                                                                 var2comp = transNEO_var2comp_nonas %>%
+                                                                   dplyr::select(Grade.pre.NAT, 
+                                                                                 Chemo.cycles, 
+                                                                                 aHER2.cycles,
+                                                                                 CIMLR),
+                                                                 strata = algorithm,
+                                                                 ordinalVars = c("Grade.pre.NAT",
+                                                                                 "Chemo.cycles",
+                                                                                 "aHER2.cycles"),
+                                                                 includeNA = FALSE,
+                                                                 tab.name = "transNEO Summary of ordinal clinical variables",
+                                                                 res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
+                                                                 output_pdf = TRUE,
+                                                                 pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
+                                                                 pdf_level_col_width = c("7em", "10em"),
+                                                                 pdf_count_col_width = "10em",
+                                                                 pdf_pval_col_width = "3em",
+                                                                 pdf_test_col_width = "8em",
+                                                                 pdf_tab_font_size = 9)
 
 # Run PAM ###
 RNGversion("4.2.2.")
@@ -695,7 +1126,7 @@ set.seed(123)
 transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
                                        train.expr = plotdata$RNAseq,
                                        moic.res   = plot_object,
-                                       test.expr  = as.matrix(transcr))
+                                       test.expr  = transcr)
 
 # Check consistency across methods
 
@@ -703,34 +1134,34 @@ transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
 RNGversion("4.2.2.")
 set.seed(123)
 TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, plot_object$clust.res$samID],
-                       templates = dgea.marker.up$templates,
-                       doPlot = F)
+                       templates = dgea.marker.up_1000$templates, distance = "cosine",
+                       doPlot = F, nPerm = 10000)
 
 TCGA.pam.pred = runPAM_single_algorithm(algorithm_name = algorithm,
                                         train.expr = plotdata$RNAseq[, plot_object$clust.res$samID],
                                         moic.res = plot_object,
                                         test.expr = plotdata$RNAseq[, plot_object$clust.res$samID])
 
-# consensus TCGA vs NTP TCGA # FAILS
+# consensus TCGA vs NTP TCGA
 runKappa_single_algorithm(algorithm_name = algorithm,
                           subt1 = plot_object$clust.res$clust,
                           subt2 = gsub(algorithm, "", TCGA.ntp.pred$clust.res$clust),
-                          subt1.lab = "CIMLR",
+                          subt1.lab = algorithm,
                           subt2.lab = "NTP TCGA",
                           height = 8,
                           width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_NTP_TCGA"))
 
 # consensus TCGA vs PAM TCGA
 runKappa_single_algorithm(algorithm_name = algorithm,
                           subt1 = plot_object$clust.res$clust,
                           subt2 = gsub(algorithm, "", TCGA.pam.pred$clust.res$clust),
-                          subt1.lab = "CIMLR",
+                          subt1.lab = algorithm,
                           subt2.lab = "PAM TCGA",
                           height = 8,
                           width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
 # NTP transNEO vs PAM transNEO
@@ -742,14 +1173,14 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           subt2.lab = "transNEO PAM",
                           height = 8,
                           width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/CIMLR"),
+                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = "kappa_NTP_vs_PAM_transNEO")
 
 # Export consensus clustering object
 clust = as.data.frame(plot_object$clust.res)
 colnames(clust) = c("Sample.ID", "Cluster")
-clust$Cluster = paste0("CIMLR", clust$Cluster)
-openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/CIMLR/", 
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/",
                                    algorithm, "_", data_source, "_",
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
@@ -757,8 +1188,8 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/CIMLR/",
 # Supplementary results #####
 
 # Create subdirectory for supplementary plots
-if (!dir.exists(paste0(home, "/Results/single_algorithm/CIMLR/Supplement"))) {
-  dir.create(paste0(home, "/Results/single_algorithm/CIMLR/Supplement"))
+if (!dir.exists(paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"))) {
+  dir.create(paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"))
 }
 
 # Setup for heatmaps
@@ -775,62 +1206,61 @@ CIMLR_clust_res = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID, CIMLR = Cl
 
 # PCA from original matrices ###
 # RNA
-pca_from_original_matrix(mydata = input$RNAseq, 
-                         algorithm = "CIMLR", 
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
+                         algorithm = algorithm, 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "RNAseq")
 
 # miRNA
-pca_from_original_matrix(mydata = input$miRNA, 
-                         algorithm = "CIMLR", 
+pca_from_original_matrix(mydata = plotdata$miRNA, 
+                         algorithm = algorithm, 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "miRNA")
 
 # CNV
-pca_from_original_matrix(mydata = input$CNV, 
-                         algorithm = "CIMLR", 
+pca_from_original_matrix(mydata = plotdata$CNV, 
+                         algorithm = algorithm, 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "CNV")
 
 # Use multidimensional scaling for SNPs
 # Features must be in rows
-mds_from_original_matrix(matrix = input$SNPs, dist_method = "binary",
-                         algorithm = "CIMLR", 
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
+                         algorithm = algorithm, 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "SNPs")
 
 # Methylation
-pca_from_original_matrix(mydata = input$Methylation, 
-                         algorithm = "CIMLR", 
+pca_from_original_matrix(mydata = plotdata$Methylation, 
+                         algorithm = algorithm, 
                          clust_res = CIMLR_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36"), 
-                         output_path = paste0(home, "/Results/single_algorithm/CIMLR/Supplement"),
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "Methylation")
 
 # Draw a heatmap of the final S matrix ###
-cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
-dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
-create_MO_heatmap(matrix = cimlr_matrix, algorithm = "CIMLR", 
+create_MO_heatmap(matrix = cimlr_matrix, algorithm = algorithm, 
                   need.diag.zero = FALSE, # already zero
                   clust_annot_pheno = clust_annot_pheno ,
                   afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
                   annColors = annColors,
-                  heatmap_title = "Final CIMLR similarity heatmap",
+                  heatmap_title = "Final CIMLR similarity (S matrix) heatmap",
                   cluster_colors = cluster_colors_heatmap,
                   cluster_rows_flag = FALSE,
                   cluster_cols_flag = FALSE,
                   splits_flag = TRUE,
                   legend_title = "Final kernel similarity",
-                  output_file_name = paste0(home, "/Results/single_algorithm/CIMLR/Supplement/CIMLR_final_S_matrix_heatmap.png"))
+                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
+                                            "/Supplement/CIMLR_final_S_matrix_heatmap.png"))
 
 # Setup for barcharts ###
 # Stage
@@ -922,53 +1352,64 @@ unbiased.cv.test = function(x, string, digits = 3) {
               value = round(as.numeric(CV), digits)))
 }
 
-voi = colnames(clust_annot_pheno)[1:11]
+clust_annot_pheno_nonas = clust_annot_pheno
+for(i in 1:ncol(clust_annot_pheno_nonas)) {
+  clust_annot_pheno_nonas[, i] = as.character(clust_annot_pheno_nonas[, i])
+  nas = which(clust_annot_pheno_nonas[, i] == "Unknown")
+  clust_annot_pheno_nonas[nas, i] = NA
+  clust_annot_pheno_nonas[, i] = factor(clust_annot_pheno_nonas[, i])
+}
+rm(nas); gc()
+
+voi = colnames(clust_annot_pheno_nonas)[1:11]
 output = as.data.frame(matrix(NA, nrow = 0, ncol = 4))
 for (v in 1:length(voi)){
-  test = suppressWarnings(chisq.test(table(clust_annot_pheno[, algorithm], 
-                                           clust_annot_pheno[, voi[v]])))
+  keepers = which(!is.na(clust_annot_pheno_nonas[, voi[v]]))
+  test = suppressWarnings(chisq.test(table(clust_annot_pheno_nonas[keepers, algorithm], 
+                                           clust_annot_pheno_nonas[keepers, voi[v]])))
   chifit_p = test$p.value
   chifit_xsq = test$statistic
-  chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno[, algorithm], 
-                                                      clust_annot_pheno[, voi[v]]),
+  chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno_nonas[keepers, algorithm], 
+                                                      clust_annot_pheno_nonas[keepers, voi[v]]),
                                                 string = voi[v],
                                                 digits = 3)$value)
   comparison = paste0(voi[v], " vs ", algorithm, " cluster")
   output = rbind(output, c(comparison, chifit_p, chifit_xsq, chifit_cv))
-  rm(test, comparison, chifit_p, chifit_xsq, chifit_cv)
+  rm(test, comparison, chifit_p, chifit_xsq, chifit_cv, keepers)
 }
 colnames(output) = c("Comparison", "p-value", "Statistic", "Cramer's V")
 
 rm(v); gc()
 openxlsx::write.xlsx(output, 
                      paste0(home, 
-                            "/Results/single_algorithm/CIMLR/Supplement/Chisq_tests.xlsx"),
+                            "/Results/single_algorithm/", algorithm, "/Supplement/Chisq_tests.xlsx"),
                      overwrite = TRUE)
 
 # Bar chart generation
 CIMLR_barcharts = list()
-plotdata_bar = clust_annot_pheno
+plotdata_bar = clust_annot_pheno_nonas
 plotdata_bar[[algorithm]] = factor(plotdata_bar[[algorithm]])
 for (i in 1:length(voi)) {
   chifit = output
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
   CIMLR_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
-                                             chifit = chifit,
-                                             algorithm = algorithm,
-                                             barchart_ylim = 650,
-                                             text_y = 600, rect_ymin = 500,
-                                             rect_ymax = 620, x_annot = 1.5,
-                                             v_gap = 35, rect_xmin = 1,
-                                             rect_xmax = 2, 
-                                             annot_text_size = 2.25,
-                                             legend.text.size = 5,
-                                             x.axis.text.size = 5) +
+                                               chifit = chifit,
+                                               na.action = "na.omit",
+                                               algorithm = algorithm,
+                                               barchart_ylim = 650,
+                                               text_y = 600, rect_ymin = 500,
+                                               rect_ymax = 620, x_annot = 1.5,
+                                               v_gap = 35, rect_xmin = 1,
+                                               rect_xmax = 2, 
+                                               annot_text_size = 2.25,
+                                               legend.text.size = 5,
+                                               x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
   print(CIMLR_barcharts[[i]])
   ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
          path = paste0(home, 
-                       "/Results/single_algorithm/CIMLR/Supplement"), 
+                       "/Results/single_algorithm/", algorithm, "/Supplement"), 
          width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
@@ -987,37 +1428,38 @@ ggarrange(CIMLR_barcharts[[1]], CIMLR_barcharts[[2]], CIMLR_barcharts[[3]],
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
-                     "/Results/single_algorithm/CIMLR/Supplement"), 
-       width = 6500, height = 8000, device = 'png', units = "px",
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 7000, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Just significant ones now
 CIMLR_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno %>% dplyr::select(CIMLR, Histology, 
-                                                       `ER status`, `PR status`)
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(CIMLR, Histology, 
+                                                             `ER status`, `PR status`)
 plotdata_bar_sig$CIMLR = factor(plotdata_bar_sig$CIMLR)
-voi_sig = setdiff(colnames(plotdata_bar_sig), "CIMLR")
+voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
   chifit = output
   loc = which(grepl(voi_sig[i], chifit$Comparison))
   chifit = chifit[loc, ]
   CIMLR_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
-                                                 chifit = chifit,
-                                                 algorithm = algorithm,
-                                                 barchart_ylim = 650,
-                                                 text_y = 600, rect_ymin = 500,
-                                                 rect_ymax = 620, x_annot = 1.5,
-                                                 v_gap = 35, rect_xmin = 1,
-                                                 rect_xmax = 2, 
-                                                 annot_text_size = 2.25,
-                                                 legend.text.size = 5,
-                                                 x.axis.text.size = 5) +
+                                                   chifit = chifit,
+                                                   na.action = "na.omit",
+                                                   algorithm = algorithm,
+                                                   barchart_ylim = 650,
+                                                   text_y = 600, rect_ymin = 500,
+                                                   rect_ymax = 620, x_annot = 1.5,
+                                                   v_gap = 35, rect_xmin = 1,
+                                                   rect_xmax = 2, 
+                                                   annot_text_size = 2.25,
+                                                   legend.text.size = 5,
+                                                   x.axis.text.size = 5) +
     barchart_scales[[voi_sig[i]]]
   print(CIMLR_barcharts_sig[[i]])
-  ggsave(filename = paste0("sig_CIMLR_", voi_sig[i], "_barchart.png"),
+  ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
          path = paste0(home, 
-                       "/Results/single_algorithm/CIMLR/Supplement"), 
+                       "/Results/single_algorithm/", algorithm, "/Supplement"), 
          width = 2320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
@@ -1029,10 +1471,10 @@ rm(loc, chifit)
 ggarrange(CIMLR_barcharts_sig[[1]], CIMLR_barcharts_sig[[2]], CIMLR_barcharts_sig[[3]],
           ncol = 1, nrow = 3, labels = c("A", "B", "C"),
           font.label = list(size = 8, face = "bold", color ="black"))
-ggsave(filename = "sig_Multiplot_CIMLR_barcharts.png",
+ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
-                     "/Results/single_algorithm/CIMLR/Supplement"), 
-       width = 2500, height = 7000, device = 'png', units = "px",
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 2500, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1080,7 +1522,8 @@ ARI_to_MOVICS_CIMLR = calculate_ari_index(cluster_df1 = MOVICS_CIMLR %>%
                                         cluster_df2 = CIMLR_clusters,
                                         sample_col = "Sample.ID",
                                         clust_col = "Cluster",
-                                        suffixes = c("_MOVICS_CIMLR", "_CIMLR"))
+                                        suffixes = c(paste0("_MOVICS_", algorithm), 
+                                                     paste0("_", algorithm)))
 
 NMI_to_MOVICS_CIMLR = calculate_nmi_index(cluster_df1 = MOVICS_CIMLR %>%
                                           dplyr::rename(Sample.ID = samID,
@@ -1088,7 +1531,8 @@ NMI_to_MOVICS_CIMLR = calculate_nmi_index(cluster_df1 = MOVICS_CIMLR %>%
                                         cluster_df2 = CIMLR_clusters,
                                         sample_col = "Sample.ID",
                                         clust_col = "Cluster",
-                                        suffixes = c("_MOVICS_CIMLR", "_CIMLR"))
+                                        suffixes = c(paste0("_MOVICS_", algorithm), 
+                                                     paste0("_", algorithm)))
 
 # Wrap up #####
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
@@ -1110,7 +1554,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               sessionInfo = sessionInfo(), home = home)
 
 # Render the R Markdown document with the parameters
-rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/CIMLR/CIMLR_report.Rmd"), 
+rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/", algorithm, "/", algorithm, "_report.Rmd"), 
                   params = params, 
                   output_file = paste0(home, "/Results/single_algorithm/", 
                                        algorithm, "/", algorithm, "_report_",

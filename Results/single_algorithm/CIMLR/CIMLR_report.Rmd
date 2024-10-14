@@ -53,7 +53,7 @@ The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (whe
 The values are very low and indicate that `r params$algorithm` produces different clusters than consensus ``MOVICS``.
 
 ## Clinical variables
-With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>vital status, history of neoadjuvant treatment, PR status, ER status, HER2 status (not confirmed in bar charts), ER and PR cell level percentages, and histological type</b>. Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/CIMLR/Summary_of_clinical_variables.txt")`) (Exact tests).
+With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>PR status, ER status, PR cell level percentages and histological type</b>. Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/CIMLR/Summary_of_clinical_variables.txt")`) (Exact tests and non-parametric Kruskal-Wallis tests). The number of lymph nodes identified by immunohistochemical procedures (IHC) and H&E procedures, were also tested using the Jonckheere-Terpstra test for ordered differences.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/CIMLR/Supplement/Multiplot_CIMLR_barcharts.png")`)
 
@@ -78,16 +78,69 @@ DGEA is performed in order to compare the expression of the two identified conse
 
 In order to identify subtype-specific markers, we find the markers that are up-regulated in `r paste0(params$algorithm, 1)` vs. all other clusters and the ones which are down-regulated in `r paste0(params$algorithm, 1)` vs. all other clusters etc.
 
-In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
+In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ (actual differential expression value in the case of standardized expression data) are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
 <b>Up-regulated markers</b>
 ![](`r paste0(params$home,"/Results/single_algorithm/CIMLR/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+The same procedure can be followed to get the top miRNA and methylation markers:
+
+<b>Up-regulated methylation markers</b>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/hypermethylated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+<b>Up-regulated miRNA markers</b>
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/upregulated_miRNA_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+
+## Fraction of Genome Altered (FGA)
+In the case of CNVs, we also generate a plot of the fraction of genome that is altered (FGA) in the samples of each identified subtype. This plot uses original counts of copy number segments as input and applies a custom definition of gain and loss. In our work, we used two approaches in annotating segments in a sample with one of three possible labels: "gain", "loss", and "normal".
+
+In the first, simpler approach, we define gain as a copy number > 2, loss as a copy number < 2, and normal as copy number equal to 2. In the second approach, we use COSMIC criteria to define gain and loss, which also take average ploidy in each sample into account. More specifically, we define five cases:
+
+$$
+\text{Status} = 
+\begin{cases} 
+    \text{gain} & \text{if ploidy} \leq 2.7 \text{ and copy number} \geq 5, \\
+    \text{gain} & \text{if ploidy} > 2.7 \text{ and copy number} \geq 9, \\
+    \text{loss} & \text{if ploidy} \leq 2.7 \text{ and copy number} = 0, \\
+    \text{loss} & \text{if ploidy} > 2.7 \text{ and copy number} < \text{ploidy} - 2.7, \\
+    \text{normal} & \text{otherwise}.
+\end{cases}
+$$
+
+We modified the MOVICS ``compFGA()`` function, which compares subtypes based on the FGA, FGG, and FGL. The function performs statistical tests to compare the subtypes using either parametric or non-parametric methods, depending on the number of subtypes and the chosen test method. We modified the function to allow for predefined gain/loss/normal annotations.
+
+Mathematically, FGA, FGG, and FGL are defined as:
+
+$$
+\text{FGA} = \frac{\sum (\text{bases where classification is "gain" or "loss"})}{\sum (\text{total bases})}
+$$
+
+$$
+\text{FGG} = \frac{\sum (\text{bases where classification is "gain"})}{\sum (\text{total bases})}
+$$
+
+$$
+\text{FGL} = \frac{\sum (\text{bases where classification is "loss"})}{\sum (\text{total bases})}
+$$
+
+We used original copy number counts and non-parametric tests:
+
+- **Wilcoxon Rank-Sum Test (Non-parametric, 2 subtypes)**: 
+    If there are two subtypes, the Wilcoxon rank-sum test is used to compare the values of FGA, FGG, and FGL between the two subtypes.
+    
+- **Kruskal-Wallis Test (Non-parametric, more than 2 subtypes)**: 
+    When there are more than two subtypes, the Kruskal-Wallis test (kruskal.test) is applied. This is a non-parametric version of ANOVA used to detect differences between multiple subtypes. Additionally, pairwise comparisons between subtypes are performed using the Wilcoxon test with the Benjamini-Hochberg p-value adjustment.
+
+In all cases, the function summarizes the FGA, FGG, and FGL values for each subtype and calculates the respective $p$-values to assess statistical significance.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/FGA_barplot_",params$algorithm,"-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/COSMIC_criteria_FGA_barplot_",params$algorithm,"-1.png")`)
 
 ## Gene Set Enrichment Analysis
 
 GSEA is carried out using a gene set background which includes all gene sets derived from GO biological processes (``Resources/Pathways/c5.go.bp.v2024.1.Hs.symbols.gmt``) from The Molecular Signatures Database (MSigDB, https://www.gsea-msigdb.org/gsea/msigdb/index.jsp).
 
-Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.25; we set the latter to <u>0.1</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
+Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p-$value < 0.05 and adjusted $p-$value < 0.25; we set the latter to <u>0.05</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/CIMLR/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
@@ -96,6 +149,9 @@ Likewise, these identified specific pathways should pass the significance thresh
 
 <b>Comparison with MOVICS CIMLR subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/CIMLR_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+
+We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/",params$algorithm,"_representative_pathways.xlsx")`)):
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/","pdf2png/representative_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
 For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest.
 
@@ -111,14 +167,14 @@ For all the new defined molecular subtypes, it is critical to depict its charact
 ## Nearest Template Prediction (NTP)
 MOVICS provides two model-free approaches for subtype prediction in validation cohort. First, MOVICS switches to nearest template prediction ([NTP](https://pubmed.ncbi.nlm.nih.gov/21124904/)) which can be flexibly applied to cross-platform, cross-species, and multiclass predictions without any optimization of analysis parameters.
 
-Here cosine similarity is used to compare external samples to class templates (here we use the up-regulated genes in the form of a binary matrix with two columns: cluster 1 / cluster 2 where an entry is 1 if the gene is up-regulated in the cluster or -1 otherwise). The nearest class for each sample is determined by the smallest distance (converted from cosine similarity here). Each sample's result includes the nearest class prediction, the distance to all templates, and the p-value of the prediction.
+Here cosine similarity is used to compare external samples to class templates (here we use the up-regulated genes in the form of a binary matrix with two columns: "cluster #" where an entry is 1 if the gene is up-regulated in the cluster # or -1 otherwise). The nearest class for each sample is determined by the smallest distance (converted from cosine similarity here). Each sample's result includes the nearest class prediction, the distance to all templates, and the p-value of the prediction.
 
 The function randomly permutes the sample labels multiple times (here ``nPerm = 10000``) to generate a null distribution of similarity scores between samples and class templates. For each observed sample-to-template distance, the function compares it against the null distribution to calculate a $p$-value. This $p$-value indicates the likelihood that the observed match could have occurred by chance. The $p$-values are adjusted using the false discovery rate (FDR) method to control for multiple hypothesis testing, ensuring robust statistical inference.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/CIMLR/pdf2png/ntp_expr_up_heatmap_transNEO-1.png")`)
 ![](`r paste0(params$home,"/Results/single_algorithm/CIMLR/pdf2png/ntp_expr_down_heatmap_transNEO-1.png")`)
 
-Results on the comparisons of `r params$evaluation_source` clinical variables with respect to the predicted consensus subtypes are summarised in [this file](`r paste0(params$home,"/Results/single_algorithm/CIMLR/transNEO_Summary_of_clinical_variables.txt")`).
+Results on the comparisons of `r params$evaluation_source` clinical variables with respect to the predicted consensus subtypes are summarised in [this file](`r paste0(params$home,"/Results/single_algorithm/CIMLR/transNEO_Summary_of_clinical_variables.txt")`). Grade before NAT administration, number of chemotherapy cycles and the number of adjuvant HER2 treatment were also tested using the Jonckheere-Terpstra test for ordered differences. See conclusions for significant results.
 
 ## Partition Around Medoids (PAM)
 
