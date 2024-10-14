@@ -1551,6 +1551,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
               NMI_to_MOVICS_CIMLR = NMI_to_MOVICS_CIMLR, ARI_to_MOVICS_CIMLR = ARI_to_MOVICS_CIMLR,
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
+              transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo(), home = home)
 
 # Render the R Markdown document with the parameters

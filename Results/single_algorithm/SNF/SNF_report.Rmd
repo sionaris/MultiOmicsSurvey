@@ -309,7 +309,7 @@ In MOVICS, the `r params$algorithm` algorithm is run by default with $N_i = 30$,
 
 ```{r resp_table, echo=FALSE, eval=TRUE}
 # Create the data frame
-table_data <- table(params$transNEO_var2comp[[params$algorithm]], params$transNEO_var2comp[[params$algorithm]])
+table_data <- table(params$transNEO_var2comp[[params$algorithm]], params$transNEO_var2comp$pCR.RD)
 
 # Calculate percentages
 percentage_data <- 100 * prop.table(table_data, 1)
