@@ -46,7 +46,7 @@ The values are very low and indicate that `r params$algorithm` produces differen
 ## Clinical variables
 Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Summary_of_clinical_variables.txt")`) (Exact tests and non-parametric Kruskal-Wallis tests). The number of lymph nodes identified by immunohistochemical procedures (IHC) and H&E procedures, were also tested using the Jonckheere-Terpstra test for ordered differences.
 
-With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>PR status, ER status, ER and PR cell level percentages, the number of lymph nodes identified by either IHC or H&E, and histological type</b>.
+With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>race, PR status, ER status, ER and PR cell level percentages, the number of lymph nodes identified by either IHC or H&E, and histological type</b>.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-1.png")`)
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-2.png")`)
@@ -73,7 +73,7 @@ Differential Gene Expression Analysis (DGEA) is performed in order to compare th
 
 In order to identify subtype-specific markers, we find the markers that are up-regulated in `r paste0(params$algorithm, 1)` vs. all other clusters and the ones which are down-regulated in `r paste0(params$algorithm, 1)` vs. all other clusters etc.
 
-In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
+In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ (actual differential expression value in the case of standardized expression data) are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
 <b>Up-regulated RNA-seq markers</b>
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
@@ -135,7 +135,7 @@ In all cases, the function summarizes the FGA, FGG, and FGL values for each subt
 
 GSEA is carried out using a gene set background which includes all gene sets derived from GO biological processes (``Resources/Pathways/c5.go.bp.v2024.1.Hs.symbols.gmt``) from The Molecular Signatures Database (MSigDB, https://www.gsea-msigdb.org/gsea/msigdb/index.jsp).
 
-Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.25; we set the latter to <u>0.1</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
+Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.25; we set the latter to <u>0.05</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
@@ -145,7 +145,7 @@ Likewise, these identified specific pathways should pass the significance thresh
 <b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/",params$algorithm,"_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
-We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/",params$algorithm,"_representative_pathways.xlsx")`):
+We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/",params$algorithm,"_representative_pathways.xlsx")`)):
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/","pdf2png/representative_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
 For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest. We focus on immune pathways here.
@@ -293,14 +293,15 @@ In MOVICS, the `r params$algorithm` algorithm is run by default with $N_i = 30$,
 
 # Conclusions
 <ol>
-  <li>The identified SNF subtypes are associated with <b>PR status, ER status, ER and PR cell level percentages, the number of lymph nodes identified by either IHC or H&E, and histological type</b>.</li>
-  <li>The identified SNF subtypes are similar to the MOVICS SNF subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS_SNF`, <b>NMI:</b> `r params$NMI_to_MOVICS_SNF`).</li>
+  <li>The identified SNF subtypes are associated with <b>race, PR status, ER status, ER and PR cell level percentages, the number of lymph nodes identified by either IHC or H&E, and histological type</b>.</li>
+  <li>The identified SNF subtypes are similar to the MOVICS SNF subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS_SNF`, <b>NMI:</b> `r params$NMI_to_MOVICS_SNF`), but not to the MOVICS consensus subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS`, <b>NMI:</b> `r params$NMI_to_MOVICS`).</li>
   <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and RNA-seq modalities</b>.</li>
   <li>SNF1 is associated with <b>ER+, PR+ samples</b> and has the majority of <b>ILC samples</b>.</li>
   <li>SNF1 tends to have <b>more positive lymph nodes</b> than SNF2, according to Jonckheere-Terpstra tests.</li>
   <li>SNF2 has generally <b>higher immune system activity</b> compared to SNF1.</li>
   <li>SNF1 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF2 has a high proportion of <em>TP53</em> <b>mutations</b>. SNF1 has a relatively high ratio of <em>CDH1</em> mutations too.</li>
-  <li>SNF2 has significantly up-regulated <b>cell division and proliferation</b> pathways copared to SNF1.</li>
+  <li>There are significant differences in the <b>FGA</b> bars of the two subtypes. </li>
+  <li>SNF2 has significantly up-regulated <b>cell division and proliferation</b> pathways compared to SNF1.</li>
   <li>In terms of <b>drug sensitivity</b>, SNF1 seems to be more sensitive to <b>sorafenib and lapatinib</b> compared to SNF2, and less sensitive to <b>paclitaxel, doxorubicin, 5-fluorouracil and cisplatin</b>.</li>
   <li>Predicted SNF subtypes on the transNEO cohort are associated with lymph node status at diagnosis, ER status, grade, <b>pCR</b> (see table below), PAM50, iC10, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
   <li>SNF2 on transNEO has a significantly <b>higher proportion of higher grade tumours</b>, according to Jonckheere-Terpstra tests.</li>

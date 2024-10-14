@@ -61,7 +61,7 @@ Differential Gene Expression Analysis (DGEA) is performed in order to compare th
 
 In order to identify subtype-specific markers, we find the markers that are up-regulated in CS1 vs. all other clusters and the ones which are down-regulated in CS1 vs. all other clusters etc.
 
-In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> <b>100 markers</b>). These biomarkers should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
+In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ (actual differential expression value in the case of standardized expression data) are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> <b>100 markers</b>). These biomarkers should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
 <b>Up-regulated RNA-seq markers</b>
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
@@ -123,11 +123,11 @@ In all cases, the function summarizes the FGA, FGG, and FGL values for each subt
 
 GSEA is carried out using a gene set background which includes all gene sets derived from GO biological processes (c5.bp.v7.1.symbols.gmt) from The Molecular Signatures Database (MSigDB, https://www.gsea-msigdb.org/gsea/msigdb/index.jsp).
 
-Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.25; we set the latter to <u>0.1</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
+Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.25; we set the latter to <u>0.05</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
-We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/MOVICS_baseline/MOVICS_representative_pathways.xlsx")`):
+We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/MOVICS_baseline/MOVICS_representative_pathways.xlsx")`)):
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/representative_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
 For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest. We focus on immune pathways here.
