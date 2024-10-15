@@ -1262,6 +1262,10 @@ stopCluster(cl)
 gc()
 names(hclust_output) = names(hclust_input)
 
+# Are there any null sets?
+which(sapply(hclust_output, function(x) is.null(x$clustered_df))) # No
+hclust_output = lapply(hclust_output, `[[`, "clustered_df")
+
 # Export
 library(openxlsx)
 wb = createWorkbook()
