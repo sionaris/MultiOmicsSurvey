@@ -347,6 +347,7 @@ var2comp = scheme$var2comp %>%
 rm(scheme); gc()
 
 # Silhouette
+library(MOVICS)
 cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
 dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
 sil = compute_silhouette(cluster_df = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID),
@@ -361,7 +362,6 @@ getSilhouette(sil      = sil,
 dev.off()
 
 # MOVICS-like analysis #####
-library(MOVICS)
 library(ComplexHeatmap)
 
 plotdata <- lapply(lapply(input, as.matrix), 
