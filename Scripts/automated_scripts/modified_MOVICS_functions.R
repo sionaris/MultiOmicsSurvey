@@ -4283,6 +4283,7 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
                                  representative = TRUE, moic.res = NULL,
                                  clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                                                "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"),
+                                 present_clusters = NULL, # New argument for cluster labels
                                  subtype_prefix = "CS", n.path = 10, msigdb.path = NULL,
                                  norm.method = "mean", dirct = NULL, color = NULL,
                                  fig.name = NULL, fig.path = getwd(), width = 15, height = 10, name = NULL,
@@ -4348,7 +4349,23 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
     gset <- log2(norm.expr + 1)
   }
   
-  n.moic = length(unique(moic.res$clust.res$clust))
+  # If present_clusters is NULL, use all clusters
+  if (is.null(present_clusters)) {
+    present_clusters <- paste0(subtype_prefix, 1:length(clust.col))
+  }
+  
+  # Extract cluster numbers from present_clusters
+  cluster_numbers <- as.numeric(gsub("[^0-9]", "", present_clusters))
+  
+  # Filter colors based on the extracted cluster numbers
+  colvec <- clust.col[cluster_numbers]
+  names(colvec) <- present_clusters
+  
+  # Filter moic.res and gsea.lists to include only present clusters
+  moic.res$clust.res <- moic.res$clust.res[moic.res$clust.res$clust %in% cluster_numbers, ]
+  gsea.lists <- gsea.lists[sapply(gsea.lists, function(x) any(as.numeric(gsub("[^0-9]", "", x$Cluster)) %in% cluster_numbers))]
+  
+  n.moic <- length(cluster_numbers)
   
   pathway <- pathcore <- list()
   pathnum <- c()
@@ -4370,8 +4387,6 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
   
   sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust, 
                                         decreasing = FALSE), "samID"]
-  colvec <- clust.col[1:n.moic]
-  names(colvec) <- paste0(subtype_prefix, 1:n.moic)
   annCol <- data.frame(Subtype = paste0(subtype_prefix, moic.res$clust.res[sam.order, 
                                                                            "clust"]), row.names = sam.order, stringsAsFactors = FALSE)
   annColors <- list(Subtype = colvec)
@@ -4385,21 +4400,21 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
   message(gsva.method, " done...")
   esm <- data.frame(row.names = rownames(es))
   if (norm.method == "mean") {
-    for (i in paste0(subtype_prefix, 1:n.moic)) {
+    for (i in present_clusters) {
       esm <- cbind.data.frame(esm, data.frame(rowmean(es[, 
                                                          rownames(annCol[which(annCol$Subtype == i), 
                                                                          , drop = FALSE])])))
     }
   }
   if (norm.method == "median") {
-    for (i in paste0(subtype_prefix, 1:n.moic)) {
+    for (i in present_clusters) {
       esm <- cbind.data.frame(esm, data.frame(rowmedian(es[, 
                                                            rownames(annCol[which(annCol$Subtype == i), 
                                                                            , drop = FALSE])])))
     }
   }
-  colnames(esm) <- paste0(subtype_prefix, 1:n.moic)
-  annRow <- data.frame(Subtype = rep(paste0(subtype_prefix, 1:n.moic), 
+  colnames(esm) <- present_clusters
+  annRow <- data.frame(Subtype = rep(present_clusters, 
                                      pathnum), row.names = rownames(esm), stringsAsFactors = FALSE)
   if (is.null(color)) {
     mapcolor <- (grDevices::colorRampPalette(c("#0000FF", 
@@ -4428,4 +4443,118 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
   message("heatmap done...")
   return(list(gsea.list = gsea.lists, raw.es = es.backup, scaled.es = es, 
               grouped.es = esm, heatmap = hm))
+}
+
+# Silhouette
+getSilhouette_mod = function (sil = NULL, 
+                              clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", 
+                                            "#BDD5EA", "#FFA5AB", "#011627", 
+                                            "#023E8A", "#9D4EDD", "#f09c6c", 
+                                            "#09f3b3"), 
+                              fig.path = getwd(), 
+                              fig.name = "silhouette", 
+                              width = 5.5, 
+                              height = 5,
+                              axis_label_size = 1, 
+                              axis_label_font = 1, 
+                              annotation_size = 1.2,
+                              title_text_size = 1
+) 
+{
+  N.clust <- length(unique(sil[, 1]))
+  colvec <- clust.col[1:N.clust]
+  outFig <- paste0(fig.name, ".pdf")
+  
+  # Set graphical parameters, including text sizes and fonts
+  par(bty = "o", mgp = c(2.5, 0.33, 0), 
+      mar = c(5.1, 2.1, 3.1, 2.1) + 0.1, 
+      las = 1, 
+      tcl = -0.25, 
+      cex.axis = axis_label_size,    
+      cex.lab = axis_label_size,     
+      font.lab = axis_label_font,    
+      cex.main = title_text_size
+  )
+  
+  # Plot the silhouette with the specified colors
+  plot(sil, border = NA, col = colvec, cex = annotation_size)
+  
+  # Save the plot to a PDF
+  dev.copy2pdf(file = file.path(fig.path, outFig), width = width, height = height)
+}
+
+getSilhouette_ggplot = function(sil = NULL, 
+                                clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", 
+                                              "#BDD5EA", "#FFA5AB", "#011627", 
+                                              "#023E8A", "#9D4EDD", "#f09c6c", 
+                                              "#09f3b3"), 
+                                fig.path = getwd(), 
+                                fig.name = "silhouette_ggplot", 
+                                width = 7,
+                                height = 5,
+                                axis_label_size = 12,
+                                axis_label_font = "plain",
+                                text_size = 3.5,
+                                title_size = 16,
+                                algorithm = "",
+                                save_plot = TRUE
+) 
+{
+  library(ggplot2)
+  
+  # Prepare the data frame from silhouette object
+  sil_df <- as.data.frame(sil)
+  sil_df$samID <- rownames(sil_df)
+  
+  # Calculate the average silhouette width for each cluster
+  cluster_stats <- aggregate(sil_df$sil_width, by = list(sil_df$cluster), FUN = mean)
+  colnames(cluster_stats) <- c("cluster", "Average_Silhouette_Width")
+  
+  # Add cluster stats to the sil_df for annotation
+  sil_df <- merge(sil_df, cluster_stats, by.x = "cluster", by.y = "cluster")
+  
+  # Create a new column for prefixed cluster labels using the 'algorithm' argument
+  sil_df$prefixed_cluster <- paste0(algorithm, sil_df$cluster)
+  
+  # Assign colors to the prefixed clusters
+  unique_prefixed_clusters <- unique(sil_df$prefixed_cluster)
+  cluster_colors <- setNames(clust.col[1:length(unique_prefixed_clusters)], unique_prefixed_clusters)
+  
+  # Create a separate data frame just for the average silhouette widths
+  avg_sil_text_df <- unique(sil_df[, c("cluster", "prefixed_cluster", "Average_Silhouette_Width")])
+  
+  # Create the ggplot2 silhouette plot
+  p <- ggplot(sil_df, aes(x = sil_width, y = reorder(samID, sil_width), fill = prefixed_cluster)) +
+    geom_bar(stat = "identity", size = 0.25, show.legend = FALSE) +  # Remove legend
+    scale_fill_manual(values = cluster_colors) +  # Use colors for prefixed clusters
+    facet_wrap(~prefixed_cluster, scales = "free_y", ncol = 1) +  # Use the prefixed cluster label in facets
+    labs(title = "Silhouette Plot", x = "Silhouette Width", y = "") +  # X-axis title
+    theme_minimal() +  # White background, minimal theme
+    theme(
+      axis.text.x = element_text(size = axis_label_size),
+      axis.text.y = element_blank(),  # Remove sample names from y-axis
+      axis.ticks.y = element_blank(), # Remove y-axis ticks
+      axis.title.x = element_text(size = axis_label_size, face = axis_label_font),  # Bold axis label
+      axis.line.x = element_line(linewidth = 0.35),
+      axis.ticks.x = element_line(linewidth = 0.15),
+      plot.title = element_text(size = title_size, hjust = 0.5, face = "bold"),
+      strip.text = element_text(size = 14),  # Prefixed cluster labels in facets
+      panel.grid.major = element_blank(),  # Remove gridlines
+      panel.grid.minor = element_blank(),  # Remove minor gridlines
+      panel.background = element_rect(fill = "white", color = NA)  # Ensure white background
+    ) +
+    # Print average silhouette width once per facet
+    geom_text(data = avg_sil_text_df, aes(x = 0, y = 0,  # Adjust vertical position
+                                          label = paste("Avg. sil =", round(Average_Silhouette_Width, 2))),
+              inherit.aes = FALSE, hjust = 2, vjust = -3, size = axis_label_size / 4, color = "black", fontface = "bold")
+  
+  # Display plot in the RStudio viewer
+  print(p)
+  
+  # Optionally save the plot as a PDF
+  if (save_plot) {
+    ggsave(filename = file.path(fig.path, paste0(fig.name, ".pdf")), plot = p, width = width, height = height)
+  }
+  
+  return(p)
 }

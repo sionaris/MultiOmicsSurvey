@@ -380,76 +380,93 @@ cluster_graph_vis_fast <- function(clu_obj, kappa_mat, enrichment_res, kappa_thr
 }
 
 cluster_enriched_terms_fast <- function(enrichment_res, method = "hierarchical", plot_clusters_graph = TRUE,
-                                   use_description = FALSE, use_active_snw_genes = FALSE, ...) {
+                                        use_description = FALSE, use_active_snw_genes = FALSE, ...) {
   ### Argument Checks
   if (!method %in% c("hierarchical", "fuzzy")) {
-    stop("the clustering `method` must either be \"hierarchical\" or \"fuzzy\"")
+    stop("The clustering `method` must either be \"hierarchical\" or \"fuzzy\"")
   }
   
   if (!is.logical(plot_clusters_graph)) {
     stop("`plot_clusters_graph` must be logical!")
   }
   
+  ### Set ID/Name index for logging
+  chosen_id <- if ("Term_Description" %in% colnames(enrichment_res) && use_description) {
+    which(colnames(enrichment_res) == "Term_Description")
+  } else if ("ID" %in% colnames(enrichment_res)) {
+    which(colnames(enrichment_res) == "ID")
+  } else {
+    return("hclust impossible")  # Return "hclust impossible" if neither column is found
+  }
+  
+  if (is.null(chosen_id) || length(chosen_id) == 0) {
+    return("hclust impossible")  # Return "hclust impossible" if chosen_id is invalid
+  }
+  
+  ### Handle cases with fewer than 2 rows
+  if (nrow(enrichment_res) < 2) {
+    return("hclust impossible")  # Return "hclust impossible" if there are fewer than 2 rows
+  }
+  
   ### Create Kappa Matrix
-  kappa_mat <- create_kappa_matrix_fast(enrichment_res = enrichment_res, use_description = use_description,
-                                   use_active_snw_genes = use_active_snw_genes)
+  kappa_mat <- tryCatch({
+    create_kappa_matrix_fast(enrichment_res = enrichment_res, use_description = use_description,
+                             use_active_snw_genes = use_active_snw_genes)
+  }, error = function(e) {
+    return("hclust impossible")  # Return "hclust impossible" if kappa matrix creation fails
+  })
+  
   kappa_mat[is.na(kappa_mat)] <- 0
   
   ### Cluster Terms
+  clu_obj <- NULL
   if (method == "hierarchical") {
-    clu_obj <- hierarchical_term_clustering_fast(kappa_mat = kappa_mat,
-                               enrichment_res = enrichment_res, use_description = use_description, ...)
-  } else {
-    clu_obj <- fuzzy_term_clustering_fast(kappa_mat = kappa_mat,
-                               enrichment_res = enrichment_res, use_description = use_description, ...)
+    clu_obj <- tryCatch({
+      hierarchical_term_clustering_fast(kappa_mat = kappa_mat, enrichment_res = enrichment_res, use_description = use_description, ...)
+    }, error = function(e) {
+      return("hclust impossible")  # Return "hclust impossible" if hierarchical clustering fails
+    })
+  } else if (method == "fuzzy") {
+    clu_obj <- tryCatch({
+      fuzzy_term_clustering_fast(kappa_mat = kappa_mat, enrichment_res = enrichment_res, use_description = use_description, ...)
+    }, error = function(e) {
+      return("hclust impossible")  # Return "hclust impossible" if fuzzy clustering fails
+    })
+  }
+  
+  if (is.character(clu_obj) && clu_obj == "hclust impossible") {
+    return("hclust impossible")  # If clustering failed, return "hclust impossible"
   }
   
   ### Graph Visualization of Clusters
   if (plot_clusters_graph) {
-    cluster_graph_vis_fast(clu_obj = clu_obj, kappa_mat = kappa_mat,
-                    enrichment_res = enrichment_res, use_description = use_description, ...)
+    tryCatch({
+      cluster_graph_vis_fast(clu_obj = clu_obj, kappa_mat = kappa_mat, enrichment_res = enrichment_res, use_description = use_description, ...)
+    }, error = function(e) {
+      message("Error in plotting cluster graph: ", e$message)
+    })
   }
   
   ### Returned Data Frame with Cluster Information
   clustered_df <- enrichment_res
   
-  ### Set ID/Name index
-  chosen_id <- ifelse(use_description, which(colnames(enrichment_res) == "Term_Description"),
-                      which(colnames(enrichment_res) == "ID"))
-  
+  ### Assign Clusters and Representatives for hierarchical method
   if (method == "hierarchical") {
-    ### Assign Clusters and Representatives
     clu_idx <- match(clustered_df[, chosen_id], names(clu_obj))
+    
+    if (any(is.na(clu_idx))) {
+      warning("Some terms in clustered_df could not be matched to clu_obj. They will be excluded.")
+      clustered_df <- clustered_df[!is.na(clu_idx), ]
+      clu_idx <- clu_idx[!is.na(clu_idx)]
+    }
+    
     clustered_df$Cluster <- clu_obj[clu_idx]
-    clustered_df <- clustered_df[order(clustered_df$Cluster, clustered_df$lowest_p,
-                                       decreasing = FALSE), ]
-    
-    tmp <- tapply(clustered_df[, chosen_id], clustered_df$Cluster, function(x) x[1])
-    stat_cond <- clustered_df[, chosen_id] %in% tmp
-    clustered_df$Status <- ifelse(stat_cond, "Representative", "Member")
-  } else {
-    term_list <- list()
-    for (term in rownames(clu_obj)) {
-      term_list[[term]] <- which(clu_obj[term, ])
-    }
-    ### Assign Clusters and Representatives
-    clustered_df2 <- c()
-    for (i in base::seq_len(nrow(clustered_df))) {
-      current_row <- clustered_df[i, ]
-      current_clusters <- term_list[[current_row[, chosen_id]]]
-      for (clu in current_clusters) {
-        clustered_df2 <- rbind(clustered_df2, data.frame(current_row, Cluster = clu))
-      }
-    }
-    
-    clustered_df <- clustered_df2
-    clustered_df <- clustered_df[order(clustered_df$Cluster, clustered_df$lowest_p,
-                                       decreasing = FALSE), ]
+    clustered_df <- clustered_df[order(clustered_df$Cluster, clustered_df$lowest_p, decreasing = FALSE), ]
     
     tmp <- tapply(clustered_df[, chosen_id], clustered_df$Cluster, function(x) x[1])
     stat_cond <- clustered_df[, chosen_id] %in% tmp
     clustered_df$Status <- ifelse(stat_cond, "Representative", "Member")
   }
   
-  return(clustered_df)
+  return(list(clustered_df = clustered_df))  # Removed `skipped` slot
 }

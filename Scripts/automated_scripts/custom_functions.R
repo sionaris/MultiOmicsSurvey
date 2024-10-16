@@ -1346,7 +1346,6 @@ evaluate_similarity_matrix <- function(matrix, k_isomap = 5) {
   return(results)
 }
 
-# Compute silhouettes #####
 compute_silhouette <- function(cluster_df, similarity_matrix, normalize_matrix = FALSE) {
   library(MOVICS)
   
@@ -1371,29 +1370,38 @@ compute_silhouette <- function(cluster_df, similarity_matrix, normalize_matrix =
     similarity_matrix <- normalize(similarity_matrix)
   }
   
+  # Check for singleton clusters
+  singleton_clusters <- table(cluster_df$Cluster)[table(cluster_df$Cluster) == 1]
+  if (length(singleton_clusters) > 0) {
+    warning("The following clusters are singletons: ", paste(singleton_clusters, collapse = ", "))
+  }
+  
   cluster_id <- 1:length(unique(cluster_df$Cluster))
   sil <- matrix(NA, nrow(cluster_df), 3, dimnames = list(cluster_df$samID, 
-                                                           c("cluster", "neighbor", "sil_width")))
-  for (j in 1:2) {
+                                                         c("cluster", "neighbor", "sil_width")))
+  for (j in cluster_id) {
     index <- (cluster_df$Cluster == cluster_id[j])
     Nj <- sum(index)
-    sil[index, "cluster"] <- cluster_id[j]
-    dindex <- rbind(apply(similarity_matrix[!index, index, 
-                                            drop = FALSE], 2, function(r) tapply(r, cluster_df$Cluster[!index], 
-                                                                                 mean)))
-    maxC <- apply(dindex, 2, which.max)
-    sil[index, "neighbor"] <- cluster_id[-j][maxC]
-    s.i <- if (Nj > 1) {
-      a.i <- colSums(similarity_matrix[index, index])/(Nj - 
-                                                         1)
+    
+    if (Nj == 1) {
+      # Handle singleton clusters, assigning silhouette width = 0
+      sil[index, "cluster"] <- cluster_id[j]
+      sil[index, "neighbor"] <- NA  # No neighbor for singletons
+      sil[index, "sil_width"] <- 0  # Silhouette is 0 for singletons
+    } else {
+      sil[index, "cluster"] <- cluster_id[j]
+      dindex <- rbind(apply(similarity_matrix[!index, index, 
+                                              drop = FALSE], 2, function(r) tapply(r, cluster_df$Cluster[!index], 
+                                                                                   mean)))
+      maxC <- apply(dindex, 2, which.max)
+      sil[index, "neighbor"] <- cluster_id[-j][maxC]
+      a.i <- colSums(similarity_matrix[index, index]) / (Nj - 1)
       b.i <- dindex[cbind(maxC, seq(along = maxC))]
-      ifelse(a.i != b.i, (a.i - b.i)/pmax(b.i, a.i), 0)
+      s.i <- ifelse(a.i != b.i, (a.i - b.i) / pmax(b.i, a.i), 0)
+      sil[index, "sil_width"] <- s.i
     }
-    else {
-      0
-    }
-    sil[index, "sil_width"] <- s.i
   }
+  
   attr(sil, "Ordered") <- FALSE
   class(sil) <- "silhouette"
   
