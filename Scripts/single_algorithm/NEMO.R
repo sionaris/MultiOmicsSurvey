@@ -1181,9 +1181,7 @@ gc()
 names(hclust_output) <- names(hclust_input)
 
 # Are there any null sets?
-which(sapply(hclust_output, function(x) x == "hclust impossible"))
-hclust_output = hclust_output[-which(sapply(hclust_output, function(x) x == "hclust impossible"))]
-# hclust_output = lapply(hclust_output, `[[`, "clustered_df")
+which(hclust_output == "hclust impossible")
 
 # Export
 library(openxlsx)
