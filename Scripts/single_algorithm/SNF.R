@@ -1253,18 +1253,24 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
   RNGversion("4.2.2")
   set.seed(123)
   source("Scripts/automated_scripts/fast_pathfindR_hclust.R")
-  cluster_enriched_terms_fast(hclust_input[[i]],
-                              method = "hierarchical", plot_clusters_graph = FALSE,
-                              use_description = FALSE, use_active_snw_genes = FALSE)
+  
+  # Perform clustering, handle errors
+  result <- cluster_enriched_terms_fast(hclust_input[[i]], method = "hierarchical", plot_clusters_graph = FALSE,
+                                        use_description = FALSE, use_active_snw_genes = FALSE)
+  if (is.character(result) && result == "hclust impossible") {
+    return("hclust impossible")
+  } else {
+    return(result)
+  }
 }
+
 timestamp() # ~2.5 mins
 stopCluster(cl)
 gc()
-names(hclust_output) = names(hclust_input)
+names(hclust_output) <- names(hclust_input)
 
 # Are there any null sets?
-which(sapply(hclust_output, function(x) is.null(x$clustered_df))) # No
-hclust_output = lapply(hclust_output, `[[`, "clustered_df")
+which(hclust_output == "hclust impossible")
 
 # Export
 library(openxlsx)
@@ -1280,6 +1286,7 @@ saveWorkbook(wb, file = paste0(home, "/Results/single_algorithm/", algorithm, "/
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
+                                                present_clusters = c("SNF1", "SNF2"),
                                                 representative = TRUE, moic.res = plot_object,
                                                 subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                 norm.method = "mean", dirct = "up",
@@ -1290,6 +1297,7 @@ hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl
 
 hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
                                                   norm.expr = plotdata$RNAseq, 
+                                                  present_clusters = c("SNF1", "SNF2"),
                                                   representative = TRUE, moic.res = plot_object,
                                                   subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                   norm.method = "mean", dirct = "down",
