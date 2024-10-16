@@ -30,10 +30,10 @@ The modified eigengap method of NEMO, determined that $k = `r params[["hyperpara
 # Main results on training data
 ## Multi-omics clustering
 The spectral clustering results using the final **ARS** matrix for $k = `r params[["hyperparameters"]][["eigengap_k"]]`$ are shown below:
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/ARS_heatmap.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/ARS_heatmap.png")`)
 
 The corresponding multi-omic heatmap is shown below:
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/default_NEMO_comprehensive_heatmap-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/default_",algorithm,"_comprehensive_heatmap-1.png")`)
 
 The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (when `r params$algorithm` subtypes are compared to the MOVICS consensus subtypes CS1, CS2) are:
 
@@ -43,25 +43,29 @@ The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (whe
 The values are very low and indicate that `r params$algorithm` produces different clusters than consensus ``MOVICS``.
 
 ## Clinical variables
-With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>vital status, history of neoadjuvant treatment, PR status, ER status, HER2 status, ER and PR cell level percentages, and histological type</b>. Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/NEMO/Summary_of_clinical_variables.txt")`) (Exact tests).
+Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Summary_of_clinical_variables.txt")`) (Exact tests and non-parametric Kruskal-Wallis tests). The number of lymph nodes identified by immunohistochemical procedures (IHC) and H&E procedures, were also tested using the Jonckheere-Terpstra test for ordered differences.
 
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/Multiplot_NEMO_barcharts.png")`)
+With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>days to birth, age, race, PR status, ER status, HER2 status, ER and PR cell level percentages, the number of lymph nodes identified by H&E, and histological type</b>. Jonckheere-Terpstra tests revealed no significant ordered trend in number of lymph nodes across subtypes.
 
-<b>Exact test results by MOVICS:</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Summary_of_clinical_variables-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-2.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-3.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary of ordinal clinical variables-1.png")`)
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/Multiplot_",params$algorithm,"_barcharts.png")`)
 
 ## Mutations
 The MOVICS package provides a function ``compMut()`` which applies independent testing (i.e., Fisher' s exact test or $\chi^2$ test) for each mutation, and generates a table with statistical results and creates an OncoPrint using those differentially mutated genes. Here we use the $p$-value simulation method,because Fisher's exact test was computationally intense for the 9 clusters.
 
 <b>Oncoprint:</b>
 
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/NEMO_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/",algorithm,"_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/Oncoprints/pdf2png/MOVICS_NEMO_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/Oncoprints/pdf2png/MOVICS_",algorithm,"_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_oncoprint-1.png")`)
 
 ## Differential Analysis
 DGEA is performed in order to compare the expression of the two identified consensus subtypes using the __limma__ package.
@@ -71,25 +75,59 @@ In order to identify subtype-specific markers, we find the markers that are up-r
 In this procedure, the most differentially expressed genes sorted by __log2FoldChange__ are chosen as the biomarkers for each subtype (200 biomarkers for each subtype by default; Here we set 200 -> 100 markers). These biomarkers should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.05) and must not overlap with any biomarkers identified for other subtypes.
 
 <b>Up-regulated gene expression markers</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/upregulated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
 
-Similarly we produce markers for CNV, miRNA and Methylation data:
-<b>Up-regulated CNV markers</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_CNV_biomarkers_heatmap_using_upregulated_genes-1.png")`)
-
+Similarly we produce markers for miRNA and Methylation data:
 <b>Up-regulated methylation markers</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/hypermethylated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/hypermethylated_biomarkers_heatmap_using_upregulated_genes-1.png")`)
 
 <b>Up-regulated miRNA markers</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_miRNA_biomarkers_heatmap_using_upregulated_genes-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/upregulated_miRNA_biomarkers_heatmap_using_upregulated_genes-1.png")`)
 
-Additionally, we produce a plot for the fraction of genome altered (FGA) for every subtype and distinguish between gains and losses. The first plot below defines gain as the presence of **more than 2 copies** for a segment, while the second one uses the [COSMIC scheme of defining gain and loss](https://cancer.sanger.ac.uk/cosmic/help/cnv/overview), which also takes average ploidy into account.
+## Fraction of Genome Altered (FGA)
+In the case of CNVs, we also generate a plot of the fraction of genome that is altered (FGA) in the samples of each identified subtype. This plot uses original counts of copy number segments as input and applies a custom definition of gain and loss. In our work, we used two approaches in annotating segments in a sample with one of three possible labels: "gain", "loss", and "normal".
 
-<b>FGA plot</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/FGA_barplot_NEMO-1.png")`)
+In the first, simpler approach, we define gain as a copy number > 2, loss as a copy number < 2, and normal as copy number equal to 2. In the second approach, we use COSMIC criteria to define gain and loss, which also take average ploidy in each sample into account. More specifically, we define five cases:
 
-<b>COSMIC criteria FGA plot</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/COSMIC_criteria_FGA_barplot_NEMO-1.png")`)
+$$
+\text{Status} = 
+\begin{cases} 
+    \text{gain} & \text{if ploidy} \leq 2.7 \text{ and copy number} \geq 5, \\
+    \text{gain} & \text{if ploidy} > 2.7 \text{ and copy number} \geq 9, \\
+    \text{loss} & \text{if ploidy} \leq 2.7 \text{ and copy number} = 0, \\
+    \text{loss} & \text{if ploidy} > 2.7 \text{ and copy number} < \text{ploidy} - 2.7, \\
+    \text{normal} & \text{otherwise}.
+\end{cases}
+$$
+
+We modified the MOVICS ``compFGA()`` function, which compares subtypes based on the FGA, FGG, and FGL. The function performs statistical tests to compare the subtypes using either parametric or non-parametric methods, depending on the number of subtypes and the chosen test method. We modified the function to allow for predefined gain/loss/normal annotations.
+
+Mathematically, FGA, FGG, and FGL are defined as:
+
+$$
+\text{FGA} = \frac{\sum (\text{bases where classification is "gain" or "loss"})}{\sum (\text{total bases})}
+$$
+
+$$
+\text{FGG} = \frac{\sum (\text{bases where classification is "gain"})}{\sum (\text{total bases})}
+$$
+
+$$
+\text{FGL} = \frac{\sum (\text{bases where classification is "loss"})}{\sum (\text{total bases})}
+$$
+
+We used original copy number counts and non-parametric tests:
+
+- **Wilcoxon Rank-Sum Test (Non-parametric, 2 subtypes)**: 
+    If there are two subtypes, the Wilcoxon rank-sum test is used to compare the values of FGA, FGG, and FGL between the two subtypes.
+    
+- **Kruskal-Wallis Test (Non-parametric, more than 2 subtypes)**: 
+    When there are more than two subtypes, the Kruskal-Wallis test (kruskal.test) is applied. This is a non-parametric version of ANOVA used to detect differences between multiple subtypes. Additionally, pairwise comparisons between subtypes are performed using the Wilcoxon test with the Benjamini-Hochberg p-value adjustment.
+
+In all cases, the function summarizes the FGA, FGG, and FGL values for each subtype and calculates the respective $p$-values to assess statistical significance.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/FGA_barplot_",params$algorithm,"-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/COSMIC_criteria_FGA_barplot_",params$algorithm,"-1.png")`)
 
 ## Gene Set Enrichment Analysis
 
@@ -97,23 +135,27 @@ GSEA is carried out using a gene set background which includes all gene sets der
 
 Likewise, these identified specific pathways should pass the significance threshold (e.g., nominal $p$-value < 0.05 and adjusted $p$-value < 0.25; we set the latter to <u>0.1</u>) and must not overlap with any pathways identified for other subtypes. After having the subtype-specific pathways, genes that are inside the pathways are retrieved to calculate a single sample enrichment score by using ``GSVA`` R package. Subsequently, subtype-specific enrichment score will be represented by the mean or median (mean by default) value within the subtype, and will be further visualized by diagonal heatmap.
 
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/NEMO_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/",algorithm,"_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+
+We also cluster the pathways hierarchically into pathways of the same family, using the ``pathfindR`` package (all results [here](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/",params$algorithm,"_representative_pathways.xlsx")`)):
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/","pdf2png/representative_upregulated_pathway_heatmap_using_upregulated_pathways-1.png")`)
+
 
 For all the new defined molecular subtypes, it is critical to depict its characteristics validated by different signatures of gene sets. MOVICS provides a simple function which uses gene set variation analysis to calculate an enrichment score for each sample in each subtype based on given gene set list of interest.
 
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/gene_sets_of_interest_heatmap_gsva-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/gene_sets_of_interest_heatmap_MOVICS_NEMO_gsva-1.png")`)
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/GSEA/pdf2png/gene_sets_of_interest_heatmap_MOVICS_",algorithm,"_gsva-1.png")`)
 
 # Evaluation results
 ## Nearest Template Prediction (NTP)
@@ -123,119 +165,113 @@ Here cosine similarity is used to compare external samples to class templates (h
 
 The function randomly permutes the sample labels multiple times (here ``nPerm = 10000``) to generate a null distribution of similarity scores between samples and class templates. For each observed sample-to-template distance, the function compares it against the null distribution to calculate a $p$-value. This $p$-value indicates the likelihood that the observed match could have occurred by chance. The $p$-values are adjusted using the false discovery rate (FDR) method to control for multiple hypothesis testing, ensuring robust statistical inference.
 
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/ntp_expr_up_heatmap_transNEO-1.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/ntp_expr_down_heatmap_transNEO-1.png")`)
-
-Results on the comparisons of `r params$evaluation_source` clinical variables with respect to the predicted consensus subtypes are summarised in [this file](`r paste0(params$home,"/Results/single_algorithm/NEMO/transNEO_Summary_of_clinical_variables.txt")`).
-
-<b>Exact test results by MOVICS:</b>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/transNEO_Summary_of_clinical_variables-1.png")`)
+<b> NTP was not possible with NEMO, so we only performed PAM (see below). </b>
 
 ## Partition Around Medoids (PAM)
 
 To be specific, ``runPAM()`` first trains a partition around medoids (PAM) classifier in the discovery (training) cohort (i.e., `r params$data_source`) to predict the subtype for patients in the external validation (testing) cohort (i.e., `r params$evaluation_source`), and each sample in the validation cohort was assigned to a subtype label whose centroid had the highest Pearson correlation with the sample. Finally, the [in-group proportion (IGP)](https://pubmed.ncbi.nlm.nih.gov/16613834/) statistic (the proportion of samples within a cluster that were classified into the same cluster upon random permutation of the data) is estimated to evaluate the similarity and reproducibility of the acquired subtypes between discovery and validation cohorts (i.e. are the clusters identified in `r params$data_source` reproducible in `r params$evaluation_source` after label permutation).
 
-<u>Compare NEMO `r params$data_source` vs. PAM `r params$data_source`:</u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/kappa_NEMO_vs_PAM_TCGA-1.png")`)
+Results on the comparisons of `r params$evaluation_source` clinical variables with respect to the predicted consensus subtypes are summarised in [this file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/transNEO_Summary_of_clinical_variables.txt")`). Grade before NAT administration, number of chemotherapy cycles and the number of adjuvant HER2 treatment were also tested using the Jonckheere-Terpstra test for ordered differences. See conclusions for significant results.
 
-<u>Compare NEMO `r params$data_source` vs. NTP `r params$data_source`:</u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/kappa_NEMO_vs_NTP_TCGA-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/transNEO_Summary_of_clinical_variables-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/transNEO_Summary_of_clinical_variables-2.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/transNEO Summary of ordinal clinical variables-1.png")`)
 
-<u>Compare NTP `r params$evaluation_source` vs. PAM `r params$evaluation_source`:</u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/kappa_NTP_vs_PAM_transNEO-1.png")`)
+<u>Compare `r params$algorithm` `r params$data_source` vs. PAM `r params$data_source`:</u>
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/kappa_",algorithm,"_vs_PAM_TCGA-1.png")`)
 
 # Supplementary results
 
 ## Graph of final ARS matrix
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/ARS matrix graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/ARS matrix graph.png")`)
 
 ## PCA from final affinity matrices
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_CNV_PCA.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_RNAseq_PCA.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_miRNA_PCA.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_Methylation_PCA.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_SNPs_MDS.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_ARS value_kernelPCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/",algorithm,"_CNV_PCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/",algorithm,"_RNAseq_PCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/",algorithm,"_miRNA_PCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/",algorithm,"_Methylation_PCA.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/",algorithm,"_SNPs_MDS.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/Supplement/",algorithm,"_ARS value_kernelPCA.png")`)
 
 ## Drug Sensitivity
 We also perform a few drug sensitivity comparisons. MOVICS uses the [pRRophetic]() package for prediction of clinical chemotherapeutic response from tumor gene expression levels (a pre-trained ridge regression model is fit for each gene and the $IC_{50}$ of each drug).
 
 <u><b>Sorafenib</b></u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Sorafenib-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_NEMO_Violin_plot_of_IC50 for Sorafenib-1.png")`)
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_",algorithm,"_Violin_plot_of_IC50 for Sorafenib-1.png")`)
 
 <u><b>Paclitaxel</b></u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Paclitaxel-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_NEMO_Violin_plot_of_IC50 for Paclitaxel-1.png")`)
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_",algorithm,"_Violin_plot_of_IC50 for Paclitaxel-1.png")`)
 
 <u><b>Lapatinib</b></u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Lapatinib-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_NEMO_Violin_plot_of_IC50 for Lapatinib-1.png")`)
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_",algorithm,"_Violin_plot_of_IC50 for Lapatinib-1.png")`)
 
 <u><b>Doxorubicin</b></u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Doxorubicin-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_NEMO_Violin_plot_of_IC50 for Doxorubicin-1.png")`)
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_",algorithm,"_Violin_plot_of_IC50 for Doxorubicin-1.png")`)
 
 <u><b>Cisplatin</b></u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for Cisplatin-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_NEMO_Violin_plot_of_IC50 for Cisplatin-1.png")`)
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_",algorithm,"_Violin_plot_of_IC50 for Cisplatin-1.png")`)
 
 <u><b>5-Fluorouracil</b></u>
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
 
 <b>Comparison with MOVICS consensus subtypes</b>:
 
 ![](`r paste0(params$home,"/Results/MOVICS_baseline/pdf2png/Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
 
-<b>Comparison with MOVICS NEMO subtypes</b>:
+<b>Comparison with MOVICS `r params$algorithm` subtypes</b>:
 
-![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_NEMO_Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
+![](`r paste0(params$home,"/Results/MOVICS_baseline/MO_comparisons/DrugSen/pdf2png/MOVICS_",algorithm,"_Violin_plot_of_IC50 for 5-Fluorouracil-1.png")`)
 
 ## Subtype agreement
 Here we examine how similar the consensus multi-omic clustering labels are to other labels relative to breast cancer.
 
 MOVICS provides function of ``compAgree()`` to calculate four statistics: Rand Index (RI), Adjusted Mutual Information (AMI), Jaccard Index (JI), and Fowlkes-Mallows (FM); all these measurements range from 0 to 1 and the larger the value is, the more similar the compared groups are. 
 
-![](`r paste0(params$home,"/Results/single_algorithm/NEMO/pdf2png/Classification_agreement-1.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/pdf2png/Classification_agreement-1.png")`)
 
-## Comparison to MOVICS NEMO
+## Comparison to MOVICS `r params$algorithm`
 
-In MOVICS, the NEMO algorithm is run by default with $nn = \frac{n}{6}$ and $\sigma = 0.5$.
+In MOVICS, the `r params$algorithm` algorithm is run by default with $nn = \frac{n}{6}$ and $\sigma = 0.5$.
 
 <b>ARI:</b> `r params$ARI_to_MOVICS_NEMO`
 <b>NMI:</b> `r params$NMI_to_MOVICS_NEMO`
@@ -243,7 +279,7 @@ In MOVICS, the NEMO algorithm is run by default with $nn = \frac{n}{6}$ and $\si
 # Conclusions
 <ol>
   <li>NEMO identifies `r params$hyperparameters$eigengap_k` subtypes in the data.</li>
-  <li>The identified NEMO subtypes are associated with <b>race, PR status, ER status, HER2 status, no. of lymph nodes positive (by H&E), ER and PR cell level percentages</b>, as determined by statistical tests in ``MOVICS::compClinvar()``.</li>
+  <li>The identified NEMO subtypes are associated with <b>age, race, PR status, ER status, HER2 status, no. of lymph nodes positive (by H&E), ER and PR cell level percentages</b>, as determined by statistical tests in ``MOVICS::compClinvar()``.</li>
   <li>The identified NEMO subtypes are not particularly similar to the MOVICS NEMO subtypes (<b>ARI:</b> `r params$ARI_to_MOVICS_NEMO`, <b>NMI:</b> `r params$NMI_to_MOVICS_NEMO`).</li>
   <li>When looking at the <b>comprehensive multi-omic heatmap</b>, we observe noticeable omic patterns for some of the NEMO subtypes:
     <ul>
@@ -252,7 +288,6 @@ In MOVICS, the NEMO algorithm is run by default with $nn = \frac{n}{6}$ and $\si
       <li>Subtype 5 has a distinctly different expression and methylation profile than the rest of the subtypes, relatively similar to Subtype 2. That may be due to the roughly equal distribution of ER+ and ER- in this subtype.</li>
       <li><b>Subtype 9 is heavily mutated</b> compared to all other subtypes.</li>
     </ul>
-  <li>Based on the dimensionality reduction plots of the original matrices, a clearer separation of samples is noticed on the <b>methylation, miRNA and SNPs modalities</b>.</li>
   <li>Although NEMO1 and NEMO3 are both predominantly ER+, NEMO1 has the majority of <b>ILC samples</b> and a noticeably lower percentage of <em>TP53</em> mutations (<b>NEMO1:</b> 8.4%, <b>NEMO2</b>: 20.8%). Roughly <b>50%</b> of NEMO1 samples have mutations in <em>PIK3CA</em>, compared to only <b>12.5%</b> in NEMO3.</li>
   <li>NEMO2 has a high percentage of <em>TP53</em> mutations (71.7%).</li>
   <li>NEMO8 and NEMO9 are heavily mutated (although small in sample size: 32 and 39 respectively) compared to the rest of the subtypes in most of the identified significant genes:
@@ -265,20 +300,20 @@ In MOVICS, the NEMO algorithm is run by default with $nn = \frac{n}{6}$ and $\si
   <li>In terms of pathways:
     <ul>
       <li>NEMO1 has up-regulated **extracellular component pathways**, **microtubule bundle formation pathways** and **axoneme pathways** compared to all other subtypes.</li>
-      <li>NEMO2 has up-regulated **nucleotide synthesis and metabolism pathways** as well as **cell division pathways** (see corresponding [file](`r paste0(params$home,"/Results/single_algorithm/NEMO/_dgea__limma_test_result.NEMO2_unique_upexpr_pathway.txt")`) as well).</li>
-      <li>NEMO3 demonstrates increased **cytokinesis** and **ubiquitin-dependent pathways**.</li>
-      <li>NEMO5 is associated with **negative regulation of VEGF** and **miRNA-mediated gene silencing by inhibition of translation**.</li>
+      <li>NEMO2 has up-regulated **nucleotide synthesis and metabolism pathways** as well as **cell division pathways** (see corresponding [file](`r paste0(params$home,"/Results/single_algorithm/",algorithm,"/_dgea__limma_test_result.NEMO2_unique_upexpr_pathway.txt")`) as well).</li>
+      <li>NEMO3 demonstrates **negative regulation of cytokinesis**.</li>
+      <li>NEMO6 shows increased **apoptotic pathways**.</li>
       <li>NEMO9 is associated with **increased immune activity**.</li>
     </ul>
   </li>
   <li>NEMO3 has generally <b>lower immune system activity</b> compared to all other subtypes.</li>
-  <li>Overall, NEMO subtypes exhibit high agremeent scores with ER status as seen in the **Subtype Agreement plot**.</li>
-  <li>Predicted NEMO subtypes on the transNEO cohort are associated with ER status, HER2 status grade, <b>pCR</b> (see table below), PAM50, iC10, type of regimen of neoadjuvant treatment, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
+  <li>Overall, NEMO subtypes exhibit high agreement scores with ER status as seen in the **Subtype Agreement plot**.</li>
+  <li>Predicted NEMO subtypes on the transNEO cohort are associated with ER status, HER2 status grade, <b>pCR</b> (see table below), tumor grade, PAM50, iC10, type of regimen of neoadjuvant treatment, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
 </ol>
 
 ```{r resp_table, echo=FALSE, eval=TRUE}
 # Create the data frame
-table_data <- table(params$transNEO_var2comp[[params$algorithm]], params$transNEO_var2comp[[params$algorithm]])
+table_data <- table(params$transNEO_var2comp[[params$algorithm]], params$transNEO_var2comp$pCR.RD)
 
 # Calculate percentages
 percentage_data <- 100 * prop.table(table_data, 1)
