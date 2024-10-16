@@ -880,7 +880,7 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
                               method = "hierarchical", plot_clusters_graph = FALSE,
                               use_description = FALSE, use_active_snw_genes = FALSE)
 }
-timestamp() # ~1h
+timestamp() # ~2.5 mins
 stopCluster(cl)
 gc()
 names(hclust_output) = names(hclust_input)
