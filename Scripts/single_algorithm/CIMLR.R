@@ -354,11 +354,17 @@ sil = compute_silhouette(cluster_df = CIMLR_clusters %>% dplyr::rename(samID = S
                          similarity_matrix = cimlr_matrix,
                          normalize_matrix = TRUE)
 
-getSilhouette(sil      = sil,
-              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-              fig.name = "Silhouette",
-              height   = 5.5,
-              width    = 5)
+getSilhouette_ggplot(sil      = sil,
+                     fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                     fig.name = "Silhouette",
+                     height   = 5.5,
+                     width    = 5.5,
+                     axis_label_size = 12,
+                     axis_label_font = "bold",
+                     text_size = 1.5,
+                     title_size = 16,
+                     algorithm = algorithm,
+                     save_plot = TRUE)
 dev.off()
 
 # MOVICS-like analysis #####
