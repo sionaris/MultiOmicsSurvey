@@ -495,11 +495,21 @@ consensus = getConsensusMOIC(moic.res.list = moic.res.list,
                              showID = FALSE)
 
 # Show silhouette metrics across clusters
-getSilhouette(sil      = consensus$sil,
-              fig.path = "Results/MOVICS_baseline",
-              fig.name = "Silhouette",
-              height   = 5.5,
-              width    = 5)
+sil = compute_silhouette(cluster_df = consensus$clust.res %>% dplyr::rename(Cluster = clust),
+                         similarity_matrix = consensus$similarity.matrix,
+                         normalize_matrix = TRUE)
+
+getSilhouette_ggplot(sil      = sil,
+                     fig.path = paste0(home, "/Results/MOVICS_baseline"),
+                     fig.name = "Silhouette",
+                     height   = 5.5,
+                     width    = 5.5,
+                     axis_label_size = 12,
+                     axis_label_font = "bold",
+                     text_size = 1.5,
+                     title_size = 16,
+                     algorithm = "CS",
+                     save_plot = TRUE)
 dev.off()
 
 # Downstream comparisons #####
