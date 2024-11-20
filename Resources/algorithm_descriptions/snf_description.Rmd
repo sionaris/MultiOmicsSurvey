@@ -48,3 +48,9 @@ Essentially, the assumption that local similarities are more important is made h
 </ol>
 
 The final diffused graph can be used as input for clustering, classification and survival analysis. For example, spectral clustering can be performed on the graph by minimizing the [RatioCut](https://www.computer.org/csdl/proceedings-article/iccad/1989/00076957/12OmNrHSD1Q) objective.
+
+**Feature ranking**:
+The authors of SNF propose a post-analysis procedure to select important features that correspond to the final network structure. After obtaining the subtypes, denoted as $g$, for each feature $f_i$, a patient network $W_i$ is constructed based on $f_i$ alone and then spectral clustering is used to obtain subtypes, $l_i$. To measure the relative contribution or consistency between $f_i$ and the whole network, a consistency score is assigned to $f_i$ as $cs_i = NMI(l_i,g)$. If $cs_i = 1$, it means that the network of patients based on feature $f_i$ leads to the same subtyping as the fused network, and therefore this feature is considered very important. If $cs_i = 0$, it means that there is no real correspondence between the feature and the fused network. Therefore, the higher is the $cs_i$, the more important is the $f_i$ to the fused network structure.
+
+**Contribution of each modality**:
+In the graph of the final affinity matrix, an edge is considered to be supported by a single data type if its weight (representing patient similarity) in that data type's network is at least 10\% higher than its weight in the networks of all other data types. If the difference between the two highest weights for the edge across data types is less than 10\%, the edge is considered to be jointly supported by those two data types. Finally, if the weights for the edge across all data types differ by less than 10\% the edge is considered to be supported by all data types.

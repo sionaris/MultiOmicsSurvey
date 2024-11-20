@@ -27,7 +27,7 @@ subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types,
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
 ground_truth_labels = openxlsx::read.xlsx("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")
 ground_truth_k = 2 # optk from MOVICS
-optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
+optk_boolean = "TRUE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
                    "<u>does not suggest</u> an optimal number of multi-omic clusters $k$")
@@ -666,17 +666,149 @@ cat("Best similarity matrix based on combined normalized scores:", best_combined
 # We choose nn = 15
 optN = as.numeric(substr(best_combined_matrix, 6, 7))
 
-# Spectral clustering for k = ground_truth_k from MOVICS
+# Spectral clustering for the estimated optimal k by SNFtool
 RNGversion("4.2.2")
 set.seed(123)
 
 final_affinity_matrix = Fusions[[paste0("NN = ", optN, ", sigma = ", optSigma)]]
-group = spectralClustering(final_affinity_matrix, ground_truth_k)
+SNF_optks = estimateNumberOfClustersGivenGraph(final_affinity_matrix, NUMC = 2:10)
+paste0("The optimal value for k using the eigen-gap method is ",
+    SNF_optks[[1]], ". The optimal value for k using the rotation method is ",
+    SNF_optks[[3]], ".")
+optk = SNF_optks[[1]]
+
+# Concordance between final matrix and individual modality affinity matrices
+conc_NMI = concordanceNetworkNMI(list(final_affinity_matrix, 
+                           affinity_object$`NN = 15`$`sigma = 0.5`$RNAseq$affinity_matrix,
+                           affinity_object$`NN = 15`$`sigma = 0.5`$CNV$affinity_matrix,
+                           affinity_object$`NN = 15`$`sigma = 0.5`$Methylation$affinity_matrix,
+                           affinity_object$`NN = 15`$`sigma = 0.5`$miRNA$affinity_matrix,
+                           affinity_object$`NN = 15`$`sigma = 0.5`$SNPs$affinity_matrix),
+                      C = optk)
+dimnames(conc_NMI) = list(c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"),
+                          c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"))
+
+group = spectralClustering(final_affinity_matrix, optk)
 names(group) = colnames(final_affinity_matrix)
 
 SNF_clusters = as.data.frame(list(Sample.ID = names(group),
                                   Cluster = group))
 
+# Feature ranking
+SNF_feature_ranks = list()
+binary_flags = c(TRUE, FALSE, FALSE, FALSE, FALSE)
+for (i in 1:length(input)) {
+  SNF_feature_ranks[[i]] = rankFeaturesByNMI_parallely(data = list(input[[i]]), 
+                                                       W = final_affinity_matrix,
+                                                       ncores = 8,
+                                                       binary = binary_flags[i])
+  cat("Done with", names(input)[i], "\n")
+}
+names(SNF_feature_ranks) = names(input)
+
+rank_sum_nas = sapply(SNF_feature_ranks, function(x) sum(is.na(x$NMI_ranks)))
+names(rank_sum_nas) = names(SNF_feature_ranks)
+
+feature_ranks_text1 = paste0("Feature ranks could not be calculated for some features in the ",
+                            paste(names(rank_sum_nas)[which(rank_sum_nas > 0)], collapse = ", "), 
+                            ifelse(length(which(rank_sum_nas > 0)) > 1, " modalities (", " modality ("),
+                            paste(rank_sum_nas[which(rank_sum_nas > 0)], collapse = ", "),
+                            ").")
+rm(rank_sum_nas); gc()
+
+# Combine all modalities into a single data frame
+for (i in 1:length(SNF_feature_ranks)) {
+  names(SNF_feature_ranks[[i]]$NMI_scores) = colnames(input[[i]])
+}
+
+# Prepare data for plotting
+# Combine all modalities into a single data frame
+feature_data <- do.call(rbind, lapply(names(SNF_feature_ranks), function(modality) {
+  data.frame(
+    Feature = paste(modality, seq_along(SNF_feature_ranks[[modality]]$NMI_scores), sep = "_"),
+    Modality = modality,
+    NMI_Scores = SNF_feature_ranks[[modality]]$NMI_scores
+  )
+}))
+
+# Remove features with NA NMI scores
+feature_data <- feature_data[!is.na(feature_data$NMI_Scores), ]
+
+# Calculate global ranks based on NMI scores
+feature_data$Global_Rank <- rank(-feature_data$NMI_Scores, ties.method = "first")
+
+# Filter the top 1000 features
+top_features <- feature_data[order(feature_data$Global_Rank), ][1:1000, ]
+
+# Ensure the data is ordered by rank for proper plotting
+top_features <- top_features[order(top_features$Global_Rank), ]
+
+# Create the bar plot
+ggplot(top_features, aes(x = NMI_Scores, y = Global_Rank, fill = Modality)) +
+  geom_bar(
+    stat = "identity",
+    orientation = "y",
+    width = 1,  # Bars fully adjacent with no gaps
+    alpha = 0.85,  # Apply transparency
+    color = NA  # Removes outlines completely
+  ) +
+  scale_fill_manual(
+    name = "Modality",
+    values = c(
+      "RNAseq" = "#1B9E77",
+      "miRNA" = "#7570B3",
+      "Methylation" = "deeppink4",
+      "CNV" = "#E7298A",
+      "SNPs" = "#66A61E"
+    )
+  ) +
+  scale_x_continuous(
+    breaks = seq(0, 1, by = 0.1),  
+    limits = c(-0.01, 1),  # Expand lower limit slightly
+    expand = c(0, 0)  # Remove extra padding on the x-axis
+  ) +
+  scale_y_reverse(
+    breaks = c(1, seq(100, 1000, by = 100)),  # Y-axis reversed
+    limits = c(1001, 0),  # Expand upper limit slightly
+    expand = c(0, 0)  # Remove extra padding on the y-axis
+  ) +
+  labs(
+    title = "Top 1000 Features Ranked by NMI with Subtypes",
+    x = "NMI Score",
+    y = "Global Rank"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 5),  # Smaller y-axis labels
+    axis.text.x = element_text(size = 5),  # Larger x-axis labels
+    axis.title = element_text(face = "bold", size = 6),
+    axis.line.y = element_line(linewidth = 0),
+    axis.line.x = element_line(linewidth = 0.1),
+    axis.ticks = element_line(linewidth = 0.05),
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 7),  # Bold and centrally aligned title
+    legend.title = element_text(face = "bold", size = 5),
+    legend.text = element_text(size = 5),
+    legend.key.size = unit(0.35, "cm"),
+    panel.grid.major.y = element_blank(),  # Remove horizontal grid lines
+    panel.grid.major.x = element_line(color = "gray90")  # Keep vertical grid lines
+  ) +
+  guides(color = "none", alpha = "none")
+
+ggsave(filename = paste0(algorithm, "_top_", nrow(top_features), "_feature_ranks.png"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 1920*1.2, height = 1920*1.5, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+feature_ranks_text2 = paste0("In the top ", nrow(top_features), " features, ",
+                             paste(names(table(top_features$Modality)), collapse = ", "),
+                             " features are found (",
+                             paste(table(top_features$Modality), collapse = ", "),
+                             ", respectively).")
+
+feature_ranks_text = paste(feature_ranks_text1, feature_ranks_text2, collapse = " ")
+rm(feature_ranks_text1, feature_ranks_text2); gc()
 
 # Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
@@ -2064,8 +2196,8 @@ names(list_aff_S) = c(paste0("CNV Original Affinity ", optN, "-NN Graph"),
 for (i in 1:length(list_aff_S)) {
   
   # Prepare the graph object
-  g <- graph_from_adjacency_matrix(list_aff_S[[i]], 
-                                   mode = "undirected", weighted = TRUE, diag = FALSE)
+  g <- graph_from_adjacency_matrix(list_aff_S[[i]],  weighted = TRUE, diag = FALSE,
+                                   mode = "max")
   g <- delete_edges(g, E(g)[weight == 0])
   E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
   nodes_data <- data.frame(name = V(g)$name) %>%
@@ -2080,7 +2212,7 @@ for (i in 1:length(list_aff_S)) {
   V(g)$color <- fifelse(V(g)$SNF == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
   
   png(paste0(home, 
-             "/Results/single_algorithm", algorithm, "/Supplement/",
+             "/Results/single_algorithm/", algorithm, "/Supplement/",
              names(list_aff_S)[i], ".png"),
       width = 6000, height = 6000, res = 700)
   
@@ -2110,6 +2242,118 @@ for (i in 1:length(list_aff_S)) {
   dev.off() 
 }
 rm(g, nodes_data)
+
+# Define the affinity matrices for each modality
+# Function to determine the important modalities for each edge
+determine_edge_support <- function(edge_weights) {
+  sorted_weights <- sort(edge_weights, decreasing = TRUE)
+  # If the highest weight is more than 10% greater than all others, it is supported by a single modality
+  if (sorted_weights[1] > sorted_weights[2] * 1.1) {
+    return(which(edge_weights == sorted_weights[1]))
+  }
+  # If the difference between the two highest weights is less than 10%, it is supported by those two modalities
+  else if (sorted_weights[1] <= sorted_weights[2] * 1.1 && sorted_weights[2] > sorted_weights[3] * 1.1) {
+    return(which(edge_weights >= sorted_weights[2]))
+  }
+  # If the difference between all weights is less than 10%, it is supported by all modalities
+  else {
+    return(which(edge_weights >= sorted_weights[1] * 0.9))
+  }
+}
+
+# Prepare the graph object for the final affinity matrix
+g <- graph_from_adjacency_matrix(aff_final_S, mode = "undirected", weighted = TRUE, diag = FALSE)
+g <- delete_edges(g, E(g)[weight == 0])
+
+# Calculate the weights of each edge in individual networks
+edge_weights_list <- list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, aff_SNPs_S)
+edge_support_list <- lapply(E(g), function(e) {
+  from <- ends(g, e)[1]
+  to <- ends(g, e)[2]
+  sapply(edge_weights_list, function(mat) mat[from, to])
+})
+
+# Assign color to each edge based on the modalities that support it
+edge_colors <- c("#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#F3FF33")  # Define unique colors for each modality
+combinations_colors <- list()
+
+for (i in 1:length(E(g))) {
+  supported_modalities <- determine_edge_support(edge_support_list[[i]])
+  if (length(supported_modalities) == 5) {
+    combinations_colors[[i]] <- "black"  # Assign black color if all modalities support the edge
+  } else if (length(supported_modalities) == 1) {
+    combinations_colors[[i]] <- edge_colors[supported_modalities]
+  } else {
+    combination <- paste(supported_modalities, collapse = " + ")
+    if (!is.null(combinations_colors[[combination]])) {
+      combinations_colors[[i]] <- combinations_colors[[combination]]
+    } else {
+      new_color <- colorRampPalette(edge_colors[supported_modalities])(1)
+      combinations_colors[[combination]] <- new_color
+      combinations_colors[[i]] <- new_color
+    }
+  }
+}
+
+E(g)$color <- unlist(combinations_colors)
+
+# Prepare the node data
+nodes_data <- data.frame(name = V(g)$name) %>%
+  inner_join(clust_annot_pheno %>% dplyr::select(samID, SNF), by = c("name" = "samID"))
+nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
+V(g)$SNF <- nodes_data[[algorithm]]
+
+# Set color based on SNF
+V(g)$color <- fifelse(V(g)$SNF == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
+
+# Draw the graph for the final affinity matrix
+png(paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/", "colored_Final_Fused_Affinity_", optN, "-NN_Graph.png"),
+    width = 6000, height = 6000, res = 700)
+
+par(mar = c(0, 0, 0, 17))  # Adjust right margin to make enough space for the legend
+
+# Plot the graph
+plot(g, vertex.color = V(g)$color,
+     edge.width = E(g)$width * 0.1,  # Make the edges thinner
+     vertex.size = 3,  # Make the nodes smaller
+     vertex.label = NA, 
+     edge.color = adjustcolor(E(g)$color, alpha.f = 0.35),  # Add transparency to edges
+     layout = layout_with_fr(g, niter = 1000))
+
+# Add a legend for the edge colors
+legend(x = 1.2, y = 1,  # Manually adjust the position of the legend to the right of the plot
+       xpd = TRUE,  # Allow legend to be drawn outside the plot area
+       title="Edge Color Legend",
+       legend=c("RNA-seq", "miRNA", "Methylation", "CNV", "SNPs", 
+                "RNA-seq + miRNA", "RNA-seq + Methylation", "RNA-seq + CNV", "RNA-seq + SNPs", 
+                "miRNA + Methylation", "miRNA + CNV", "miRNA + SNPs", 
+                "Methylation + CNV", "Methylation + SNPs", 
+                "CNV + SNPs", 
+                "RNA-seq + miRNA + Methylation", "RNA-seq + miRNA + CNV", "RNA-seq + miRNA + SNPs", 
+                "RNA-seq + Methylation + CNV", "RNA-seq + Methylation + SNPs", 
+                "RNA-seq + CNV + SNPs", 
+                "miRNA + Methylation + CNV", "miRNA + Methylation + SNPs", 
+                "miRNA + CNV + SNPs", 
+                "Methylation + CNV + SNPs", 
+                "RNA-seq + miRNA + Methylation + CNV", "RNA-seq + miRNA + Methylation + SNPs", 
+                "RNA-seq + miRNA + CNV + SNPs", "RNA-seq + Methylation + CNV + SNPs", 
+                "miRNA + Methylation + CNV + SNPs", 
+                "RNA-seq + miRNA + Methylation + CNV + SNPs"),
+       fill=c("#33FF57", "#3357FF", "#FF5733", "#FF33A1", "#F3FF33", 
+              "#abcdef", "#123456", "#654321", "#fedcba", 
+              "#a1b2c3", "#b2c3d4", "#c3d4e5", 
+              "#d4e5f6", "#e5f6a7", "#f6a7b8", 
+              "#aabbcc", "#bbccdd", "#ccddee", 
+              "#ddeeff", "#eeffaa", "#ffaabb", 
+              "#aaffcc", "#bbffdd", "#ccffee", 
+              "#ffccaa", 
+              "#112233", "#223344", "#334455", 
+              "#445566", "#556677", "#667788", 
+              "black"),
+       cex=0.7,
+       box.lwd=1)
+
+dev.off()
 
 # Compare these SNF results with the SNF output from MOVICS ###
 load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
@@ -2143,7 +2387,8 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        optimal_N = optN,
                        optimal_sigma = optSigma,
                        conclusion = conclusion, # if there is agreement, np_conclusion can also be used
-                       n_iter = n_iterations
+                       n_iter = n_iterations,
+                       feature_ranks_text = feature_ranks_text
                        )
 
 # Put all parameters in a list

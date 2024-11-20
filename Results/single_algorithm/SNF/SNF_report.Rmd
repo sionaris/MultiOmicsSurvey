@@ -43,6 +43,16 @@ The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (whe
 
 The values are very low and indicate that `r params$algorithm` produces different clusters than consensus ``MOVICS``.
 
+## Modality contribution
+The following figure, illustrates the final graph, where each edge is colored according to the modalities that contribute the most to the corresponding relationship. The relationships plotted are for the $N_i = 15$ nearest neighbors of each sample.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/colored_Final_Fused_Affinity_15-NN_Graph.png")`)
+
+## Feature ranking
+The top 100 features ranked by NMI are shown in the figure below. `r params$hyperparameters$feature_ranks_text`
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/",params$algorithm,"_top_1000_feature_ranks.png")`)
+
 ## Clinical variables
 Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Summary_of_clinical_variables.txt")`) (Exact tests and non-parametric Kruskal-Wallis tests). The number of lymph nodes identified by immunohistochemical procedures (IHC) and H&E procedures, were also tested using the Jonckheere-Terpstra test for ordered differences.
 
@@ -298,7 +308,7 @@ In MOVICS, the `r params$algorithm` algorithm is run by default with $N_i = 30$,
   <li>Based on the PCAs of the affinity matrices, a clearer separation of samples is noticed on the <b>methylation and RNA-seq modalities</b>.</li>
   <li>SNF1 is associated with <b>ER+, PR+ samples</b> and has the majority of <b>ILC samples</b>.</li>
   <li>SNF1 tends to have <b>more positive lymph nodes</b> than SNF2, according to Jonckheere-Terpstra tests.</li>
-  <li>SNF2 has generally <b>higher immune system activity</b> compared to SNF1.</li>
+  <!--<li>SNF2 has generally <b>higher immune system activity</b> compared to SNF1.</li>-->
   <li>SNF1 has a high proportion of <em>PIK3CA</em> <b>mutations</b> and SNF2 has a high proportion of <em>TP53</em> <b>mutations</b>. SNF1 has a relatively high ratio of <em>CDH1</em> mutations too.</li>
   <li>There are significant differences in the <b>FGA</b> bars of the two subtypes. </li>
   <li>SNF2 has significantly up-regulated <b>cell division and proliferation</b> pathways compared to SNF1.</li>

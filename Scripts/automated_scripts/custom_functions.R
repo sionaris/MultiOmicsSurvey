@@ -1522,3 +1522,56 @@ transform_affinity_matrix <- function(similarity_matrix, norm_quant = 0.05, norm
   
   return(similarity_matrix)
 }
+
+# Rank SNF features parallely #####
+rankFeaturesByNMI_parallely <- function(data, W, ncores = detectCores() - 1, binary = FALSE) {
+  stopifnot(class(data) == "list" && length(data) == 1)  # Ensure only one data type is passed
+  
+  NUM_OF_FEATURES <- ncol(data[[1]])
+  NMI_scores <- vector(mode = "numeric", length = NUM_OF_FEATURES)
+  problematic_features <- vector(mode = "list")  # To store indices of problematic features
+  num_of_clusters_fused <- estimateNumberOfClustersGivenGraph(W)[[1]]
+  clustering_fused <- spectralClustering(W, num_of_clusters_fused)
+  
+  # Set up parallel backend to use with foreach
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl)
+  
+  # Ensure cluster is stopped in case of error
+  on.exit(stopCluster(cl))
+  
+  clusterEvalQ(cl, library(SNFtool))  # Make SNFtool available to each core
+  clusterEvalQ(cl, library(foreach))
+  clusterEvalQ(cl, library(doParallel))
+  
+  # Use foreach to parallelize over features (compatible with Windows)
+  data_type_scores <- foreach(feature_ind = 1:NUM_OF_FEATURES, .combine = 'c', .packages = c("SNFtool")) %dopar% {
+    tryCatch({
+      if (binary) {
+        # Use binary distance
+        dist_matrix <- as.matrix(dist(as.matrix(data[[1]][, feature_ind]), method = "binary"))
+      } else {
+        # Use default distance (assumed to be Euclidean)
+        dist_matrix <- dist2(as.matrix(data[[1]][, feature_ind]), as.matrix(data[[1]][, feature_ind]))
+      }
+      
+      affinity_matrix <- affinityMatrix(dist_matrix)      
+      clustering_single_feature <- spectralClustering(affinity_matrix, num_of_clusters_fused)
+      calNMI(clustering_fused, clustering_single_feature)
+    }, error = function(e) {
+      # Log the index of the problematic feature and return NA for its score
+      problematic_features <<- append(problematic_features, feature_ind)
+      NA
+    })
+  }
+  
+  # Rank the features, excluding NA values from ranking
+  data_type_ranks <- rank(-data_type_scores, ties.method = "first", na.last = "keep")
+  
+  # Print or log problematic feature indices
+  if (length(problematic_features) > 0) {
+    cat("Problematic feature indices:", unlist(problematic_features), "\n")
+  }
+  
+  return(list(NMI_scores = data_type_scores, NMI_ranks = data_type_ranks, problematic_features = problematic_features))
+}
