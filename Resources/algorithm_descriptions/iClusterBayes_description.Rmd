@@ -1,0 +1,76 @@
+<u>**In detail**:</u>
+Suppose we have $n$ tumor samples and each of them is analyzed by $m$ different types of techniques generating $m$ sets of genomic data. For example, microarray-based platforms can generate continuous data for gene expression, DNA copy number and CpG site methylation, while sequencing-based platforms can generate count data for gene expression and binary data for DNA mutation.
+<ol>
+  <li>Let $y_{it} = (y_{i1t}, \ldots, y_{ip_{t}t})^T$ denote a $p_t-$dimensional vector. Each element $y_{ijt}$ denotes the observed data associated with the $j-$th genomic feature in the $i-$th $(i \in \{1, \ldots n\})$ sample of the $t-$th $(t \in \{1, \ldots, m\})$ data type.</li>
+  <li>The $t-$th dataset can be represented by $Y_t = (y_{1t}, \ldots, y_{nt})$, a matrix with dimensions $p_t \times n$, and all the datasets can be represented by a multi-high dimensional genomic data space $\{Y_t\}^m_{t=1}$.</li>
+  <li>Assume there are $k+1, \quad (k>0)$ molecular subtypes in the tumor samples and we hope to identify them from the multi-high dimensional data space $\{Y_t\}^m_{t=1}$. The core idea is to reduce the multi-high dimensional data space to a low dimensional subspace that will collectively capture the major variations of the multiple genomic datasets. The low dimensional subspace can then be used to cluster the tumor samples.
+  
+  Borrowing the idea from PCA, we assume that we could project the multi-high dimensional space $\{Y_t\}^m_{t=1}$ to a low dimensional integrated subspace $Z$ with dimensions $n \times k$. In other words, each sample is associated with a latent variable $z_i = (z_{i1}, \ldots, z_{ik}), \quad i \in \{1, \ldots, n\}$, where $z_i$ is a continuous variable and follows a standard multivariate normal distribution $\textbf{MVN}(0, \textbf{I}_k)$.</li>
+  <li>
+    <ul>
+      <li><b>Omics with continuous measurements</b>
+      $$y_{ijt} = \textbf{x}_i\boldsymbol{\Gamma}
+_{jt}\boldsymbol{\beta}_{jt} + \epsilon_{ijt}, \quad i = 1, \ldots, n, \quad j = 1, \ldots, p_t, \quad t \in (1, \ldots, m)$$
+      where $\boldsymbol{\beta_{jt}} = (\beta_{0jt}, \beta_{1jt}, \ldots, \beta_{kjt})^T$ is the coefficient vector associated with the $j-$th feature in the $t-$th dataset, $\textbf{x}_i = (1, z_i) = (1, z_{i1}, \ldots, z_{ik})$ is a vector in which the first component is 1 and all the remaining components are exactly from vector $z_i$, $\boldsymbol{\Gamma}_{jt} = \text{diag}(1, \gamma_{jt}, \ldots, \gamma_{jt})$ is a diagonal matrix whose first diagonal component is 1 and the all the remaining $k$ diagonal components are $\gamma_{jt}$, and $\epsilon_{ijt}$ is the random error with mean 0 and variance $\sigma_{jt}^2$.</li>
+      <li>The constant 1 in $\textbf{x}_i$ and $\boldsymbol{\Gamma}_{jt}$ is designed to let the model have the intercept $\b_{0jt}$. In the model, $\gamma_{jt}$ is an indicator variable with value 0 (indicates that the corresponding $\boldsymbol{\beta}_{jt}$ is small and thus the $j-$th omics feature in the $t-$th dataset contributes little for joint clustering) or 1 (indicates that the corresponding $\boldsymbol{\beta}_{jt}$ is small and thus the $j-$th omics features in the $t-$th dataset is a contributor for the joint clustering, which is used for Bayesian variable selection).</li>
+      <li>Let $y_{jt} = (y_{1jt}, \ldots, y_{njt})^T$ be the data vector of omics feature $j$ for samples $1 \ldots n$. Let $\textbf{X} = (\textbf{x}_1, \ldots, \textbf{x}_n)^T$ be the design matrix with dimensions $n \times (k+1)$, where row $i$ is $\textbf{x}_i$. Then, the model for omics feature $j$ in dataset $t$ can be written as:
+      $$y_{jt} = \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt} + \boldsymbol{\epsilon}_{jt}, \quad j = 1, \ldots, p_t, \quad t \in (1, \ldots, m)$$
+      where $\boldsymbol{\epsilon}_{jt} = (\epsilon_{1jt}, \epsilon_{2jt}, \ldots, \epsilon_{njt})^T$.</li>
+      <li>To perform Bayesian analysis, we assume the following priors for the model parameters:
+      $$\boldsymbol{\beta}_{jt} \sim \text{MVN}(\boldsymbol{\beta}_{0t}, \Sigma_{0t}), \quad \sigma_{jt}^2 \sim \text{IG}(\frac{\nu_0}{2}, \frac{\nu_0 \sigma_0^2}{2}), \quad \gamma_{jt} \sim \text{Bernoulli}(q_t)$$
+      In other words, we assume that the coefficient vector $\boldsymbol{\beta}_{jt}$ follows a multivariate normal distribution with mean $\boldsymbol{\beta}_{0t}$ and covariance $\Sigma_{0t}$; $\sigma_{jt}^2$ follows an inverse-gamma distribution with shape parameter $\frac{\nu_0}{2}$ and scale parameter $\frac{\nu_0 \sigma_0^2}{2}$; indicator variable $\gamma_{jt}$ follows a Bernoulli distribution with probability of an omics feature being selected as a driving factor for clustering being $q_t$</li>
+      <li> With these assumptions, we can derive the posterior distributions of the model parameters $\boldsymbol{\beta}_{jt}$, $\sigma_{jt}^2$ and $\gamma_{jt}$:
+      $$P(\sigma_{jt}^2 | y_{jt}, Z, \gamma_{jt}, \boldsymbol{\beta}_{jt}) \sim IG(\frac{\nu_0 + n}{2}, \frac{\nu_0\sigma_0^2 + (y_jt- \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})^T(y_jt- \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})}{2})$$
+      $$P(\boldsymbol{\beta}_{jt} | y_{jt}, Z, \sigma_{jt}^2, \gamma_{jt}) \sim \text{MVN}(\textbf{m, V}) \\
+      \textbf{m} = (\boldsymbol{\Gamma}_{jt}^T\textbf{X}^T\textbf{X}\boldsymbol{\Gamma}_{jt}/\sigma_{jt}^2 + \Sigma_{0t}^{-1})^{-1}(\boldsymbol{\Gamma}_{jt}^T\textbf{X}^T\textbf{X}_{jt}/\sigma_{jt}^2 + \Sigma_{0t}^{-1}\beta_{0t}) \\
+      \textbf{V} = (\boldsymbol{\Gamma}_{jt}^T\textbf{X}^T\textbf{X}\boldsymbol{\Gamma}_{jt}/\sigma_{jt}^2 + \Sigma_{0t}^{-1})^{-1}$$
+      $$P(\gamma_{jt} | y_{jt}, Z, \boldsymbol{\beta}_{jt}, \sigma_{jt}^2) \propto \exp \bigl( - \frac{(y_jt- \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})^T(y_jt- \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})}{2\sigma_{jt}^2}\bigr)P(\gamma_{jt})$$
+      where $P(\gamma_{jt})$ is the prior of $\gamma_{jt}$. In other words, the posterior of $\sigma_{jt}^2$ is an inverse gamma distribution with scale parameter $\nu_0\sigma_0^2 + (y_jt- \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})^T(y_jt- \textbf{X}\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})$ and shape parameter $(\nu_0 + n)/2$; the posterior of $\boldsymbol{\beta}_{jt}$ is a multivariate normal with mean $\textbf{m}$ and covariance $\textbf{V}$.</li>
+      <li>Since the posteriors are known, the Gibbs sampling algorithm is used to obtain samples from the posteriors. There is no closed form for parameter $\gamma_{jt}$, but the distribution is proportional to the terms specified in the last equation. Therefore, the Metropolis-Hastings algorithm can be used to sample from its posterior. There is no closed form for $z_i$ either. The sampling strategy for $z_i$ is described later below. The idea in the end will be that the latent variable $z_i$ will be used for sample clustering and omics features with high posterior probability of $\gamma_{jt}$ being 1 will be selected as informative features.</li>
+    </ul>
+  </li>
+  <li>
+    <ul>
+      <li><b>Omics with binary measurements</b>
+      If $y_{ijt}$ is a binary variable (e.g. mutation/no mutation) the data is modelled with classical logistic regression:
+      $$\log\frac{P(y_{ijt}=1|z_i)}{1 - P(y_{ijt}=1|z_i)} = \textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}, \quad i = 1, \ldots, n, \quad j = 1, \ldots, p_t, \quad t \in (1, \ldots, m)$$
+      where $P(y_{ijt}=1|z_i)$  is the probability of gene $j$ being mutant in sample $i$ given the value of the latent variable $z_i$; $\textbf{x}_i = (1, z_i)$ is the same design vector as previously, $\boldsymbol{\Gamma}_{jt}$ and $\boldsymbol{\beta}_{jt}$ have the same components as previously and data type $t$ refers to binary.</li>
+      <li>Assuming that the priors for the model parameters are:
+      $$\boldsymbol{\beta}_{jt} \sim \text{MVN}(\boldsymbol{\beta}_{0t}, \Sigma_{0t}), \quad \gamma_{jt} \sim \text{Bernoulli}(q_t)$$
+      the posteriors then are:
+      $$P(\boldsymbol{\beta}_{jt} | y_{jt}, Z, \gamma_{jt}) \propto \bigl(\prod_{i=1}^n \frac{(\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}))^{y_{ijt}}}{1 + \exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})}\bigr) \exp \bigl(-\frac{1}{2} (\boldsymbol{\beta}_{jt} - \boldsymbol{\beta}_{0t})^T\Sigma_{0t}^{-1}(\boldsymbol{\beta}_{jt} - \boldsymbol{\beta}_{0t})\bigr) \\
+      P(\gamma_{jt} | y_{jt}, Z, \boldsymbol{\beta}_{jt}) \propto \bigl(\prod_{i=1}^n\frac{(\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}))^{y_{ijt}}}{1 + \exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})}\bigr) P(\gamma_{jt})$$</li>
+    </ul>
+  </li>
+  <li>
+    <ul>
+      <li><b>Omics with count measurements</b>
+      When $y_{ijt}$ is a count variable (e.g. RNA-seq data), the data is modelled using Poisson regression:
+      $$\log(\lambda(y_{ijt} | z_i)) = \textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}, \quad i = 1, \ldots, n, \quad j = 1, \ldots, p_t, t \in (1, \ldots, m)$$
+      where $\lambda(y_{ijt} | z_i)$ is the predicted mean of $y_{ijt}$ conditional on the latent variable $z_i$; $\boldsymbol{\Gamma}_{jt}$ and $\boldsymbol{\beta}_{jt}$ are the corresponding indicator variable and parameter for the count data type (simlar to those in the continuous and binary cases).</li>
+      <li>Assuming that the priors for the model parameters are:
+      $$\boldsymbol{\beta}_{jt} \sim \text{MVN}(\boldsymbol{\beta}_{0t}, \Sigma_{0t}), \quad \gamma_{jt} \sim \text{Bernoulli}(q_t)$$
+      the posteriors then are:
+      $$P(\boldsymbol{\beta}_{jt} | y_{jt}, Z, \gamma_{jt}) \propto \bigl(\prod_{i=1}^n(\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}))^{y_{ijt}}\exp(-\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}))\bigr)\exp\bigl(-\frac{1}{2} (\boldsymbol{\beta}_{jt} - \boldsymbol{\beta}_{0t})^T\Sigma_{0t}^{-1}(\boldsymbol{\beta}_{jt} - \boldsymbol{\beta}_{0t})\bigr) \\
+      P(\gamma_{jt} | y_{jt}, Z, \boldsymbol{\beta}_{jt}) \propto \bigl(\prod_{i=1}^n(\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}))^{y_{ijt}}\exp(-\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt}))\bigr)P(\gamma_{jt})$$
+      </li>
+      <li>The Metropolis-Hastings algorithm is used to jointly sample $(\gamma_{jt}, \boldsymbol{\beta}_{jt})$ from their posteriors.</li>
+    </ul>
+  </li>
+  <li>Now, let sample $i$ be associated with latent variable $z_i$. Through joint modelling, $z_i$ will collectively capture the major biological variations across the omics data of the cancer samples and provide a basis for predicting if an omics feature $j$ in a given dataset $t$ is a driver for sample clustering. The joint model can be written as:
+  $$P(y_{ijt}, z_i | \boldsymbol{\beta}_{jt}, \gamma_{jt}, i=1,\ldots,n, j=1,\ldots,p_t, t=1,\ldots,m) = \prod_{t}^m \prod_{i}^n \prod_{j}^{p_t} P(y_{ijt} | z_i, \boldsymbol{\beta}_{jt}, \gamma_{jt})P(z_i)$$
+  where the multiplication is due to the conditional independence assumption of $y_{ijt}$ given $z_i$; $P(z_i)$ is the density function of the standard $\text{MVN}(\textbf{0,I}_k)$; the conditional density function $P(y_{ijt} | z_i, \boldsymbol{\beta}_{jt}, \gamma_{jt})$ has the form of normal, Bernoulli or Poisson depending on the type of omics data. More specifically,
+  $$
+P(y_{ijt} | z_i, \boldsymbol{\beta}_{jt}, \gamma_{jt}) \propto 
+  \begin{cases}
+    \sigma_{jt}^{-1}\exp\left(-\frac{(y_{ijt}-\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})^2}{2\sigma_{jt}^2}\right), & \text{normal}, \\
+    \left(\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})\right)^{y_{ijt}}\left(1+\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})\right)^{-1}, & \text{binomial}, \\
+    \left(\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})\right)^{y_{ijt}}\exp\left(-\exp(\textbf{x}_i\boldsymbol{\Gamma}_{jt}\boldsymbol{\beta}_{jt})\right), & \text{Poisson},
+  \end{cases}
+$$</li>
+<li>The latent variable $z_i$ is not observable and therefore we need the Markov Chain Monte Carlo (MCMC) method to obtain samples from its posterior distribution for statistical inference. The exact posterior of $z_i$ is not known. However, we know it's proportional to the product of the density of $z_i$ and the joint likelihood of the data:
+  $$P\left( z_i | y_{jt}, \boldsymbol{\beta}_{jt}, \gamma_{jt} \right) \propto P(z_i) \prod_{t=m}^{T} \prod_{j=p_t}^{P} P\left( y_{ijt} | Z_i, \boldsymbol{\beta}_{jt}, \gamma_{jt} \right), \quad i=1, 2, \ldots, n.
+$$
+Therefore, the Metropolis–Hasting algorithm will be used to sample from its posterior distribution for statistical inference.</li>
+  <li>The mean values of the latent variables are used for clustering. Specifically, following a general principle for separating $g$ clusters among $n$ data points, the $k-$ means algorithm is used to divide the $n$ samples into $g$ clusters in the latent variable space, where $g = k + 1$.</li>
+</ol>

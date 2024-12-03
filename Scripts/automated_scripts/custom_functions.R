@@ -1575,3 +1575,429 @@ rankFeaturesByNMI_parallely <- function(data, W, ncores = detectCores() - 1, bin
   
   return(list(NMI_scores = data_type_scores, NMI_ranks = data_type_ranks, problematic_features = problematic_features))
 }
+
+# Binary NMF into IntNMF ####
+nmf.opt.k.plusbin = function(dat = dat, n.runs = 30, n.fold = 5, k.range = 2:8, 
+         result = TRUE, make.plot = TRUE, progress = TRUE, st.count = 10, 
+         maxiter = 100, wt = if (is.list(dat)) rep(1, length(dat)) else 1,
+         is.binary = rep("No", length(dat))) 
+{
+  library(IntNMF)
+  library(nmfbin)
+  library(mclust)
+  
+  # Check inputs
+  if (!is.list(dat) & length(wt) > 1) 
+    stop("Weight is not applicable for single data")
+  if (!is.list(dat)) 
+    dat <- list(dat)
+  n.dat <- length(dat)
+  if (n.dat != length(wt)) 
+    stop("Number of weights must match number of data")
+  
+  # Binary matrix detection
+  binary_flags = (is.binary == "Yes")
+  
+  set.seed(12345)
+  n.sample <- nrow(dat[[1]])
+  CPI <- matrix(NA, length(k.range), n.runs)
+  dimnames(CPI) <- list(paste("k", k.range, sep = ""), paste("run", 1:n.runs, sep = ""))
+  count <- 0
+  
+  for (i in 1:n.runs) {
+    for (k in k.range) {
+      R.ind <- NULL
+      random.sample <- sample(seq(n.sample), n.sample)
+      
+      for (j in 1:n.fold) {
+        test.sample <- random.sample[(round((j - 1) * n.sample/n.fold) + 1):round(j * n.sample/n.fold)]
+        train.sample <- setdiff(random.sample, test.sample)
+        
+        # Separate training and testing sets
+        d.train <- lapply(dat, function(x) x[train.sample, , drop = FALSE])
+        d.test <- lapply(dat, function(x) x[test.sample, , drop = FALSE])
+        
+        # Fit NMF models for each dataset
+        fit.train <- lapply(seq_along(d.train), function(idx) {
+          if (binary_flags[idx]) {
+            # Use nmfbin for binary data
+            nmfbin::nmfbin(d.train[[idx]], k = k, loss_fun = "logloss", max_iter = maxiter)
+          } else {
+            # Use standard nmf.mnnals for continuous data
+            IntNMF::nmf.mnnals(dat = list(d.train[[idx]]), k = k, maxiter = maxiter, st.count = st.count)
+          }
+        })
+        
+        # Collect H matrices for W-prediction
+        H.train <- lapply(seq_along(fit.train), function(idx) fit.train[[idx]]$H)
+        
+        # Predict W for the test data
+        XHt <- 0
+        for (idx in seq_along(d.test)) {
+          if (binary_flags[idx]) {
+            XHt <- XHt + sqrt(wt[idx]) * d.test[[idx]] %*% t(H.train[[idx]])
+          } else {
+            XHt <- XHt + d.test[[idx]] %*% t(H.train[[idx]])
+          }
+        }
+        HHt <- 0
+        for (idx in seq_along(H.train)) {
+          HHt <- HHt + sqrt(wt[idx]) * H.train[[idx]] %*% t(H.train[[idx]])
+        }
+        W.predict <- XHt %*% MASS::ginv(HHt)
+        W.predict <- W.predict + abs(min(W.predict))
+        
+        # Predict clusters
+        predicted.cluster.mem <- apply(W.predict, 1, which.max)
+        
+        # Fit independent test model to get observed clusters
+        fit.test <- lapply(seq_along(d.test), function(idx) {
+          if (binary_flags[idx]) {
+            nmfbin::nmfbin(d.test[[idx]], k = k, loss_fun = "logloss", max_iter = maxiter)
+          } else {
+            IntNMF::nmf.mnnals(dat = list(d.test[[idx]]), k = k, maxiter = maxiter, st.count = st.count)
+          }
+        })
+        computed.cluster.mem <- unlist(lapply(fit.test, function(fit) fit$clusters))
+        
+        # Compute Adjusted Rand Index (ARI)
+        R.ind <- c(R.ind, mclust::adjustedRandIndex(predicted.cluster.mem, computed.cluster.mem))
+        
+        count <- count + 1
+        if (progress & round(count/(n.runs * length(k.range) * n.fold) * 100, 0) %in% seq(5, 100, by = 5)) {
+          message(paste(round(count/(n.runs * length(k.range) * n.fold) * 100, 0), "% complete", sep = ""))
+          flush.console()
+        }
+      }
+      CPI[k - 1, i] <- mean(R.ind)
+    }
+  }
+  
+  if (make.plot) {
+    dev.new(width = 4, height = 5)
+    plot(k.range, CPI[, 1], ylim = c(min(CPI), max(CPI)), 
+         pch = 20, main = "", xlab = "k", ylab = "CPI")
+    for (m in 2:n.runs) points(k.range, CPI[, m], pch = 20)
+    lines(k.range, apply(CPI, 1, mean), col = "red", lwd = 2)
+    mtext("Optimum k", outer = TRUE, cex = 1, line = -2)
+  }
+  
+  if (result) 
+    return(CPI)
+}
+
+nmf.opt.k.plusbin <- function(dat = dat, n.runs = 30, n.fold = 5, k.range = 2:8, 
+                              result = TRUE, make.plot = TRUE, progress = TRUE, st.count = 10, 
+                              maxiter = 100, wt = if (is.list(dat)) rep(1, length(dat)) else 1,
+                              is.binary = rep("No", length(dat))) {
+  library(IntNMF)
+  library(nmfbin)
+  library(mclust)
+  
+  # Check inputs
+  if (!is.list(dat) & length(wt) > 1) 
+    stop("Weight is not applicable for single data")
+  if (!is.list(dat)) 
+    dat <- list(dat)
+  n.dat <- length(dat)
+  if (n.dat != length(wt)) 
+    stop("Number of weights must match number of data")
+  
+  # Binary flags
+  binary_flags <- (is.binary == "Yes")
+  message("Binary flags for modalities: ", paste(binary_flags, collapse = ", "))
+  
+  set.seed(12345)
+  n.sample <- nrow(dat[[1]])
+  CPI <- matrix(NA, length(k.range), n.runs)
+  dimnames(CPI) <- list(paste("k", k.range, sep = ""), paste("run", 1:n.runs, sep = ""))
+  count <- 0
+  
+  for (i in 1:n.runs) {
+    for (k in k.range) {
+      R.ind <- NULL
+      random.sample <- sample(seq(n.sample), n.sample)
+      
+      for (j in 1:n.fold) {
+        test.sample <- random.sample[(round((j - 1) * n.sample/n.fold) + 1):round(j * n.sample/n.fold)]
+        train.sample <- setdiff(random.sample, test.sample)
+        
+        # Separate training and testing sets
+        d.train <- lapply(dat, function(x) x[train.sample, , drop = FALSE])
+        d.test <- lapply(dat, function(x) x[test.sample, , drop = FALSE])
+        
+        message("Iteration: ", count, " | Fold: ", j, 
+                " | Train samples: ", length(train.sample), 
+                " | Test samples: ", length(test.sample))
+        
+        # Fit NMF models for each dataset
+        fit.train <- lapply(seq_along(d.train), function(idx) {
+          message("Training on modality ", idx, " (binary: ", binary_flags[idx], ")")
+          if (binary_flags[idx]) {
+            fit <- nmfbin::nmfbin(d.train[[idx]], k = k, loss_fun = "logloss", max_iter = maxiter)
+            message("Binary fit done for modality ", idx)
+            list(W = fit$W, H = fit$H)  # Use H, discard W for now
+          } else {
+            fit <- IntNMF::nmf.mnnals(dat = list(d.train[[idx]]), k = k, maxiter = maxiter, st.count = st.count)
+            message("Continuous fit done for modality ", idx)
+            list(W = fit$W, H = fit$H, clusters = fit$clusters)
+          }
+        })
+        
+        # Collect H matrices for W-prediction
+        H.train <- lapply(seq_along(fit.train), function(idx) fit.train[[idx]]$H)
+        message("Collected H matrices for W-prediction")
+        
+        # Predict W for the test data
+        XHt <- 0
+        HHt <- 0
+        for (idx in seq_along(d.test)) {
+          XHt <- XHt + sqrt(wt[idx]) * d.test[[idx]] %*% t(H.train[[idx]])
+          HHt <- HHt + sqrt(wt[idx]) * H.train[[idx]] %*% t(H.train[[idx]])
+        }
+        W.predict <- XHt %*% MASS::ginv(HHt)
+        W.predict <- W.predict + abs(min(W.predict))
+        message("W matrix predicted for test samples")
+        
+        # Predict clusters
+        predicted.cluster.mem <- apply(W.predict, 1, which.max)
+        message("Predicted clusters: ", paste(predicted.cluster.mem, collapse = ", "))
+        
+        # Fit independent test model to get observed clusters
+        fit.test <- lapply(seq_along(d.test), function(idx) {
+          message("Testing on modality ", idx, " (binary: ", binary_flags[idx], ")")
+          if (binary_flags[idx]) {
+            fit <- nmfbin::nmfbin(d.test[[idx]], k = k, loss_fun = "logloss", max_iter = maxiter)
+            clusters <- apply(fit$W, 1, which.max)  # Derive clusters from W
+            list(W = fit$W, H = fit$H, clusters = clusters)
+          } else {
+            fit <- IntNMF::nmf.mnnals(dat = list(d.test[[idx]]), k = k, maxiter = maxiter, st.count = st.count)
+            fit
+          }
+        })
+        
+        # Ensure computed clusters align with predicted clusters
+        computed.cluster.mem <- unlist(lapply(fit.test, function(fit) {
+          if (!is.null(fit$clusters)) {
+            return(fit$clusters)
+          } else {
+            stop("Clusters not computed for modality. Check the factorization step.")
+          }
+        }))
+        
+        # Validate cluster membership lengths
+        if (length(predicted.cluster.mem) != length(test.sample)) {
+          stop(sprintf("Mismatch in test sample size: predicted (%d) vs test sample size (%d).",
+                       length(predicted.cluster.mem), length(test.sample)))
+        }
+        if (length(computed.cluster.mem) != length(test.sample)) {
+          stop(sprintf("Mismatch in computed cluster memberships: expected %d but got %d.",
+                       length(test.sample), length(computed.cluster.mem)))
+        }
+        
+        # Compute Adjusted Rand Index (ARI)
+        R.ind <- c(R.ind, mclust::adjustedRandIndex(predicted.cluster.mem, computed.cluster.mem))
+        message("ARI computed for fold ", j, ": ", tail(R.ind, 1))
+      }
+      CPI[k - 1, i] <- mean(R.ind)
+    }
+  }
+  
+  if (make.plot) {
+    dev.new(width = 4, height = 5)
+    plot(k.range, CPI[, 1], ylim = c(min(CPI), max(CPI)), 
+         pch = 20, main = "", xlab = "k", ylab = "CPI")
+    for (m in 2:n.runs) points(k.range, CPI[, m], pch = 20)
+    lines(k.range, apply(CPI, 1, mean), col = "red", lwd = 2)
+    mtext("Optimum k", outer = TRUE, cex = 1, line = -2)
+  }
+  
+  if (result) 
+    return(CPI)
+}
+
+
+integrative_nmf_plus <- function(dat, kmax, is.binary, n.runs = 30, n.fold = 5, 
+                                 maxiter = 100, tol = 1e-6, st.count = 10, wt = NULL, 
+                                 result = TRUE, make.plot = TRUE, verbose = TRUE, 
+                                 allowParallel = FALSE, n.cores = NULL) {
+  # Load necessary libraries
+  library(MASS)       # For ginv
+  library(nmfbin)     # For handling binary modalities
+  library(IntNMF)     # For continuous NMF processing
+  library(mclust)     # For Adjusted Rand Index
+  library(foreach)    # For parallelization
+  library(doParallel) # Backend for parallel foreach loops
+  library(reshape2)   # For plotting
+  library(ggplot2)    # For CPI visualization
+  
+  # Set random seed
+  RNGversion("4.2.2")
+  set.seed(123)
+  
+  # Parallelization setup
+  if (allowParallel) {
+    if (is.null(n.cores)) {
+      n.cores <- parallel::detectCores() - 1
+    }
+    cl <- makeCluster(n.cores)
+    registerDoParallel(cl)
+    backend_registered <- foreach::getDoParRegistered()
+    if (verbose) {
+      message("Parallelization enabled using ", n.cores, " cores.")
+      message("Parallel backend registered: ", backend_registered)
+    }
+    if (!backend_registered) {
+      stop("Failed to register parallel backend. Check `doParallel` and `foreach` setup.")
+    }
+  } else {
+    if (verbose) message("Running without parallelization.")
+  }
+  
+  # Input checks
+  if (!is.list(dat)) stop("Input 'dat' must be a list of matrices.")
+  if (length(dat) != length(is.binary)) stop("Length of 'is.binary' must match the number of modalities in 'dat'.")
+  if (is.null(wt)) wt <- rep(1, length(dat))  # Assign equal weights if not provided
+  
+  # Check modalities for non-negativity
+  for (i in 1:length(dat)) {
+    if (min(dat[[i]]) < 0) stop(paste("All matrices must be non-negative. Issue with modality", i))
+  }
+  
+  # Initialize variables
+  n <- nrow(dat[[1]])
+  m <- length(dat)  # Number of modalities
+  CPI <- matrix(NA, length(2:kmax), n.runs)  # Cluster Prediction Index storage
+  dimnames(CPI) <- list(paste("k", 2:kmax, sep = ""), paste("run", 1:n.runs, sep = ""))
+  
+  # Debugging: Initial parameters
+  if (verbose) {
+    message("Binary flags for modalities: ", paste(is.binary, collapse = ", "))
+    message("Number of samples (n): ", n, ", Number of modalities (m): ", m)
+    message("Weights for modalities: ", paste(wt, collapse = ", "))
+  }
+  
+  # Main loop for n.runs and folds (parallelized across runs)
+  results <- foreach(run = 1:n.runs, 
+                     .combine = 'cbind', 
+                     .packages = c("MASS", "nmfbin", "IntNMF", "mclust", "foreach")) %dopar% {
+                       run_results <- numeric(length(2:kmax))
+                       
+                       for (curr_k in 2:kmax) {
+                         R.ind <- NULL  # Adjusted Rand Index for this run
+                         
+                         # Debugging
+                         if (verbose) message("Run ", run, " | k = ", curr_k)
+                         
+                         # Cross-validation folds
+                         random.sample <- sample(1:n, n)  # Shuffle sample indices
+                         for (fold in 1:n.fold) {
+                           # Split train and test indices
+                           test.sample <- random.sample[seq((fold - 1) * n / n.fold + 1, fold * n / n.fold)]
+                           train.sample <- setdiff(1:n, test.sample)
+                           
+                           d.train <- lapply(dat, function(x) x[train.sample, , drop = FALSE])
+                           d.test <- lapply(dat, function(x) x[test.sample, , drop = FALSE])
+                           
+                           # Debugging
+                           if (verbose) {
+                             message("Fold: ", fold, " | Train samples: ", length(train.sample), 
+                                     " | Test samples: ", length(test.sample))
+                             message("Training modalities dimensions: ", paste(sapply(d.train, dim), collapse = " | "))
+                             message("Testing modalities dimensions: ", paste(sapply(d.test, dim), collapse = " | "))
+                           }
+                           
+                           # Initialize W and H matrices
+                           W <- matrix(runif(length(train.sample) * curr_k, min = 0, max = 1), nrow = length(train.sample), ncol = curr_k)
+                           H.train <- lapply(d.train, function(x) matrix(runif(curr_k * ncol(x), min = 0, max = 1), nrow = curr_k, ncol = ncol(x)))
+                           
+                           # Iterative optimization
+                           for (iter in 1:maxiter) {
+                             if (verbose) message("Iteration ", iter, " | Updating H matrices")
+                             
+                             # Update H matrices
+                             for (modality in 1:m) {
+                               if (verbose) {
+                                 message("Updating modality ", modality)
+                                 message("W dimensions: ", paste(dim(W), collapse = " x "))
+                                 message("H.train[[modality]] dimensions: ", paste(dim(H.train[[modality]]), collapse = " x "))
+                                 message("d.train[[modality]] dimensions: ", paste(dim(d.train[[modality]]), collapse = " x "))
+                               }
+                               
+                               if (is.binary[modality]) {
+                                 # Binary data: log-loss optimization
+                                 pred <- 1 / (1 + exp(-W %*% H.train[[modality]]))  # Sigmoid activation
+                                 if (verbose) message("Binary prediction dimensions: ", paste(dim(pred), collapse = " x "))
+                                 H.train[[modality]] <- H.train[[modality]] * ((t(W) %*% d.train[[modality]]) /
+                                                                                 (t(W) %*% pred + .Machine$double.eps))
+                               } else {
+                                 # Continuous data: Euclidean loss optimization
+                                 H.train[[modality]] <- H.train[[modality]] * ((t(W) %*% d.train[[modality]]) /
+                                                                                 (t(W) %*% W %*% H.train[[modality]] + .Machine$double.eps))
+                               }
+                             }
+                             
+                             # Update W using all modalities
+                             XHt <- 0
+                             HHt <- 0
+                             for (modality in 1:m) {
+                               XHt <- XHt + sqrt(wt[modality]) * d.train[[modality]] %*% t(H.train[[modality]])
+                               HHt <- HHt + sqrt(wt[modality]) * H.train[[modality]] %*% t(H.train[[modality]])
+                             }
+                             W_new <- XHt %*% ginv(HHt)
+                             W_new[W_new < 0] <- 0  # Ensure non-negativity
+                             
+                             # Debugging: Check W matrix
+                             if (verbose) message("W matrix updated. Max: ", max(W_new), " | Min: ", min(W_new))
+                             
+                             # Check convergence
+                             if (sum(abs(W_new - W)) / sum(W) < tol) {
+                               if (verbose) message("Convergence achieved at iteration ", iter)
+                               break
+                             }
+                             W <- W_new
+                           }
+                           
+                           # Predict clusters for test samples
+                           predicted.cluster.mem <- apply(W, 1, which.max)
+                           computed.cluster.mem <- apply(W, 1, which.max)
+                           
+                           if (length(predicted.cluster.mem) != length(computed.cluster.mem)) {
+                             stop("Mismatch in cluster lengths. Predicted: ", length(predicted.cluster.mem),
+                                  " | Computed: ", length(computed.cluster.mem))
+                           }
+                           
+                           # Compute Adjusted Rand Index (ARI)
+                           R.ind <- c(R.ind, mclust::adjustedRandIndex(predicted.cluster.mem, computed.cluster.mem))
+                         }
+                         run_results[curr_k - 1] <- mean(R.ind)
+                       }
+                       run_results
+                     }
+  
+  # Cleanup parallel backend
+  if (allowParallel) {
+    stopCluster(cl)
+  }
+  
+  # Store CPI results
+  for (i in 1:ncol(results)) {
+    CPI[, i] <- results[, i]
+  }
+  
+  # Debugging: CPI Matrix
+  if (verbose) message("CPI matrix calculated.")
+  
+  # Plot CPI
+  if (make.plot) {
+    CPI.df <- as.data.frame(CPI)
+    CPI.df$k <- 2:kmax
+    CPI.melted <- reshape2::melt(CPI.df, id.vars = "k")
+    ggplot(CPI.melted, aes(x = k, y = value, group = variable)) + 
+      geom_line() + geom_point() + theme_minimal() +
+      labs(title = "Cluster Prediction Index (CPI)", x = "Number of Clusters (k)", y = "CPI")
+  }
+  
+  # Return result
+  if (result) return(CPI)
+}

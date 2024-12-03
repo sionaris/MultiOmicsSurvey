@@ -11,5 +11,5 @@ citations[["MoCluster"]] = "https://pubs.acs.org/doi/10.1021/acs.jproteome.5b008
 citations[["LRAcluster"]] = "https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-015-2223-8"
 citations[["CC"]] = "https://link.springer.com/article/10.1023/A:1023949509487"
 citations[["IntNMF"]] = "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0176278"
-citations[["iCB"]] = "https://academic.oup.com/biostatistics/article/19/1/71/3852318?login=false"
+citations[["iClusterBayes"]] = "https://academic.oup.com/biostatistics/article/19/1/71/3852318?login=false"
 citations[["MOVICS"]] = "https://academic.oup.com/bioinformatics/article/36/22-23/5539/6033582"

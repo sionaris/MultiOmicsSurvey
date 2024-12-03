@@ -8,3 +8,5 @@
 /Resources/TCGA/*.rds
 /Resources/TCGA/*.RData
 /Resources/Archived/
+/Resources/HPC output/*.rds
+/Resources/iCB_input.rds

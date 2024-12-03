@@ -1,0 +1,65 @@
+<!-- ## Integrative Non-Negative Matrix Factorization (intNMF)
+### Algorithm 
+<u>**In a nutshell (a.k.a. TL;DR)**:</u>
+
+[IntNMF](`r cite_IntNMF`) is a NMF approach to multi-omics where one common basis is used for all modalities, but separate sets of coefficients for each modality's features. Through iterative updates, a final set of basis vectors (each of which represents a sample's association with a distinct cluster) is produced and each sample is allocated a label corresponding to the index of the basis vector with the highest value for that sample. The first $k$ basis vectors are examined, where $k$ is specified by the user or is determined based on the Cluster Prediction Index (CPI) of the examined $k$'s.
+-->
+
+<u>**In detail**:</u>
+### Some of these equations have been previously described in section \@ref(sec:det_methods_movics_optk), however they are also included here in order to describe the full IntNMF process.
+
+1. For each modality $i$ the NMF equation is:
+
+$$
+X_{n \times p_{i}}^i \approx W_{n \times k} H_{k \times p_{i}}^i
+$$
+
+where $n$ is the number of samples, $p_i$ is the dimensionality of modality $i$, and $k$ is a pre-defined number of clusters. Here, $X_{n \times p_{i}}^i$ is the non-negative matrix version of $X^i$ produced by adding the absolute value of the lowest negative value in the matrix to the whole matrix and then further adding the Machine epsilon for stability reasons (in the machine used for this paper, it is $2.220446 \cdot 10^{-16}$).
+
+2. The idea is that $W$ is the same for all modalities (matrix of basis vectors) and $H$ is varying (matrix of coefficients). The objective function is:
+
+$$
+Q = \min_{W, H} \sum_{i=1}^m \theta_{i} ||X^i - WH^i||_2
+$$
+
+where $\theta_{i}$ is the user-specified weight for the $i$-th data. For example, the weights can be calculated as the maximum of the mean sums of squares among all data divided by the mean sums of squares of each data:
+
+$$
+\theta_i = \frac{\text{max}\{\text{mean}\{||X^i||_2\}\}}{\text{mean}\{||X^i||_2\}}, \quad i = 1, \ldots, m
+$$
+
+Thus, the use of $\theta$ ensures that the factorization process is more equitable, i.e., no single dataset with large scale or high variability unduly dominates the factorization process.
+
+3. The function $Q$ is convex with respect to $W$; however, the function is not convex when $W$ and all $H^i$ are considered together. Therefore, there is no unique global minimum of the NMF problem. However, a local optimum can be achieved by minimizing the objective function $Q$ using numerical optimization methods. **Overview of the algorithm**:
+
+- $W$ is initialized from a random uniform distribution ($U[0,1]$) and/or NNDSVD (Boutsidis et al., 2008).
+- Solve for each $H^i$ using the NNALS algorithm (Ling, 1977) and the current value for $W$:
+
+$$
+Q_{H^i} = \text{arg}\min_{H^i} ||X^i - WH^i||_2
+$$
+
+- Solve for $W$ using $X^i$ and current values for $H^i$ ($i = 1, \ldots , m$) using NNALS:
+
+$$
+Q_W = \text{arg}\min_{W} \sum_{i=1}^m \theta_{i} ||X^i - WH^i||_2
+$$
+
+- Repeat steps 2 and 3 until convergence.
+
+4. Using the solution for $W$, the cluster membership for each sample is then determined by the highest entry in each column (i.e., sample $j$ is assigned in cluster $c$ if $W[j, c]$ is the largest element in $W[j,]$ where $j$ represents rows, $j = 1,\ldots,n$, and $c$ represents columns in $W$, $c = 1,\ldots,k$).
+
+5. The stopping criterion in the algorithm is based on the stability in connectivity matrix. For each run of the algorithm, an $n \times n$ connectivity matrix $C$ with all the entries either $0$ or $1$ is defined based on the sample assignment to the clusters. If two samples $i$ and $j$ belong to the same cluster, then the corresponding entry of the connectivity matrix is $1$ ($c_{ij} = 1$); otherwise, it is $0$ ($c_{ij} = 0$). The algorithm stops when $C$ does not change for a pre-set number of consecutive iterations.
+
+6. The optimal $k$ is determined based on the CPI using a resampling-based cross-validation technique.
+
+<details>
+  <summary> More on CPI </summary>
+  Τhe idea is to partition the data into training ($Χ^i_{n1 \times p_i}$, for $i = 1,\ldots,m$) and testing ($Χ^i_{n2 \times p_i}$, for $i = 1,\ldots,m$) sets repeatedly. At each repetition, the IntNMF algorithm is applied to the training data in order to estimate coefficient matrices $H^i_{k \times p_i{\text{(train)}}}$} ($i = 1,\ldots, m$). The coefficient matrices are then used to estimate the common basis matrix ($W_{n2 \times k}$) using the test data and solving the following optimization problem:
+
+$$Q_{W_{n2 \times k}} = \text{arg}\min_{W_{n2 \times k}} \sum_{i=1}^m \theta_{i} ||X^i_{n2 \times p_i} - W_{n2 \times k}H^i_{k \times p_i{\text{(train)}}}||_2$$
+</li>
+</ol>
+
+Cluster memberships of the samples in the test data are predicted using the matrix as mentioned before. In parallel, the `IntNMF` algorithm is used in the test data independently to compute the clustering assignments (“observed”) of the samples in test data. Under the true model, there should be a good consensus between the predicted and the observed clustering assignments as measured by the adjusted rand index. The process is repeated several times and average of the adjusted rand indices is computed which is called “Cluster Prediction Index”. The value of $k$ that results in maximum value of Cluster Prediction Index (CPI) is chosen as optimum number of clusters for the data.
+</details>
