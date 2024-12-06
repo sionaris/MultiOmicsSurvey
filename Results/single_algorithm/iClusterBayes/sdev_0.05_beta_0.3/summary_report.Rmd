@@ -1,0 +1,17 @@
+---
+title: "iClusterBayes Summary Report"
+author: "Automated Report"
+output: pdf_document
+---
+
+# Hyperparameters
+```{r, echo=FALSE}
+hyperparameter_values
+```
+
+# Summary Statistics
+```{r, echo=FALSE, results='asis'}
+cat(paste0("```
+", summary_stats_str, "
+```"))
+```

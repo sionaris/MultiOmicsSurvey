@@ -98,7 +98,9 @@ clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 # Setup ###
 saveRDS(input, "Resources/iCB_input.rds")
 
-# Run the tun.IclusterBayes() function at an HPC with the following parameters
+# Run the tune.iClusterBayes() function at an HPC for a gird of parameters
+# See /Scripts/automated_scripts/iCB_scripts_preparation.R
+# and /Scripts/single_algorithm/iCB_HPC/*.R and *.sh
 
 # Hyperparameter tuning
 K_values <- 1:9

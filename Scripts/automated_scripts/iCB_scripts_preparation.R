@@ -92,18 +92,14 @@ Rscript iClusterBayes_HPC_script_sdev_<sdev>_beta_<beta>.R
 # Loop over hyperparameter combinations
 for (sdev in sdev_values) {
   for (beta_var_scale in beta_var_scale_values) {
-    # Skip the combination already running (sdev = 0.05, beta_var_scale = 0.5)
-    if (sdev == 0.05 && beta_var_scale == 0.5) {
-      next
-    }
-    
     # Create R script content
     r_script <- r_script_template
     r_script <- gsub("<sdev_value>", sdev, r_script)
     r_script <- gsub("<beta_var_scale_value>", beta_var_scale, r_script)
     
     # Write R script to file
-    r_script_filename <- paste0("iClusterBayes_HPC_script_sdev_", sdev, "_beta_", beta_var_scale, ".R")
+    r_script_filename <- paste0("Scripts/single_algorithm/iCB_HPC/iClusterBayes_HPC_script_sdev_",
+                                sdev, "_beta_", beta_var_scale, ".R")
     writeLines(r_script, con = r_script_filename)
     
     # Create SLURM script content
@@ -112,7 +108,8 @@ for (sdev in sdev_values) {
     slurm_script <- gsub("<beta>", beta_var_scale, slurm_script)
     
     # Write SLURM script to file
-    slurm_script_filename <- paste0("iClusterBayes_sdev_", sdev, "_beta_", beta_var_scale, ".slurm")
+    slurm_script_filename <- paste0("Scripts/single_algorithm/iCB_HPC/iClusterBayes_sdev_",
+                                    sdev, "_beta_", beta_var_scale, ".sh")
     writeLines(slurm_script, con = slurm_script_filename)
   }
 }
