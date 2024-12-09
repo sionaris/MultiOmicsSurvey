@@ -1,0 +1,10 @@
+The following methods would require extensive modification in order to handle
+binary data;
+  - PINSPlus
+  - moCluster
+  
+For PINSPlus and moCluster, logisticPCA could potentially be incorporated to
+generate latent variables from binary data, but the different optimization process
+(compared to each method's existing fucntionality for continuous data) makes
+it hard to implement in an integrative way (so that continuous and binary data
+are simultaneously updated during iterations in a smooth manner).
