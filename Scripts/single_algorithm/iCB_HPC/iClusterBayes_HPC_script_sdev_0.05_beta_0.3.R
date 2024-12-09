@@ -10,24 +10,24 @@ input <- readRDS(paste0(getwd(), "/iCB_input.rds"))
 sdev <- 0.05
 beta_var_scale <- 0.3
 
+# Fixed hyperparameters
+thin <- 1
+pp_cutoff <- 0.5
+n_burnin <- 8000
+n_draw <- 7000
+prior_gamma <- c(0.1,0.1,0.1,0.1,0.1)
+
 # Generate an informative suffix for output files
 suffix <- paste0("sdev_", sdev, "_beta_", beta_var_scale)
 
 # Define the range of K
-K_values <- 1:9
+K_values <- 1:9  # Adjust if needed based on your data
 
 # Set up the number of cores for parallelization
-num_cores <- 9  # Adjust based on available cores
+num_cores <- 9  # Adjust based on available cores and HPC capacity
 
-# Define data types for each dataset
+# Define data types for each dataset (adjust if needed)
 data_types <- c("binomial", "gaussian", "gaussian", "gaussian", "gaussian")
-
-# Fix other hyperparameters
-n_burnin <- 1000
-n_draw <- 1200
-prior_gamma <- rep(0.1, length(data_types))
-thin <- 1
-pp_cutoff <- 0.5
 
 # Run tune.iClusterBayes in parallel
 tune_results <- tune.iClusterBayes(

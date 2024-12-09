@@ -8,7 +8,7 @@ input <- readRDS(paste0(getwd(), "/iCB_input.rds"))
 
 # Define hyperparameters
 sdev <- 0.025
-beta_var_scale <- 0.3
+beta_var_scale <- 0.1
 
 # Fixed hyperparameters
 thin <- 1

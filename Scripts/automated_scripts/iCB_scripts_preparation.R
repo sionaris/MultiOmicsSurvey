@@ -1,6 +1,14 @@
-# Define hyperparameter values
-sdev_values <- c(0.01, 0.025, 0.05)
-beta_var_scale_values <- c(0.3, 0.5, 0.8)
+# Define hyperparameter values to be exhaustively tested
+sdev_values <- c(0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.05)
+beta_var_scale_values <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0)
+
+# Fixed hyperparameters based on the paper
+thin <- 1
+pp_cutoff <- 0.5
+# Assuming we have 5 data sets as per your previous scripts
+prior_gamma <- rep(0.1, 5)
+n_burnin <- 8000
+n_draw <- 7000
 
 # Template for R script
 r_script_template <- '
@@ -15,24 +23,24 @@ input <- readRDS(paste0(getwd(), "/iCB_input.rds"))
 sdev <- <sdev_value>
 beta_var_scale <- <beta_var_scale_value>
 
+# Fixed hyperparameters
+thin <- <thin_value>
+pp_cutoff <- <pp_cutoff_value>
+n_burnin <- <n_burnin_value>
+n_draw <- <n_draw_value>
+prior_gamma <- c(<prior_gamma_values>)
+
 # Generate an informative suffix for output files
 suffix <- paste0("sdev_", sdev, "_beta_", beta_var_scale)
 
 # Define the range of K
-K_values <- 1:9
+K_values <- 1:9  # Adjust if needed based on your data
 
 # Set up the number of cores for parallelization
-num_cores <- 9  # Adjust based on available cores
+num_cores <- 9  # Adjust based on available cores and HPC capacity
 
-# Define data types for each dataset
+# Define data types for each dataset (adjust if needed)
 data_types <- c("binomial", "gaussian", "gaussian", "gaussian", "gaussian")
-
-# Fix other hyperparameters
-n_burnin <- 1000
-n_draw <- 1200
-prior_gamma <- rep(0.1, length(data_types))
-thin <- 1
-pp_cutoff <- 0.5
 
 # Run tune.iClusterBayes in parallel
 tune_results <- tune.iClusterBayes(
@@ -89,15 +97,30 @@ Rscript -e \'if (!requireNamespace("BiocManager", quietly = TRUE)) install.packa
 Rscript iClusterBayes_HPC_script_sdev_<sdev>_beta_<beta>.R
 '
 
-# Loop over hyperparameter combinations
+# Create directories if not exist
+if(!dir.exists("Scripts/single_algorithm/iCB_HPC")) {
+  dir.create("Scripts/single_algorithm/iCB_HPC", recursive = TRUE)
+}
+if(!dir.exists("logs")) {
+  dir.create("logs")
+}
+
+# Convert prior_gamma to a string
+pg_str <- paste(prior_gamma, collapse=",")
+
+# Generate R and SLURM scripts for all combinations
 for (sdev in sdev_values) {
   for (beta_var_scale in beta_var_scale_values) {
     # Create R script content
     r_script <- r_script_template
     r_script <- gsub("<sdev_value>", sdev, r_script)
     r_script <- gsub("<beta_var_scale_value>", beta_var_scale, r_script)
+    r_script <- gsub("<thin_value>", thin, r_script)
+    r_script <- gsub("<pp_cutoff_value>", pp_cutoff, r_script)
+    r_script <- gsub("<n_burnin_value>", n_burnin, r_script)
+    r_script <- gsub("<n_draw_value>", n_draw, r_script)
+    r_script <- gsub("<prior_gamma_values>", pg_str, r_script)
     
-    # Write R script to file
     r_script_filename <- paste0("Scripts/single_algorithm/iCB_HPC/iClusterBayes_HPC_script_sdev_",
                                 sdev, "_beta_", beta_var_scale, ".R")
     writeLines(r_script, con = r_script_filename)
@@ -107,7 +130,6 @@ for (sdev in sdev_values) {
     slurm_script <- gsub("<sdev>", sdev, slurm_script)
     slurm_script <- gsub("<beta>", beta_var_scale, slurm_script)
     
-    # Write SLURM script to file
     slurm_script_filename <- paste0("Scripts/single_algorithm/iCB_HPC/iClusterBayes_sdev_",
                                     sdev, "_beta_", beta_var_scale, ".sh")
     writeLines(slurm_script, con = slurm_script_filename)

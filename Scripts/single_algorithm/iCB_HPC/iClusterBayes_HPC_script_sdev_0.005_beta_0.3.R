@@ -7,7 +7,7 @@ library(parallel)
 input <- readRDS(paste0(getwd(), "/iCB_input.rds"))
 
 # Define hyperparameters
-sdev <- 0.025
+sdev <- 0.005
 beta_var_scale <- 0.3
 
 # Fixed hyperparameters
