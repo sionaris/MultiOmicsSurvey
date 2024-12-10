@@ -14,7 +14,7 @@
 module load r-4.0.2-gcc-5.4.0-xyx46xb
 
 # Set working directory
-cd $HOME/MO_survey
+cd $HOME/MO_survey/iCB_HPC
 
 # Set R_LIBS_USER to install packages in your home directory
 export R_LIBS_USER=$HOME/MO_survey/R/library

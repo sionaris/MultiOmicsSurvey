@@ -7,8 +7,8 @@ thin <- 1
 pp_cutoff <- 0.5
 # Assuming we have 5 data sets as per your previous scripts
 prior_gamma <- rep(0.1, 5)
-n_burnin <- 8000
-n_draw <- 7000
+n_burnin <- 3000
+n_draw <- 4000
 
 # Template for R script
 r_script_template <- '
@@ -82,7 +82,7 @@ slurm_script_template <- '#!/bin/bash
 module load r-4.0.2-gcc-5.4.0-xyx46xb
 
 # Set working directory
-cd $HOME/MO_survey
+cd $HOME/MO_survey/iCB_HPC
 
 # Set R_LIBS_USER to install packages in your home directory
 export R_LIBS_USER=$HOME/MO_survey/R/library
