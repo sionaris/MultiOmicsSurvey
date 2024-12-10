@@ -1,0 +1,41 @@
+<!--## Low Rank Approximation clustering (LRAcluster)
+### Algorithm
+<u>**In a nutshell (a.k.a. TL;DR)**:</u>
+
+[LRAcluster](`r cite_LRAcluster`) assumes that a few major biological factors determine a set of high-dimensional but low-rank systems parameters and the observed cancer omics data are generated based on these parameters. The probabilistic assumption is that each observed molecular feature of each sample is a random variable conditional on a hidden parameter. Thus, each observed data matrix is conditional on a size-matched parameter matrix and different types of data follow different probabilistic models. The low-rank assumption of the parameter matrix leads to a penalty function corresponding to a structural complexity constraint of the model. Then, the low-rank parameter matrix can be decomposed into a low-dimensional representation of the original data, which will be used to identify candidate molecular subtypes. -->
+
+<u>**In detail**:</u>
+
+<ol>
+  <li><b>Probabilistic model</b>
+  
+  Let $X_{ij}^{(k)}$ denote the observation for sample $j$ in feature $i$ in the $k-$th modality. Then $\Theta^{(k)}$ denotes the size-matched parameter matrix of $X^{(k)}$. The probabilistic model specifies the probability density (mass) function of the observations given the parameters for each data type as below:
+    <ul>
+        <li>For real-type data, Gaussian distribution (e.g. DNA methylation):
+        $$ \text{Pr} \left( X_{ij}^{(k)} | \Theta_{ij}^{(k)} \right) \propto \exp \left(-\frac{1}{2} (X_{ij}^{(k)} - \Theta_{ij}^{(k)})^2 \right)$$</li>
+        <li>For binary data (and categorical data transformed into dummy variables), Bernoulli distribution (e.g. mutation data):
+        $$ \text{Pr} \left( X_{ij}^{(k)} | \Theta_{ij}^{(k)} \right) = \frac{e^{\Theta_{ij}^{(k)}}}{1 + e^{\Theta_{ij}^{(k)}}} I(X_{ij}^{(k)} = 1) + \frac{1}{1 + e^{\Theta_{ij}^{(k)}}} I(X_{ij}^{(k)} = 0)$$
+        </li>
+        <li>For count data, Poisson distribution (e.g. RNA-seq)
+        $$ \text{Pr} \left( X_{ij}^{(k)} | \Theta_{ij}^{(k)} \right) \propto \left( \lambda_{ij}^{(k)} \right)^{X_{ij}^{(k)}} e^{\left(-\lambda_{ij}^{(k)} \right)} , \quad \lambda_{ij}^{(k)} = e^{\Theta_{ij}^{(k)}} $$
+        </li>
+    </ul>
+  </li>
+    <li>The likelihood function of the probabilistic model is the minus log of the mass function which is:
+    $$ \text{L} \left(\Theta^{(k)} ; X^{(k)} \right) = - \sum_{ij} \ln \left(\text{Pr} \left(X_{ij}^{(k)} | \Theta_{ij}^{(k)}\right) \right)$$
+  </li>
+  <li> For integrative analysis, the overall parameter matrix $\Theta$ stacks all the parameter matrices $\left(\Theta^{(k)}\right)$ used for each observed matrix. The overall likelihood function is the sum of the likelihood functions of different data types:
+  $$ \text{L} (\Theta) = \sum_k \text{L} \left(\Theta^{(k)} ; X^{(k)} \right)$$
+  </li>
+  <li>The probabilistic model assumes that the observations $X_{ij}$ are independently distributed conditional on the ultrahigh dimensional parameter matrix $\Theta$. The prior assumption of the model is that $\Theta$ has low-rank structure. The low-rank assumption is used to penalize the freedom of the model and eventually leads to the following optimization problem:
+  
+  $$ \text{arg} \ \text{min}_\Theta \text{L}(\Theta) + \mu|\Theta|^*$$
+  where \mu is a tuning parameter and $|\cdot|^*$ denotes the nuclear norm of the matrix (which is used a lot in low-rank approximation problems):
+  $$ |\Theta|^* = \text{trace}(\sqrt{\Theta^*\Theta}) = \sum_{i}^{\text{min}(m, n)}\sigma_i(\Theta)$$
+  where $\Theta^*$ is the conjugate transpose of $\Theta$ and $\sigma_i$ are its singular values.
+  </li>
+  <li>Details on the fast iterative low-rank approximation process proposed by the authors can be found in the [Methods section of the corresponding paper](`r cite_LRAcluster`).</li>
+  <li>The dimension reduction is straightforward after getting the low-rank matrix $\Theta$. As the rank of $\Theta$ is no more than $r$ (set by the user), the singular vector decomposition (SVD) of that matrix $\Theta = U\mathit{\Sigma} \ V^T$ has $\mathit{\Sigma}$ with no more than $r$ non-zero singular values. Thus, the first $r$ columns of $\mathit{\Sigma V^T}$ are just the dimension reduction result of the original data matrix $X$ with the target dimension (rank) $r$.
+  </li>
+  <li> LRAcluster uses $k-$means to identify the candidate molecular subtypes in the reduced low-dimensional subspace. Silhouette values are used to determine the cluster number $k$. Any other unsupervised clustering algorithm can be used instead of $k-$means.</li>
+</ol>

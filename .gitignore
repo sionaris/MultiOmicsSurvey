@@ -10,6 +10,7 @@
 /Resources/Archived/
 /Resources/HPC output/*.rds
 /Resources/iCB_input.rds
+/Resources/LRAcluster_input.rds
 /Resources/METABRIC/METABRIC_data_CNA.txt
 /Resources/METABRIC/METABRIC_data_Expression.txt
 /Resources/METABRIC/METABRIC_mutation_data.txt

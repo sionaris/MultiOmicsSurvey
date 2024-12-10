@@ -7,7 +7,7 @@ desc_list[["MOVICS"]] = "MOVICS is used to perform multi-omics integrative clust
 desc_list[["SNF"]] = "SNF approaches the multi-omic problem by constructing networks of samples (e.g., patients) for each available data type and then efficiently fusing these into one network that represents the full spectrum of underlying data."
 
 # CIMLR
-desc_list[["CIMLR"]] = ""
+desc_list[["CIMLR"]] = "CIMLR learns a measure of similarity between each pair of samples in a multi-omic dataset by combining multiple Gaussian kernels per data type, corresponding to different, complementary representations of the data. It enforces a block structure in the resulting similarity matrix, which is then used for dimension reduction and k-means clustering. CIMLR is building on the SIMLR (https://pubmed.ncbi.nlm.nih.gov/29265724/) approach."
 
 # PINSPlus
 desc_list[["PINSPlus"]] = ""
@@ -20,3 +20,6 @@ desc_list[["IntNMF"]] = "Integrative Non-negative Matrix Factorization (IntNMF) 
 
 # iClusterBayes
 desc_list[["iClusterBayes"]] = "iClusterBayes uses a few latent variables to capture the inherent structure of multiple omics datasets to achieve joint dimension reduction. As a result, the tumor samples can be clustered in the latent variable space and relevant omics features that drive the sample clustering are identified through Bayesian variable selection."
+
+# LRAcluster
+desc_list[["LRAcluster"]] = "LRAcluster assumes that a few major biological factors determine a set of high-dimensional but low-rank systems parameters and the observed cancer omics data are generated based on these parameters. The probabilistic assumption is that each observed molecular feature of each sample is a random variable conditional on a hidden parameter. Thus, each observed data matrix is conditional on a size-matched parameter matrix and different types of data follow different probabilistic models. The low-rank assumption of the parameter matrix leads to a penalty function corresponding to a structural complexity constraint of the model. Then, the low-rank parameter matrix can be decomposed into a low-dimensional representation of the original data, which will be used to identify candidate molecular subtypes."

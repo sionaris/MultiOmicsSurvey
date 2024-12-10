@@ -1,7 +1,6 @@
 # A collection of the citations of algorithms
 citations = list()
 
-# SNF
 citations[["SNF"]] = "https://www.nature.com/articles/nmeth.2810"
 citations[["CIMLR"]] = "https://www.nature.com/articles/s41467-018-06921-8"
 citations[["PINSPlus"]] = "https://academic.oup.com/bioinformatics/article/35/18/3348/5304361"
