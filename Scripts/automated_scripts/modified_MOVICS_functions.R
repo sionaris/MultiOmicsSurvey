@@ -4295,9 +4295,9 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
   
   if (representative) {
     fig.name = paste0("representative_", fig.name)
-    
+
     gsea.lists = lapply(gsea.lists, function (x) {
-      x = x %>%
+      x = x[["clustered_df"]] %>%
         dplyr::filter(Status == "Representative")
     })
     

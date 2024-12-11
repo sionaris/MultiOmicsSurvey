@@ -27,7 +27,7 @@ subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types,
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
 ground_truth_labels = openxlsx::read.xlsx("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")
 ground_truth_k = 2 # optk from MOVICS
-optk_boolean = "TRUE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
+optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
                    "<u>does not suggest</u> an optimal number of multi-omic clusters $k$")
@@ -99,199 +99,262 @@ saveRDS(input, "Resources/LRAcluster_input.rds")
 
 # Setup ###
 # Hyperparameter tuning
-# Set the types vector accordingly: first one binary, the rest Gaussian
-types <- c("binary", "gaussian", "gaussian", "gaussian", "gaussian")
 
-# Dimensions to try
-dimensions_to_try <- c(2, 3, 5, 10, 15, 20, 30, 40, 50)
+# We ran the Scripts/single_algorithm/LRAcluster_HPC.R script in an HPC
+# with SLURM parameters specified in Scripts/single_algorithm/LRAcluster_HPC.sh
 
-# Run LRAcluster for each dimension and store the potential value
-library(doParallel)
-library(foreach)
-
-# Number of cores
-num_cores <- 2
-cl <- makeCluster(num_cores)
-registerDoParallel(cl)
-
-dimensions_to_try <- c(2, 3, 5, 10, 15, 20, 30, 40, 50)
-types <- c("binary", "gaussian", "gaussian", "gaussian", "gaussian")
-
-timestamp()
-# Run LRAcluster in parallel using foreach
-results_list <- foreach(dim_val = dimensions_to_try) %dopar% {
-  LRAcluster(data = input, 
-             types = types, 
-             dimension = dim_val, 
-             names = names(input))
-}
-
-stopCluster(cl)
-timestamp()
-
-# Name the results by the dimension for clarity
-names(results_list) <- paste0("dim_", dimensions_to_try)
+# We import the results here for further procressing
+dimensions_to_try = c(2:10)
+results_list = readRDS("Resources/HPC output/LRAcluster_HPC/LRAcluster_results_list.rds")
 
 # Extract potential values for plotting explained variance
 potential_values <- sapply(results_list, function(x) x$potential)
 
 # Plot the explained variance (potential) vs. dimension
-plot(dimensions_to_try, potential_values, type = "b", pch = 19,
-     xlab = "Dimension", ylab = "Explained Variation",
-     main = "Explained Variation by Dimension")
-grid()
-
-
-# We choose nn = 15
-optN = as.numeric(substr(best_combined_matrix, 6, 7))
-
-# Spectral clustering for the estimated optimal k by LRAclustertool
-RNGversion("4.2.2")
-set.seed(123)
-
-final_affinity_matrix = Fusions[[paste0("NN = ", optN, ", sigma = ", optSigma)]]
-LRAcluster_optks = estimateNumberOfClustersGivenGraph(final_affinity_matrix, NUMC = 2:10)
-paste0("The optimal value for k using the eigen-gap method is ",
-       LRAcluster_optks[[1]], ". The optimal value for k using the rotation method is ",
-       LRAcluster_optks[[3]], ".")
-optk = LRAcluster_optks[[1]]
-
-# Concordance between final matrix and individual modality affinity matrices
-conc_NMI = concordanceNetworkNMI(list(final_affinity_matrix, 
-                                      affinity_object$`NN = 15`$`sigma = 0.5`$RNAseq$affinity_matrix,
-                                      affinity_object$`NN = 15`$`sigma = 0.5`$CNV$affinity_matrix,
-                                      affinity_object$`NN = 15`$`sigma = 0.5`$Methylation$affinity_matrix,
-                                      affinity_object$`NN = 15`$`sigma = 0.5`$miRNA$affinity_matrix,
-                                      affinity_object$`NN = 15`$`sigma = 0.5`$SNPs$affinity_matrix),
-                                 C = optk)
-dimnames(conc_NMI) = list(c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"),
-                          c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"))
-
-group = spectralClustering(final_affinity_matrix, optk)
-names(group) = colnames(final_affinity_matrix)
-
-LRAcluster_clusters = as.data.frame(list(Sample.ID = names(group),
-                                  Cluster = group))
-
-# Feature ranking
-LRAcluster_feature_ranks = list()
-binary_flags = c(TRUE, FALSE, FALSE, FALSE, FALSE)
-for (i in 1:length(input)) {
-  LRAcluster_feature_ranks[[i]] = rankFeaturesByNMI_parallely(data = list(input[[i]]), 
-                                                       W = final_affinity_matrix,
-                                                       ncores = 8,
-                                                       binary = binary_flags[i])
-  cat("Done with", names(input)[i], "\n")
-}
-names(LRAcluster_feature_ranks) = names(input)
-
-rank_sum_nas = sapply(LRAcluster_feature_ranks, function(x) sum(is.na(x$NMI_ranks)))
-names(rank_sum_nas) = names(LRAcluster_feature_ranks)
-
-feature_ranks_text1 = paste0("Feature ranks could not be calculated for some features in the ",
-                             paste(names(rank_sum_nas)[which(rank_sum_nas > 0)], collapse = ", "), 
-                             ifelse(length(which(rank_sum_nas > 0)) > 1, " modalities (", " modality ("),
-                             paste(rank_sum_nas[which(rank_sum_nas > 0)], collapse = ", "),
-                             ").")
-rm(rank_sum_nas); gc()
-
-# Combine all modalities into a single data frame
-for (i in 1:length(LRAcluster_feature_ranks)) {
-  names(LRAcluster_feature_ranks[[i]]$NMI_scores) = colnames(input[[i]])
-}
-
-# Prepare data for plotting
-# Combine all modalities into a single data frame
-feature_data <- do.call(rbind, lapply(names(LRAcluster_feature_ranks), function(modality) {
-  data.frame(
-    Feature = paste(modality, seq_along(LRAcluster_feature_ranks[[modality]]$NMI_scores), sep = "_"),
-    Modality = modality,
-    NMI_Scores = LRAcluster_feature_ranks[[modality]]$NMI_scores
-  )
-}))
-
-# Remove features with NA NMI scores
-feature_data <- feature_data[!is.na(feature_data$NMI_Scores), ]
-
-# Calculate global ranks based on NMI scores
-feature_data$Global_Rank <- rank(-feature_data$NMI_Scores, ties.method = "first")
-
-# Filter the top 1000 features
-top_features <- feature_data[order(feature_data$Global_Rank), ][1:1000, ]
-
-# Ensure the data is ordered by rank for proper plotting
-top_features <- top_features[order(top_features$Global_Rank), ]
-
-# Create the bar plot
-ggplot(top_features, aes(x = NMI_Scores, y = Global_Rank, fill = Modality)) +
-  geom_bar(
-    stat = "identity",
-    orientation = "y",
-    width = 1,  # Bars fully adjacent with no gaps
-    alpha = 0.85,  # Apply transparency
-    color = NA  # Removes outlines completely
-  ) +
-  scale_fill_manual(
-    name = "Modality",
-    values = c(
-      "RNAseq" = "#1B9E77",
-      "miRNA" = "#7570B3",
-      "Methylation" = "deeppink4",
-      "CNV" = "#E7298A",
-      "SNPs" = "#66A61E"
-    )
-  ) +
-  scale_x_continuous(
-    breaks = seq(0, 1, by = 0.1),  
-    limits = c(-0.01, 1),  # Expand lower limit slightly
-    expand = c(0, 0)  # Remove extra padding on the x-axis
-  ) +
-  scale_y_reverse(
-    breaks = c(1, seq(100, 1000, by = 100)),  # Y-axis reversed
-    limits = c(1001, 0),  # Expand upper limit slightly
-    expand = c(0, 0)  # Remove extra padding on the y-axis
-  ) +
+library(ggplot2)
+ggplot(data = data.frame(Dimension = dimensions_to_try, ExplainedVariation = potential_values),
+       aes(x = Dimension, y = ExplainedVariation)) +
+  geom_line(color = "#f5bc83", size = 0.5) +
+  geom_point(color = "#880a49", size = 1, shape = 16) +
   labs(
-    title = "Top 1000 Features Ranked by NMI with Subtypes",
-    x = "NMI Score",
-    y = "Global Rank"
+    title = "Explained Variation by Dimension",
+    x = "Dimension",
+    y = "Explained Variation"
   ) +
-  theme_classic() +
   theme(
-    axis.text.y = element_text(size = 5),  # Smaller y-axis labels
-    axis.text.x = element_text(size = 5),  # Larger x-axis labels
-    axis.title = element_text(face = "bold", size = 6),
-    axis.line.y = element_line(linewidth = 0),
-    axis.line.x = element_line(linewidth = 0.1),
+    plot.background = element_rect(fill = "white", color = "white"),
+    panel.background = element_rect(fill = "white", color = "white"),
+    panel.grid.major.y = element_line(color = "lightgray", linetype = "dotted", linewidth = 0.13),
+    panel.grid.major.x = element_blank(),
+    axis.title = element_text(face = "bold", size = 4.5),
+    axis.text = element_text(size = 3),
+    axis.line = element_line(linetype = "solid", linewidth = 0.1),
     axis.ticks = element_line(linewidth = 0.05),
-    plot.title = element_text(face = "bold", hjust = 0.5, size = 7),  # Bold and centrally aligned title
-    legend.title = element_text(face = "bold", size = 5),
-    legend.text = element_text(size = 5),
-    legend.key.size = unit(0.35, "cm"),
-    panel.grid.major.y = element_blank(),  # Remove horizontal grid lines
-    panel.grid.major.x = element_line(color = "gray90")  # Keep vertical grid lines
-  ) +
-  guides(color = "none", alpha = "none")
+    plot.title = element_text(face = "bold", size = 5, hjust = 0.5)
+  )+
+  scale_x_continuous(limits = c(0, 11), breaks = 2:10, expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, 0.4), breaks = seq(0, 0.35, 0.05), expand = c(0, 0)) +
+  geom_vline(xintercept = 2:10, color = "grey", linetype = "dotted", linewidth = 0.13)
+ggsave("Results/single_algorithm/LRAcluster/explained_variation_plot.png",
+       dpi = 700, width = 1920, height = 1080, units = "px")
+dev.off()
 
-ggsave(filename = paste0(algorithm, "_top_", nrow(top_features), "_feature_ranks.png"),
-       path = paste0(home, 
-                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 1920*1.2, height = 1920*1.5, device = 'png', units = "px",
+# We pick 7 as the optimal number of low dimensions due to the high jump of the 
+# line for dimensions = 7 and the slow increase afterwards
+
+# The authors suggest running k-means clustering (or other unsupervised methods)
+# for a varying number of clusters and choose optimal k based on silhouette
+optr = 7
+
+# # Hierarchical clustering
+# library(fastcluster)
+# dist_mat = dist(t(results_list[["dim_7"]][["coordinate"]]))
+# hclust_output = fastcluster::hclust(dist_mat,
+#                                     method = "complete")
+# 
+# # Get silhouette values
+# possible_K = c(2:10)
+# avg_sil_values <- numeric(length(possible_K))
+# 
+# for (i in seq_along(possible_K)) {
+#   k <- possible_K[i]
+#   cluster_assignments <- cutree(hclust_output, k = k)
+#   sil <- cluster::silhouette(cluster_assignments, 
+#                              dist_mat)
+#   avg_sil_values[i] <- mean(sil[, "sil_width"])
+# }
+# sil_results <- data.frame(k = possible_K, avg_sil = avg_sil_values)
+# 
+# # Identify k with the highest average silhouette and choose as optimal
+# best_k <- possible_K[which.max(avg_sil_values)] # 4: close second
+# 
+# # Average Silhouette plot
+# ggplot(data = data.frame(cluster.no = c(2:10), Avg.sil = avg_sil_values),
+#        aes(x = cluster.no, y = avg_sil_values)) +
+#   geom_line(color = "#f5bc83", size = 0.5) +
+#   geom_point(color = "#880a49", size = 1, shape = 16) +
+#   labs(
+#     title = "Average silhouette index per number of clusters",
+#     x = "Number of clusters",
+#     y = "Average Silhouette index"
+#   ) +
+#   theme(
+#     plot.background = element_rect(fill = "white", color = "white"),
+#     panel.background = element_rect(fill = "white", color = "white"),
+#     panel.grid.major.y = element_line(color = "lightgray", linetype = "dotted", linewidth = 0.13),
+#     panel.grid.major.x = element_blank(),
+#     axis.title = element_text(face = "bold", size = 4.5),
+#     axis.text = element_text(size = 3),
+#     axis.line = element_line(linetype = "solid", linewidth = 0.1),
+#     axis.ticks = element_line(linewidth = 0.05),
+#     plot.title = element_text(face = "bold", size = 5, hjust = 0.5)
+#   )+
+#   scale_x_continuous(limits = c(0, 11), breaks = 2:10, expand = c(0, 0)) +
+#   scale_y_continuous(limits = c(0, 0.6), breaks = seq(0, 0.5, 0.1), expand = c(0, 0)) +
+#   geom_vline(xintercept = 2:10, color = "grey", linetype = "dotted", linewidth = 0.13)
+# ggsave("Results/single_algorithm/LRAcluster/avg_silhouette_plot.png",
+#        dpi = 700, width = 1920, height = 1080, units = "px")
+# dev.off()
+
+# Import resources
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp
+rm(scheme); gc()
+
+# M3C
+library(M3C)
+# Here we create a class column for ER status
+m3c_des = annCol
+m3c_des$class = m3c_des$`ER status`
+m3c_des$ID = rownames(m3c_des)
+m3c_input = results_list[[paste0("dim_", optr)]][["coordinate"]] %>% as.data.frame()
+rownames(m3c_input) = paste0("LRA_", rownames(results_list[["dim_7"]][["coordinate"]]))
+colnames(m3c_input) = colnames(results_list[["dim_7"]][["coordinate"]])
+
+RNGversion("4.2.2")
+consensus_km = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
+                   repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
+                   clusteralg = "km", maxK = 10) # optimal K: 4
+
+optk = 4 # p = 0.046
+paste0(ifelse(consensus_km$scores$NORM_P[consensus_km$scores$K == 4] < 0.05, "The clustering is significant.",
+              "The clustering is not significant."))
+
+# Plotting clustering info
+# Consensus index plot
+ci_plot = ggplot(consensus_km[["plots"]][[1]][["data"]], aes(x = consensusindex, y = CDF,
+                                                     group = k, alpha = 0.7))+
+  geom_line(aes(color = factor(k)), linewidth = 0.5)+
+  theme_bw()+
+  theme(panel.border = element_rect(linewidth = 0.2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 5, face = "bold"),
+        legend.title = element_text(face = "bold", size = 4),
+        legend.text = element_text(size = 3),
+        legend.key.size = unit(0.2, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5, units = "mm"),
+        axis.title.x = element_text(size = 4, face = "bold"),
+        axis.title.y = element_text(size = 4, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 4))+
+  labs(y = "Cumulative Distribution Function (CDF)",
+       x = "Consensus Index",
+       title = "Real Data")+
+  guides(color = guide_legend(title = "K"), linewidth = "none", alpha = "none")
+ci_plot
+ggsave(filename = "Consensus_index.png",
+       path = "Results/single_algorithm/LRAcluster", 
+       width = 1920, height = 1080, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
-feature_ranks_text2 = paste0("In the top ", nrow(top_features), " features, ",
-                             paste(names(table(top_features$Modality)), collapse = ", "),
-                             " features are found (",
-                             paste(table(top_features$Modality), collapse = ", "),
-                             ", respectively).")
+# Entropy plot
+entropy = ggplot(consensus_km[["plots"]][[2]][["data"]], aes(x = K, y = PAC_SCORE, alpha = 0.7))+
+  geom_line(aes(color = "#7c1d6f"), linewidth = 0.5)+
+  scale_x_continuous(limits = c(2, 10), breaks = seq(2, 10, 1))+
+  theme_bw()+
+  theme(panel.border = element_rect(linewidth = 0.2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 5, face = "bold", vjust = 0.5, hjust = 0.5),
+        legend.title = element_text(face = "bold", size = 4),
+        legend.text = element_text(size = 3),
+        legend.key.size = unit(0.2, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5, units = "mm"),
+        axis.title.x = element_text(size = 4, face = "bold"),
+        axis.title.y = element_text(size = 4, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 4))+
+  labs(y = "Entropy",
+       x = "K",
+       title = "Real Data")+
+  guides(color = "none", alpha = "none")
+entropy
+ggsave(filename = "Entropy.png",
+       path = "Results/single_algorithm/LRAcluster", 
+       width = 1920, height = 1080, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
 
-feature_ranks_text = paste(feature_ranks_text1, feature_ranks_text2, collapse = " ")
-rm(feature_ranks_text1, feature_ranks_text2); gc()
+# Statistical significance of clusters
+statsig_clust = ggplot(consensus_km[["plots"]][[3]][["data"]], aes(x = K, y = P_SCORE, 
+                                                           color = P_SCORE < -log10(0.05)))+
+  geom_point(size = 1.5, alpha = 0.6)+
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", linewidth = 0.2)+
+  scale_x_continuous(limits = c(2, 10), breaks = seq(2, 10, 1))+
+  scale_color_manual(name = "Color",
+                     values = c("#6c2167", "grey"),
+                     labels = c("p < 0.05", "p > 0.05")) +
+  theme_bw()+
+  theme(panel.border = element_rect(linewidth = 0.2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 5, face = "bold"),
+        axis.title.x = element_text(size = 4, face = "bold"),
+        axis.title.y = element_text(size = 4, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 4),
+        legend.title = element_text(face = "bold", size = 4),
+        legend.text = element_text(size = 3),
+        legend.key.size = unit(0.2, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5, units = "mm"))+
+  labs(title = "Statistical significance of different values of K",
+       y = bquote(bold(-log[10]("p"))))
+statsig_clust
+ggsave(filename = "Stat_sig.png",
+       path = "Results/single_algorithm/LRAcluster", 
+       width = 1920, height = 1080, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# RCSI plot
+rcsi = ggplot(as.data.frame(consensus_km[["scores"]]), aes(x = consensus_km$scores$K,
+                                                   y = consensus_km$scores$RCSI))+
+  geom_line(size = 0.3, color = "violet")+
+  geom_errorbar(aes(ymin = consensus_km$scores$RCSI - consensus_km$scores$RCSI_SE,
+                    ymax = consensus_km$scores$RCSI + consensus_km$scores$RCSI_SE,
+                    color = "deeppink3"), width = 0.2, size = 0.1)+
+  geom_point(size = 0.05, color ="deeppink3")+
+  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
+  scale_y_continuous(limits = c(-0.6, 0.6), breaks = seq(-0.5, 0.5, 0.1))+
+  theme(plot.title = element_text(size = 5, face = "bold"),
+        axis.title.x = element_text(size = 4, face = "bold"),
+        axis.title.y = element_text(size = 4, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 4),
+        legend.position = "none",
+        panel.background = element_rect(fill = "white", 
+                                        colour = "white"),
+        panel.grid = element_blank(),
+        axis.line = element_line(linewidth = 0.2))+
+  labs(title = "Relative Cluster Stability Index vs. number of clusters K",
+       x = "K", y = "RCSI")
+rcsi
+ggsave(filename = "RCSI.png",
+       path = "Results/single_algorithm/LRAcluster", 
+       width = 1920, height = 1080, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
 
 # Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
+LRAcluster_clusters = as.data.frame(list(Sample.ID = rownames(consensus_km[["realdataresults"]][[4]][["ordered_annotation"]]),
+                                    Cluster = consensus_km[["realdataresults"]][[4]][["ordered_annotation"]][["consensuscluster"]]))
+LRAcluster_clusters$Sample.ID = gsub("\\.", "-", LRAcluster_clusters$Sample.ID)
+rownames(LRAcluster_clusters) = LRAcluster_clusters$Sample.ID
 
 # Calculate ARI and NMI
 library(mclust)
@@ -321,7 +384,7 @@ library(ComplexHeatmap)
 scheme = readRDS("Resources/scheme.rds")
 annCol = scheme$annCol
 annColors = scheme$annColors
-cluster_colors = scheme$clust.colors
+cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA")
 col.list = scheme$col.list
 var2comp = scheme$var2comp %>%
   dplyr::select(-`Consensus Subtype`) %>%
@@ -339,8 +402,9 @@ rm(scheme); gc()
 #                                             threshold = 100, norm_quant = 0,
 #                                             norm_method = "divide by quantile")
 
+cor_mat = cor(as.matrix(results_list[[paste0("dim_", optr)]][["coordinate"]]), method = "spearman")
 sil = compute_silhouette(cluster_df = LRAcluster_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = final_affinity_matrix,
+                         similarity_matrix = cor_mat,
                          normalize_matrix = TRUE)
 
 getSilhouette_ggplot(sil      = sil,
@@ -358,8 +422,7 @@ dev.off()
 
 # Heatmap prep
 plotdata <- lapply(lapply(input, as.matrix), 
-                   function(mat) mat[, colSums(mat != 0) > 0])
-plotdata <- lapply(plotdata, t)
+                   function(mat) mat[rowSums(mat != 0) > 0, ])
 plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
@@ -436,9 +499,9 @@ clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                          output_pdf = TRUE,
                                          pdf_level_col_width = c("7em", "10em"),
-                                         pdf_count_col_width = "10em",
+                                         pdf_count_col_width = "5em",
                                          pdf_pval_col_width = "3em",
-                                         pdf_test_col_width = "8em",
+                                         pdf_test_col_width = "5em",
                                          pdf_tab_font_size = 9)
 
 clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
@@ -456,9 +519,9 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          output_pdf = TRUE,
                                                          pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
                                                          pdf_level_col_width = c("7em", "10em"),
-                                                         pdf_count_col_width = "10em",
+                                                         pdf_count_col_width = "5em",
                                                          pdf_pval_col_width = "3em",
-                                                         pdf_test_col_width = "8em",
+                                                         pdf_test_col_width = "5em",
                                                          pdf_tab_font_size = 9)
 
 # Oncoprint ###
@@ -733,7 +796,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             minGSSize = 5,
                                             maxGSSize = 500,
                                             fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                            width = 14, height = 12)
+                                            width = 14, height = 18)
 
 # GSEA down-regulated
 RNGversion("4.2.2")
@@ -758,7 +821,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               minGSSize = 5,
                                               maxGSSize = 500,
                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                              width = 14, height = 12)
+                                              width = 14, height = 18)
 
 # Gene set variation analysis #####
 # locate ABSOLUTE path of gene set file
@@ -881,7 +944,7 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
   }
 }
 
-timestamp() # ~2.5 mins
+timestamp() # ~5.5 mins
 stopCluster(cl)
 gc()
 names(hclust_output) <- names(hclust_input)
@@ -903,25 +966,27 @@ saveWorkbook(wb, file = paste0(home, "/Results/single_algorithm/", algorithm, "/
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
-                                                present_clusters = c("LRAcluster1", "LRAcluster2"),
+                                                present_clusters = c("LRAcluster1", "LRAcluster2",
+                                                                     "LRAcluster3", "LRAcluster4"),
                                                 representative = TRUE, moic.res = plot_object,
                                                 subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                 norm.method = "mean", dirct = "up",
                                                 fig.name = "upregulated_pathway_heatmap",
                                                 name = "GSVA scores",
                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm), 
-                                                width = 15, height = 10, gsva.method = "gsva")
+                                                width = 15, height = 18, gsva.method = "gsva")
 
 hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
                                                   norm.expr = plotdata$RNAseq, 
-                                                  present_clusters = c("LRAcluster1", "LRAcluster2"),
+                                                  present_clusters = c("LRAcluster1", "LRAcluster2",
+                                                                       "LRAcluster3", "LRAcluster4"),
                                                   representative = TRUE, moic.res = plot_object,
                                                   subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                   norm.method = "mean", dirct = "down",
                                                   fig.name = "downregulated_pathway_heatmap",
                                                   name = "GSVA scores",
                                                   fig.path = paste0(home, "/Results/single_algorithm/", algorithm), 
-                                                  width = 15, height = 10, gsva.method = "gsva")
+                                                  width = 15, height = 18, gsva.method = "gsva")
 
 # Fraction Genome Altered ###
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
@@ -1000,7 +1065,7 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
-timestamp() # 4 min
+timestamp() # 11 min
 
 # down-regulated
 RNGversion("4.2.2")
@@ -1097,9 +1162,9 @@ transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                  output_pdf = TRUE,
                                                  pdf_level_col_width = c("7em", "10em"),
-                                                 pdf_count_col_width = "10em",
+                                                 pdf_count_col_width = "5em",
                                                  pdf_pval_col_width = "3em",
-                                                 pdf_test_col_width = "8em",
+                                                 pdf_test_col_width = "5em",
                                                  pdf_tab_font_size = 9)
 
 transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
@@ -1121,9 +1186,9 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                  output_pdf = TRUE,
                                                                  pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
                                                                  pdf_level_col_width = c("7em", "10em"),
-                                                                 pdf_count_col_width = "10em",
+                                                                 pdf_count_col_width = "5em",
                                                                  pdf_pval_col_width = "3em",
-                                                                 pdf_test_col_width = "8em",
+                                                                 pdf_test_col_width = "5em",
                                                                  pdf_tab_font_size = 9)
 
 # Run PAM ###
@@ -1200,206 +1265,57 @@ if (!dir.exists(paste0(home, "/Results/single_algorithm/", algorithm, "/Suppleme
 
 # Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
-cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
   dplyr::rename(LRAcluster = Cluster, samID = "Sample.ID")
 rownames(clust_annot_pheno) = clust_annot_pheno$samID
 afh_colnames = colnames(annCol)
 
-# Prepare affinity matrices
-aff_CNV = normalize_affinity_matrix(
-  LRAclustertool::affinityMatrix(
-    LRAclustertool::dist2(input$CNV,
-                   input$CNV),
-    K = optN, sigma = optSigma))
-colnames(aff_CNV) = rownames(aff_CNV) = rownames(input$CNV)
-
-aff_rna = normalize_affinity_matrix(
-  LRAclustertool::affinityMatrix(
-    LRAclustertool::dist2(input$RNAseq,
-                   input$RNAseq),
-    K = optN, sigma = optSigma))
-colnames(aff_rna) = rownames(aff_rna) = rownames(input$RNA)
-
-aff_miRNA = normalize_affinity_matrix(
-  LRAclustertool::affinityMatrix(
-    LRAclustertool::dist2(input$miRNA,
-                   input$miRNA),
-    K = optN, sigma = optSigma))
-colnames(aff_miRNA) = rownames(aff_miRNA) = rownames(input$miRNA)
-
-aff_Methyl = normalize_affinity_matrix(
-  LRAclustertool::affinityMatrix(
-    LRAclustertool::dist2(input$Methylation,
-                   input$Methylation),
-    K = optN, sigma = optSigma))
-colnames(aff_Methyl) = rownames(aff_Methyl) = rownames(input$Methylation)
-
-aff_SNPs = normalize_affinity_matrix(
-  LRAclustertool::affinityMatrix(
-    as.matrix(dist(as.matrix(input$SNPs),
-                   as.matrix(input$SNPs),
-                   method = "binary")),
-    K = optN, sigma = optSigma))
-colnames(aff_SNPs) = rownames(aff_SNPs) = rownames(input$SNPs)
-
-aff_final = final_affinity_matrix
-
-# CNV
-create_MO_heatmap(matrix = aff_CNV, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "CNV first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
-                                            "/Supplement/aff_CNV_heatmap.png"))
-
-# RNAseq
-create_MO_heatmap(matrix = aff_rna, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "RNAseq first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
-                                            "/Supplement/aff_RNAseq_heatmap.png"))
-
-# miRNA
-create_MO_heatmap(matrix = aff_miRNA, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "miRNA first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/aff_miRNA_heatmap.png"))
-
-# Methylation
-create_MO_heatmap(matrix = aff_Methyl, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Methylation first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
-                                            "/Supplement/aff_Methylation_heatmap.png"))
-
-# SNPs
-create_MO_heatmap(matrix = aff_SNPs, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "SNPs first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/aff_SNPs_heatmap.png"))
-
-# Final affinity matrix
-create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Final affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/aff_final_affinity_heatmap.png"))
-
-# Final affinity matrix with clustered rows and columns
-create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Final affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = TRUE,
-                  cluster_rows_flag = TRUE,
-                  splits_flag = FALSE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/hclust_aff_final_affinity_heatmap.png"))
+# Same data frame. Different columns. Just for easiness
+LRAcluster_clust_res = LRAcluster_clusters %>% dplyr::rename(samID = Sample.ID, LRAcluster = Cluster)
 
 # PCA ###
-# CNV
-pca_from_sim_matrix(sim_matrix = aff_CNV, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "CNV")
-
-# RNAseq
-pca_from_sim_matrix(sim_matrix = aff_rna, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "RNAseq")
+# RNA
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
+                         algorithm = algorithm, 
+                         clust_res = LRAcluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "RNAseq")
 
 # miRNA
-pca_from_sim_matrix(sim_matrix = aff_miRNA, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "miRNA")
+pca_from_original_matrix(mydata = plotdata$miRNA, 
+                         algorithm = algorithm, 
+                         clust_res = LRAcluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "miRNA")
+
+# CNV
+pca_from_original_matrix(mydata = plotdata$CNV, 
+                         algorithm = algorithm, 
+                         clust_res = LRAcluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "CNV")
+
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
+                         algorithm = algorithm, 
+                         clust_res = LRAcluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "SNPs")
 
 # Methylation
-pca_from_sim_matrix(sim_matrix = aff_Methyl, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "Methylation")
-
-# SNPs
-pca_from_sim_matrix(sim_matrix = aff_SNPs, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "SNPs")
-
-# Final affinity
-pca_from_sim_matrix(sim_matrix = aff_final, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "Fusion")
+pca_from_original_matrix(mydata = plotdata$Methylation, 
+                         algorithm = algorithm, 
+                         clust_res = LRAcluster_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"),
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "Methylation")
 
 # Setup for barcharts ###
 # Stage
@@ -1537,11 +1453,11 @@ for (i in 1:length(voi)) {
                                              chifit = chifit,
                                              na.action = "na.omit",
                                              algorithm = algorithm,
-                                             barchart_ylim = 650,
-                                             text_y = 600, rect_ymin = 500,
-                                             rect_ymax = 620, x_annot = 1.5,
-                                             v_gap = 35, rect_xmin = 1,
-                                             rect_xmax = 2, 
+                                             barchart_ylim = 600,
+                                             text_y = 550, rect_ymin = 450,
+                                             rect_ymax = 570, x_annot = 2.5,
+                                             v_gap = 35, rect_xmin = 2,
+                                             rect_xmax = 3, 
                                              annot_text_size = 2.25,
                                              legend.text.size = 5,
                                              x.axis.text.size = 5) +
@@ -1550,7 +1466,7 @@ for (i in 1:length(voi)) {
   ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/single_algorithm/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 4320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1569,14 +1485,15 @@ ggarrange(LRAcluster_barcharts[[1]], LRAcluster_barcharts[[2]], LRAcluster_barch
 ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 7000, height = 8000, device = 'png', units = "px",
+       width = 10000, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Just significant ones now
 LRAcluster_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(LRAcluster, Race, Histology, 
-                                                             `ER status`, `PR status`)
+                                                             `ER status`, `PR status`, 
+                                                             `HER2 status`, Stage)
 plotdata_bar_sig$LRAcluster = factor(plotdata_bar_sig$LRAcluster)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1587,11 +1504,11 @@ for (i in 1:length(voi_sig)) {
                                                  chifit = chifit,
                                                  na.action = "na.omit",
                                                  algorithm = algorithm,
-                                                 barchart_ylim = 650,
-                                                 text_y = 600, rect_ymin = 500,
-                                                 rect_ymax = 620, x_annot = 1.5,
-                                                 v_gap = 35, rect_xmin = 1,
-                                                 rect_xmax = 2, 
+                                                 barchart_ylim = 600,
+                                                 text_y = 550, rect_ymin = 450,
+                                                 rect_ymax = 570, x_annot = 2.5,
+                                                 v_gap = 35, rect_xmin = 2,
+                                                 rect_xmax = 3, 
                                                  annot_text_size = 2.25,
                                                  legend.text.size = 5,
                                                  x.axis.text.size = 5) +
@@ -1600,7 +1517,7 @@ for (i in 1:length(voi_sig)) {
   ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/single_algorithm/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 4320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1609,13 +1526,13 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(LRAcluster_barcharts_sig[[1]], LRAcluster_barcharts_sig[[2]], LRAcluster_barcharts_sig[[3]],
-          LRAcluster_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          LRAcluster_barcharts_sig[[4]], LRAcluster_barcharts_sig[[5]], LRAcluster_barcharts_sig[[6]],
+          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D", "E", "F"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 4320, height = 2320*3, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1625,17 +1542,32 @@ Pheno_sunburst_LRAcluster = clust_annot_pheno
 Pheno_sunburst_LRAcluster$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_LRAcluster$`ER status`)
 Pheno_sunburst_LRAcluster$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_LRAcluster$`ER status`)
 Pheno_sunburst_LRAcluster$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_LRAcluster$`ER status`)
+Pheno_sunburst_LRAcluster$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                         Pheno_sunburst_LRAcluster$`HER2 status`)
+Pheno_sunburst_LRAcluster$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_LRAcluster$`HER2 status`)
+Pheno_sunburst_LRAcluster$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_LRAcluster$`HER2 status`)
+Pheno_sunburst_LRAcluster$Stage = gsub("Unkown", "Unkn stage", Pheno_sunburst_LRAcluster$Stage)
 Pheno_sunburst_LRAcluster = Pheno_sunburst_LRAcluster %>%
-  dplyr::select(LRAcluster, `ER status`) %>%
-  group_by(LRAcluster, `ER status`) %>%
+  dplyr::select(LRAcluster, `ER status`, `HER2 status`, Stage) %>%
+  group_by(LRAcluster, `ER status`, `HER2 status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_LRAcluster = data.frame(stringsAsFactors = FALSE,
-                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                      "#C11D9C", "#0F1682",  "grey40"))),
+                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
+                                                                      "#C11D9C", "#0F1682",  "grey40",
+                                                                      "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                      "hotpink4", "grey40",
+                                                                      "#00C9FF", "#099CF5", 
+                                                                      "#097BF5", "#0B5684", 
+                                                                      "grey40"))),
                                    labels = c("LRAcluster1", "LRAcluster2",
-                                              "ER-", "ER+", "Unkn ER status"))
+                                              "LRAcluster3", "LRAcluster4",
+                                              "ER-", "ER+", "Unkn ER status",
+                                              "HER2-", "HER2+", "Indeterminate",
+                                              "Equivocal", "Unkn HER2 status",
+                                              "Stage I", "Stage II",
+                                              "Stage III", "Stage IV", "Unkn stage"))
 
 sunburstDF_LRAcluster = as.sunburstDF(Pheno_sunburst_LRAcluster, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_LRAcluster, by = "labels")
@@ -1652,187 +1584,6 @@ pie_LRAcluster = plot_ly() %>%
   )
 pie_LRAcluster
 rm(Pheno_sunburst_LRAcluster, sunburstDF_LRAcluster, sunburst_coloring_LRAcluster, pie_LRAcluster); gc()
-
-# Graphs ###
-library(igraph)
-
-aff_CNV_S = calculate_S(aff_CNV)
-aff_rna_S = calculate_S(aff_rna)
-aff_miRNA_S = calculate_S(aff_miRNA)
-aff_Methyl_S = calculate_S(aff_Methyl)
-aff_SNPs_S = calculate_S(aff_SNPs)
-aff_final_S = calculate_S(aff_final)
-
-list_aff_S = list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, 
-                  aff_SNPs_S, aff_final_S)
-names(list_aff_S) = c(paste0("CNV Original Affinity ", optN, "-NN Graph"),
-                      paste0("RNAseq Original Affinity ", optN, "-NN Graph"),
-                      paste0("miRNA Original Affinity ", optN, "-NN Graph"),
-                      paste0("Methylation Original Affinity ", optN, "-NN Graph"),
-                      paste0("SNPs Original Affinity ", optN, "-NN Graph"),
-                      paste0("Final Fused Affinity ", optN, "-NN Graph"))
-
-for (i in 1:length(list_aff_S)) {
-  
-  # Prepare the graph object
-  g <- graph_from_adjacency_matrix(list_aff_S[[i]],  weighted = TRUE, diag = FALSE,
-                                   mode = "max")
-  g <- delete_edges(g, E(g)[weight == 0])
-  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
-  nodes_data <- data.frame(name = V(g)$name) %>%
-    inner_join(clust_annot_pheno %>% dplyr::select(samID, LRAcluster),
-               by = c("name" = "samID"))
-  
-  # Set LRAcluster as a factor for coloring
-  nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-  V(g)$LRAcluster <- nodes_data[[algorithm]] # modify `$LRAcluster` manually
-  
-  # Set color based on LRAcluster
-  V(g)$color <- fifelse(V(g)$LRAcluster == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
-  
-  png(paste0(home, 
-             "/Results/single_algorithm/", algorithm, "/Supplement/",
-             names(list_aff_S)[i], ".png"),
-      width = 6000, height = 6000, res = 700)
-  
-  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
-  
-  # Plot the graph with a layout that spreads nodes well
-  plot(g, vertex.color = V(g)$color,
-       edge.width = E(g)$width,
-       vertex.size = 4, 
-       vertex.label = NA, 
-       edge.color = "gray85",
-       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
-       main = "")
-  
-  # Add title with reduced size using title() function
-  title(main = names(list_aff_S)[i], cex.main = 1.7)
-  
-  # Add a legend to the right of the plot
-  legend("bottomright", 
-         title="Node Color Legend",    
-         legend=c(paste0(algorithm, "1"),
-                  paste0(algorithm, "2")), 
-         fill=cluster_colors_heatmap,  
-         cex=0.7,      
-         box.lwd=1)  
-  
-  dev.off() 
-}
-rm(g, nodes_data)
-
-# Define the affinity matrices for each modality
-# Function to determine the important modalities for each edge
-determine_edge_support <- function(edge_weights) {
-  sorted_weights <- sort(edge_weights, decreasing = TRUE)
-  # If the highest weight is more than 10% greater than all others, it is supported by a single modality
-  if (sorted_weights[1] > sorted_weights[2] * 1.1) {
-    return(which(edge_weights == sorted_weights[1]))
-  }
-  # If the difference between the two highest weights is less than 10%, it is supported by those two modalities
-  else if (sorted_weights[1] <= sorted_weights[2] * 1.1 && sorted_weights[2] > sorted_weights[3] * 1.1) {
-    return(which(edge_weights >= sorted_weights[2]))
-  }
-  # If the difference between all weights is less than 10%, it is supported by all modalities
-  else {
-    return(which(edge_weights >= sorted_weights[1] * 0.9))
-  }
-}
-
-# Prepare the graph object for the final affinity matrix
-g <- graph_from_adjacency_matrix(aff_final_S, mode = "undirected", weighted = TRUE, diag = FALSE)
-g <- delete_edges(g, E(g)[weight == 0])
-
-# Calculate the weights of each edge in individual networks
-edge_weights_list <- list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, aff_SNPs_S)
-edge_support_list <- lapply(E(g), function(e) {
-  from <- ends(g, e)[1]
-  to <- ends(g, e)[2]
-  sapply(edge_weights_list, function(mat) mat[from, to])
-})
-
-# Assign color to each edge based on the modalities that support it
-edge_colors <- c("#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#F3FF33")  # Define unique colors for each modality
-combinations_colors <- list()
-
-for (i in 1:length(E(g))) {
-  supported_modalities <- determine_edge_support(edge_support_list[[i]])
-  if (length(supported_modalities) == 5) {
-    combinations_colors[[i]] <- "black"  # Assign black color if all modalities support the edge
-  } else if (length(supported_modalities) == 1) {
-    combinations_colors[[i]] <- edge_colors[supported_modalities]
-  } else {
-    combination <- paste(supported_modalities, collapse = " + ")
-    if (!is.null(combinations_colors[[combination]])) {
-      combinations_colors[[i]] <- combinations_colors[[combination]]
-    } else {
-      new_color <- colorRampPalette(edge_colors[supported_modalities])(1)
-      combinations_colors[[combination]] <- new_color
-      combinations_colors[[i]] <- new_color
-    }
-  }
-}
-
-E(g)$color <- unlist(combinations_colors)
-
-# Prepare the node data
-nodes_data <- data.frame(name = V(g)$name) %>%
-  inner_join(clust_annot_pheno %>% dplyr::select(samID, LRAcluster), by = c("name" = "samID"))
-nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-V(g)$LRAcluster <- nodes_data[[algorithm]]
-
-# Set color based on LRAcluster
-V(g)$color <- fifelse(V(g)$LRAcluster == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
-
-# Draw the graph for the final affinity matrix
-png(paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/", "colored_Final_Fused_Affinity_", optN, "-NN_Graph.png"),
-    width = 6000, height = 6000, res = 700)
-
-par(mar = c(0, 0, 0, 17))  # Adjust right margin to make enough space for the legend
-
-# Plot the graph
-plot(g, vertex.color = V(g)$color,
-     edge.width = E(g)$width * 0.1,  # Make the edges thinner
-     vertex.size = 3,  # Make the nodes smaller
-     vertex.label = NA, 
-     edge.color = adjustcolor(E(g)$color, alpha.f = 0.35),  # Add transparency to edges
-     layout = layout_with_fr(g, niter = 1000))
-
-# Add a legend for the edge colors
-legend(x = 1.2, y = 1,  # Manually adjust the position of the legend to the right of the plot
-       xpd = TRUE,  # Allow legend to be drawn outside the plot area
-       title="Edge Color Legend",
-       legend=c("RNA-seq", "miRNA", "Methylation", "CNV", "SNPs", 
-                "RNA-seq + miRNA", "RNA-seq + Methylation", "RNA-seq + CNV", "RNA-seq + SNPs", 
-                "miRNA + Methylation", "miRNA + CNV", "miRNA + SNPs", 
-                "Methylation + CNV", "Methylation + SNPs", 
-                "CNV + SNPs", 
-                "RNA-seq + miRNA + Methylation", "RNA-seq + miRNA + CNV", "RNA-seq + miRNA + SNPs", 
-                "RNA-seq + Methylation + CNV", "RNA-seq + Methylation + SNPs", 
-                "RNA-seq + CNV + SNPs", 
-                "miRNA + Methylation + CNV", "miRNA + Methylation + SNPs", 
-                "miRNA + CNV + SNPs", 
-                "Methylation + CNV + SNPs", 
-                "RNA-seq + miRNA + Methylation + CNV", "RNA-seq + miRNA + Methylation + SNPs", 
-                "RNA-seq + miRNA + CNV + SNPs", "RNA-seq + Methylation + CNV + SNPs", 
-                "miRNA + Methylation + CNV + SNPs", 
-                "RNA-seq + miRNA + Methylation + CNV + SNPs"),
-       fill=c("#33FF57", "#3357FF", "#FF5733", "#FF33A1", "#F3FF33", 
-              "#abcdef", "#123456", "#654321", "#fedcba", 
-              "#a1b2c3", "#b2c3d4", "#c3d4e5", 
-              "#d4e5f6", "#e5f6a7", "#f6a7b8", 
-              "#aabbcc", "#bbccdd", "#ccddee", 
-              "#ddeeff", "#eeffaa", "#ffaabb", 
-              "#aaffcc", "#bbffdd", "#ccffee", 
-              "#ffccaa", 
-              "#112233", "#223344", "#334455", 
-              "#445566", "#556677", "#667788", 
-              "black"),
-       cex=0.7,
-       box.lwd=1)
-
-dev.off()
 
 # Compare these LRAcluster results with the LRAcluster output from MOVICS ###
 load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
@@ -1857,17 +1608,10 @@ NMI_to_MOVICS_LRAcluster = calculate_nmi_index(cluster_df1 = MOVICS_LRAcluster %
                                                      paste0("_", algorithm)))
 
 # Wrap up #####
-hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
-                       num_neighbors_max = max(num_neighbors_range),
-                       num_neighbors_step = neighbor_step,
-                       sigma_min = min(sigma_range),
-                       sigma_max = max(sigma_range),
-                       sigma_step = sigma_step,
-                       optimal_N = optN,
-                       optimal_sigma = optSigma,
-                       conclusion = conclusion, # if there is agreement, np_conclusion can also be used
-                       n_iter = n_iterations,
-                       feature_ranks_text = feature_ranks_text
+hyperparameters = list(num_dimensions_min = min(dimensions_to_try),
+                       num_dimensions_max = max(dimensions_to_try),
+                       optimal_r = optr,
+                       optimal_k = optk
 )
 
 # Put all parameters in a list
