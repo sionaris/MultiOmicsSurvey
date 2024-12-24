@@ -37,5 +37,5 @@
   <li>Details on the fast iterative low-rank approximation process proposed by the authors can be found in the [Methods section of the corresponding paper](`r cite_LRAcluster`).</li>
   <li>The dimension reduction is straightforward after getting the low-rank matrix $\Theta$. As the rank of $\Theta$ is no more than $r$ (set by the user), the singular vector decomposition (SVD) of that matrix $\Theta = U\mathit{\Sigma} \ V^T$ has $\mathit{\Sigma}$ with no more than $r$ non-zero singular values. Thus, the first $r$ columns of $\mathit{\Sigma V^T}$ are just the dimension reduction result of the original data matrix $X$ with the target dimension (rank) $r$.
   </li>
-  <li> LRAcluster uses $k-$means to identify the candidate molecular subtypes in the reduced low-dimensional subspace. Silhouette values are used to determine the cluster number $k$. Any other unsupervised clustering algorithm can be used instead of $k-$means.</li>
+  <li> LRAcluster uses $k$-means to identify the candidate molecular subtypes in the reduced low-dimensional subspace. Silhouette values are used to determine the cluster number $k$. Any other unsupervised clustering algorithm can be used instead of $k-$means.</li>
 </ol>

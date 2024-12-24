@@ -436,7 +436,7 @@ plot_object = list(clust.res = LRAcluster_clusters %>%
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
                               data          = plotdata,
-                              row.title     = names(heatmap_plotdata),
+                              row.title     = names(plotdata),
                               is.binary     = c(T,F,F,F,F), 
                               legend.name   = c("SNPs",
                                                 "Standardized RNAseq norm. counts",
@@ -605,7 +605,7 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              fig.name      = "upregulated_biomarkers_heatmap",
                                              fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                              width = 14,
-                                             height = 12,
+                                             height = 18,
                                              fontsize_row = 3,
                                              name = "normalized RNA-seq")
 dev.off()
@@ -632,7 +632,7 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                fig.name      = "downregulated_biomarkers_heatmap",
                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
-                                               height = 12,
+                                               height = 18,
                                                fontsize_row = 3,
                                                name = "normalized RNA-seq")
 dev.off()
@@ -671,7 +671,7 @@ methyl.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                fig.name      = "hypermethylated_biomarkers_heatmap",
                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
-                                               height = 12,
+                                               height = 18,
                                                fontsize_row = 0, # 3 default
                                                name = "normalized Methylation")
 dev.off()
@@ -698,7 +698,7 @@ methyl.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                  fig.name      = "hypomethylated_biomarkers_heatmap",
                                                  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                  width = 14,
-                                                 height = 12,
+                                                 height = 18,
                                                  fontsize_row = 0, # 3 default
                                                  name = "normalized Methylation")
 dev.off()
@@ -737,7 +737,7 @@ miRNA.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                               fig.name      = "upregulated_miRNA_biomarkers_heatmap",
                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                               width = 14,
-                                              height = 12,
+                                              height = 18,
                                               fontsize_row = 0, # 3 default
                                               name = "normalized miRNA")
 dev.off()
@@ -764,7 +764,7 @@ miRNA.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                 fig.name      = "downregulated_miRNA_biomarkers_heatmap",
                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                 width = 14,
-                                                height = 12,
+                                                height = 18,
                                                 fontsize_row = 0, # 3 default
                                                 name = "normalized miRNA")
 dev.off()
@@ -1145,7 +1145,7 @@ for (i in 1:ncol(transNEO_var2comp)) {
 }
 rm(nas, empties); gc()
 
-transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
+transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = "",
                                                  moic.res = transNEO_ntp_expr_up,
                                                  var2comp = transNEO_var2comp_nonas,
                                                  strata = algorithm,

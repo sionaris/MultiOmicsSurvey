@@ -1,0 +1,11 @@
+There is one hyperparameter we tune for in LRAcluster: the number of dimensions $r$, in the low-dimensional space of the LRA projections. We used a range of number of dimensions $[ `r hyperparameters[["num_dimensions_min"]]`, `r hyperparameters[["num_dimensions_max"]]` ]$. 
+
+The optimal number of dimensions was determined by examining the differences in explained variation for different values of $r$. Based on the plot below, $r = `r hyperparameters[["optimal_r"]]`$ was the optimal value for $r$, due to the high jump of the line for $r = `r hyperparameters[["optimal_r"]]`$ and the slow increase afterwards.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/explained_variation_plot.png")`)
+
+To determine the optimal number of clusters we used the M3C package and ran Monte Carlo reference-based $k$-means clustering for a range of values for $k$: $[2, 10]$. The optimal value for $k$ was determined by inspecting the the <b>statistical significance</b>, <b>entropy</b> and <b>Relative Cluster Stability Index (RCSI)</b> values for each $k$. $k = `r hyperparameters[["optimal_k"]]`$ was the optimal value for $k$.
+
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Entropy.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/RCSI.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Stat_sig.png")`)
