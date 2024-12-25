@@ -5,13 +5,368 @@ output: pdf_document
 ---
 
 # Hyperparameters
-```{r, echo=FALSE}
-hyperparameter_values
+```{r}
+cat('sdev = 0.05, beta.var.scale = 0.8\n')
 ```
 
-# Summary Statistics
-```{r, echo=FALSE, results='asis'}
-cat(paste0("```
-", summary_stats_str, "
-```"))
+# Key Summary Statistics
+```{r}
+cat(paste0('```\n', '
+
+--- Summary for K = 1 ---
+Z.ar:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.2194  0.2456  0.2528  0.2524  0.2589  0.2850 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.09722 0.14111 0.13775 0.17222 0.89333 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.1000  0.1450  0.1412  0.1761  0.7489 
+  Modality 2 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.005000 0.008333 0.102049 0.031111 1.000000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+0.0005556 0.0050000 0.0083333 0.0776963 0.0244444 1.0000000 
+  Modality 5 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.006111 0.015000 0.162454 0.118889 1.000000 
+
+--- Summary for K = 2 ---
+Z.ar:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.04056 0.05556 0.06056 0.06028 0.06444 0.08222 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0650  0.1094  0.1137  0.1467  0.8544 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.06778 0.11333 0.11701 0.15222 0.69333 
+  Modality 2 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.001667 0.061111 0.416666 1.000000 1.000000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.001111 0.005000 0.250839 0.386806 1.000000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.1306  1.0000  0.6992  1.0000  1.0000 
+
+--- Summary for K = 3 ---
+Z.ar:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.008333 0.019444 0.022222 0.022305 0.025556 0.038889 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.03167 0.07222 0.08050 0.11222 0.78889 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.03444 0.07667 0.08383 0.11778 0.55444 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.8900  1.0000  0.7919  1.0000  1.0000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+0.0000000 0.0000000 0.0005556 0.2208022 0.1716667 1.0000000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.05778 1.00000 0.67531 1.00000 1.00000 
+
+--- Summary for K = 4 ---
+Z.ar:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.003333 0.010000 0.012778 0.013227 0.016111 0.052222 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.02222 0.06111 0.07171 0.10111 0.85722 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.02444 0.06556 0.07519 0.10778 0.64944 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.5994  1.0000  0.7435  1.0000  1.0000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.2666  0.6369  1.0000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  1.0000  1.0000  0.8654  1.0000  1.0000 
+
+--- Summary for K = 5 ---
+Z.ar:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.003333 0.008889 0.012222 0.013323 0.016111 0.056111 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.02111 0.05333 0.06548 0.09000 0.82167 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.02333 0.05778 0.06911 0.09667 0.67222 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.02778 0.64000 0.55887 1.00000 1.00000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.2574  0.6028  1.0000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  1.0000  1.0000  0.8728  1.0000  1.0000 
+
+--- Summary for K = 6 ---
+Z.ar:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.001111 0.004444 0.006667 0.007253 0.008889 0.051111 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.01778 0.04833 0.06047 0.08500 0.75611 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.02000 0.05333 0.06527 0.09333 0.51778 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.2828  0.9450  0.6609  1.0000  1.0000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.2799  0.8483  1.0000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  1.0000  1.0000  0.8725  1.0000  1.0000 
+
+--- Summary for K = 7 ---
+Z.ar:
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+0.0005556 0.0038889 0.0055556 0.0061049 0.0072222 0.0311111 
+
+beta.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.01000 0.03667 0.05127 0.07222 0.74722 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.01222 0.04111 0.05595 0.08111 0.53278 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.4106  0.4806  1.0000  1.0000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.6494  1.0000  1.0000  1.0000  1.0000  1.0000 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.2196  0.2267  1.0000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.7761  1.0000  0.7986  1.0000  1.0000 
+
+--- Summary for K = 8 ---
+Z.ar:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.003333 0.009444 0.012778 0.013408 0.016667 0.031667 
+
+beta.ar:
+  Modality 1 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.002222 0.021111 0.040231 0.060556 0.734444 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.003333 0.024444 0.044021 0.068889 0.514444 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.2938  0.6828  1.0000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.4700  1.0000  1.0000  0.9993  1.0000  1.0000 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.1439  0.0000  1.0000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.05222 0.68500 0.56825 0.97389 1.00000 
+
+--- Summary for K = 9 ---
+Z.ar:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.003333 0.010000 0.012222 0.013128 0.015556 0.036111 
+
+beta.ar:
+  Modality 1 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.002778 0.021111 0.038919 0.056111 0.659444 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+gamma.ar:
+  Modality 1 :
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+0.000000 0.003333 0.025556 0.043236 0.065000 0.487778 
+  Modality 2 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.2349  0.4800  1.0000 
+  Modality 3 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  1.0000  1.0000  0.9836  1.0000  1.0000 
+  Modality 4 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.00000 0.00000 0.07875 0.00000 1.00000 
+  Modality 5 :
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00000 0.00000 0.07222 0.31343 0.63167 1.00000 
+', '\n```'))
 ```
+
+# Conclusion
+This brief report includes acceptance rate summaries, posterior probabilities, 
+and basic statistics for each K (1–9). The `.png` files show Z.ar, beta.ar, 
+and gamma.ar distributions.

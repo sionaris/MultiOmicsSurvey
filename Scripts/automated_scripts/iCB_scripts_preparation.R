@@ -7,8 +7,8 @@ thin <- 1
 pp_cutoff <- 0.5
 # Assuming we have 5 data sets as per your previous scripts
 prior_gamma <- rep(0.1, 5)
-n_burnin <- 3000
-n_draw <- 4000
+n_burnin <- 1200
+n_draw <- 1800
 
 # Template for R script
 r_script_template <- '

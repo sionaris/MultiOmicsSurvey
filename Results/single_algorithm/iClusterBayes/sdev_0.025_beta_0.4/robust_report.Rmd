@@ -1,0 +1,74 @@
+---
+title: "Robust Metrics Report"
+author: "Automated Report"
+output: pdf_document
+---
+
+# Hyperparameters
+```{r}
+cat('sdev = 0.025, beta.var.scale = 0.4\n')
+```
+
+# Robust Metrics & Score
+```{r}
+cat(paste0('```\n', '
+## Per-K Metrics
+
+--- K = 1 ---
+Median Z.ar:        0.4427778 
+Median Beta.ar:     1 
+Median Gamma.ar:    0.04888889 
+Score segment:      0.9583333 
+
+--- K = 2 ---
+Median Z.ar:        0.2677778 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.282222 
+
+--- K = 3 ---
+Median Z.ar:        0.08944444 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.460556 
+
+--- K = 4 ---
+Median Z.ar:        0.03555556 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.514444 
+
+--- K = 5 ---
+Median Z.ar:        0.04111111 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.508889 
+
+--- K = 6 ---
+Median Z.ar:        0.03111111 
+Median Beta.ar:     1 
+Median Gamma.ar:    0.9727778 
+Score segment:      1.491667 
+
+--- K = 7 ---
+Median Z.ar:        0.03888889 
+Median Beta.ar:     1 
+Median Gamma.ar:    0.76 
+Score segment:      1.271111 
+
+--- K = 8 ---
+Median Z.ar:        0.03388889 
+Median Beta.ar:     1 
+Median Gamma.ar:    0.7172222 
+Score segment:      1.233333 
+
+--- K = 9 ---
+Median Z.ar:        0.1338889 
+Median Beta.ar:     1 
+Median Gamma.ar:    0.2077778 
+Score segment:      1.108333 
+
+## Final Score
+Final Score: 11.82889 
+', '\n```'))
+```

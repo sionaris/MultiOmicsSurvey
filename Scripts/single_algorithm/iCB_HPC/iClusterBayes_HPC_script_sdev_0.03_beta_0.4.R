@@ -13,8 +13,8 @@ beta_var_scale <- 0.4
 # Fixed hyperparameters
 thin <- 1
 pp_cutoff <- 0.5
-n_burnin <- 3000
-n_draw <- 4000
+n_burnin <- 1200
+n_draw <- 1800
 prior_gamma <- c(0.1,0.1,0.1,0.1,0.1)
 
 # Generate an informative suffix for output files

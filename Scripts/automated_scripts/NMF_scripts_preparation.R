@@ -5,9 +5,10 @@ is.binary <- c(TRUE, FALSE, FALSE, FALSE, FALSE)
 # Create a string that represents is.binary correctly in R code:
 is_binary_str <- paste0("c(", paste(is.binary, collapse = ", "), ")")
 
-n.runs.values <- c(30, 50, 75, 100)    
-maxiter.values <- c(50, 100, 200, 500, 1000) 
+n.runs.values <- c(50, 75, 100, 150, 200, 300)    
+maxiter.values <- c(100, 200, 500, 1000, 2000) 
 k.range.values <- list(2:10)
+lr.values <- c(1e-4, 5e-4, 1e-3, 5e-3, 1e-2)
 n.fold <- 10
 allowParallel <- TRUE
 n.cores <- 10
@@ -17,36 +18,32 @@ input_dat_path <- "NMF_input.rds"
 
 # Directories for generated scripts
 script_dir <- "Scripts/single_algorithm/NMF_HPC/"
-if(!dir.exists(script_dir)) {
+if (!dir.exists(script_dir)) {
   dir.create(script_dir, recursive = TRUE)
 }
 
 counter <- 0
-for (nr in n.runs.values) {
-  for (mi in maxiter.values) {
-    for (kr in k.range.values) {
-      counter <- counter + 1
-      job_name <- paste0("nmf_nruns_", nr, "_maxiter_", mi)
-      
-      # Filenames for scripts
-      r_script_basename <- paste0(job_name, ".R")
-      sh_script_basename <- paste0(job_name, ".sh")
-      r_script_name <- paste0(script_dir, r_script_basename)
-      sh_script_name <- paste0(script_dir, sh_script_basename)
-      
-      # Write the R script
-      # Use cat with careful formatting for readability:
-      cat(
-        "#
+for (lr in lr.values) {
+  for (nr in n.runs.values) {
+    for (mi in maxiter.values) {
+      for (kr in k.range.values) {
+        counter <- counter + 1
+        job_name <- paste0("nmf_nruns_", nr, "_maxiter_", mi, "_lr_", lr)
+        
+        r_script_basename <- paste0(job_name, ".R")
+        sh_script_basename <- paste0(job_name, ".sh")
+        r_script_name <- paste0(script_dir, r_script_basename)
+        sh_script_name <- paste0(script_dir, sh_script_basename)
+        
+        cat("
 # ", r_script_name, "
 library(foreach)
 library(doParallel)
 library(mclust)
 library(MASS)
 
-source('nmf_integrative_functions.R') # Ensure this file has nmf.opt.k.integrative defined
+source('nmf_integrative_functions.R')
 
-# Load data
 dat <- readRDS('", input_dat_path, "')
 
 res <- nmf.opt.k.integrative(
@@ -56,6 +53,7 @@ res <- nmf.opt.k.integrative(
   n.fold = ", n.fold, ",
   k.range = ", deparse(kr), ",
   maxiter = ", mi, ",
+  lr = ", lr, ",
   allowParallel = ", allowParallel, ",
   n.cores = ", n.cores, ",
   make.plot = FALSE,
@@ -63,10 +61,11 @@ res <- nmf.opt.k.integrative(
 )
 
 saveRDS(res, file = '", job_name, "_results.rds')
-", sep="", file = r_script_name)
+", file = r_script_name, sep="")
 
+#
 # Write the SLURM (.sh) script
-# Note the quoting around Rscript -e command
+#
 cat("#!/bin/bash
 #SBATCH --partition=icelake-himem
 #SBATCH --nodes=1
@@ -88,13 +87,21 @@ cd $HOME/MO_survey/IntNMF
 # Set R_LIBS_USER to install packages in your home directory
 export R_LIBS_USER=$HOME/MO_survey/R/library
 
-# Install required packages if not already installed
-Rscript -e \"packages <- c('parallel','doParallel','foreach','mclust','MASS'); install.packages(setdiff(packages, installed.packages()[,'Package']), repos='https://cran.r-project.org')\"
+# 1) Install required packages (except MASS) if not already installed
+Rscript -e \"packages <- c('parallel','doParallel','foreach','mclust'); install.packages(setdiff(packages, installed.packages()[,'Package']), repos='https://cran.r-project.org')\"
 
-# Run R script
+# 2) Check if MASS 7.3-60.0.1 is installed; if not, install it
+Rscript -e \"if (!requireNamespace('MASS', quietly=TRUE) || packageVersion('MASS') != '7.3.60.0.1') {
+  if(!requireNamespace('remotes', quietly=TRUE)) {
+    install.packages('remotes', repos='https://cran.r-project.org')
+  }
+  remotes::install_version('MASS', version='7.3-60.0.1', repos='https://cran.r-project.org')
+}\"
+
+# 3) Run R script
 Rscript ", r_script_basename, "
-", sep="", file = sh_script_name)
-
+", sep = "", file = sh_script_name)
+      }
     }
   }
 }
