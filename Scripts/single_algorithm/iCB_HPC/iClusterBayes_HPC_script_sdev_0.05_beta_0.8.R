@@ -11,11 +11,11 @@ sdev <- 0.05
 beta_var_scale <- 0.8
 
 # Fixed hyperparameters
-thin <- 1
+thin <- 3
 pp_cutoff <- 0.5
 n_burnin <- 1200
 n_draw <- 1800
-prior_gamma <- c(0.1,0.1,0.1,0.1,0.1)
+prior_gamma <- c(0.5,0.5,0.5,0.5,0.5)
 
 # Generate an informative suffix for output files
 suffix <- paste0("sdev_", sdev, "_beta_", beta_var_scale)

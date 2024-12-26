@@ -124,11 +124,12 @@ compute_robust_metrics_and_score <- function(tune_results, K_values) {
     all_gamma  <- unlist(gamma_ar)
     median_gamma <- median(all_gamma, na.rm = TRUE)
     
-    # Example scoring: sum of distances from 0.45 for each median
+    # Example scoring: sum of distances from 0.234 for each median
+    # why 0.234?: https://www.maths.lancs.ac.uk/~sherlocc/Publications/rwm.final.pdf
     # Lower is "better" in this example
-    score_k <- (abs(median_z - 0.45) +
-                  abs(median_beta - 0.45) +
-                  abs(median_gamma - 0.45))
+    score_k <- (abs(median_z - 0.234) +
+                  abs(median_beta - 0.234) +
+                  abs(median_gamma - 0.234))
     
     metrics_list[[K]] <- list(
       K               = K,
@@ -151,7 +152,8 @@ compute_robust_metrics_and_score <- function(tune_results, K_values) {
 ################################################################################
 
 sdev_values <- c(0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.05)
-beta_values <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0)
+beta_values <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 1.25,
+                 1.5, 2, 2.5, 3)
 
 dirs <- c()
 for (sd in sdev_values) {
@@ -265,7 +267,6 @@ results_output <- foreach(i = seq_along(dirs), .combine = "c") %dopar% {
     "```",
     "",
     "# Conclusion",
-    "This brief report includes acceptance rate summaries, posterior probabilities, ",
     "and basic statistics for each K (1–9). The `.png` files show Z.ar, beta.ar, ",
     "and gamma.ar distributions."
   )
@@ -409,3 +410,84 @@ for (nm in names(robust_scores_list)) {
   cat(nm, " => final_score =", fs, "\n")
 }
 
+###############################################################################
+# Penalizing and Creating a "penalized_score" in robust_scores_list
+# Based on Extreme Acceptance (Median Beta/Gamma/Z AR < 0.1 or > 0.9)
+###############################################################################
+
+# Parameters for penalization
+low_threshold  <- 0.1
+high_threshold <- 0.8
+penalty_amount <- 0.05
+
+# Function to apply penalty based on acceptance rate
+penalize_acceptance <- function(acc_rate, low_thres = 0.1, high_thres = 0.9, penalty = 0.05) {
+  if (acc_rate < low_thres || acc_rate > high_thres) {
+    return(penalty)
+  } else {
+    return(0)
+  }
+}
+
+# Create a modified copy of robust_scores_list to preserve original
+robust_scores_list_penalized <- robust_scores_list
+
+# Iterate over each hyperparameter combination
+for (i in seq_along(robust_scores_list_penalized)) {
+  # Extract the original final score
+  orig_score <- robust_scores_list_penalized[[i]]$metrics$final_score
+  
+  # Initialize penalty sum
+  penalty_sum <- 0
+  
+  # Extract per-K metrics data frame
+  df_k <- robust_scores_list_penalized[[i]]$metrics$per_K_metrics
+  
+  # Loop over each K to check acceptance rates
+  for (row_i in seq_len(nrow(df_k))) {
+    # Extract median acceptance rates for Beta and Gamma
+    median_beta_ar  <- df_k$median_beta_ar[row_i]
+    median_gamma_ar <- df_k$median_gamma_ar[row_i]
+    median_z_ar <- df_k$median_z_ar[row_i]
+    
+    # Accumulate penalties for Beta acceptance rates
+    penalty_sum <- penalty_sum + penalize_acceptance(median_beta_ar,
+                                                     low_threshold,
+                                                     high_threshold,
+                                                     penalty_amount)
+    
+    # Accumulate penalties for Gamma acceptance rates
+    penalty_sum <- penalty_sum + penalize_acceptance(median_gamma_ar,
+                                                     low_threshold,
+                                                     high_threshold,
+                                                     penalty_amount)
+    
+    # Accumulate penalties for Z acceptance rates
+    penalty_sum <- penalty_sum + penalize_acceptance(median_z_ar,
+                                                     low_threshold,
+                                                     high_threshold,
+                                                     penalty_amount)
+  }
+  
+  # Compute penalized score by adding penalty_sum to original final_score
+  # (Since lower scores are better, adding penalties increases the score for extremes)
+  penalized_score <- orig_score + penalty_sum
+  
+  # Store the penalized_score back into the list
+  robust_scores_list_penalized[[i]]$metrics$penalized_score <- penalized_score
+}
+
+# Create a summary data frame with penalized scores
+penalized_summary <- data.frame(
+  combo_name      = sapply(robust_scores_list_penalized, function(x) x$combo_name),
+  sdev_val        = sapply(robust_scores_list_penalized, function(x) x$sdev_val),
+  beta_val        = sapply(robust_scores_list_penalized, function(x) x$beta_val),
+  original_score  = sapply(robust_scores_list_penalized, function(x) x$metrics$final_score),
+  penalized_score = sapply(robust_scores_list_penalized, function(x) x$metrics$penalized_score)
+)
+
+# Order the summary by penalized_score (ascending)
+penalized_summary_ordered <- penalized_summary[order(penalized_summary$penalized_score), ]
+
+# Display the ordered summary
+print(penalized_summary_ordered)

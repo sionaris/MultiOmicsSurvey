@@ -1,12 +1,12 @@
 # Define hyperparameter values to be exhaustively tested
 sdev_values <- c(0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.05)
-beta_var_scale_values <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0)
+beta_var_scale_values <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 1.25,
+                           1.5, 2, 2.5, 3)
 
 # Fixed hyperparameters based on the paper
-thin <- 1
+thin <- 3
 pp_cutoff <- 0.5
-# Assuming we have 5 data sets as per your previous scripts
-prior_gamma <- rep(0.1, 5)
+prior_gamma <- rep(0.5, 5)
 n_burnin <- 1200
 n_draw <- 1800
 
