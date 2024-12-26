@@ -1493,7 +1493,8 @@ dev.off()
 LRAcluster_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(LRAcluster, Race, Histology, 
                                                              `ER status`, `PR status`, 
-                                                             `HER2 status`, Stage)
+                                                             `HER2 status`, Stage,
+                                                             Metastasis)
 plotdata_bar_sig$LRAcluster = factor(plotdata_bar_sig$LRAcluster)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1527,12 +1528,13 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(LRAcluster_barcharts_sig[[1]], LRAcluster_barcharts_sig[[2]], LRAcluster_barcharts_sig[[3]],
           LRAcluster_barcharts_sig[[4]], LRAcluster_barcharts_sig[[5]], LRAcluster_barcharts_sig[[6]],
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D", "E", "F"),
+          LRAcluster_barcharts_sig[[7]], 
+          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 4320, height = 2320*3, device = 'png', units = "px",
+       width = 6000, height = 2320*4, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
