@@ -35,7 +35,7 @@ The Ajusted Rand Index (ARI) and Normalized Mutual Information (NMI) values (whe
 <b>ARI:</b> `r params$ARI_to_MOVICS`
 <b>NMI:</b> `r params$NMI_to_MOVICS`
 
-The values are very low and indicate that `r params$algorithm` produces different clusters than consensus ``MOVICS``.
+The values are larger than 0.5 and indicate that `r params$algorithm` produces relatively similar clusters to consensus ``MOVICS``.
 
 ## Clinical variables
 Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Summary_of_clinical_variables.txt")`) (Exact tests and non-parametric Kruskal-Wallis tests). The number of lymph nodes identified by immunohistochemical procedures (IHC) and H&E procedures, were also tested using the Jonckheere-Terpstra test for ordered differences.
