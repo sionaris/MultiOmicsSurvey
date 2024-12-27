@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.7155556 
+Median Z.ar:        0.7122222 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04888889 
-Score segment:      1.216667 
+Median Gamma.ar:    0.3794444 
+Score segment:      1.389667 
 
 --- K = 2 ---
-Median Z.ar:        0.6027778 
+Median Z.ar:        0.5272222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.252778 
+Score segment:      1.825222 
 
 --- K = 3 ---
-Median Z.ar:        0.4933333 
+Median Z.ar:        0.4211111 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.8994444 
-Score segment:      1.042778 
+Median Gamma.ar:    1 
+Score segment:      1.719111 
 
 --- K = 4 ---
-Median Z.ar:        0.3772222 
+Median Z.ar:        0.3494444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.7877778 
-Score segment:      0.9605556 
+Median Gamma.ar:    0.9583333 
+Score segment:      1.605778 
 
 --- K = 5 ---
-Median Z.ar:        0.9811111 
+Median Z.ar:        0.3016667 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.531111 
+Median Gamma.ar:    0.7466667 
+Score segment:      1.346333 
 
 --- K = 6 ---
-Median Z.ar:        0.9866667 
+Median Z.ar:        0.2777778 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.536667 
+Median Gamma.ar:    0.6172222 
+Score segment:      1.193 
 
 --- K = 7 ---
-Median Z.ar:        0.8711111 
+Median Z.ar:        0.4255556 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.421111 
+Median Gamma.ar:    0.1644444 
+Score segment:      1.027111 
 
 --- K = 8 ---
-Median Z.ar:        0.9844444 
+Median Z.ar:        0.665 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.534444 
+Score segment:      1.431 
 
 --- K = 9 ---
-Median Z.ar:        0.9838889 
+Median Z.ar:        0.6761111 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.533889 
+Score segment:      1.442111 
 
 ## Final Score
-Final Score: 12.03 
+Final Score: 12.97933 
 ', '\n```'))
 ```

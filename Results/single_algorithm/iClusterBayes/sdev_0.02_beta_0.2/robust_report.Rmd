@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.5133333 
+Median Z.ar:        0.5094444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04888889 
-Score segment:      1.014444 
+Median Gamma.ar:    0.3794444 
+Score segment:      1.186889 
 
 --- K = 2 ---
-Median Z.ar:        0.2394444 
+Median Z.ar:        0.2316667 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.310556 
+Score segment:      1.534333 
 
 --- K = 3 ---
-Median Z.ar:        0.1466667 
+Median Z.ar:        0.1272222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.403333 
+Score segment:      1.638778 
 
 --- K = 4 ---
-Median Z.ar:        0.075 
+Median Z.ar:        0.05666667 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.475 
+Score segment:      1.709333 
 
 --- K = 5 ---
-Median Z.ar:        0.06777778 
+Median Z.ar:        0.03388889 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.482222 
+Score segment:      1.732111 
 
 --- K = 6 ---
-Median Z.ar:        0.1244444 
+Median Z.ar:        0.04555556 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.6405556 
-Score segment:      1.066111 
+Median Gamma.ar:    0.9666667 
+Score segment:      1.687111 
 
 --- K = 7 ---
-Median Z.ar:        0.09 
+Median Z.ar:        0.03777778 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.4227778 
-Score segment:      0.9372222 
+Median Gamma.ar:    0.8094444 
+Score segment:      1.537667 
 
 --- K = 8 ---
-Median Z.ar:        0.06055556 
+Median Z.ar:        0.05611111 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.5011111 
-Score segment:      0.9905556 
+Median Gamma.ar:    0.4477778 
+Score segment:      1.157667 
 
 --- K = 9 ---
-Median Z.ar:        0.4772222 
+Median Z.ar:        0.04833333 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.027222 
+Median Gamma.ar:    0.46 
+Score segment:      1.177667 
 
 ## Final Score
-Final Score: 10.70667 
+Final Score: 13.36156 
 ', '\n```'))
 ```

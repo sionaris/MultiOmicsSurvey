@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.3877778 
+Median Z.ar:        0.3838889 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04888889 
-Score segment:      1.013333 
+Median Gamma.ar:    0.3822222 
+Score segment:      1.064111 
 
 --- K = 2 ---
-Median Z.ar:        0.145 
+Median Z.ar:        0.1322222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.405 
+Score segment:      1.633778 
 
 --- K = 3 ---
-Median Z.ar:        0.04444444 
+Median Z.ar:        0.03722222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.505556 
+Score segment:      1.728778 
 
 --- K = 4 ---
-Median Z.ar:        0.02111111 
-Median Beta.ar:     1 
-Median Gamma.ar:    1 
-Score segment:      1.528889 
-
---- K = 5 ---
-Median Z.ar:        0.01833333 
-Median Beta.ar:     1 
-Median Gamma.ar:    1 
-Score segment:      1.531667 
-
---- K = 6 ---
 Median Z.ar:        0.02277778 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.9388889 
-Score segment:      1.466111 
+Median Gamma.ar:    1 
+Score segment:      1.743222 
+
+--- K = 5 ---
+Median Z.ar:        0.02166667 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.744333 
+
+--- K = 6 ---
+Median Z.ar:        0.02333333 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.742667 
 
 --- K = 7 ---
-Median Z.ar:        0.01833333 
+Median Z.ar:        0.01944444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.9194444 
-Score segment:      1.451111 
+Median Gamma.ar:    0.9405556 
+Score segment:      1.687111 
 
 --- K = 8 ---
-Median Z.ar:        0.04111111 
+Median Z.ar:        0.02277778 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.1766667 
-Score segment:      1.232222 
+Median Gamma.ar:    0.6711111 
+Score segment:      1.414333 
 
 --- K = 9 ---
-Median Z.ar:        0.03111111 
+Median Z.ar:        0.01666667 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.1675 
-Score segment:      1.251389 
+Median Gamma.ar:    0.3975 
+Score segment:      1.146833 
 
 ## Final Score
-Final Score: 12.38528 
+Final Score: 13.90517 
 ', '\n```'))
 ```

@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.715 
+Median Z.ar:        0.7133333 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04833333 
-Score segment:      1.216667 
+Median Gamma.ar:    0.3772222 
+Score segment:      1.388556 
 
 --- K = 2 ---
-Median Z.ar:        0.6061111 
+Median Z.ar:        0.4916667 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.256111 
+Score segment:      1.789667 
 
 --- K = 3 ---
-Median Z.ar:        0.4922222 
+Median Z.ar:        0.4338889 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.86 
-Score segment:      1.002222 
+Median Gamma.ar:    1 
+Score segment:      1.731889 
 
 --- K = 4 ---
-Median Z.ar:        0.7027778 
+Median Z.ar:        0.6638889 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.1466667 
-Score segment:      1.106111 
+Median Gamma.ar:    0.3311111 
+Score segment:      1.293 
 
 --- K = 5 ---
-Median Z.ar:        0.9838889 
+Median Z.ar:        0.4405556 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.533889 
+Median Gamma.ar:    0.4216667 
+Score segment:      1.160222 
 
 --- K = 6 ---
-Median Z.ar:        0.4633333 
+Median Z.ar:        0.3133333 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.08944444 
-Score segment:      0.9238889 
+Median Gamma.ar:    0.5072222 
+Score segment:      1.118556 
 
 --- K = 7 ---
-Median Z.ar:        0.5261111 
+Median Z.ar:        0.3566667 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.005555556 
-Score segment:      1.070556 
+Median Gamma.ar:    0.27 
+Score segment:      0.9246667 
 
 --- K = 8 ---
-Median Z.ar:        0.92 
+Median Z.ar:        0.5811111 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.47 
+Score segment:      1.347111 
 
 --- K = 9 ---
-Median Z.ar:        0.9861111 
+Median Z.ar:        0.9016667 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.536111 
+Score segment:      1.667667 
 
 ## Final Score
-Final Score: 11.11556 
+Final Score: 12.42133 
 ', '\n```'))
 ```

@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.8233333 
+Median Z.ar:        0.8472222 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.1244444 
-Score segment:      1.248889 
+Median Gamma.ar:    0.3822222 
+Score segment:      1.527444 
 
 --- K = 2 ---
-Median Z.ar:        0.6772222 
+Median Z.ar:        0.7311111 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.3638889 
-Score segment:      0.8633333 
+Median Gamma.ar:    0.885 
+Score segment:      1.914111 
 
 --- K = 3 ---
-Median Z.ar:        0.8738889 
+Median Z.ar:        0.67 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.423889 
+Median Gamma.ar:    0.7077778 
+Score segment:      1.675778 
 
 --- K = 4 ---
-Median Z.ar:        0.6311111 
+Median Z.ar:        0.6377778 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.1494444 
-Score segment:      1.031667 
+Median Gamma.ar:    0.2833333 
+Score segment:      1.219111 
 
 --- K = 5 ---
-Median Z.ar:        0.9938889 
+Median Z.ar:        0.6872222 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.543889 
+Score segment:      1.453222 
 
 --- K = 6 ---
-Median Z.ar:        0.9938889 
+Median Z.ar:        0.9672222 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.543889 
+Score segment:      1.733222 
 
 --- K = 7 ---
-Median Z.ar:        0.9933333 
+Median Z.ar:        0.7927778 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.543333 
+Score segment:      1.558778 
 
 --- K = 8 ---
-Median Z.ar:        0.9927778 
+Median Z.ar:        0.9877778 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.542778 
+Score segment:      1.753778 
 
 --- K = 9 ---
-Median Z.ar:        0.9927778 
+Median Z.ar:        0.9827778 
 Median Beta.ar:     1 
 Median Gamma.ar:    0 
-Score segment:      1.542778 
+Score segment:      1.748778 
 
 ## Final Score
-Final Score: 12.28444 
+Final Score: 14.58422 
 ', '\n```'))
 ```

@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.5138889 
+Median Z.ar:        0.5094444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04944444 
-Score segment:      1.014444 
+Median Gamma.ar:    0.3813889 
+Score segment:      1.188833 
 
 --- K = 2 ---
-Median Z.ar:        0.2427778 
+Median Z.ar:        0.2405556 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.307222 
+Score segment:      1.538556 
 
 --- K = 3 ---
-Median Z.ar:        0.1605556 
+Median Z.ar:        0.1061111 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.389444 
+Score segment:      1.659889 
 
 --- K = 4 ---
-Median Z.ar:        0.06833333 
+Median Z.ar:        0.07777778 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.481667 
+Score segment:      1.688222 
 
 --- K = 5 ---
-Median Z.ar:        0.05611111 
+Median Z.ar:        0.06722222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.493889 
+Score segment:      1.698778 
 
 --- K = 6 ---
-Median Z.ar:        0.06888889 
+Median Z.ar:        0.05444444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.7944444 
-Score segment:      1.275556 
+Median Gamma.ar:    0.9866667 
+Score segment:      1.698222 
 
 --- K = 7 ---
-Median Z.ar:        0.2622222 
+Median Z.ar:        0.05611111 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.1011111 
-Score segment:      1.086667 
+Median Gamma.ar:    0.7416667 
+Score segment:      1.451556 
 
 --- K = 8 ---
-Median Z.ar:        0.8477778 
+Median Z.ar:        0.07055556 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.397778 
+Median Gamma.ar:    0.4322222 
+Score segment:      1.127667 
 
 --- K = 9 ---
-Median Z.ar:        0.1611111 
+Median Z.ar:        0.05555556 
 Median Beta.ar:     1 
-Median Gamma.ar:    0 
-Score segment:      1.288889 
+Median Gamma.ar:    0.465 
+Score segment:      1.175444 
 
 ## Final Score
-Final Score: 11.73556 
+Final Score: 13.22717 
 ', '\n```'))
 ```

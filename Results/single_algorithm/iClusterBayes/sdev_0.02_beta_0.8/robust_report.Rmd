@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.5138889 
+Median Z.ar:        0.5094444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04888889 
-Score segment:      1.015 
+Median Gamma.ar:    0.3777778 
+Score segment:      1.185222 
 
 --- K = 2 ---
-Median Z.ar:        0.2744444 
+Median Z.ar:        0.2355556 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.275556 
+Score segment:      1.533556 
 
 --- K = 3 ---
-Median Z.ar:        0.115 
+Median Z.ar:        0.08611111 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.435 
+Score segment:      1.679889 
 
 --- K = 4 ---
-Median Z.ar:        0.1077778 
+Median Z.ar:        0.05722222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.442222 
+Score segment:      1.708778 
 
 --- K = 5 ---
-Median Z.ar:        0.06333333 
+Median Z.ar:        0.05333333 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.9916667 
-Score segment:      1.478333 
+Median Gamma.ar:    1 
+Score segment:      1.712667 
 
 --- K = 6 ---
-Median Z.ar:        0.07611111 
+Median Z.ar:        0.05888889 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.7638889 
-Score segment:      1.237778 
+Median Gamma.ar:    0.8611111 
+Score segment:      1.568222 
 
 --- K = 7 ---
-Median Z.ar:        0.285 
+Median Z.ar:        0.05555556 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.2505556 
-Score segment:      0.9144444 
+Median Gamma.ar:    0.7666667 
+Score segment:      1.477111 
 
 --- K = 8 ---
-Median Z.ar:        0.06166667 
+Median Z.ar:        0.055 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.5594444 
-Score segment:      1.047778 
+Median Gamma.ar:    0.6416667 
+Score segment:      1.352667 
 
 --- K = 9 ---
-Median Z.ar:        0.4405556 
+Median Z.ar:        0.09722222 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.08555556 
-Score segment:      0.9238889 
+Median Gamma.ar:    0.3716667 
+Score segment:      1.040444 
 
 ## Final Score
-Final Score: 10.77 
+Final Score: 13.25856 
 ', '\n```'))
 ```

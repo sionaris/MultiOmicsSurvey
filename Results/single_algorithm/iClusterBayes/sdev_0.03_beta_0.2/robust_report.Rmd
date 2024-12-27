@@ -15,60 +15,60 @@ cat(paste0('```\n', '
 ## Per-K Metrics
 
 --- K = 1 ---
-Median Z.ar:        0.3872222 
+Median Z.ar:        0.3838889 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.04888889 
-Score segment:      1.013889 
+Median Gamma.ar:    0.3788889 
+Score segment:      1.060778 
 
 --- K = 2 ---
-Median Z.ar:        0.2183333 
+Median Z.ar:        0.1322222 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.331667 
+Score segment:      1.633778 
 
 --- K = 3 ---
-Median Z.ar:        0.05222222 
+Median Z.ar:        0.055 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.497778 
+Score segment:      1.711 
 
 --- K = 4 ---
-Median Z.ar:        0.025 
+Median Z.ar:        0.03166667 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.525 
+Score segment:      1.734333 
 
 --- K = 5 ---
+Median Z.ar:        0.03222222 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.733778 
+
+--- K = 6 ---
+Median Z.ar:        0.02055556 
+Median Beta.ar:     1 
+Median Gamma.ar:    1 
+Score segment:      1.745444 
+
+--- K = 7 ---
 Median Z.ar:        0.01333333 
 Median Beta.ar:     1 
 Median Gamma.ar:    1 
-Score segment:      1.536667 
-
---- K = 6 ---
-Median Z.ar:        0.01666667 
-Median Beta.ar:     1 
-Median Gamma.ar:    1 
-Score segment:      1.533333 
-
---- K = 7 ---
-Median Z.ar:        0.01 
-Median Beta.ar:     1 
-Median Gamma.ar:    1 
-Score segment:      1.54 
+Score segment:      1.752667 
 
 --- K = 8 ---
-Median Z.ar:        0.03388889 
-Median Beta.ar:     1 
-Median Gamma.ar:    0.6244444 
-Score segment:      1.140556 
-
---- K = 9 ---
 Median Z.ar:        0.03944444 
 Median Beta.ar:     1 
-Median Gamma.ar:    0.2694444 
-Score segment:      1.141111 
+Median Gamma.ar:    0.3394444 
+Score segment:      1.066 
+
+--- K = 9 ---
+Median Z.ar:        0.02388889 
+Median Beta.ar:     1 
+Median Gamma.ar:    0.6133333 
+Score segment:      1.355444 
 
 ## Final Score
-Final Score: 12.26 
+Final Score: 13.79322 
 ', '\n```'))
 ```
