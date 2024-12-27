@@ -295,7 +295,7 @@ In MOVICS, the `r params$algorithm` algorithm is run by default with $r = 2$.
     </ul>
   </li>
   <li>LRAcluster3 has <b>higher predicted resistance to sorafenib</b>. All LRAclusters seem sensitive to paclitaxel. LRAcluster1/3 exhibit <b>higher predicted resistance to lapatinib</b> and <b>higher sensitivity to doxorubicin, cisplatin and fluouracil</b>.</li>
-  <li>Overall, LRAcluster subtypes exhibit genrally high agreement scores with other classification systems as seen in the **Subtype Agreement plot**.</li>
+  <li>Overall, LRAcluster subtypes exhibit generally high agreement scores with other classification systems as seen in the **Subtype Agreement plot**.</li>
   <li>Predicted LRAcluster subtypes on the transNEO cohort are associated with lymph node status at diagnosis, ER status, tumor grade, <b>pCR</b> (see table below), PAM50, iC10, RCB score, STAT1.gsva score, GGI.gsva score, ESC.gsva score, TMB and HRD.sum. </li>
 </ol>
 
