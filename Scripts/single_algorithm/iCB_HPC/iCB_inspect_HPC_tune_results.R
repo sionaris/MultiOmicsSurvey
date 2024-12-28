@@ -491,3 +491,6 @@ penalized_summary_ordered <- penalized_summary[order(penalized_summary$penalized
 
 # Display the ordered summary
 print(penalized_summary_ordered)
+
+# Best score is for sdev = 0.015 and beta.var.scale = 0.5
+# all beta acceptance rates are 1, however
