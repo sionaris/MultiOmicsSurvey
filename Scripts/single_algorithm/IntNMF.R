@@ -100,14 +100,16 @@ clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 # We can tune a few things in the optimal k determination
 # We fix k.range to (2:10) and n.fold to 10
 # wt (dataset weight) remains 1 for each dataset (default)
-tuning_grid = expand.grid(n.runs = c(30, 50, 75, 100),
-                          maxiter = c(50, 100, 200, 500, 1000))
+
+# Instead of using lower numbers of runs and values for maxiter
+# we set them to high values and run them at the HPC cluster
+# using parallelization
 
 # Transform input to non-negative format by making the lowest value in each matrix 0 + Machine double epsilon
 transform_non_negative <- function(input) {
   transformed_input <- lapply(input, function(matrix) {
     # Ensure non-negativity: Add the absolute value of the lowest negative value in the matrix
-    if (!all(matrix >= 0)) {
+    if (!all(matrix > 0)) {
       matrix <- pmax(matrix + abs(min(matrix)), 0) + .Machine$double.eps
     }
     return(matrix)
@@ -117,12 +119,20 @@ transform_non_negative <- function(input) {
 
 # Apply the transformation to your list of matrices "input"
 input_nn <- transform_non_negative(input)
+saveRDS(input_nn, "Resources/IntNMF_input.rds")
+
+# We run the Scripts/single_algorithm/IntNMF_HPC/IntNMF_HPC_script.R
+# with Scripts/single_algorithm/IntNMF_HPC/IntNMF_HPC_script.sh at the HPC
+# and use the results below
+
+
+################################################################################
 
 library(doParallel)
 library(foreach)
 
 # Setup parallelization
-n.cores <- 5
+n.cores <- 10
 cl <- makeCluster(n.cores)
 registerDoParallel(cl)
 
@@ -133,6 +143,9 @@ if (foreach::getDoParRegistered()) {
   stop("Failed to register parallel backend.")
 }
 
+optk_run = nmf.opt.k(dat = input_nn,
+                     n.runs = 200,
+                     n.fold = )
 # Run the integrative NMF function for each combination in the tuning grid
 IntNMF_optk_list <- list()
 for (i in 1:nrow(tuning_grid)) {
