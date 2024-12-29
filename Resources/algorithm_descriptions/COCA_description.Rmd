@@ -1,0 +1,60 @@
+<u>**In detail**:</u>
+
+1. If not specified, the number of clusters is determined for each matrix based on silhouette analysis, up to `maxK`.
+
+2. **Clustering Process**:  
+   For each matrix \(X_i\) in the list of \(\{X_1, \ldots X_m\}\) input matrices, the clustering is performed as follows:
+
+   - Euclidean distances are calculated:
+     $$D_{ij} = \sqrt{\sum (x_{ik} - x_{jk})^2}$$
+     
+     where \(x_{ik}\) and \(x_{jk}\) are the feature values for samples \(i\) and \(j\) in matrix \(X_i\).
+
+   - Hierarchical clustering is applied:
+     - The hierarchical clustering tree is constructed using the <u>complete linkage method</u>, where the distance between two clusters is the maximum distance between their elements:
+       $$
+       d(S,T) = \max_{s \in S, t \in T} d(s,t)
+       $$
+       where \(S\) and \(T\) are clusters.
+
+   - Determine cluster assignments by cutting the dendrogram at a level that results in \(K\) clusters:
+     $$
+     \text{labels} = \text{cutree}(\text{hClust}, K)
+     $$
+     where `hClust` is the result from `hclust(D, method = "complete")`.
+
+3. **Matrix of Clusters (MoC) Construction**:  
+   - Each matrix's cluster assignments are used to build part of the MoC, indicating which samples belong to which cluster across different matrices.  
+   - <u>Rows:</u> The MoC has as many rows as there are samples across all datasets. It assumes that all datasets are aligned by their samples, meaning each row corresponds to a specific sample across all datasets.  
+   - <u>Columns:</u> The total number of columns in the MoC equals the sum of the optimal number of clusters \(K\) determined for each dataset. Thus, each dataset contributes a varying number of columns based on its individual optimal \(K\).
+
+4. **Integration of Results**:  
+   - The outputs, including the MoC and cluster labels, are compiled and returned.
+
+5. **Silhouette Analysis** (if \(K\) is not provided):  
+   Use the <u>silhouette score</u> to determine the optimal number of clusters, which measures how similar an object is to its own cluster compared to other clusters:
+   $$
+   s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))}
+   $$
+   where \(a(i)\) is the average dissimilarity of \(i\) with all other points within the same cluster, and \(b(i)\) is the minimum average dissimilarity of \(i\) to any other cluster.
+
+6. **Final Clustering**:  
+   - The MoC is converted into a distance matrix using a modified Jaccard method.  
+     - First, the Bray-Curtis dissimilarity is calculated:
+       $$
+       B_{jk} = \frac{\sum_{i=1}^p |x_{ji} - x_{ki}|}{\sum_{i=1}^p (x_{ji} + x_{ki})}
+       $$
+       where \(j,k\) are two samples and \(p\) is the number of features.
+     - Then, a modified Jaccard index based on Bray-Curtis dissimilarity is calculated:
+       $$
+       J_{jk} = \frac{2B_{jk}}{1 + B_{jk}}
+       $$
+       The result is a "distance" matrix representing the dissimilarity between each pair of samples based on their cluster memberships across all datasets.
+
+   - The distance matrix is used as the input for hierarchical clustering, employing Ward's method, which minimizes the total within-cluster variance. At each step, it merges the pair of clusters that leads to the smallest increase in total within-cluster variance:
+     $$
+     \Delta (\text{Error sum of squares}) = \frac{|T| \times |S|}{|T| + |S|} \times ||\bar{x}_T - \bar{x}_S||
+     $$
+     where \(|T|\) and \(|S|\) are the sizes of clusters \(T\) and \(S\), and \(\bar{x}_T\) and \(\bar{x}_S\) are their respective centroids.
+
+   - Finally, the dendrogram is cut to produce `Nclust` clusters.
