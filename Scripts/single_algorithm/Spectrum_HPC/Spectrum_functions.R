@@ -48,7 +48,30 @@ Spectrum_bin_and_par <- function (
   }
   
   # Validate that all distance types are supported
-  supported_distances <- c("euclidean", "manhattan", "binary", "canberra", "maximum", "minkowski")
+  supported_distances <- c(
+    "euclidean",
+    "manhattan",
+    "minimum",
+    "maximum",
+    "minkowski",
+    "bhattacharyya",
+    "hellinger",
+    "kullback_leibler",
+    "jensen_shannon",
+    "haversine",
+    "canberra",
+    "chi_square",
+    "soergel",
+    "sorensen",
+    "cosine",
+    "wave_hedges",
+    "motyka",
+    "harmonic_mean",
+    "jeffries_matusita",
+    "gower",
+    "kulczynski",
+    "itakura_saito"
+  )
   if (!all(distances %in% supported_distances)) {
     stop(paste("Error: Unsupported distance type detected. Supported distances are:", 
                paste(supported_distances, collapse = ", ")))
@@ -478,7 +501,30 @@ Spectrum_bin_and_par <- function (
 CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean") 
 {
   # Validate distance parameter
-  supported_distances <- c("euclidean", "manhattan", "binary", "canberra", "maximum", "minkowski")
+  supported_distances <- c(
+    "euclidean",
+    "manhattan",
+    "minimum",
+    "maximum",
+    "minkowski",
+    "bhattacharyya",
+    "hellinger",
+    "kullback_leibler",
+    "jensen_shannon",
+    "haversine",
+    "canberra",
+    "chi_square",
+    "soergel",
+    "sorensen",
+    "cosine",
+    "wave_hedges",
+    "motyka",
+    "harmonic_mean",
+    "jeffries_matusita",
+    "gower",
+    "kulczynski",
+    "itakura_saito"
+  )
   if (!(distance %in% supported_distances)) {
     stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
                paste(supported_distances, collapse = ", ")))
@@ -524,7 +570,30 @@ kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
                                 showres = TRUE, dotsize = 2, distance = "euclidean") 
 {
   # Validate distance parameter
-  supported_distances <- c("euclidean", "manhattan", "binary", "canberra", "maximum", "minkowski")
+  supported_distances <- c(
+    "euclidean",
+    "manhattan",
+    "minimum",
+    "maximum",
+    "minkowski",
+    "bhattacharyya",
+    "hellinger",
+    "kullback_leibler",
+    "jensen_shannon",
+    "haversine",
+    "canberra",
+    "chi_square",
+    "soergel",
+    "sorensen",
+    "cosine",
+    "wave_hedges",
+    "motyka",
+    "harmonic_mean",
+    "jeffries_matusita",
+    "gower",
+    "kulczynski",
+    "itakura_saito"
+  )
   if (!(distance %in% supported_distances)) {
     stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
                paste(supported_distances, collapse = ", ")))
@@ -597,7 +666,30 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
                                  showres = TRUE, dotsize = 2, distance = "euclidean") 
 {
   # Validate distance parameter
-  supported_distances <- c("euclidean", "manhattan", "binary", "canberra", "maximum", "minkowski")
+  supported_distances <- c(
+    "euclidean",
+    "manhattan",
+    "minimum",
+    "maximum",
+    "minkowski",
+    "bhattacharyya",
+    "hellinger",
+    "kullback_leibler",
+    "jensen_shannon",
+    "haversine",
+    "canberra",
+    "chi_square",
+    "soergel",
+    "sorensen",
+    "cosine",
+    "wave_hedges",
+    "motyka",
+    "harmonic_mean",
+    "jeffries_matusita",
+    "gower",
+    "kulczynski",
+    "itakura_saito"
+  )
   if (!(distance %in% supported_distances)) {
     stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
                paste(supported_distances, collapse = ", ")))
@@ -681,7 +773,31 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
 rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean") 
 {
   # Validate distance parameter
-  supported_distances <- c("euclidean", "manhattan", "binary", "canberra", "maximum", "minkowski")
+  supported_distances <- c(
+    "euclidean",
+    "manhattan",
+    "minimum",
+    "maximum",
+    "minkowski",
+    "bhattacharyya",
+    "hellinger",
+    "kullback_leibler",
+    "jensen_shannon",
+    "haversine",
+    "canberra",
+    "chi_square",
+    "soergel",
+    "sorensen",
+    "cosine",
+    "wave_hedges",
+    "motyka",
+    "harmonic_mean",
+    "jeffries_matusita",
+    "gower",
+    "kulczynski",
+    "itakura_saito"
+  )
+  
   if (!(distance %in% supported_distances)) {
     stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
                paste(supported_distances, collapse = ", ")))
