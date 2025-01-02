@@ -194,7 +194,7 @@ Spectrum_bin_and_par <- function (
                             # Compute the CNN kernel based on the specified distance
                             kerneli <- CNN_kernel_mod(
                               datalist[[platform]], 
-                              K = NN, 
+                              NN = NN, 
                               NN2 = NN2, 
                               distance = current_distance  # Passing the specified distance
                             )
