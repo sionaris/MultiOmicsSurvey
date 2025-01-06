@@ -1767,55 +1767,53 @@ nmf.opt.k.integrative <- function(dat, is.binary, n.runs = 30, n.fold = 5, k.ran
 }
 
 # Modified clusternomics function to avoid errors #####
-contextCluster_mod = function (datasets, clusterCounts, dataDistributions = "diagNormal", 
-                               prior = NULL, maxIter = 1000, burnin = NULL, lag = 3, verbose = FALSE) 
-{
+# Adapted from MONET's official repository:
+# https://github.com/Shamir-Lab/MONET/blob/master/R_code/monet_exp.R
+run.clusternomics <- function(omics.list, num.clusters=NULL, 
+                              num.clusters.per.omic=NULL, dataDistributions = NULL,
+                              ncores = NULL) {
   library(clusternomics)
-  library(plyr)
-  library(dplyr)
-  nDataPoints <- dim(datasets[[1]])[1]
-  nContexts <- length(datasets)
-  if (nContexts != length(clusterCounts$context)) 
-    stop("Number of datasets is different from number of contexts.")
-  if (sum(plyr::laply(datasets, function(dt) nrow(dt) == nDataPoints)) != 
-      nContexts) {
-    stop("Number of data points is different in individual contexts.")
+  if (is.null(num.clusters)) {
+    stop("Provide a valid non-NULL/NA num.clusters value!")
   }
-  if (verbose) 
-    message("Running initialisation")
-  if (length(dataDistributions) == 1) {
-    fullDataDistributions <- rep(dataDistributions, nContexts)
+  if (is.null(num.clusters.per.omic)) {
+    stop("Provide a valid non-NULL/NA num.clusters.per.omic value! It must be a list of two vectors.")
   }
-  else {
-    fullDataDistributions <- dataDistributions
+  if(is.null(ncores)) {
+    stop("ncores must be a numeric value.")
   }
-  if (is.null(burnin)) {
-    burnin <- maxIter/2
+  if (is.null(dataDistributions)) {
+    stop("Provide a valid non-NULL/NA value for dataDistributions.")
+  } else if (!is.null(dataDistributions) && length(dataDistributions) != length(omics.list)) {
+    stop("length(omics.list) == length(dataDistributions) is essential.")
   }
-  if (is.null(prior)) {
-    prior <- empiricalBayesPrior(datasets, fullDataDistributions)
-  }
-  state <- clusternomics:::createGibbsState(datasets, clusterCounts, fullDataDistributions)
-  dataStats <- clusternomics:::createDataStats(datasets, prior, fullDataDistributions)
-  logliks <- rep(0, maxIter)
-  assignSamples <- vector("list", length = maxIter)
-  for (iter in 1:maxIter) {
-    if (((iter%%10) == 0) && verbose) {
-      message(paste("iter ", iter))
+  all.param.options = expand.grid(1:length(num.clusters), 1:length(num.clusters.per.omic))
+  all.rets = mclapply(1:nrow(all.param.options), function(i) {
+    set.seed(123 + i)
+    cur.num.clusters = num.clusters[all.param.options[i, 1]]
+    cur.num.clusters.per.omic = num.clusters.per.omic[[all.param.options[i, 2]]]
+    start = Sys.time()
+    if (length(cur.num.clusters.per.omic) == 1) {
+      num.clusters.per.omic = rep(num.clusters.per.omic, length(omics.list))
     }
-    state <- state %>% clusternomics:::gibbsSampleZ(dataStats, prior, clusterCounts) %>% 
-      clusternomics:::gibbsSampleContextK(prior, clusterCounts)
-    logliks[iter] <- clusternomics:::logJoint(state, prior, clusterCounts)
-    assignSamples[[iter]]$dataAssignments <- state$Z
-    assignSamples[[iter]]$contextAssignments <- state$contextK
-  }
-  thinned_logliks <- clusternomics:::getMCMCSamples(logliks, burnin, lag)
-  thinned_samples <- clusternomics:::getMCMCSamples(assignSamples, burnin, 
-                                    lag)
-  DIC <- clusternomics:::computeDIC(thinned_logliks, thinned_samples, nDataPoints, 
-                    state$distributions, clusterCounts, prior, datasets)
-  assignments <- thinned_samples %>% llply(getClustersAssignments)
-  return(list(samples = assignments, logliks = logliks, DIC = DIC))
+    cluster.counts = list(global=cur.num.clusters, context=cur.num.clusters.per.omic)
+    
+    # Hack due to a false assertion in clusternomics package
+    if (length(omics.list) > 2) {
+      cluster.counts = c(cluster.counts, rep('UNUSED', length(omics.list) - 2))
+    }
+    # parameters are as used in the clusternomics publication.
+    results = contextCluster(omics.list.trans, cluster.counts, maxIter=1e4, 
+                             burnin=5e3, lag=3, dataDistributions=dataDistributions, verbose=T)
+    cur.clustering = results$samples[[length(results$samples)]]$Global
+    dic = results$DIC
+    time.taken.per.param = as.numeric(Sys.time() - start, units='secs')
+    return(list(clustering=cur.clustering, dic=dic, timing=time.taken.per.param, clusternomics.ret=results))
+  }, mc.cores=ncores)
+  
+  best.sol.index = which.min(sapply(all.rets, function(x) x$dic))
+  wall.timing = max(sapply(all.rets, function(x) x$timing)) + time.taken.normalization
+  return(list(clustering=all.rets[[best.sol.index]]$clustering, timing=wall.timing, all.rets=all.rets))
 }
 
 # Spectrum functions #####
