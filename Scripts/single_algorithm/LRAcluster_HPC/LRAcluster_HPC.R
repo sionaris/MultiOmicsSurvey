@@ -33,5 +33,4 @@ timestamp()
 
 # Name the results by the dimension for clarity
 names(results_list) <- paste0("dim_", dimensions_to_try)
-
 saveRDS(results_list, paste0(getwd(), "/LRAcluster_results_list.rds"))

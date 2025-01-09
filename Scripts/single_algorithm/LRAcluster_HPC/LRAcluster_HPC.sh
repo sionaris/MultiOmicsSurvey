@@ -11,11 +11,11 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=as3582@cam.ac.uk
 
-# Load R module
-module load r-4.0.2-gcc-5.4.0-xyx46xb
-
 # Set working directory
 cd $HOME/MO_survey/LRAcluster
+
+# Load R module
+module load r-4.0.2-gcc-5.4.0-xyx46xb
 
 # Set R_LIBS_USER to install packages in your home directory
 export R_LIBS_USER=$HOME/MO_survey/R/library
