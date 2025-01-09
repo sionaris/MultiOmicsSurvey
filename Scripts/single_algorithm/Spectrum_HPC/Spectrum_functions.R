@@ -299,12 +299,12 @@ Spectrum_bin_and_par <- function (
       message("Examining eigenvector distributions to select K...")
     }
     xi <- decomp$vectors[, 1:(maxk + 1)]
-    res <- EM_finder(xi, silent = silent)
+    res <- Spectrum:::EM_finder(xi, silent = silent)
     d <- data.frame(K = seq_len(maxk + 1), Z = res[1:(maxk + 1), 2])
     if (showres == TRUE) {
-      plot_multigap(d, maxk = maxk, dotsize = dotsize, fontsize = fontsize)
+     Spectrum:::plot_multigap(d, maxk = maxk, dotsize = dotsize, fontsize = fontsize)
     }
-    optk <- findk(res, maxk = maxk, frac = frac, thresh = thresh)
+    optk <- Spectrum:::findk(res, maxk = maxk, frac = frac, thresh = thresh)
     if (silent == FALSE) {
       message(paste("Optimal K:", optk))
     }
@@ -336,13 +336,13 @@ Spectrum_bin_and_par <- function (
                          
                          if (clusteralg == "GMM") {
                            # Assuming Spectrum has GMM and predict_GMM functions
-                           gmm <- Spectrum::GMM(
+                           gmm <- ClusterR:::GMM(
                              yi, 
                              tk, 
                              verbose = FALSE, 
                              seed_mode = "random_spread"
                            )
-                           pr <- Spectrum::predict_GMM(
+                           pr <- ClusterR::predict_GMM(
                              yi, 
                              gmm$centroids, 
                              gmm$covariance_matrices, 
@@ -402,14 +402,14 @@ Spectrum_bin_and_par <- function (
       if (silent == FALSE) {
         message("Performing GMM clustering...")
       }
-      # Assuming Spectrum has GMM and predict_GMM functions
-      gmm <- Spectrum::GMM(
+      
+      gmm <-ClusterR::GMM(
         yi, 
         optk, 
         verbose = FALSE, 
         seed_mode = "random_spread"
       )
-      pr <- Spectrum::predict_GMM(
+      pr <- ClusterR::predict_GMM(
         yi, 
         gmm$centroids, 
         gmm$covariance_matrices, 
@@ -841,3 +841,4 @@ rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
   
   return(out)
 }
+

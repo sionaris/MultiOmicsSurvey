@@ -14,6 +14,8 @@
 /Resources/LRAcluster_input.rds
 /Resources/clusternomics_input.rds
 /Resources/Spectrum_input.rds
+/Resources/KLIC_input.rds
+/Resources/KLIC_distances.rds
 /Resources/Python
 /Python/MONET/.git
 /Python/MONET/build
