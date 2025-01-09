@@ -2544,3 +2544,111 @@ rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
   
   return(out)
 }
+
+# KLIC modification of coca::consensusCluster() #####
+coca_cc_mod = function (data = NULL, K = 2, B = 100, pItem = 0.8, clMethod = "hclust", 
+                        dist = "euclidean", hclustMethod = "average", sparseKmeansPenalty = NULL, 
+                        maxIterKM = 1000) 
+{
+  library(coca)
+  containsFactors <- 0
+  if (!is.null(data)) {
+    N <- dim(data)[1]
+    P <- dim(data)[2]
+    for (i in seq_len(P)) {
+      containsFactors <- as.numeric(is.factor(data[, i])) + 
+        containsFactors
+    }
+  }
+  else if (is.double(dist)) {
+    N <- dim(dist)[1]
+  }
+  else {
+    stop("If the data matrix is not provided, `dist` must be a symmetric\n        matrix of type double providing the distances between each pair of\n        observations.")
+  }
+  dataIndices <- seq_len(N)
+  coClusteringMatrix <- indicatorMatrix <- matrix(0, N, N)
+  for (b in seq_len(B)) {
+    items <- sample(N, ceiling(N * pItem), replace = FALSE)
+    nUniqueDataPoints <- 0
+    if (!is.null(data)) {
+      uniqueData <- unique(data[items, ])
+      nUniqueDataPoints <- nrow(uniqueData)
+    }
+    if (nUniqueDataPoints > K | is.null(data)) {
+      if (clMethod == "pam" | containsFactors) {
+        if (is.double(dist) & isSymmetric(dist)) {
+          distances <- stats::as.dist(dist[items, items])
+        }
+        else if (dist == "cor") {
+          distances <- stats::as.dist(1 - stats::cor(t(data[items, 
+          ])))
+        }
+        else if (dist == "binary") {
+          distances <- stats::dist(data[items, ], method = dist)
+        }
+        else if (dist == "gower") {
+          distances <- cluster::daisy(data[items, ], 
+                                      metric = "gower")
+        }
+        else {
+          stop("Distance not recognized. If method is `pam`, distance\n                must be one of `cor`, `binary`, `gower` or the symmetric\n                matrix of distances.")
+        }
+        cl <- cluster::pam(distances, K)$clustering
+      }
+      else if (clMethod == "kmeans" & !is.null(data)) {
+        cl <- stats::kmeans(data[items, ], K, iter.max = maxIterKM, 
+                            nstart = 20)$cluster
+      }
+      else if (clMethod == "sparse-kmeans" & !is.null(data)) {
+        if (is.null(sparseKmeansPenalty)) 
+          sparseKmeansPenalty = sqrt(P)
+        cat("sparseKmeansPenalty", sparseKmeansPenalty, 
+            "\n")
+        cl <- sparcl::KMeansSparseCluster(data[items, 
+        ], K, wbounds = sparseKmeansPenalty)[[1]]$Cs
+      }
+      else if (clMethod == "hclust" | clMethod == "sparse-hclust") {
+        if (is.double(dist)) {
+          distances <- stats::as.dist(dist[items, items])
+        }
+        else if (dist == "pearson" | dist == "spearman") {
+          pearsonCor <- stats::cor(t(data[items, ]), 
+                                   method = dist)
+          distances <- stats::as.dist(1 - pearsonCor)
+        }
+        else {
+          distances <- stats::dist(data[items, ], method = dist)
+        }
+        if (clMethod == "hclust") {
+          hClustering <- stats::hclust(distances, method = hclustMethod)
+        }
+        else {
+          hClustering <- sparcl::HierarchicalSparseCluster(dists = as.matrix(distances), 
+                                                           method = "average", wbound = 10)$hc
+        }
+        cl <- stats::cutree(hClustering, K)
+      }
+      else {
+        stop("Clustering algorithm name not recognised. Please choose\n                     one of `kmeans`, `hclust`, `pam`, `sparse-kmeans`,\n                     `sparse-hclust`.")
+      }
+      indicatorMatrix <- indicatorMatrix + crossprod(t(as.numeric(dataIndices %in% 
+                                                                    items)))
+      for (k in seq_len(K)) {
+        coClusteringMatrix[items, items] <- coClusteringMatrix[items, 
+                                                               items] + crossprod(t(as.numeric(cl == k)))
+      }
+    }
+  }
+  if (!sum(indicatorMatrix) == 0) {
+    consensusMatrix <- coClusteringMatrix/indicatorMatrix
+  }
+  else {
+    consensusMatrix <- indicatorMatrix
+    warning(paste("Consensus matrix is empty for K =", K, 
+                  "because there are\n                      less than", 
+                  K, "distinct data points", sep = ""))
+  }
+  return(consensusMatrix)
+}
+
