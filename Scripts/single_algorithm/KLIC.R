@@ -146,7 +146,7 @@ gc()
 saveRDS(input_dists, "Resources/KLIC_distances.rds")
 
 # Hyperparameters and tuning ###
-maxK = 10
+maxK = 5 # max individual modality k
 B = 250
 pItem = 0.8
 
@@ -176,17 +176,20 @@ for (k in 2:maxK) {
   }
   allCM[[paste0("k = ", k)]] = CM
 }
-timestamp() # ~3 min
+timestamp() # ~1 min
 gc()
 
 # Determine best global k using lmmkmeans
 library(cluster)
+library(foreach)
+library(doParallel)
+library(doRNG)       # for reproducible parallel loops
 
-kRange    <- 2:10 # local
-globalK   <- 2:10 # global
+kRange    <- 2:5 # range of individual omic clusters
+globalK   <- 2:10 # range of global clusters
+nSamples  <- dim(allCM[[1]])[1] # 625
+nDatasets <- dim(allCM[[1]])[3] # 5
 
-# Create all combinations of per-dataset k
-# For M=5, this is {2..10}^5 = 59,049 combos
 kCombos <- expand.grid(
   k1 = kRange,
   k2 = kRange,
@@ -194,173 +197,106 @@ kCombos <- expand.grid(
   k4 = kRange,
   k5 = kRange
 )
+cat("Total combos of (k1..k5):", nrow(kCombos), "\n") # 1024
 
-# Set up local kernel k-means parameters
-km_parameters <- list()
-km_parameters$iteration_count <- 100  # max iterations
-
-bestSil        <- -Inf
-bestCombo      <- NULL  # will store the (k1, k2, ..., k5)
-bestGlobalK    <- NULL
-bestClustering <- NULL
-
-# Main loop over combos
-for (comboIdx in seq_len(nrow(kCombos))) {
-  kvals <- as.numeric(kCombos[comboIdx, ])  # e.g. c(k1, k2, k3, k4, k5)
-  
-  # Build a 3D array of dimension (nSamples x nSamples x nDatasets)
-  # by picking the co-clustering matrix for dataset i from allCM[[k_i - 1]]
-  CMcombo <- array(0, dim = c(nSamples, nSamples, nDatasets))
-  for (i in seq_len(nDatasets)) {
-    # k_i is kvals[i]
-    # allCM[[1]] => k=2, allCM[[2]] => k=3, so the index in allCM is (k_i - 1).
-    CMcombo[, , i] <- allCM[[kvals[i] - 1]][, , i]
-  }
-  
-  # Now try each global k in 2..10
-  for (gk in globalK) {
-    km_parameters$cluster_count <- gk
-    
-    # Run local kernel k-means
-    res <- klic::lmkkmeans(CMcombo, km_parameters)
-    
-    # Weighted kernel: WKM = sum_{dataset j} (Theta[, j] %*% t(Theta[, j])) * CMcombo[,, j]
-    WKM <- matrix(0, nrow = nSamples, ncol = nSamples)
-    for (j in seq_len(nDatasets)) {
-      WKM <- WKM + (res$Theta[, j] %*% t(res$Theta[, j])) * CMcombo[,, j]
-    }
-    
-    # Compute silhouette => we must convert WKM (similarities) to a dist/dissimilarity
-    #  Simple approach: dissimilarity = 1 - similarity (since WKM in [0,1]).
-    diss_mat <- 1 - WKM
-    dd <- as.dist(diss_mat)
-    
-    sil_obj <- cluster::silhouette(res$clustering, dd)
-    avgSil  <- summary(sil_obj)$avg.width
-    
-    # Check if this is the best silhouette so far
-    if (avgSil > bestSil) {
-      bestSil        <- avgSil
-      bestCombo      <- kvals      # (k1, k2, k3, k4, k5)
-      bestGlobalK    <- gk
-      bestClustering <- res$clustering
-    }
-  }
-  cat("Done for ", comboIdx)
-}
-
-# Inspect results
-bestSil
-#> e.g. 0.55 ...
-bestCombo
-#> e.g. c(2, 2, 4, 10, 9)
-bestGlobalK
-#> e.g. 4
-#> 
-#> 
-
-
-# Parallel version
-library(foreach)
-library(doParallel)
-library(doRNG)       # for reproducible parallel loops
-
-# Suppose you have:
-# 1. 'allCM' = list of length 9 => co-clustering mats for k=2..10
-# 2. 'kCombos' = expand.grid(...) => all combos of per-dataset k
-# 3. 'nSamples' = number of samples (e.g., 625)
-# 4. 'nDatasets' = 5 (for 5 omics)
-# 5. 'globalK' = 2:10
-
-# Prepare a cluster of 9 cores (match 'globalK' length or as you wish)
-nCores <- 9
-cl <- makeCluster(nCores)
-registerDoParallel(cl)
-
-# Optionally fix a seed for reproducibility in parallel:
-registerDoRNG(seed = 123)
-
-# Local kernel k-means parameters
+# Set local kernel k-means parameters
 km_parameters <- list()
 km_parameters$iteration_count <- 100
 
 bestSil        <- -Inf
-bestCombo      <- NULL  # will store the best (k1, k2, ..., k5)
+bestCombo      <- NULL
 bestGlobalK    <- NULL
 bestClustering <- NULL
 
-# Main loop over combos
+# Loop over each per-dataset k combination
+timestamp()
 for (comboIdx in seq_len(nrow(kCombos))) {
-  kvals <- as.numeric(kCombos[comboIdx, ])  # e.g. c(k1, k2, k3, k4, k5)
+  kvals <- as.numeric(kCombos[comboIdx, ])
   
-  # 1) Build a 3D array (nSamples x nSamples x nDatasets)
-  #    by picking the co-clustering matrices from allCM
-  #    allCM[[1]] => k=2, allCM[[2]] => k=3, ...
-  CMcombo <- array(NA, dim = c(nSamples, nSamples, nDatasets))
+  # Build the 3D array (nSamples x nSamples x nDatasets) 
+  # by extracting from 'allCM' for each dataset i
+  CMcombo <- array(0, dim = c(nSamples, nSamples, nDatasets))
   for (i in seq_len(nDatasets)) {
-    # k_i in {2..10}, index in allCM is (k_i - 2 + 1) => (k_i - 1)
-    CMcombo[, , i] <- allCM[[kvals[i] - 1]][, , i]
+    # If k_i = 2 => index in allCM is (2 - 2 + 1) = 1, if k_i = 3 => 2, etc.
+    idxInAllCM <- kvals[i] - 2 + 1
+    CMcombo[, , i] <- allCM[[idxInAllCM]][, , i]
   }
   
-  # 2) Parallelize the loop over globalK
-  #    We gather results in a data.frame or matrix
-  #    using .combine='rbind' so we can pick the best silhouette
-  results_gk <- foreach(gk = globalK, 
-                        .combine = rbind,        # row-bind results
+  cl <- makeCluster(9)
+  registerDoParallel(cl)
+  
+  # Ensure reproducibility across workers:
+  registerDoRNG(seed = 123)
+  
+  # Parallelize the inner loop over global K
+  results_gk <- foreach(gk = globalK,
+                        .combine = rbind,
                         .packages = c("klic","cluster")) %dopar% {
+                          # Copy the parameters locally
                           local_params <- km_parameters
                           local_params$cluster_count <- gk
                           
-                          # 2a) Run local kernel k-means
+                          # Run local kernel k-means
                           res <- klic::lmkkmeans(CMcombo, local_params)
                           
-                          # 2b) Weighted kernel: sum_{j} (Theta[, j] %*% t(Theta[, j])) * CMcombo[,, j]
+                          # Weighted kernel
                           WKM <- matrix(0, nrow = nSamples, ncol = nSamples)
                           for (j in seq_len(nDatasets)) {
                             WKM <- WKM + (res$Theta[, j] %*% t(res$Theta[, j])) * CMcombo[,, j]
                           }
                           
-                          # 2c) Silhouette => transform WKM => dissimilarity
-                          #     If WKM is 0..1, do 1 - WKM
+                          # Convert to dissimilarity => (1 - similarity)
                           diss_mat <- 1 - WKM
-                          dd       <- as.dist(diss_mat)
+                          dd <- as.dist(diss_mat)
                           
+                          # Silhouette
                           sil_obj <- silhouette(res$clustering, dd)
                           avgSil  <- summary(sil_obj)$avg.width
                           
-                          # Return info: [gk, silhouette, plus if needed the cluster labels, etc.]
-                          # We only do numeric columns in .combine='rbind'; store cluster as NA or skip
-                          c(global_k = gk, avgSil = avgSil)
+                          # Return numeric row: (globalK, silhouette)
+                          c(gkVal = gk, silhouette = avgSil)
                         }
   
-  # 3) among the 9 globalK's tested, find which yields the best silhouette
-  bestIndex   <- which.max(results_gk[,"avgSil"])
-  gk_best     <- results_gk[bestIndex, "global_k"]
-  localBestSil <- results_gk[bestIndex, "avgSil"]
+  stopCluster(cl)
   
-  # If that best is better than our overall best, re-run to store final labels
+  # Among the 9 tested globalK's, find which yields best silhouette
+  bestLocalIdx <- which.max(results_gk[, "silhouette"])
+  localBestSil <- results_gk[bestLocalIdx, "silhouette"]
+  bestLocalGk  <- results_gk[bestLocalIdx, "gkVal"]
+  
+  # Update global best if improved
   if (localBestSil > bestSil) {
-    # Re-run local kernel k-means once more *in serial* or keep it from above
-    # to store the final clustering. We'll do a quick re-run:
-    km_parameters$cluster_count <- gk_best
+    # Re-run to store cluster labels
+    km_parameters$cluster_count <- bestLocalGk
     res <- klic::lmkkmeans(CMcombo, km_parameters)
-    
-    # Weighted kernel and silhouette re-check if you want
-    # ...
     
     bestSil        <- localBestSil
     bestCombo      <- kvals
-    bestGlobalK    <- gk_best
+    bestGlobalK    <- bestLocalGk
     bestClustering <- res$clustering
   }
   
-  cat("Done comboIdx =", comboIdx, "=> Best local silhouette:", localBestSil, "\n")
+  cat(sprintf("Done combo %d/%d, local best: K=%d, silhouette=%.4f\n",
+              comboIdx, nrow(kCombos), bestLocalGk, localBestSil))
 }
+timestamp()
+# Stop the cluster
+stopCluster(cl)
 
-# Stop cluster
-stopCluster(cl); gc()
-
-# Print final results
+# Print or save final results
+cat("======= FINAL RESULTS ========\n")
 cat("Overall best silhouette =", bestSil, "\n")
-cat("Best combo of dataset-level k's =", bestCombo, "\n")
+cat("Best combo of dataset-level k's =", paste(bestCombo, collapse=", "), "\n")
 cat("Best global k =", bestGlobalK, "\n")
+
+# Export
+final_KLIC = list(
+  bestSil        = bestSil,
+  bestCombo      = bestCombo,
+  bestGlobalK    = bestGlobalK,
+  bestClustering = bestClustering
+)
+saveRDS(
+  final_KLIC,
+  file = "Results/single_algorithm/KLIC/KLIC_finalResults.rds"
+)
