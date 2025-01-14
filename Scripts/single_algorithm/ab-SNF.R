@@ -15,7 +15,7 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Preamble
 home = getwd()
-algorithm = "abSNF"
+algorithm = "ab-SNF"
 alg_feature_pref = "cols" # Where does the algorithm expect the features to be
 citation = fetch_citation(algorithm = algorithm)
 data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
