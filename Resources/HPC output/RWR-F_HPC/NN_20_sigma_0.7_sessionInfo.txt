@@ -1,0 +1,26 @@
+R version 4.4.0 (2024-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Rocky Linux 8.10 (Green Obsidian)
+
+Matrix products: default
+BLAS/LAPACK: /usr/local/software/spack/csd3/opt-2024-06-01/linux-rocky8-cascadelake/gcc-13.3.0/intel-oneapi-mkl-2024.1.0-2m6u5w57tlpq5z3cgljnvd6pe3bxr4r7/mkl/2024.1/lib/libmkl_gf_lp64.so.2;  LAPACK version 3.11.0
+
+locale:
+ [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+ [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+ [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+[10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
+
+time zone: GB
+tzcode source: internal
+
+attached base packages:
+[1] parallel  stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+[1] doParallel_1.0.17 iterators_1.0.14  foreach_1.5.2     SNFtool_2.3.1    
+
+loaded via a namespace (and not attached):
+[1] ExPosition_2.8.23  compiler_4.4.0     prettyGraphs_2.1.6 codetools_0.2-20  
+[5] alluvial_0.1-2    
