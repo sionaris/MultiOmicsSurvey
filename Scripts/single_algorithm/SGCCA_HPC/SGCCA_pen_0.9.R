@@ -2,7 +2,7 @@
 suppressPackageStartupMessages(library(mixOmics))
 
 # Load input data
-input = readRDS("RGCCA_input.rds")
+input = readRDS("SGCCA_input.rds")
 
 RNGversion("4.2.2")
 set.seed(123)
@@ -18,8 +18,8 @@ max.iter = 1000 # default
 init = "svd.single"
 near.zero.var = FALSE
 
-# Run RGCCA
-rgcca = wrapper.rgcca(
+# Run SGCCA
+sgcca = wrapper.sgcca(
   input,
   penalty = penalty,
   design = design,
@@ -35,9 +35,9 @@ rgcca = wrapper.rgcca(
 )
 
 # Save the results
-saveRDS(rgcca, "rgcca_results.rds")
+saveRDS(sgcca, "sgcca_pen_0.9_results.rds")
 
 # Also record sessionInfo
 writeLines(capture.output(sessionInfo()), 
-           "rgcca_sessionInfo.txt")
+           "sgcca_pen_0.9_sessionInfo.txt")
 
