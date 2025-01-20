@@ -19,6 +19,7 @@
 /Resources/RWR-F_input_dists.rds
 /Resources/RGCCA_input.rds
 /Resources/SGCCA_input.rds
+/Resources/mixkernel_input.rds
 /Resources/Python
 /Python/MONET/.git
 /Python/MONET/build
