@@ -13,7 +13,7 @@ ncomp = 10
 scheme = "horst"
 keepX = NULL
 scale = FALSE
-max.iter = 1000 # default
+max.iter = 2000 # default
 init = "svd.single"
 near.zero.var = FALSE
 
