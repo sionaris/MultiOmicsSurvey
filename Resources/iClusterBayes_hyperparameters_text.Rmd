@@ -1,1 +1,0 @@
-The gamma prior is set to 0.5 for all features. 18000 burn-in iterations are used for the MCMC sampling. 12000 draws (samples) from the posterior after burn-in are used to estimate the posterior distribution of parameters. There is a thinning parameter for the MCMC which is set to 3, which means every third sample is kept to reduce auto-correlation between consecutive samples.
