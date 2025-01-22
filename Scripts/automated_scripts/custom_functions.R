@@ -2652,3 +2652,122 @@ coca_cc_mod = function (data = NULL, K = 2, B = 100, pItem = 0.8, clMethod = "hc
   return(consensusMatrix)
 }
 
+# SNF estimateNUMCfromGraph modification for iterative application #####
+library(SNFtool)  # for .discretisation and other SNF functions
+
+estimateNumberOfClustersGivenGraph_mod <- function(W, NUMC = 2:5) 
+{
+  # Replicate the original check for NUMC == 1
+  if (min(NUMC) == 1) {
+    warning("Note that we always assume there are more than one cluster.")
+    NUMC = NUMC[NUMC > 1]
+  }
+  
+  # Make the affinity matrix symmetric and zero out diagonal
+  W = (W + t(W)) / 2
+  diag(W) = 0
+  
+  # Prepare placeholders for the final output
+  K1 <- K12 <- K2 <- K22 <- NA
+  # We'll also store the eigen-gap and rotation "scores" for the top 2 results
+  eigengap_K1_score <- eigengap_K12_score <- NA
+  rotation_K2_score <- rotation_K22_score <- NA
+  
+  if (length(NUMC) > 0) {
+    # Degrees and Laplacian construction
+    degs = rowSums(W)
+    degs[degs == 0] = .Machine$double.eps
+    D = diag(degs)
+    L = D - W
+    Di = diag(1 / sqrt(degs))
+    L = Di %*% L %*% Di
+    
+    # Eigen-decomposition
+    eigs = eigen(L)
+    eigs_order = sort(eigs$values, index.return = TRUE)$ix
+    eigs$values = eigs$values[eigs_order]
+    eigs$vectors = eigs$vectors[, eigs_order]
+    
+    # -------------------------
+    # 1. Eigen-gap computation
+    # -------------------------
+    eigengap = abs(diff(eigs$values))
+    eigengap = eigengap * (1 - eigs$values[1:(length(eigs$values) - 1)]) /
+      (1 - eigs$values[2:length(eigs$values)])
+    
+    # We only look at eigengap[k] for k in NUMC
+    valid_gap_scores <- eigengap[NUMC]
+    
+    # Sort them (descending) and get index into NUMC
+    gap_sort <- sort(valid_gap_scores, decreasing = TRUE, index.return = TRUE)
+    best1_idx <- gap_sort$ix[1]
+    best2_idx <- gap_sort$ix[2]
+    
+    # The top two cluster numbers from the eigen-gap criterion
+    K1  = NUMC[best1_idx]
+    K12 = NUMC[best2_idx]
+    
+    # Record their actual gap scores
+    eigengap_K1_score  = valid_gap_scores[best1_idx]
+    eigengap_K12_score = valid_gap_scores[best2_idx]
+    
+    # -----------------------------------------
+    # 2. Rotation / discretization "quality" 
+    # -----------------------------------------
+    # In the original code, 'quality' is stored in a list.  
+    # Here, we'll store it as a numeric vector of length(NUMC).
+    quality <- numeric(length(NUMC))
+    for (c_index in seq_along(NUMC)) {
+      ck <- NUMC[c_index]
+      
+      # First ck eigenvectors
+      UU = eigs$vectors[, 1:ck, drop = FALSE]
+      # Discretize (SNFtool internal function)
+      EigenvectorsDiscrete <- SNFtool:::.discretisation(UU)[[1]]
+      EigenVectors = EigenvectorsDiscrete^2
+      
+      # The same "temp1" manipulations as the original
+      temp1 <- EigenVectors[do.call(order, lapply(seq_len(ncol(EigenVectors)), 
+                                                  function(i) EigenVectors[, i])),
+                            , drop = FALSE]
+      temp1 <- t(apply(temp1, 1, sort, decreasing = TRUE))
+      
+      # The "cost" or "quality" measure:
+      quality[c_index] = (1 - eigs$values[ck + 1]) / (1 - eigs$values[ck]) * 
+        sum(sum(
+          diag(1 / (temp1[, 1] + .Machine$double.eps)) %*%
+            temp1[, 1:max(2, ck - 1), drop = FALSE]
+        ))
+    }
+    
+    # The original code picks the smallest quality as best
+    quality_sort <- sort(quality, decreasing = FALSE, index.return = TRUE)
+    bestQ1_idx <- quality_sort$ix[1]
+    bestQ2_idx <- quality_sort$ix[2]
+    
+    # The top two cluster numbers from the rotation method
+    K2  = NUMC[bestQ1_idx]
+    K22 = NUMC[bestQ2_idx]
+    
+    # Record their actual rotation "cost" scores
+    rotation_K2_score  = quality[bestQ1_idx]
+    rotation_K22_score = quality[bestQ2_idx]
+  }
+  
+  # -------------------------------------------
+  # Return everything in a single named list
+  # -------------------------------------------
+  return(list(
+    # Identical to original in terms of K1, K12, K2, K22
+    K1  = K1,
+    K12 = K12,
+    K2  = K2,
+    K22 = K22,
+    
+    # Additional numeric scores we are now exposing
+    eigengap_K1_score  = eigengap_K1_score,
+    eigengap_K12_score = eigengap_K12_score,
+    rotation_K2_score  = rotation_K2_score,
+    rotation_K22_score = rotation_K22_score
+  ))
+}
