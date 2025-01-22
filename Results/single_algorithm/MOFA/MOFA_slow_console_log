@@ -1,0 +1,9 @@
+Connecting to the mofapy2 package using basilisk. 
+    Set 'use_basilisk' to FALSE if you prefer to manually set the python binary using 'reticulate'.
+Warning messages:
+1: In run_mofa(mofa_input_slow, use_basilisk = TRUE) :
+  No output filename provided. Using C:\Users\as3582\AppData\Local\Temp\Rtmpknt62d/mofa_20250121-172845.hdf5 to store the trained model.
+
+
+2: In .quality_control(object, verbose = verbose) :
+  Factor(s) 1, 4, 6 are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are differences in the total 'levels' between your samples, *sometimes* because of poor normalisation in the preprocessing steps.

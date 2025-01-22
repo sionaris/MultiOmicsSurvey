@@ -1,0 +1,291 @@
+> timestamp()
+##------ Tue Jan 21 16:19:38 2025 ------##
+> MOFA = run_mofa(mofa_input, use_basilisk = TRUE)
+Connecting to the mofapy2 package using basilisk. 
+    Set 'use_basilisk' to FALSE if you prefer to manually set the python binary using 'reticulate'.
+trying URL 'https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Windows-x86_64.exe'
+Content type 'application/octet-stream' length 74687656 bytes (71.2 MB)
+downloaded 71.2 MB
+
++ "C:/Users/as3582/AppData/Local/R/cache/R/basilisk/1.16.0/0/condabin/conda.bat" create --yes --prefix "C:/Users/as3582/AppData/Local/R/cache/R/basilisk/1.16.0/MOFA2/1.14.0/mofa_env" "python=3.10.5" --quiet -c conda-forge
+Collecting package metadata (current_repodata.json): ...working... done
+Solving environment: ...working... failed with repodata from current_repodata.json, will retry with next repodata source.
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... done
+
+## Package Plan ##
+
+  environment location: C:\Users\as3582\AppData\Local\R\cache\R\basilisk\1.16.0\MOFA2\1.14.0\mofa_env
+
+  added / updated specs:
+    - python=3.10.5
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    bzip2-1.0.8                |       h2466b09_7          54 KB  conda-forge
+    ca-certificates-2024.12.14 |       h56e8100_0         154 KB  conda-forge
+    libffi-3.4.2               |       h8ffe710_5          41 KB  conda-forge
+    liblzma-5.6.3              |       h2466b09_1         102 KB  conda-forge
+    liblzma-devel-5.6.3        |       h2466b09_1         123 KB  conda-forge
+    libsqlite-3.48.0           |       h67fdade_0         876 KB  conda-forge
+    libzlib-1.3.1              |       h2466b09_2          54 KB  conda-forge
+    openssl-3.4.0              |       ha4e3fda_1         8.1 MB  conda-forge
+    pip-24.3.1                 |     pyh8b19718_2         1.2 MB  conda-forge
+    python-3.10.5              |hcf16a7b_0_cpython        16.2 MB  conda-forge
+    setuptools-75.8.0          |     pyhff2d567_0         757 KB  conda-forge
+    sqlite-3.48.0              |       h2466b09_0         901 KB  conda-forge
+    tk-8.6.13                  |       h5226925_1         3.3 MB  conda-forge
+    tzdata-2025a               |       h78e105d_0         120 KB  conda-forge
+    ucrt-10.0.22621.0          |       h57928b3_1         547 KB  conda-forge
+    vc-14.3                    |      ha32ba9b_23          17 KB  conda-forge
+    vc14_runtime-14.42.34433   |      he29a5d6_23         737 KB  conda-forge
+    vs2015_runtime-14.42.34433 |      hdffcdeb_23          17 KB  conda-forge
+    wheel-0.45.1               |     pyhd8ed1ab_1          61 KB  conda-forge
+    xz-5.6.3                   |       h208afaa_1          23 KB  conda-forge
+    xz-tools-5.6.3             |       h2466b09_1          62 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:        33.3 MB
+
+The following NEW packages will be INSTALLED:
+
+  bzip2              conda-forge/win-64::bzip2-1.0.8-h2466b09_7
+  ca-certificates    conda-forge/win-64::ca-certificates-2024.12.14-h56e8100_0
+  libffi             conda-forge/win-64::libffi-3.4.2-h8ffe710_5
+  liblzma            conda-forge/win-64::liblzma-5.6.3-h2466b09_1
+  liblzma-devel      conda-forge/win-64::liblzma-devel-5.6.3-h2466b09_1
+  libsqlite          conda-forge/win-64::libsqlite-3.48.0-h67fdade_0
+  libzlib            conda-forge/win-64::libzlib-1.3.1-h2466b09_2
+  openssl            conda-forge/win-64::openssl-3.4.0-ha4e3fda_1
+  pip                conda-forge/noarch::pip-24.3.1-pyh8b19718_2
+  python             conda-forge/win-64::python-3.10.5-hcf16a7b_0_cpython
+  setuptools         conda-forge/noarch::setuptools-75.8.0-pyhff2d567_0
+  sqlite             conda-forge/win-64::sqlite-3.48.0-h2466b09_0
+  tk                 conda-forge/win-64::tk-8.6.13-h5226925_1
+  tzdata             conda-forge/noarch::tzdata-2025a-h78e105d_0
+  ucrt               conda-forge/win-64::ucrt-10.0.22621.0-h57928b3_1
+  vc                 conda-forge/win-64::vc-14.3-ha32ba9b_23
+  vc14_runtime       conda-forge/win-64::vc14_runtime-14.42.34433-he29a5d6_23
+  vs2015_runtime     conda-forge/win-64::vs2015_runtime-14.42.34433-hdffcdeb_23
+  wheel              conda-forge/noarch::wheel-0.45.1-pyhd8ed1ab_1
+  xz                 conda-forge/win-64::xz-5.6.3-h208afaa_1
+  xz-tools           conda-forge/win-64::xz-tools-5.6.3-h2466b09_1
+
+
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
++ "C:/Users/as3582/AppData/Local/R/cache/R/basilisk/1.16.0/0/condabin/conda.bat" install --yes --prefix "C:/Users/as3582/AppData/Local/R/cache/R/basilisk/1.16.0/MOFA2/1.14.0/mofa_env" "python=3.10.5" -c conda-forge
+Collecting package metadata (current_repodata.json): ...working... done
+Solving environment: ...working... done
+
+
+==> WARNING: A newer version of conda exists. <==
+  current version: 4.12.0
+  latest version: 25.1.0
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+
+# All requested packages already installed.
+
++ "C:/Users/as3582/AppData/Local/R/cache/R/basilisk/1.16.0/0/condabin/conda.bat" install --yes --prefix "C:/Users/as3582/AppData/Local/R/cache/R/basilisk/1.16.0/MOFA2/1.14.0/mofa_env" -c conda-forge "python=3.10.5" "python=3.10.5" "numpy=1.23.1" "scipy=1.8.1" "pandas=1.4.3" "h5py=3.6.0" "scikit-learn=1.1.1" "dtw-python=1.2.2"
+Collecting package metadata (current_repodata.json): ...working... done
+Solving environment: ...working... failed with initial frozen solve. Retrying with flexible solve.
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... done
+
+
+==> WARNING: A newer version of conda exists. <==
+  current version: 4.12.0
+  latest version: 25.1.0
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+
+## Package Plan ##
+
+  environment location: C:\Users\as3582\AppData\Local\R\cache\R\basilisk\1.16.0\MOFA2\1.14.0\mofa_env
+
+  added / updated specs:
+    - dtw-python=1.2.2
+    - h5py=3.6.0
+    - numpy=1.23.1
+    - pandas=1.4.3
+    - python[version='3.10.5.*,3.10.5.*']
+    - scikit-learn=1.1.1
+    - scipy=1.8.1
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    cached-property-1.5.2      |       hd8ed1ab_1           4 KB  conda-forge
+    cached_property-1.5.2      |     pyha770c72_1          11 KB  conda-forge
+    dtw-python-1.2.2           |  py310he2412df_0         273 KB  conda-forge
+    h5py-3.6.0                 |nompi_py310h00cbb18_100         1.1 MB  conda-forge
+    hdf5-1.12.1                |nompi_h57737ce_104        22.9 MB  conda-forge
+    intel-openmp-2024.2.1      |    h57928b3_1083         1.8 MB  conda-forge
+    joblib-1.4.2               |     pyhd8ed1ab_1         215 KB  conda-forge
+    krb5-1.21.3                |       hdf4eb48_0         695 KB  conda-forge
+    libblas-3.9.0              |     26_win64_mkl         3.6 MB  conda-forge
+    libcblas-3.9.0             |     26_win64_mkl         3.6 MB  conda-forge
+    libcurl-8.8.0              |       hd5e4a3a_1         326 KB  conda-forge
+    libhwloc-2.11.2            |default_hc8275d1_1000         2.3 MB  conda-forge
+    libiconv-1.17              |       hcfcfb64_2         621 KB  conda-forge
+    liblapack-3.9.0            |     26_win64_mkl         3.6 MB  conda-forge
+    libssh2-1.11.0             |       h7dfc565_0         261 KB  conda-forge
+    libxml2-2.12.7             |       h283a6d9_1         1.6 MB  conda-forge
+    libzlib-1.2.13             |       h2466b09_6          55 KB  conda-forge
+    m2w64-gcc-libgfortran-5.3.0|                6         342 KB  conda-forge
+    m2w64-gcc-libs-5.3.0       |                7         520 KB  conda-forge
+    m2w64-gcc-libs-core-5.3.0  |                7         214 KB  conda-forge
+    m2w64-gmp-6.1.0            |                2         726 KB  conda-forge
+    m2w64-libwinpthread-git-5.0.0.4634.697f757|                2          31 KB  conda-forge
+    mkl-2024.2.2               |      h66d3029_15        98.3 MB  conda-forge
+    msys2-conda-epoch-20160418 |                1           3 KB  conda-forge
+    numpy-1.23.1               |  py310h8a5b91a_0         6.3 MB  conda-forge
+    pandas-1.4.3               |  py310hf5e1058_0        11.0 MB  conda-forge
+    pthreads-win32-2.9.1       |       h2466b09_4         260 KB  conda-forge
+    python-dateutil-2.9.0.post0|     pyhff2d567_1         217 KB  conda-forge
+    python_abi-3.10            |          5_cp310           7 KB  conda-forge
+    pytz-2024.2                |     pyhd8ed1ab_1         182 KB  conda-forge
+    scikit-learn-1.1.1         |  py310h4dafddf_0         7.5 MB  conda-forge
+    scipy-1.8.1                |  py310h578b7cb_3        27.4 MB  conda-forge
+    six-1.17.0                 |     pyhd8ed1ab_0          16 KB  conda-forge
+    tbb-2021.13.0              |       h62715c5_1         148 KB  conda-forge
+    threadpoolctl-3.5.0        |     pyhc1e730c_0          23 KB  conda-forge
+    zlib-1.2.13                |       h2466b09_6         105 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:       196.1 MB
+
+The following NEW packages will be INSTALLED:
+
+  cached-property    conda-forge/noarch::cached-property-1.5.2-hd8ed1ab_1
+  cached_property    conda-forge/noarch::cached_property-1.5.2-pyha770c72_1
+  dtw-python         conda-forge/win-64::dtw-python-1.2.2-py310he2412df_0
+  h5py               conda-forge/win-64::h5py-3.6.0-nompi_py310h00cbb18_100
+  hdf5               conda-forge/win-64::hdf5-1.12.1-nompi_h57737ce_104
+  intel-openmp       conda-forge/win-64::intel-openmp-2024.2.1-h57928b3_1083
+  joblib             conda-forge/noarch::joblib-1.4.2-pyhd8ed1ab_1
+  krb5               conda-forge/win-64::krb5-1.21.3-hdf4eb48_0
+  libblas            conda-forge/win-64::libblas-3.9.0-26_win64_mkl
+  libcblas           conda-forge/win-64::libcblas-3.9.0-26_win64_mkl
+  libcurl            conda-forge/win-64::libcurl-8.8.0-hd5e4a3a_1
+  libhwloc           conda-forge/win-64::libhwloc-2.11.2-default_hc8275d1_1000
+  libiconv           conda-forge/win-64::libiconv-1.17-hcfcfb64_2
+  liblapack          conda-forge/win-64::liblapack-3.9.0-26_win64_mkl
+  libssh2            conda-forge/win-64::libssh2-1.11.0-h7dfc565_0
+  libxml2            conda-forge/win-64::libxml2-2.12.7-h283a6d9_1
+  m2w64-gcc-libgfor~ conda-forge/win-64::m2w64-gcc-libgfortran-5.3.0-6
+  m2w64-gcc-libs     conda-forge/win-64::m2w64-gcc-libs-5.3.0-7
+  m2w64-gcc-libs-co~ conda-forge/win-64::m2w64-gcc-libs-core-5.3.0-7
+  m2w64-gmp          conda-forge/win-64::m2w64-gmp-6.1.0-2
+  m2w64-libwinpthre~ conda-forge/win-64::m2w64-libwinpthread-git-5.0.0.4634.697f757-2
+  mkl                conda-forge/win-64::mkl-2024.2.2-h66d3029_15
+  msys2-conda-epoch  conda-forge/win-64::msys2-conda-epoch-20160418-1
+  numpy              conda-forge/win-64::numpy-1.23.1-py310h8a5b91a_0
+  pandas             conda-forge/win-64::pandas-1.4.3-py310hf5e1058_0
+  pthreads-win32     conda-forge/win-64::pthreads-win32-2.9.1-h2466b09_4
+  python-dateutil    conda-forge/noarch::python-dateutil-2.9.0.post0-pyhff2d567_1
+  python_abi         conda-forge/win-64::python_abi-3.10-5_cp310
+  pytz               conda-forge/noarch::pytz-2024.2-pyhd8ed1ab_1
+  scikit-learn       conda-forge/win-64::scikit-learn-1.1.1-py310h4dafddf_0
+  scipy              conda-forge/win-64::scipy-1.8.1-py310h578b7cb_3
+  six                conda-forge/noarch::six-1.17.0-pyhd8ed1ab_0
+  tbb                conda-forge/win-64::tbb-2021.13.0-h62715c5_1
+  threadpoolctl      conda-forge/noarch::threadpoolctl-3.5.0-pyhc1e730c_0
+  zlib               conda-forge/win-64::zlib-1.2.13-h2466b09_6
+
+The following packages will be DOWNGRADED:
+
+  libzlib                                  1.3.1-h2466b09_2 --> 1.2.13-h2466b09_6
+
+
+
+Downloading and Extracting Packages
+python-dateutil-2.9. | 217 KB    | ########## | 100% 
+hdf5-1.12.1          | 22.9 MB   | ########## | 100% 
+h5py-3.6.0           | 1.1 MB    | ########## | 100% 
+m2w64-gcc-libs-core- | 214 KB    | ########## | 100% 
+joblib-1.4.2         | 215 KB    | ########## | 100% 
+liblapack-3.9.0      | 3.6 MB    | ########## | 100% 
+libssh2-1.11.0       | 261 KB    | ########## | 100% 
+libcblas-3.9.0       | 3.6 MB    | ########## | 100% 
+libhwloc-2.11.2      | 2.3 MB    | ########## | 100% 
+libxml2-2.12.7       | 1.6 MB    | ########## | 100% 
+m2w64-gcc-libgfortra | 342 KB    | ########## | 100% 
+libiconv-1.17        | 621 KB    | ########## | 100% 
+scikit-learn-1.1.1   | 7.5 MB    | ########## | 100% 
+libzlib-1.2.13       | 55 KB     | ########## | 100% 
+m2w64-gmp-6.1.0      | 726 KB    | ########## | 100% 
+m2w64-libwinpthread- | 31 KB     | ########## | 100% 
+msys2-conda-epoch-20 | 3 KB      | ########## | 100% 
+cached_property-1.5. | 11 KB     | ########## | 100% 
+pthreads-win32-2.9.1 | 260 KB    | ########## | 100% 
+libblas-3.9.0        | 3.6 MB    | ########## | 100% 
+pytz-2024.2          | 182 KB    | ########## | 100% 
+zlib-1.2.13          | 105 KB    | ########## | 100% 
+cached-property-1.5. | 4 KB      | ########## | 100% 
+pandas-1.4.3         | 11.0 MB   | ########## | 100% 
+threadpoolctl-3.5.0  | 23 KB     | ########## | 100% 
+intel-openmp-2024.2. | 1.8 MB    | ########## | 100% 
+krb5-1.21.3          | 695 KB    | ########## | 100% 
+libcurl-8.8.0        | 326 KB    | ########## | 100% 
+m2w64-gcc-libs-5.3.0 | 520 KB    | ########## | 100% 
+dtw-python-1.2.2     | 273 KB    | ########## | 100% 
+python_abi-3.10      | 7 KB      | ########## | 100% 
+numpy-1.23.1         | 6.3 MB    | ########## | 100% 
+tbb-2021.13.0        | 148 KB    | ########## | 100% 
+scipy-1.8.1          | 27.4 MB   | ########## | 100% 
+six-1.17.0           | 16 KB     | ########## | 100% 
+mkl-2024.2.2         | 98.3 MB   | ########## | 100% 
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
+Collecting mofapy2==0.7.0
+  Downloading mofapy2-0.7.0-py3-none-any.whl.metadata (1.7 kB)
+Collecting anndata<0.9,>=0.8 (from mofapy2==0.7.0)
+  Downloading anndata-0.8.0-py3-none-any.whl.metadata (4.6 kB)
+Requirement already satisfied: h5py<4,>=3 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from mofapy2==0.7.0) (3.6.0)
+Requirement already satisfied: numpy<2.0.0,>=1.21.0 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from mofapy2==0.7.0) (1.23.1)
+Requirement already satisfied: pandas<2.0.0,>=1.2.0 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from mofapy2==0.7.0) (1.4.3)
+Requirement already satisfied: scikit-learn<2,>=1 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from mofapy2==0.7.0) (1.1.1)
+Requirement already satisfied: scipy<2,>=1 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from mofapy2==0.7.0) (1.8.1)
+Collecting natsort (from anndata<0.9,>=0.8->mofapy2==0.7.0)
+  Downloading natsort-8.4.0-py3-none-any.whl.metadata (21 kB)
+Collecting packaging>=20 (from anndata<0.9,>=0.8->mofapy2==0.7.0)
+  Using cached packaging-24.2-py3-none-any.whl.metadata (3.2 kB)
+Requirement already satisfied: python-dateutil>=2.8.1 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from pandas<2.0.0,>=1.2.0->mofapy2==0.7.0) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from pandas<2.0.0,>=1.2.0->mofapy2==0.7.0) (2024.2)
+Requirement already satisfied: joblib>=1.0.0 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from scikit-learn<2,>=1->mofapy2==0.7.0) (1.4.2)
+Requirement already satisfied: threadpoolctl>=2.0.0 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from scikit-learn<2,>=1->mofapy2==0.7.0) (3.5.0)
+Requirement already satisfied: six>=1.5 in c:\users\as3582\appdata\local\r\cache\r\basilisk\1.16.0\mofa2\1.14.0\mofa_env\lib\site-packages (from python-dateutil>=2.8.1->pandas<2.0.0,>=1.2.0->mofapy2==0.7.0) (1.17.0)
+Downloading mofapy2-0.7.0-py3-none-any.whl (1.0 MB)
+   ---------------------------------------- 1.0/1.0 MB 12.0 MB/s eta 0:00:00
+Downloading anndata-0.8.0-py3-none-any.whl (96 kB)
+Using cached packaging-24.2-py3-none-any.whl (65 kB)
+Downloading natsort-8.4.0-py3-none-any.whl (38 kB)
+Installing collected packages: packaging, natsort, anndata, mofapy2
+  WARNING: The script natsort.exe is installed in 'C:\Users\as3582\AppData\Local\R\cache\R\basilisk\116~1.0\MOFA2\114~1.0\mofa_env\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+Successfully installed anndata-0.8.0 mofapy2-0.7.0 natsort-8.4.0 packaging-24.2
+Warning messages:
+1: In run_mofa(mofa_input, use_basilisk = TRUE) :
+  No output filename provided. Using C:\Users\as3582\AppData\Local\Temp\Rtmpknt62d/mofa_20250121-161938.hdf5 to store the trained model.
+
+
+2: In .quality_control(object, verbose = verbose) :
+  Factor(s) 1, 4 are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are differences in the total 'levels' between your samples, *sometimes* because of poor normalisation in the preprocessing steps.
+  
+> timestamp()
+##------ Tue Jan 21 17:08:22 2025 ------##

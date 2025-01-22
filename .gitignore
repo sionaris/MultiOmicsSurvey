@@ -20,6 +20,8 @@
 /Resources/RGCCA_input.rds
 /Resources/SGCCA_input.rds
 /Resources/mixkernel_input.rds
+/Resources/MFA_input.rds
+/Resources/MOFA_input.rds
 /Resources/Python
 /Python/MONET/.git
 /Python/MONET/build
