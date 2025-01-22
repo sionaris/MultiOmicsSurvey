@@ -664,6 +664,15 @@ plotdata = getStdiz(
 plot_object = list(clust.res = NEMO_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
 
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
+
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
                               data          = plotdata,
@@ -1370,15 +1379,6 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           width = 8,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
-
-# Export consensus clustering object
-clust = as.data.frame(plot_object$clust.res)
-colnames(clust) = c("Sample.ID", "Cluster")
-clust$Cluster = paste0(algorithm, clust$Cluster)
-openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
-                                   algorithm, "_", data_source, "_",
-                                   data_types, "_eval_on_", evaluation_source,
-                                   "_clusterings.xlsx"))
 
 # Supplementary results #####
 
