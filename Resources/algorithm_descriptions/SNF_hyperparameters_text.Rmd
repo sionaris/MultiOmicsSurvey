@@ -10,6 +10,99 @@ The corresponding histogram of Pearson correlations is shown below:
 
 The $sigma$ effect was not confirmed by the non-parametric tests.  We therefore set $sigma = `r hyperparameters[["optimal_sigma"]]`$, which is close to the median $sigma$ value (0.55, but rounded down to 0.5 which was actually included in our range of tested $sigma$ values). For $N_i$, we chose the optimal value based on two custom metrics we especially defined for this case where the optimal number of clusters is 2. 
 
+The fused matrices for $\sigma = 0.5$ and $N_i \in \{10, 15, 20, 25, 30, 35, 40, 45, 50\}$ are then used as input in the ``estimateNumberOfClustersGivenGraph`` of <em>SNFtool</em> to determine the optimal number of clusters in the data based on two methods: i) the eigengap method and ii) the discretization (rotation) method.
+
+Given a fused similarity matrix $W_{n \times n}$, the ``estimateNumberOfClustersGivenGraph`` function of <em>SNFtool</em> proceeds as follows:
+
+1. *Symmetrize* \(W\) and zero out its diagonal:
+
+   \[
+   W \leftarrow \frac{W + W^T}{2}, \quad \text{and} \quad W_{ii} = 0.
+   \]
+
+2. *Compute the degree vector* \(\mathbf{d}\) where
+
+   \[
+   d_i = \sum_{j=1}^n W_{ij}, \quad \text{for } i = 1, \dots, n.
+   \]
+
+   If \(d_i = 0\), then \(d_i\) is set to a small positive constant \(\varepsilon\), which in this case is the ``.Machine$double.eps`` value. Define \(D = \mathrm{diag}(d_1, d_2, \dots, d_n)\).
+
+3. *Construct the (unnormalized) Laplacian*:
+
+   \[
+   L = D - W.
+   \]
+
+4. *Normalize* \(L\) to obtain the symmetric normalized Laplacian:
+
+   \[
+   D^{-\tfrac{1}{2}} L \, D^{-\tfrac{1}{2}}
+   \;=\; D^{-\tfrac{1}{2}} (D - W)\, D^{-\tfrac{1}{2}}.
+   \]
+
+5. *Eigen-decomposition.* Let
+
+   \[
+   \bigl\{\lambda_i, \boldsymbol{v}_i\bigr\}_{i=1}^n
+   \]
+
+   be the set of eigenvalues and eigenvectors of the normalized Laplacian, with \(\{\lambda_i\}\) sorted in ascending order:
+
+   \[
+   \lambda_1 \,\le\, \lambda_2 \,\le\, \cdots \,\le\, \lambda_n.
+   \]
+
+6. *Eigen-gap criterion.*  
+   The function computes a "corrected" gap between consecutive eigenvalues:
+
+   \[
+   \Delta_i \;=\; \bigl|\lambda_{i+1} - \lambda_i\bigr|
+   \;\times\;
+   \frac{1 - \lambda_i}{\,1 - \lambda_{i+1}\,},
+   \]
+
+   for \(i = 1, \dots, n-1\).  
+   Then, for a user-supplied range of candidate cluster numbers
+   ``NUMC`` = \{k\_\mathrm{min}, \dots, k\_\mathrm{max}\}, the function looks at \(\Delta_{k}\) only for \(k \in \texttt{NUMC}\), sorts those values in descending order, and picks the top two cluster numbers:
+
+   \[
+   K1 = \arg\!\max_{k \in \texttt{NUMC}} \Delta_{k}, 
+   \quad
+   K12 = \arg\!\max_{\substack{k \in \texttt{NUMC} \\ k \neq K1}} \Delta_{k}.
+   \]
+
+7. *Discretization (rotation) criterion.*  
+   Let $U_{n \times k}$ be the matrix formed by the first \(k\) eigenvectors \(\boldsymbol{v}_1, \dots, \boldsymbol{v}_k\). A discretization step projects \(\mathbf{U}\) into a "hard-cluster" representation \(\mathbf{U}_\mathrm{disc}\). Then the function computes a *quality measure* (or "rotation cost"):
+
+   \[
+   Q(k)
+   \;=\;
+   \frac{\,1 - \lambda_{k+1}\,}{\,1 - \lambda_k\,}
+   \;\times\;
+   \Phi\bigl(\mathbf{U}_\mathrm{disc}\bigr),
+   \]
+
+   where \(\Phi(\mathbf{U}_\mathrm{disc})\) encodes row-wise transformations (sorting, normalizing, etc.) of \(\mathbf{U}_\mathrm{disc}\). The smaller $Q(k)$, the "better" the solution. Sorting \(Q(k)\) in *ascending* order for \(k \in \texttt{NUMC}\), the function picks the two cluster numbers
+
+   \[
+   K2  \;=\; \arg\!\min_{k \in \texttt{NUMC}} Q(k),
+   \quad
+   K22 \;=\; \arg\!\min_{\substack{k \in \texttt{NUMC} \\ k \neq K2}} Q(k).
+   \]
+
+8. *Return.*  
+   The function outputs
+   \(\{K1, K12, K2, K22\}\), i.e., the top two cluster numbers according to the eigengap method and the discretization method, respectively, along with the corresponding \(\Delta_k\) and \(Q(k)\) values (in a lightly modified version of the function).
+   
+The results are shown in the table below:
+
+```{r SNF_optk_table, echo=FALSE, eval=TRUE}
+knitr::kable(params$hyperparameters$numc_df, caption = "Eigengap and discretization scores.")
+```
+
+<b>k = 2 is unequivocally the optimal choice for number of clusters.</b>
+
 For a given $sigma = 0.5$ and for all $N_i$, we calculated:
 <ol>
   <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each final fused affinity matrix as an indication of spread.</li>

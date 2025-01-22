@@ -2487,7 +2487,8 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        optimal_sigma = optSigma,
                        conclusion = conclusion, # if there is agreement, np_conclusion can also be used
                        n_iter = n_iterations,
-                       feature_ranks_text = feature_ranks_text
+                       feature_ranks_text = feature_ranks_text,
+                       numc_df = numc_df
                        )
 
 # Put all parameters in a list
