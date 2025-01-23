@@ -544,34 +544,114 @@ dev.off()
 # 2. Get the sum of absolute skewness and kurtosis
 # 3. Find the nn matrix for which the sum of 1 and 2 is maximum
 
-library(e1071)
-contrast_list <- choose_matrix_contrasts(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
-skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
-contrast_values <- unlist(contrast_list)
-skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+# library(e1071)
+# contrast_list <- choose_matrix_contrasts(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
+# skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
+# contrast_values <- unlist(contrast_list)
+# skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+# 
+# # Normalize the contrast values and skewness-kurtosis values
+# normalized_contrast <- minmax_normalize_values(contrast_values)
+# normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+# 
+# # Get the sum
+# combined_scores <- normalized_contrast + normalized_skewness_kurtosis
+# combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
+# print(combined_scores_list)
+# 
+# best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
+# cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
 
-# Normalize the contrast values and skewness-kurtosis values
-normalized_contrast <- minmax_normalize_values(contrast_values)
-normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+# # We choose nn = 10, sigma = 0.3
 
-# Get the sum
-combined_scores <- normalized_contrast + normalized_skewness_kurtosis
-combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
-print(combined_scores_list)
+# Iteratively go through ARS matrices to find the one that produces the best clustering
+# (in terms of silhouette) for its optimal k as determined by nemo.num.clusters()
+silhouettes <- data.frame(
+  NN = numeric(),
+  sigma = numeric(),
+  optk = integer(),
+  avg.sil.width = numeric(),
+  stringsAsFactors = FALSE
+)
 
-best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
-cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
+for (i in 1:length(ARS_object)) {
+  hyperparams_NN <- 
+    as.numeric(
+      str_extract(
+        str_subset(
+          str_trim(
+            str_split(names(ARS_object)[i], ", ")[[1]]), 
+            "^NN\\s*=\\s*"
+          ), "\\d*\\.?\\d+"
+        )
+      )
+  hyperparams_sigma <- 
+    as.numeric(
+      str_extract(
+        str_subset(
+          str_trim(
+            str_split(names(ARS_object)[i], ", ")[[1]]),
+        "^sigma\\s*=\\s*"
+        ), "\\d*\\.?\\d+"
+      )
+    )
+  aff <- ARS_object[[i]]$affinity_matrix
+  
+  # Determine the optimal number of clusters
+  numc <- nemo.num.clusters(aff, NUMC = 2:10)
+  
+  # Perform spectral clustering
+  clust_numc <- spectralClustering(aff, numc)
+  names(clust_numc) <- colnames(aff)
+  
+  # Create clustering data frame
+  NEMO_clustdf <- data.frame(
+    samID = names(clust_numc),
+    Cluster = clust_numc,
+    stringsAsFactors = FALSE
+  )
+  rownames(NEMO_clustdf) <- NEMO_clustdf$samID
+  
+  # we compute the silhouette for each point and then take the mean across all points.
+  silw <- compute_silhouette(
+    cluster_df = NEMO_clustdf,
+    similarity_matrix = aff,
+    normalize_matrix = TRUE
+  ) %>%
+    as.data.frame() %>%
+    summarise(silw_out = mean(sil_width, na.rm = TRUE)) %>%
+    pull(silw_out)
+  
+  # Store metrics in silhouettes data frame
+  silhouettes[i, ] <- list(
+    NN = hyperparams_NN,
+    sigma = hyperparams_sigma,
+    optk = numc,
+    avg.sil.width = silw
+  )
+}
 
-# We choose nn = 10, sigma = 0.3
-optN = as.numeric(substr(best_combined_matrix, 6, 7))
-optSigma = as.numeric(substr(best_combined_matrix, 18, 20))
+rm(hyperparams_NN, hyperparams_sigma, aff, numc, clust_numc, NEMO_clustdf, silw); gc()
 
-conclusion2 = paste0("Best similarity matrix based on combined normalized scores is for $nn' = ", 
-                     optN, "$ and $\\sigma = ", optSigma, "$. We therefore proceed with $nn' = ",
-                     optN, "$ and $\\sigma = ", optSigma, "$.")
+# Remove any rows with NA values
+silhouettes <- silhouettes %>% dplyr::filter(!is.na(avg.sil.width))
+
+# Order by descending silhouette
+silhouettes <- silhouettes %>% arrange(desc(avg.sil.width))
+best_hyperparams = paste0("NN: ", silhouettes$NN[1],
+                          ", sigma: ", silhouettes$sigma[1],
+                          ", K : ", silhouettes$optk[1])
+print(best_hyperparams) # The distribution method yielded NN = 10, sigma = 0.5 for comparison (bottom of these silhouettes; discordant)
+
+optN = silhouettes$NN[1]
+optSigma = silhouettes$sigma[1]
+optk = silhouettes$optk[1]
+
+conclusion2 = paste0("Best similarity matrix based on average silhouette widths for the corresponding optimal number of clusters is for $nn' = ", 
+                     optN, "$ and $\\sigma = ", optSigma, "$ and $\\k = ", optk, ".")
 conclusion = paste(conclusion, conclusion2)
 
-# Spectral clustering for k = ground_truth_k from MOVICS
+# Spectral clustering
 RNGversion("4.2.2")
 set.seed(123)
 
@@ -580,7 +660,7 @@ final_affinity_matrix = ARS_object[[paste0("NN = ", optN, ", sigma = ", optSigma
 # NEMO estimation of number of clusters:
 num.clusters = nemo.num.clusters(final_affinity_matrix, NUMC = 2:10)
 
-# 9 is the optimal number of clusters based on the NEMO process
+# 2 is the optimal number of clusters based on the NEMO process
 group = spectralClustering(final_affinity_matrix, num.clusters)
 names(group) = colnames(final_affinity_matrix)
 
