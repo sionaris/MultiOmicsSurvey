@@ -683,8 +683,6 @@ var2comp = scheme$var2comp %>%
   dplyr::select(NEMO, everything()) %>%
   dplyr::select(-Cluster)
 rm(scheme); gc()
-cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                   "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c")
 
 # Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
