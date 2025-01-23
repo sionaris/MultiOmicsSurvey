@@ -104,7 +104,7 @@ num_neighbors_range = seq(10, 50, neighbor_step) # number of neighbors, usually 
 gc()
 
 # Similarity matrices ###
-# Parallelization occurs alreade within the function. We do not parallelize further
+# Parallelization occurs already within the function. We do not parallelize further
 library(Matrix)
 library(parallel)
 similarity_object = list()
@@ -234,43 +234,43 @@ if (!sig_status_final){
   optNN = 15 # arbitrary, but yielded good results in SNF
 }
 
-# We then choose the nn value for which the
-# fused similarity matrix has the "best" bimodal distribution of low and high values.
-# WE USE THIS APPROACH ONLY BECAUSE THE NUMBER OF CLUSTERS WE SEEK IS 2!
+# # We then choose the nn value for which the
+# # fused similarity matrix has the "best" bimodal distribution of low and high values.
+# 
+# # We combine two methodologies to do it:
+# 
+# # 1. Get the sum of variance and IQR for every matrix
+# # 2. Get the sum of absolute skewness and kurtosis
+# # 3. Find the nn matrix for which the sum of 1 and 2 is maximum
+# 
+# # Skewness and kurtosis
+# library(e1071)
+# contrast_list <- choose_matrix_contrasts(sim_matrices_S)
+# skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(sim_matrices_S)
+# contrast_values <- unlist(contrast_list)
+# skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+# 
+# # Normalize the contrast values and skewness-kurtosis values
+# normalized_contrast <- minmax_normalize_values(contrast_values)
+# normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+# 
+# # Get the sum
+# combined_scores <- normalized_contrast + normalized_skewness_kurtosis
+# combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
+# print(combined_scores_list)
+# 
+# best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
+# cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
+# 
+# # We choose nn = 20
+# optNN = as.numeric(substr(best_combined_matrix, 6, 7))
 
-# We combine two methodologies to do it:
+# This process results in optNN = 20
+# We consider the full approach below to see if it made sense
+# Update, the best clustering  is for NN = 15, although several values for k
+# were significant for NN = 20, consistently in the top 10
 
-# 1. Get the sum of variance and IQR for every matrix
-# 2. Get the sum of absolute skewness and kurtosis
-# 3. Find the nn matrix for which the sum of 1 and 2 is maximum
-
-# Skewness and kurtosis
-library(e1071)
-contrast_list <- choose_matrix_contrasts(sim_matrices_S)
-skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(sim_matrices_S)
-contrast_values <- unlist(contrast_list)
-skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
-
-# Normalize the contrast values and skewness-kurtosis values
-normalized_contrast <- minmax_normalize_values(contrast_values)
-normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
-
-# Get the sum
-combined_scores <- normalized_contrast + normalized_skewness_kurtosis
-combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
-print(combined_scores_list)
-
-best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
-cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
-
-# We choose nn = 20
-optNN = as.numeric(substr(best_combined_matrix, 6, 7))
-conclusion2 = paste0("Best similarity matrix based on combined normalized scores is for $nn' = ", 
-                     optNN, "$. We therefore proceed with $nn' = ",
-                     optNN, "$.")
-conclusion = paste(conclusion1, conclusion2)
-
-# M3C k-means clustering
+# M3C k-means clustering ###
 library(M3C)
 
 # Import resources
@@ -286,27 +286,215 @@ rm(scheme); gc()
 m3c_des = annCol
 m3c_des$class = m3c_des$`ER status`
 m3c_des$ID = rownames(m3c_des)
-m3c_input = t(similarity_object[[paste0("NN = ", optNN)]]$F) %>% as.data.frame()
-rownames(m3c_input) = c("t_SNE1", "t_SNE2")
-colnames(m3c_input) = colnames(input[["SNPs"]])
 
-RNGversion("4.2.2")
-consensus_km = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
-           repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
-           clusteralg = "km", maxK = 2)
+# Run a loop of M3C for all results. In the end pick the one that achieves the
+# best combo of entropy, RCSI, p-value
 
-# Is the clustering significant?
-paste0(ifelse(consensus_km$scores$NORM_P < 0.05, "The clustering is significant.",
-       "The clustering is not significant."))
+M3C_clusterings = list()
+for (i in 1:length(similarity_object)) {
+  m3c_input = t(similarity_object[[i]]$F) %>% as.data.frame()
+  rownames(m3c_input) = c("t_SNE1", "t_SNE2")
+  colnames(m3c_input) = colnames(input[["SNPs"]])
+  
+  RNGversion("4.2.2")
+  M3C_clusterings[[names(similarity_object)[i]]] = M3C(m3c_input, des = m3c_des,
+                                                       iters = 100, repsref = 250, 
+                     repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
+                     clusteralg = "km", maxK = 10)
+  cat("Done with", names(similarity_object)[i], ".", "\n")
+}
 
-# Normally, we would not proceed, but for the sake of comparisons across algorithms
-# we will produce the additional relevant plots
+# console logs:
+# NN = 10, optimal K: 8
+# NN = 15, optimal K: 2
+# NN = 20, optimal K: 3
+# NN = 25, optimal K: 5
+# NN = 30, optimal K: 6
+# NN = 35, optimal K: 5
+# NN = 40, optimal K: 5
+# NN = 45, optimal K: 5
+# NN = 50, optimal K: 8
 
-# Main results ###
+# Inspection of clustering results #####
+scores_df = as.data.frame(cbind(list(NN = sort(rep(paste0("NN = ", seq(10, 50, 5)), 9))), 
+                                rbind(M3C_clusterings[["NN = 10"]][["scores"]],
+                                      M3C_clusterings[["NN = 15"]][["scores"]],
+                                      M3C_clusterings[["NN = 20"]][["scores"]],
+                                      M3C_clusterings[["NN = 25"]][["scores"]],
+                                      M3C_clusterings[["NN = 30"]][["scores"]],
+                                      M3C_clusterings[["NN = 35"]][["scores"]],
+                                      M3C_clusterings[["NN = 40"]][["scores"]],
+                                      M3C_clusterings[["NN = 45"]][["scores"]],
+                                      M3C_clusterings[["NN = 50"]][["scores"]])))
+
+# RCSI plot
+rcsi = ggplot(scores_df, aes(x = K, y = RCSI, group = NN, color = factor(NN)))+
+  geom_line(linewidth = 0.3*2)+
+  # geom_errorbar(aes(ymin = RCSI - RCSI_SE,
+  #                   ymax = RCSI + RCSI_SE,
+  #                   color = "grey"), width = 0.05, linewidth = 0.1*2)+
+  geom_point(size = 1)+
+  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
+  scale_y_continuous(limits = c(min(scores_df$RCSI - scores_df$RCSI_SE) - 0.15, 
+                                max(scores_df$RCSI + scores_df$RCSI_SE) + 0.15), 
+                     breaks = c(-rev(seq(0, abs(round(min(scores_df$RCSI - scores_df$RCSI_SE), 1)), 0.5)), 
+                                  seq(0, round(max(scores_df$RCSI + scores_df$RCSI_SE), 1), 0.5)))+
+  scale_colour_manual(values=rcartocolor::carto_pal(n = 9, "Safe"), name="NN") +
+  theme(plot.title = element_text(size = 5*2, face = "bold"),
+        axis.title.x = element_text(size = 4*2, face = "bold"),
+        axis.title.y = element_text(size = 4*2, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15*2),
+        axis.text.x = element_text(size = 4*2),
+        axis.text.y = element_text(size = 4*2),
+        legend.position = "right",
+        legend.text = element_text(size = 5),
+        legend.title = element_text(face = "bold", size = 6.5, hjust = 0.5),
+        legend.key.spacing = unit(2, "mm"),
+        panel.background = element_rect(fill = "white", 
+                                        colour = "white"),
+        panel.grid = element_blank(),
+        axis.line = element_line(linewidth = 0.2*2))+
+  labs(title = "RCSI vs. number of clusters K for different NN values",
+       x = "K", y = "RCSI")
+rcsi
+ggsave(filename = "RCSI.pdf",
+       path = "Results/single_algorithm/CIMLR", 
+       width = 140, height = 100, device = 'pdf', units = "mm",
+       dpi = 350)
+dev.off()
+
+# Statistical significance of clusters
+library(ggnewscale)
+statsig_clust = ggplot(scores_df, aes(x = K, y = P_SCORE, color = factor(NN)))+
+  geom_point(size = 1.5*2, alpha = 0.6)+
+  scale_color_manual(values=c(rcartocolor::carto_pal(n = 9, "Safe")),
+                      name="NN") +
+  new_scale("color") +
+  geom_hline(linetype = "dashed", linewidth = 0.2*2,
+             aes(yintercept = -log10(0.05), color = "grey40"))+
+  scale_color_manual(values="grey40", labels = expression(-log[10]("0.05")),
+                      name="Statistical \nsignificance") +
+  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
+  scale_y_continuous(limits = c(min(scores_df$P_SCORE) - 0.15, 
+                                max(scores_df$P_SCORE) + 0.15), 
+                     breaks = seq(0, max(scores_df$P_SCORE) + 0.1, 1))+
+  theme_bw()+
+  theme(plot.title = element_text(size = 5*2, face = "bold"),
+        axis.title.x = element_text(size = 4*2, face = "bold"),
+        axis.title.y = element_text(size = 4*2, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15*2),
+        axis.text.x = element_text(size = 4*2),
+        axis.text.y = element_text(size = 4*2),
+        legend.position = "right",
+        legend.text = element_text(size = 5),
+        legend.title = element_text(face = "bold", size = 6.5, hjust = 0.5),
+        legend.key.spacing = unit(2, "mm"),
+        panel.background = element_rect(fill = "white", 
+                                        colour = "white"),
+        panel.grid = element_blank(),
+        axis.line = element_line(linewidth = 0.2*2))+
+  labs(title = "Statistical significance of different values of K",
+       y = bquote(bold(-log[10]("p"))))
+statsig_clust
+ggsave(filename = "Stat_Sig.pdf",
+       path = "Results/single_algorithm/CIMLR", 
+       width = 140, height = 100, device = 'pdf', units = "mm",
+       dpi = 350)
+dev.off()
+
+# Entropy
+entropy = ggplot(scores_df, aes(x = K, y = ENTROPY_REAL, alpha = 0.85, 
+                                group = NN, color = factor(NN)))+
+  geom_line(linewidth = 0.6)+
+  geom_point(size = 1) +
+  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
+  scale_y_continuous(limits = c(0, 100000), breaks = seq(0, 100000, 10000),
+                     labels = scales::label_comma()) +
+  scale_colour_manual(values=rcartocolor::carto_pal(n = 9, "Safe"), name="NN") +
+  theme_bw()+
+  theme(panel.border = element_rect(linewidth = 0.2*2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 5*2, face = "bold", vjust = 0.5, hjust = 0.5),
+        legend.title = element_text(face = "bold", size = 4*2, hjust = 0.5),
+        legend.text = element_text(size = 3*2),
+        legend.key.size = unit(0.2*2, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5*2, units = "mm"),
+        axis.title.x = element_text(size = 4*2, face = "bold"),
+        axis.title.y = element_text(size = 4*2, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15*2),
+        axis.text.x = element_text(size = 4*2),
+        axis.text.y = element_text(size = 4*2))+
+  labs(y = "Entropy",
+       x = "K",
+       title = "Entropy in Real Data")+
+  guides(alpha = "none")
+entropy
+ggsave(filename = "Entropy.pdf",
+       path = "Results/single_algorithm/CIMLR", 
+       width = 140, height = 100, device = 'pdf', units = "mm",
+       dpi = 350)
+dev.off()
+
+# Determine the best clustering based on p-value filtering and then examining the RCSI
+# Entropy is biased for higher K
+best_clusterings = scores_df[scores_df$NORM_P < 0.05, ] %>%
+  dplyr::arrange(desc(RCSI))
+
+# According to these criteria the best clustering is:
+print(best_clusterings[1, ]) # NN = 15, K = 2, very low entropy (low reference too though), borderline p-value, very high RCSI
+
+# Determine optNN
+optNN = as.numeric(substr(best_clusterings$NN[1], 6, 8))
+conclusion2 = paste0("Best similarity matrix based on statistical significance and RCSI is for $nn' = ", 
+                     optNN, "$. We therefore proceed with $nn' = ",
+                     optNN, "$.")
+conclusion = paste(conclusion1, conclusion2)
+
+# Exploratory plot of the results
+assignments = as.data.frame(M3C_clusterings[[best_clusterings$NN[1]]]$realdataresults[[2]]$assignments) %>%
+  tibble::rownames_to_column(var = "Sample.ID")
+colnames(assignments)[2] = "Cluster"
+cluster_DF = as.data.frame(similarity_object[[best_clusterings$NN[1]]]$F) %>%
+  mutate(Sample.ID = colnames(input$SNPs)) %>% # add Sample ID's in order
+  inner_join(assignments, by = "Sample.ID") %>%
+  dplyr::rename(t_SNE1 = V1, t_SNE2 = V2)
+cluster_DF$Cluster = paste0("CIMLR", cluster_DF$Cluster)
+cluster_scatter = ggplot(data = cluster_DF, aes(x = t_SNE1, y = t_SNE2, group = Cluster,
+                                                color = factor(Cluster))) +
+  geom_point(size = 1) +
+  scale_color_manual(values=c(rcartocolor::carto_pal(n = 12, "Safe")[1:2]),
+                                         name="Cluster") +
+  theme_bw()+
+  theme(plot.title = element_text(size = 5*2, face = "bold"),
+        axis.title.x = element_text(size = 4*2, face = "bold"),
+        axis.title.y = element_text(size = 4*2, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15*2),
+        axis.text.x = element_text(size = 4*2),
+        axis.text.y = element_text(size = 4*2),
+        legend.position = "right",
+        legend.text = element_text(size = 8),
+        legend.title = element_text(face = "bold", size = 6.5, hjust = 0.5),
+        legend.key.spacing = unit(2, "mm"),
+        panel.background = element_rect(fill = "white", 
+                                        colour = "white"),
+        panel.grid = element_blank(),
+        axis.line = element_line(linewidth = 0.2*2))+
+  labs(title = paste0("Cluster scatter plot for ", best_clusterings$NN[1],
+                      " and K = ", best_clusterings$K[1]),
+       x = "t-SNE1", y = "t-SNE2")
+cluster_scatter
+ggsave(filename = "Cluster_scatter.pdf",
+       path = "Results/single_algorithm/CIMLR", 
+       width = 140, height = 100, device = 'pdf', units = "mm",
+       dpi = 350)
+dev.off()
+
+# Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
-CIMLR_clusters = as.data.frame(list(Sample.ID = rownames(consensus_km[["realdataresults"]][[2]][["ordered_annotation"]]),
-                               Cluster = consensus_km[["realdataresults"]][[2]][["ordered_annotation"]][["consensuscluster"]]))
+CIMLR_clusters = cluster_DF %>% dplyr::select(Sample.ID, Cluster)
 CIMLR_clusters$Sample.ID = gsub("\\.", "-", CIMLR_clusters$Sample.ID)
 rownames(CIMLR_clusters) = CIMLR_clusters$Sample.ID
 
@@ -350,7 +538,8 @@ rm(scheme); gc()
 library(MOVICS)
 cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
 dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
-sil = compute_silhouette(cluster_df = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID),
+sil = compute_silhouette(cluster_df = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID) %>%
+                           mutate(Cluster = as.numeric(gsub("CIMLR", "", Cluster))),
                          similarity_matrix = cimlr_matrix,
                          normalize_matrix = TRUE)
 
