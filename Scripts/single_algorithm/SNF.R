@@ -497,6 +497,7 @@ optSigma = 0.5
 # also plays a role, according only to parametric tests
 
 # Pearson and Frobenius histograms for different nn AND sigma = 0.5
+Fusions_filt = Fusions[which(grepl("sigma = 0.5", names(Fusions)))]
 Pearson_hist_matrix = compute_matrix_similarity(Fusions_filt)$Pearson
 Pearson_values <- Pearson_hist_matrix[lower.tri(Pearson_hist_matrix, diag = FALSE)]
 mean_Pearson_value <- mean(Pearson_values)
@@ -655,7 +656,6 @@ choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
   return(skewness_kurtosis_values)
 }
 
-Fusions_filt = Fusions[which(grepl("sigma = 0.5", names(Fusions)))]
 contrast_list <- choose_matrix_contrasts(Fusions_filt)
 skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(Fusions_filt)
 
