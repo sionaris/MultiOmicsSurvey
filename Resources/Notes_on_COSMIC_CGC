@@ -1,0 +1,6 @@
+Data were downloaded from https://cancer.sanger.ac.uk/cosmic/census/ by choosing
+"Gene Symbol" at the breakdown menu and fitlering for results which were returned after
+searching the keyword "breast". Then, the 42 gene symbols that were downloaded, 
+were filtered for somatic results only (NOT germline) drivers.
+
+Date of operations: 27/01/2025
