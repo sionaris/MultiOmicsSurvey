@@ -2771,3 +2771,19 @@ estimateNumberOfClustersGivenGraph_mod <- function(W, NUMC = 2:5)
     rotation_K22_score = rotation_K22_score
   ))
 }
+
+# ANF custom concordance by NMI function #####
+concordanceNetworkNMI_ANF = function (Wall, C, type) 
+{
+  LW = length(Wall)
+  labels = lapply(Wall, function(x) ANF::spectral_clustering(x, 
+                                                       C,
+                                                       type = type))
+  NMIs = matrix(NA, LW, LW)
+  for (i in 1:LW) {
+    for (j in 1:LW) {
+      NMIs[i, j] = calNMI(labels[[i]], labels[[j]])
+    }
+  }
+  return(NMIs)
+}
