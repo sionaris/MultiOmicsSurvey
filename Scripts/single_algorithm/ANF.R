@@ -170,11 +170,6 @@ for (i in 1:length(Fusions)) {
   rownames(Fusions[[i]]) = row_names
 }
 
-save.image(paste0(home, "/Results/single_algorithm/", 
-                  algorithm, "/", algorithm, "_", data_source, "_",
-                  data_types, "_eval_on_", evaluation_source,
-                  "_env.RData"))
-
 # Function to compute both Frobenius norm and Pearson correlation between matrices
 compute_matrix_similarity <- function(matrices) {
   num_matrices <- length(matrices)
@@ -344,13 +339,17 @@ ANF_clusters = as.data.frame(list(Sample.ID = names(group),
                                   Cluster = group))
 
 # Feature ranking
+library(parallel)
+library(foreach)
+library(doParallel)
 ANF_feature_ranks = list()
 binary_flags = c(TRUE, FALSE, FALSE, FALSE, FALSE)
 for (i in 1:length(input)) {
-  ANF_feature_ranks[[i]] = rankFeaturesByNMI_parallely(data = list(input[[i]]), 
+  ANF_feature_ranks[[i]] = rankFeaturesByNMI_parallely_ANF(data = list(input[[i]]), 
                                                        W = final_affinity_matrix,
                                                        ncores = 8,
-                                                       binary = binary_flags[i])
+                                                       binary = binary_flags[i],
+                                                       type  = "rw")
   cat("Done with", names(input)[i], "\n")
 }
 names(ANF_feature_ranks) = names(input)
@@ -393,6 +392,7 @@ top_features <- feature_data[order(feature_data$Global_Rank), ][1:1000, ]
 top_features <- top_features[order(top_features$Global_Rank), ]
 
 # Create the bar plot
+library(ggplot2)
 ggplot(top_features, aes(x = NMI_Scores, y = Global_Rank, fill = Modality)) +
   geom_bar(
     stat = "identity",
@@ -548,6 +548,11 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    algorithm, "_", data_source, "_",
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
+
+save.image(paste0(home, "/Results/single_algorithm/", 
+                  algorithm, "/", algorithm, "_", data_source, "_",
+                  data_types, "_eval_on_", evaluation_source,
+                  "_env.RData"))
 
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
