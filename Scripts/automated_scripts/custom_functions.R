@@ -2790,7 +2790,7 @@ concordanceNetworkNMI_ANF = function (Wall, C, type)
 
 # ANF feature ranking by NMI modification #####
 rankFeaturesByNMI_parallely_ANF <- function(data, W, ncores = detectCores() - 1, binary = FALSE,
-                                            type = "rw") {
+                                            type = "rw", nn = 15) {
   stopifnot(class(data) == "list" && length(data) == 1)  # Ensure only one data type is passed
   
   NUM_OF_FEATURES <- ncol(data[[1]])
@@ -2806,22 +2806,25 @@ rankFeaturesByNMI_parallely_ANF <- function(data, W, ncores = detectCores() - 1,
   # Ensure cluster is stopped in case of error
   on.exit(stopCluster(cl))
   
-  clusterEvalQ(cl, library(SNFtool))  # Make SNFtool available to each core
+  clusterEvalQ(cl, library(SNFtool))
+  clusterEvalQ(cl, library(ANF))
   clusterEvalQ(cl, library(foreach))
   clusterEvalQ(cl, library(doParallel))
   
   # Use foreach to parallelize over features (compatible with Windows)
-  data_type_scores <- foreach(feature_ind = 1:NUM_OF_FEATURES, .combine = 'c', .packages = c("SNFtool")) %dopar% {
+  data_type_scores <- foreach(feature_ind = 1:NUM_OF_FEATURES, .combine = 'c', .packages = c("SNFtool", "ANF")) %dopar% {
     tryCatch({
       if (binary) {
         # Use binary distance
-        dist_matrix <- as.matrix(dist(as.matrix(data[[1]][, feature_ind]), method = "binary"))
+        dist_matrix <- as.matrix(dist(as.matrix(data[[1]][, feature_ind]), 
+                                      as.matrix(data[[1]][, feature_ind]),
+                                      method = "binary"))
       } else {
         # Use default distance (assumed to be Euclidean)
         dist_matrix <- dist2(as.matrix(data[[1]][, feature_ind]), as.matrix(data[[1]][, feature_ind]))
       }
       
-      affinity_matrix <- affinityMatrix(dist_matrix)      
+      affinity_matrix <- ANF::affinity_matrix(dist_matrix, alpha = 1/6, beta = 1/6, k = nn)      
       clustering_single_feature <- spectral_clustering(affinity_matrix, num_of_clusters_fused,
                                                        type = type)
       calNMI(clustering_fused, clustering_single_feature)

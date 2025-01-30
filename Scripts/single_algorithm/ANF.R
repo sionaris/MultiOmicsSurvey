@@ -349,7 +349,8 @@ for (i in 1:length(input)) {
                                                        W = final_affinity_matrix,
                                                        ncores = 8,
                                                        binary = binary_flags[i],
-                                                       type  = "rw")
+                                                       type  = "rw",
+                                                       nn = optN)
   cat("Done with", names(input)[i], "\n")
 }
 names(ANF_feature_ranks) = names(input)
