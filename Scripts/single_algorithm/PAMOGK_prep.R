@@ -81,3 +81,11 @@ print(dimensions_df)
 # CNV                 CNV 13374 rows x 625 columns
 # miRNA             miRNA     0 rows x 625 columns
 # Methylation Methylation 14739 rows x 625 columns
+
+for (modality in names(up_input)) {
+  if (modality == "miRNA") {
+    next
+  } else {
+  write.csv(as.data.frame(up_input[[modality]]), paste0("Python/PAMOGK/", modality, ".csv"))
+  }
+}
