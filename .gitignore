@@ -22,9 +22,11 @@
 /Resources/mixkernel_input.rds
 /Resources/MFA_input.rds
 /Resources/MOFA_input.rds
+/Resources/PIntNMF_input.rds
 /Resources/Python
 /Python/MONET/.git
 /Python/MONET/build
+/Python/PAMOGK/*.csv
 /Resources/METABRIC/METABRIC_data_CNA.txt
 /Resources/METABRIC/METABRIC_data_Expression.txt
 /Resources/METABRIC/METABRIC_mutation_data.txt
