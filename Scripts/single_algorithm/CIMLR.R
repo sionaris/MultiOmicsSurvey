@@ -574,7 +574,6 @@ plot_object = list(clust.res = CIMLR_clusters %>%
 # Export consensus clustering object
 clust = as.data.frame(plot_object$clust.res)
 colnames(clust) = c("Sample.ID", "Cluster")
-clust$Cluster = paste0(algorithm, clust$Cluster)
 openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/",
                                    algorithm, "_", data_source, "_",
                                    data_types, "_eval_on_", evaluation_source,
