@@ -100,263 +100,82 @@ COCA_moc = buildMOC(data = input, M = 5,
 timestamp()
 # 2.2h
 
-# Hyperparameter tuning
+# Clustering the output
+library(fastcluster)
+vgd = vegan::vegdist(as.matrix(COCA_moc$moc), method = "jaccard")
+hcs <- fastcluster::hclust(vgd, "ward.D")
 
-# We ran the Scripts/single_algorithm/COCA_HPC.R script in an HPC
-# with SLURM parameters specified in Scripts/single_algorithm/COCA_HPC.sh
+# List of clusterings for the range of k -> 2:10
+list_of_k = list()
+treecuts = list()
 
-# We import the results here for further procressing
-dimensions_to_try = c(2:10)
-results_list = readRDS("Resources/HPC output/COCA_HPC/COCA_results_list.rds")
+for (k in 2:10) {
+  treecuts[[paste0("k = ", k)]] = cutree(hcs, k)
+  list_of_k[[paste0("k = ", k)]] = data.frame(Sample.ID = rownames(COCA_moc$moc), 
+                                              cluster = as.numeric(treecuts[[paste0("k = ", k)]]), 
+                                              row.names = rownames(COCA_moc$moc), 
+                                              stringsAsFactors = FALSE)
+}
 
-# Extract potential values for plotting explained variance
-potential_values <- sapply(results_list, function(x) x$potential)
+# Get silhouette metrics to pick the best k
+library(cluster)
 
-# Plot the explained variance (potential) vs. dimension
-library(ggplot2)
-ggplot(data = data.frame(Dimension = dimensions_to_try, ExplainedVariation = potential_values),
-       aes(x = Dimension, y = ExplainedVariation)) +
-  geom_line(color = "#f5bc83", size = 0.5) +
-  geom_point(color = "#880a49", size = 1, shape = 16) +
-  labs(
-    title = "Explained Variation by Dimension",
-    x = "Dimension",
-    y = "Explained Variation"
-  ) +
-  theme(
-    plot.background = element_rect(fill = "white", color = "white"),
-    panel.background = element_rect(fill = "white", color = "white"),
-    panel.grid.major.y = element_line(color = "lightgray", linetype = "dotted", linewidth = 0.13),
-    panel.grid.major.x = element_blank(),
-    axis.title = element_text(face = "bold", size = 4.5),
-    axis.text = element_text(size = 3),
-    axis.line = element_line(linetype = "solid", linewidth = 0.1),
-    axis.ticks = element_line(linewidth = 0.05),
-    plot.title = element_text(face = "bold", size = 5, hjust = 0.5)
-  )+
-  scale_x_continuous(limits = c(0, 11), breaks = 2:10, expand = c(0, 0)) +
-  scale_y_continuous(limits = c(0, 0.4), breaks = seq(0, 0.35, 0.05), expand = c(0, 0)) +
-  geom_vline(xintercept = 2:10, color = "grey", linetype = "dotted", linewidth = 0.13)
-ggsave("Results/single_algorithm/COCA/explained_variation_plot.png",
-       dpi = 700, width = 1920, height = 1080, units = "px")
-dev.off()
+avg_sil = numeric(length = 9)
+# Loop over the range of k values
+for (k in 2:10) {
+  sil <- silhouette(treecuts[[paste0("k = ", k)]], vgd)
+  avg_sil[k - 1] <- mean(sil[, "sil_width"])
+}
+names(avg_sil) = names(list_of_k)
 
-# We pick 7 as the optimal number of low dimensions due to the high jump of the 
-# line for dimensions = 7 and the slow increase afterwards
+# > avg_sil
+# k = 2     k = 3     k = 4     k = 5     k = 6     k = 7     k = 8     k = 9    k = 10 
+# 0.9775318 0.9840628 0.9949359 0.9958667 0.9968000 0.8896000 0.8848000 0.8848000 0.8848000 
 
-# The authors suggest running k-means clustering (or other unsupervised methods)
-# for a varying number of clusters and choose optimal k based on silhouette
-optr = 7
+# Get gap statistics to complement the final choice
+hclust_gap <- function(x, k) {
+  return(list_of_k[[paste0("k = ", k)]])
+}
 
-# # Hierarchical clustering
-# library(fastcluster)
-# dist_mat = dist(t(results_list[["dim_7"]][["coordinate"]]))
-# hclust_output = fastcluster::hclust(dist_mat,
-#                                     method = "complete")
-# 
-# # Get silhouette values
-# possible_K = c(2:10)
-# avg_sil_values <- numeric(length(possible_K))
-# 
-# for (i in seq_along(possible_K)) {
-#   k <- possible_K[i]
-#   cluster_assignments <- cutree(hclust_output, k = k)
-#   sil <- cluster::silhouette(cluster_assignments, 
-#                              dist_mat)
-#   avg_sil_values[i] <- mean(sil[, "sil_width"])
-# }
-# sil_results <- data.frame(k = possible_K, avg_sil = avg_sil_values)
-# 
-# # Identify k with the highest average silhouette and choose as optimal
-# best_k <- possible_K[which.max(avg_sil_values)] # 4: close second
-# 
-# # Average Silhouette plot
-# ggplot(data = data.frame(cluster.no = c(2:10), Avg.sil = avg_sil_values),
-#        aes(x = cluster.no, y = avg_sil_values)) +
-#   geom_line(color = "#f5bc83", size = 0.5) +
-#   geom_point(color = "#880a49", size = 1, shape = 16) +
-#   labs(
-#     title = "Average silhouette index per number of clusters",
-#     x = "Number of clusters",
-#     y = "Average Silhouette index"
-#   ) +
-#   theme(
-#     plot.background = element_rect(fill = "white", color = "white"),
-#     panel.background = element_rect(fill = "white", color = "white"),
-#     panel.grid.major.y = element_line(color = "lightgray", linetype = "dotted", linewidth = 0.13),
-#     panel.grid.major.x = element_blank(),
-#     axis.title = element_text(face = "bold", size = 4.5),
-#     axis.text = element_text(size = 3),
-#     axis.line = element_line(linetype = "solid", linewidth = 0.1),
-#     axis.ticks = element_line(linewidth = 0.05),
-#     plot.title = element_text(face = "bold", size = 5, hjust = 0.5)
-#   )+
-#   scale_x_continuous(limits = c(0, 11), breaks = 2:10, expand = c(0, 0)) +
-#   scale_y_continuous(limits = c(0, 0.6), breaks = seq(0, 0.5, 0.1), expand = c(0, 0)) +
-#   geom_vline(xintercept = 2:10, color = "grey", linetype = "dotted", linewidth = 0.13)
-# ggsave("Results/single_algorithm/COCA/avg_silhouette_plot.png",
-#        dpi = 700, width = 1920, height = 1080, units = "px")
-# dev.off()
+# Compute the gap statistic for k = 1 to 10 clusters
+# 100 bootstrap samples for the reference distribution
+gap_stat <- clusGap(as.matrix(COCA_moc$moc), 
+                    FUNcluster = hclust_gap, 
+                    K.max = 10, 
+                    B = 100)
 
-# Import resources
-scheme = readRDS("Resources/scheme.rds")
-annCol = scheme$annCol
-annColors = scheme$annColors
-cluster_colors = scheme$clust.colors
-col.list = scheme$col.list
-var2comp = scheme$var2comp
-rm(scheme); gc()
+print(gap_stat$Tab)
 
-# M3C
-library(M3C)
-# Here we create a class column for ER status
-m3c_des = annCol
-m3c_des$class = m3c_des$`ER status`
-m3c_des$ID = rownames(m3c_des)
-m3c_input = results_list[[paste0("dim_", optr)]][["coordinate"]] %>% as.data.frame()
-rownames(m3c_input) = paste0("LRA_", rownames(results_list[["dim_7"]][["coordinate"]]))
-colnames(m3c_input) = colnames(results_list[["dim_7"]][["coordinate"]])
+# > gap_stat[["Tab"]]
+# logW   E.logW      gap      SE.sim
+# [1,]  3.8803687 5.275151 1.394783 0.007818690
+# [2,]  1.8415692 5.273556 3.431986 0.007824948
+# [3,]  1.1368116 5.272031 4.135220 0.007772126
+# [4,]  0.3382772 5.270493 4.932216 0.007832553
+# [5,] -0.3613887 5.268835 5.630224 0.007850038
+# [6,]       -Inf 5.267217      Inf 0.007873200
+# [7,]       -Inf 5.265610      Inf 0.007888058
+# [8,]       -Inf 5.263988      Inf 0.007917444
+# [9,]       -Inf 5.262369      Inf 0.007944020
+# [10,]       -Inf 5.260737      Inf 0.007961466
 
-RNGversion("4.2.2")
-consensus_km = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
-                   repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
-                   clusteralg = "km", maxK = 10) # optimal K: 4
+# The largest gap is noticed between 5 and 6 and these are the clusterings with
+# the highest silhouette. k = 5 would normally be selected
 
-optk = 4 # p = 0.046
-paste0(ifelse(consensus_km$scores$NORM_P[consensus_km$scores$K == 4] < 0.05, "The clustering is significant.",
-              "The clustering is not significant."))
+# However, after observing the corresponding table
+table(list_of_k[[paste0("k = ", optk)]]$cluster)
 
-# Plotting clustering info
-# Consensus index plot
-ci_plot = ggplot(consensus_km[["plots"]][[1]][["data"]], aes(x = consensusindex, y = CDF,
-                                                             group = k, alpha = 0.7))+
-  geom_line(aes(color = factor(k)), linewidth = 0.5)+
-  theme_bw()+
-  theme(panel.border = element_rect(linewidth = 0.2),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(size = 5, face = "bold"),
-        legend.title = element_text(face = "bold", size = 4),
-        legend.text = element_text(size = 3),
-        legend.key.size = unit(0.2, "cm"),
-        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
-        legend.spacing.y = unit(0.5, units = "mm"),
-        axis.title.x = element_text(size = 4, face = "bold"),
-        axis.title.y = element_text(size = 4, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15),
-        axis.text.x = element_text(size = 4),
-        axis.text.y = element_text(size = 4))+
-  labs(y = "Cumulative Distribution Function (CDF)",
-       x = "Consensus Index",
-       title = "Real Data")+
-  guides(color = guide_legend(title = "K"), linewidth = "none", alpha = "none")
-ci_plot
-ggsave(filename = "Consensus_index.png",
-       path = "Results/single_algorithm/COCA", 
-       width = 1920, height = 1080, device = 'png', units = "px",
-       dpi = 700)
-dev.off()
+# 1   2   3   4   5 
+# 549  68   3   1   4
 
-# Entropy plot
-entropy = ggplot(consensus_km[["plots"]][[2]][["data"]], aes(x = K, y = PAC_SCORE, alpha = 0.7))+
-  geom_line(aes(color = "#7c1d6f"), linewidth = 0.5)+
-  scale_x_continuous(limits = c(2, 10), breaks = seq(2, 10, 1))+
-  theme_bw()+
-  theme(panel.border = element_rect(linewidth = 0.2),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(size = 5, face = "bold", vjust = 0.5, hjust = 0.5),
-        legend.title = element_text(face = "bold", size = 4),
-        legend.text = element_text(size = 3),
-        legend.key.size = unit(0.2, "cm"),
-        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
-        legend.spacing.y = unit(0.5, units = "mm"),
-        axis.title.x = element_text(size = 4, face = "bold"),
-        axis.title.y = element_text(size = 4, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15),
-        axis.text.x = element_text(size = 4),
-        axis.text.y = element_text(size = 4))+
-  labs(y = "Entropy",
-       x = "K",
-       title = "Real Data")+
-  guides(color = "none", alpha = "none")
-entropy
-ggsave(filename = "Entropy.png",
-       path = "Results/single_algorithm/COCA", 
-       width = 1920, height = 1080, device = 'png', units = "px",
-       dpi = 700)
-dev.off()
-
-# Statistical significance of clusters
-statsig_clust = ggplot(consensus_km[["plots"]][[3]][["data"]], aes(x = K, y = P_SCORE, 
-                                                                   color = P_SCORE < -log10(0.05)))+
-  geom_point(size = 1.5, alpha = 0.6)+
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", linewidth = 0.2)+
-  scale_x_continuous(limits = c(2, 10), breaks = seq(2, 10, 1))+
-  scale_color_manual(name = "Color",
-                     values = c("#6c2167", "grey"),
-                     labels = c("p < 0.05", "p > 0.05")) +
-  theme_bw()+
-  theme(panel.border = element_rect(linewidth = 0.2),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(size = 5, face = "bold"),
-        axis.title.x = element_text(size = 4, face = "bold"),
-        axis.title.y = element_text(size = 4, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15),
-        axis.text.x = element_text(size = 4),
-        axis.text.y = element_text(size = 4),
-        legend.title = element_text(face = "bold", size = 4),
-        legend.text = element_text(size = 3),
-        legend.key.size = unit(0.2, "cm"),
-        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
-        legend.spacing.y = unit(0.5, units = "mm"))+
-  labs(title = "Statistical significance of different values of K",
-       y = bquote(bold(-log[10]("p"))))
-statsig_clust
-ggsave(filename = "Stat_sig.png",
-       path = "Results/single_algorithm/COCA", 
-       width = 1920, height = 1080, device = 'png', units = "px",
-       dpi = 700)
-dev.off()
-
-# RCSI plot
-rcsi = ggplot(as.data.frame(consensus_km[["scores"]]), aes(x = consensus_km$scores$K,
-                                                           y = consensus_km$scores$RCSI))+
-  geom_line(size = 0.3, color = "violet")+
-  geom_errorbar(aes(ymin = consensus_km$scores$RCSI - consensus_km$scores$RCSI_SE,
-                    ymax = consensus_km$scores$RCSI + consensus_km$scores$RCSI_SE,
-                    color = "deeppink3"), width = 0.2, size = 0.1)+
-  geom_point(size = 0.05, color ="deeppink3")+
-  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
-  scale_y_continuous(limits = c(-0.6, 0.6), breaks = seq(-0.5, 0.5, 0.1))+
-  theme(plot.title = element_text(size = 5, face = "bold"),
-        axis.title.x = element_text(size = 4, face = "bold"),
-        axis.title.y = element_text(size = 4, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15),
-        axis.text.x = element_text(size = 4),
-        axis.text.y = element_text(size = 4),
-        legend.position = "none",
-        panel.background = element_rect(fill = "white", 
-                                        colour = "white"),
-        panel.grid = element_blank(),
-        axis.line = element_line(linewidth = 0.2))+
-  labs(title = "Relative Cluster Stability Index vs. number of clusters K",
-       x = "K", y = "RCSI")
-rcsi
-ggsave(filename = "RCSI.png",
-       path = "Results/single_algorithm/COCA", 
-       width = 1920, height = 1080, device = 'png', units = "px",
-       dpi = 700)
-dev.off()
+# It looks like there are really two clusters. Therefore, the tree is cut at k = 2
+optk = 2
 
 # Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
-COCA_clusters = as.data.frame(list(Sample.ID = rownames(consensus_km[["realdataresults"]][[4]][["ordered_annotation"]]),
-                                         Cluster = consensus_km[["realdataresults"]][[4]][["ordered_annotation"]][["consensuscluster"]]))
-COCA_clusters$Sample.ID = gsub("\\.", "-", COCA_clusters$Sample.ID)
-rownames(COCA_clusters) = COCA_clusters$Sample.ID
+COCA_clusters = list_of_k[[paste0("k = ", optk)]] %>%
+  dplyr::rename(Cluster = cluster)
 
 # Calculate ARI and NMI
 library(mclust)
@@ -386,7 +205,8 @@ library(ComplexHeatmap)
 scheme = readRDS("Resources/scheme.rds")
 annCol = scheme$annCol
 annColors = scheme$annColors
-cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA")
+cluster_colors = c("#2EC4B6", "#E71D36", 
+                   "#FF9F1C", "#BDD5EA", "#FFA5AB")
 col.list = scheme$col.list
 var2comp = scheme$var2comp %>%
   dplyr::select(-`Consensus Subtype`) %>%
@@ -404,10 +224,9 @@ rm(scheme); gc()
 #                                             threshold = 100, norm_quant = 0,
 #                                             norm_method = "divide by quantile")
 
-cor_mat = cor(as.matrix(results_list[[paste0("dim_", optr)]][["coordinate"]]), method = "spearman")
 sil = compute_silhouette(cluster_df = COCA_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = cor_mat,
-                         normalize_matrix = TRUE)
+                         similarity_matrix = 1 - as.matrix(vgd),
+                         normalize_matrix = FALSE)
 
 getSilhouette_ggplot(sil      = sil,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
@@ -424,7 +243,8 @@ dev.off()
 
 # Heatmap prep
 plotdata <- lapply(lapply(input, as.matrix), 
-                   function(mat) mat[rowSums(mat != 0) > 0, ])
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
 plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
@@ -432,8 +252,18 @@ plotdata = getStdiz(
   scaleFlag = c(F, F, F, F, F)
 )
 
+
 plot_object = list(clust.res = COCA_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
+
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
 
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
@@ -1248,15 +1078,6 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           width = 8,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = "kappa_NTP_vs_PAM_transNEO")
-
-# Export consensus clustering object
-clust = as.data.frame(plot_object$clust.res)
-colnames(clust) = c("Sample.ID", "Cluster")
-clust$Cluster = paste0(algorithm, clust$Cluster)
-openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
-                                   algorithm, "_", data_source, "_",
-                                   data_types, "_eval_on_", evaluation_source,
-                                   "_clusterings.xlsx"))
 
 # Supplementary results #####
 
