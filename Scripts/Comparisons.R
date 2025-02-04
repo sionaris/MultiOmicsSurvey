@@ -11,6 +11,9 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Preamble
 home = getwd()
+data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
+data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
+evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER 
 
 # Import clusterings
 R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "IntNMF", "KLIC",
@@ -122,60 +125,8 @@ ari_matrix_masked <- ari_matrix
 ari_matrix_masked[which(is.na(ari_matrix_masked))] = .Machine$double.eps
 ari_matrix_masked[upper.tri(ari_matrix_masked)] <- NA
 
-# Create logo mix using magick
-library(magick)
-
-# Scale the R logo to 200x200
-r_img <- image_read(file.path(home, "Resources/r.png")) |> 
-  image_scale("200x200!")
-
-# Scale the Python logo to 200x200
-py_img <- image_read(file.path(home, "Resources/python.png")) |> 
-  image_scale("200x200!")
-
-# Write them back to disk so we can read them as arrays
-image_write(r_img, file.path(home, "Resources/r_200x200.png"))
-image_write(py_img, file.path(home, "Resources/python_200x200.png"))
-
-library(png)
-
-# Read each 200x200 image as a numeric array:  [height, width, channels]
-# Typically RGBA => a 4-channel array
-r_array   <- readPNG(file.path(home, "Resources/r_200x200.png"))      # shape: 200 x 200 x 4
-py_array  <- readPNG(file.path(home, "Resources/python_200x200.png"))  # shape: 200 x 200 x 4
-
-nr <- dim(r_array)[1]  # 200
-nc <- dim(r_array)[2]  # 200
-# Create a blank result array, same shape
-res_array <- array(0, dim = c(nr, nc, 4))
-
-# We want:
-#  - the "upper triangle" (row < col) to come from the R logo
-#  - the "lower triangle" (row > col) to come from the Python logo
-#  - the main diagonal (row == col) to be white
-#
-
-for(i in seq_len(nr)) {
-  for(j in seq_len(nc)) {
-    
-    if(j > i) {
-      # Above diagonal => pick from R
-      res_array[i, j, ] <- r_array[i, j, ]
-      
-    } else if(j < i) {
-      # Below diagonal => pick from Python
-      res_array[i, j, ] <- py_array[i, j, ]
-      
-    } else {
-      # On the diagonal => white background
-      # RGBA for white = c(1,1,1,1)
-      res_array[i, j, ] <- c(1,1,1,1)
-    }
-  }
-}
-
-# Write out the combined image
-writePNG(res_array, file.path(home, "Resources/r_python_mashup.png"))
+# Create a logo mashup
+# source("Scripts/create_logo_mashup.R")
 
 # Import logos
 logo_paths <- vapply(
@@ -301,3 +252,8 @@ draw(ARI_heatmap,
      annotation_legend_side = "bottom")
 
 dev.off()
+
+# Save environment
+save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
+                  data_types, "_eval_on_", evaluation_source,
+                  "_env.RData"))
