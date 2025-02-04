@@ -157,7 +157,7 @@ categorical = c("SNPs")
 # Calculate the pair-wise distance (Euclidean for continuous modalities)
 input_dists = lapply(input[continuous], function(x) {
   x = as.matrix(x)
-  x = SNFtool::dist2(x, x)
+  x = MDICCtool::dist2(x, x)
 })
 
 # Binary for SNPs (see ?dist for details)
@@ -182,55 +182,6 @@ for (modality in modalities) {
                                    aff_matrix_neighbors)
 }
 gc()
-
-# # Set up parallel background
-# library(doParallel)
-# library(foreach)
-# 
-# nCores = 9 # set depending on your machine's capabilities. Here: one core for each k
-# cl <- makeCluster(nCores)
-# registerDoParallel(cl)
-# 
-# # We want the following functions to be accessible on each worker:
-# func_vec <- c("dominate.set", "transition.fields", "dn", 
-#               "eig1", "L2_distance_1", "umkl", "Hbeta", "MDICC",
-#               "MDICClabel", "MDICCscore")
-# 
-# # MDICC runs
-# timestamp()
-# mdicc_results_parallel <- foreach(
-#   cc = 2:10, 
-#   .combine = 'rbind', 
-#   .export = func_vec,  
-#   .packages = c("Matrix", "reticulate")  
-# ) %:%
-#   foreach(
-#     k2_val = k2, 
-#     .combine = 'rbind',
-#     .export = func_vec,
-#     .packages = c("Matrix", "reticulate")
-#   ) %:%
-#   foreach(
-#     k3_val = 2:10,
-#     .combine = 'rbind',
-#     .export = func_vec,
-#     .packages = c("Matrix", "reticulate")
-#   ) %dopar% {
-#     # Running MDICC
-#     S <- MDICC(aff_input, c = cc, k = k2_val)
-#     label_vec <- MDICClabel(S, k3_val)
-#     
-#     data.frame(
-#       c              = cc,
-#       k2             = k2_val,
-#       k3             = k3_val,
-#       cluster_labels = I(list(label_vec)),
-#       stringsAsFactors = FALSE
-#     )
-#   }
-# 
-# stopCluster(cl)
-# timestamp()
 
 # ---- Serial version (no parallel, nested for loops) ----
 
@@ -276,7 +227,119 @@ for (cc in 2:10) {
   cat("---------------", "\n")
   cat("Done for cc =", cc, "\n")
 }
-timestamp()
+timestamp() # ~1.25h
+
+rm(S, label_vec, new_row); gc()
+
+# We pick the best combination based on the silhouette index
+# Enhance the MDICC results list
+library(cluster)
+
+MDICC_results = vector("list", length(S_matrices))
+for (i in 1:length(S_matrices)) {
+  MDICC_results[[i]][["MDICC"]] = mdicc_results_serial[i, ]
+  MDICC_results[[i]][["S_matrix"]] = S_matrices[[i]]
+  MDICC_results[[i]][["Silhouette"]] = silhouette(as.integer(MDICC_results[[i]][["MDICC"]][["cluster_labels"]][[1]]),
+                   dist = 1 - MDICC_results[[i]][["S_matrix"]])
+  MDICC_results[[i]][["Avg. sil. width"]] = summary(MDICC_results[[i]][["Silhouette"]])$avg.width
+  
+}
+names(MDICC_results) = names(S_matrices)
+rm(S_matrices, mdicc_results_serial); gc()
+
+# Optimal combination is for maximum avg. silhouette width
+optimal_MDICC = MDICC_results[[which.max(lapply(MDICC_results, function(x) x[["Avg. sil. width"]]))]]
+optk = optimal_MDICC$MDICC$k3 # 2
+
+MDICC_clusters = as.data.frame(list(Sample.ID = rownames(input$SNPs), 
+                                    Cluster = as.numeric(optimal_MDICC$MDICC$cluster_labels[[1]]) + 1)) # MDICC starts from 0
+
+# Main results ###
+# Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
+# (Jaccard may be misleading)
+
+# Calculate ARI and NMI
+library(mclust)
+library(clue)
+
+ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = MDICC_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
+
+NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = MDICC_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
+
+# Very low statistics when compared to the MOVICS. Results differ
+
+# MOVICS-like analysis #####
+library(MOVICS)
+library(ComplexHeatmap)
+
+# Import coloring scheme
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(MDICC_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(MDICC = paste0(algorithm, Cluster)) %>%
+  dplyr::select(MDICC, everything()) %>%
+  dplyr::select(-Cluster)
+rm(scheme); gc()
+
+# Silhouette
+dimnames(optimal_MDICC$S_matrix) = list(rownames(input_dists$SNPs), rownames(input_dists$SNPs))
+sil = compute_silhouette(cluster_df = MDICC_clusters %>% dplyr::rename(samID = Sample.ID),
+                         similarity_matrix = optimal_MDICC$S_matrix,
+                         normalize_matrix = TRUE)
+
+getSilhouette_ggplot(sil      = sil,
+                     fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                     fig.name = "Silhouette",
+                     height   = 5.5,
+                     width    = 5.5,
+                     axis_label_size = 12,
+                     axis_label_font = "bold",
+                     text_size = 1.5,
+                     title_size = 16,
+                     algorithm = algorithm,
+                     save_plot = TRUE)
+dev.off()
+
+# Heatmap prep
+plotdata <- lapply(lapply(input, as.matrix), 
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
+plotdata = getStdiz(
+  data = plotdata,
+  halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
+  centerFlag = c(F, F, F, F, F),
+  scaleFlag = c(F, F, F, F, F)
+)
+
+plot_object = list(clust.res = MDICC_clusters %>%
+                     dplyr::rename(samID = Sample.ID, clust = Cluster))
+
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
+
 
 # Save environment
 save.image(paste0(home, "/Results/single_algorithm/", 
