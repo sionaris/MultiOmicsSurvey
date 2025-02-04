@@ -300,3 +300,112 @@ saveRDS(
   final_KLIC,
   file = "Results/single_algorithm/KLIC/KLIC_finalResults.rds"
 )
+
+# Optimal k and cluster df
+optk = bestGlobalK
+KLIC_clusters = as.data.frame(list(Sample.ID = rownames(input$SNPs), Cluster = bestClustering))
+
+# Main results ###
+# Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
+# (Jaccard may be misleading)
+
+# Calculate ARI and NMI
+library(mclust)
+library(clue)
+
+ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = KLIC_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
+
+NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = KLIC_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
+
+# Very low statistics when compared to the MOVICS. Results differ
+
+# MOVICS-like analysis #####
+library(MOVICS)
+library(ComplexHeatmap)
+
+# Import coloring scheme
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(KLIC_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(KLIC = paste0(algorithm, Cluster)) %>%
+  dplyr::select(KLIC, everything()) %>%
+  dplyr::select(-Cluster)
+rm(scheme); gc()
+
+# Compute a similarity matrix based on the methodology
+final_kvals = bestCombo
+final_CM = array(0, dim = c(nSamples, nSamples, nDatasets))
+for (i in seq_len(nDatasets)) {
+  # If k_i = 2 => index in allCM is (2 - 2 + 1) = 1, if k_i = 3 => 2, etc.
+  idxInAllCM <- final_kvals[i] - 2 + 1
+  final_CM[, , i] <- allCM[[idxInAllCM]][, , i]
+}
+
+RNGversion("4.2.2")
+set.seed(123)
+
+local_params = list(iteration_count = 100, cluster_count = 2)
+final_res = klic::lmkkmeans(final_CM, local_params)
+final_WKM <- matrix(0, nrow = nSamples, ncol = nSamples)
+for (j in seq_len(nDatasets)) {
+  final_WKM <- final_WKM + (res$Theta[, j] %*% t(res$Theta[, j])) * final_CM[,, j]
+}
+dimnames(final_WKM) = list(rownames(input$SNPs), rownames(input$SNPs))
+
+# Silhouette
+sil = compute_silhouette(cluster_df = KLIC_clusters %>% dplyr::rename(samID = Sample.ID),
+                         similarity_matrix = final_WKM,
+                         normalize_matrix = TRUE)
+
+getSilhouette_ggplot(sil      = sil,
+                     fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                     fig.name = "Silhouette",
+                     height   = 5.5,
+                     width    = 5.5,
+                     axis_label_size = 12,
+                     axis_label_font = "bold",
+                     text_size = 1.5,
+                     title_size = 16,
+                     algorithm = algorithm,
+                     save_plot = TRUE)
+dev.off()
+
+# Heatmap prep
+plotdata <- lapply(lapply(input, as.matrix), 
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
+plotdata = getStdiz(
+  data = plotdata,
+  halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
+  centerFlag = c(F, F, F, F, F),
+  scaleFlag = c(F, F, F, F, F)
+)
+
+plot_object = list(clust.res = KLIC_clusters %>%
+                     dplyr::rename(samID = Sample.ID, clust = Cluster))
+
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
