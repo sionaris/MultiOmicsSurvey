@@ -26,6 +26,7 @@
 /Resources/Python
 /Python/MONET/.git
 /Python/MONET/build
+/Python/MONET/monet/__pycache__
 /Python/PAMOGK/*.csv
 /Resources/METABRIC/METABRIC_data_CNA.txt
 /Resources/METABRIC/METABRIC_data_Expression.txt
