@@ -1529,7 +1529,7 @@ transform_affinity_matrix <- function(similarity_matrix, norm_quant = 0.05, norm
 }
 
 # Rank SNF features parallely #####
-rankFeaturesByNMI_parallely <- function(data, W, ncores = detectCores() - 1, binary = FALSE) {
+rankFeaturesByNMI_parallely <- function(data, W, ncores = detectCores() - 1, binary = FALSE, nn = NULL, sigma) {
   stopifnot(class(data) == "list" && length(data) == 1)  # Ensure only one data type is passed
   
   NUM_OF_FEATURES <- ncol(data[[1]])
@@ -1560,7 +1560,7 @@ rankFeaturesByNMI_parallely <- function(data, W, ncores = detectCores() - 1, bin
         dist_matrix <- dist2(as.matrix(data[[1]][, feature_ind]), as.matrix(data[[1]][, feature_ind]))
       }
       
-      affinity_matrix <- affinityMatrix(dist_matrix)      
+      affinity_matrix <- affinityMatrix(dist_matrix, K = nn, sigma = sigma)      
       clustering_single_feature <- spectralClustering(affinity_matrix, num_of_clusters_fused)
       calNMI(clustering_fused, clustering_single_feature)
     }, error = function(e) {
