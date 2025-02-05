@@ -96,10 +96,8 @@ saveRDS(input, "Resources/Spectrum_input.rds")
 
 # Setup ###
 library(Spectrum)
+source("Scripts/single_algorithm/automated_scripts/Spectrum_functions.R")
 
-# Run the following at the HPC
-
-# Hyperparameter tuning
 parameters = list(
   method = 2, # multimodality gap method (Gaussian/non-Gaussian clusters)
   diffusion = TRUE, # whether to perform graph diffusion
@@ -113,244 +111,77 @@ parameters = list(
   tunekernel = TRUE, # whether to tune the kernel, only applies for method 2 (default=FALSE)
   clusteralg = 'km', # or GMM
   diffusion_iters = 5, # default 4
-  KNNs_p = 10, # number of KNNs when making KNN graph (default=10, suggested=10-20)
+  KNNs_p = seq(10, 50, 5), # number of KNNs when making KNN graph (default=10, suggested=10-20)
   fontsize = 18, # plot parameter
   dotsize = 1.25 # plot parameter
 )
 
-# Run Spectrum
-timestamp()
-spectral_clustering = Spectrum_bin_and_par(input,
-                               method = parameters$method,
-                               diffusion = parameters$diffusion,
-                               kerneltype = parameters$kerneltype,
-                               maxk = parameters$maxk,
-                               NN = parameters$NN,
-                               NN2 = parameters$NN2,
-                               frac = parameters$frac,
-                               thresh = parameters$thresh,
-                               tunekernel = parameters$tunekernel,
-                               clusteralg = parameters$clusteralg,
-                               diffusion_iters = parameters$diffusion_iters,
-                               KNNs_p = parameters$KNNs_p,
-                               fontsize = parameters$fontsize,
-                               dotsize = parameters$dotsize,
-                               distances = c("binary",
-                                             rep("euclidean", 4)),
-                               cores = 5)
-timestamp()
-
-neighbor_step = 5
-num_neighbors_range = seq(10, 50, neighbor_step) # number of neighbors, usually (10~30)
+Spectrum_runs = list()
+t1 = Sys.time()
+for (kNN_p in parameters$KNNs_p) {
+  Spectrum_runs[[paste0("kNN_p = ", kNN_p)]] = Spectrum_bin_and_par(input,
+                                       method = parameters$method,
+                                       diffusion = parameters$diffusion,
+                                       kerneltype = parameters$kerneltype,
+                                       maxk = parameters$maxk,
+                                       NN = parameters$NN,
+                                       NN2 = parameters$NN2,
+                                       frac = parameters$frac,
+                                       thresh = parameters$thresh,
+                                       tunekernel = parameters$tunekernel,
+                                       clusteralg = parameters$clusteralg,
+                                       diffusion_iters = parameters$diffusion_iters,
+                                       KNNs_p = kNN_p,
+                                       fontsize = parameters$fontsize,
+                                       dotsize = parameters$dotsize,
+                                       distances = c("manhattan",
+                                                     rep("euclidean", 4)),
+                                       cores = 5)
+  dev.off()
+}
+dt = Sys.time() - t1
 gc()
 
-# Similarity matrices ###
-# Parallelization occurs alreade within the function. We do not parallelize further
-library(Matrix)
-library(parallel)
-similarity_object = list()
-for (nn in num_neighbors_range) {
-  similarity_object[[paste0("NN = ", nn)]] = Spectrum_mod(X = input, c = ground_truth_k, 
-                                                       k = nn, binary_flags = c("Yes", "No", "No", "No", "No"),
-                                                       binary_distance = "binary", nonbinary_distance = "sqeuclidean", cores.ratio = 0.25)
+# Pick the best clustering based on average silhouette width
+library(cluster)
+for (i in 1:length(Spectrum_runs)) {
+  embeddings = as.data.frame(Spectrum_runs[[i]]$eigensystem$vectors)[, 1:Spectrum_runs[[i]]$K]
+  Spectrum_runs[[i]][["Silhouette"]] = silhouette(as.integer(Spectrum_runs[[i]]$assignments),
+                                                  dist = Rfast::Dist(embeddings, method = "euclidean"))
+  Spectrum_runs[[i]][["Avg. sil. width"]] = summary(Spectrum_runs[[i]][["Silhouette"]])$avg.width
 }
-rm(nn)
+rm(embeddings, i); gc()
 
-# Compare similarity matrices similarly to what we did to SNF
-sim_matrices_S = lapply(similarity_object, function(x) x[["S"]])
-D2_matrices_F = lapply(similarity_object, function(x) x[["F"]])
-names(sim_matrices_S) = names(D2_matrices_F) = names(similarity_object)
+# Optimal combination is for maximum avg. silhouette width
+optimal_Spectrum = Spectrum_runs[[which.max(lapply(Spectrum_runs, function(x) x[["Avg. sil. width"]]))]]
+optk = optimal_Spectrum$K # 2
 
-# Check similarities for a given nn
-S_similarities = compute_matrix_similarity(sim_matrices_S)
-dimnames(S_similarities$Frobenius) = dimnames(S_similarities$Pearson) =
-  list(names(similarity_object), names(similarity_object))
+# Optimal KNN_p value
+names(Spectrum_runs)[which.max(lapply(Spectrum_runs, function(x) x[["Avg. sil. width"]]))] # 20
 
-# Examine Pearson matrices ###
-S_Pearson_matrix <- S_similarities$Pearson
-S_Frobenius_matrix <- S_similarities$Frobenius
+Spectrum_clusters = as.data.frame(list(Sample.ID = colnames(input$SNPs), 
+                                    Cluster = paste0("Spectrum", optimal_Spectrum$assignments)))
+Spectrum_clusters$Sample.ID = gsub("\\.", "-", Spectrum_clusters$Sample.ID)
+rownames(Spectrum_clusters) = Spectrum_clusters$Sample.ID
 
-S_Pearson_values <- S_Pearson_matrix[lower.tri(S_Pearson_matrix, diag = FALSE)]
-S_mean_Pearson_value <- mean(S_Pearson_values)
-S_median_Pearson_value <- median(S_Pearson_values)
-S_sd_Pearson_value <- sd(S_Pearson_values)
-
-S_Frobenius_values <- S_Frobenius_matrix[lower.tri(S_Frobenius_matrix, diag = FALSE)]
-S_mean_Frobenius_value <- mean(S_Frobenius_values)
-S_median_Frobenius_value <- median(S_Frobenius_values)
-S_sd_Frobenius_value <- sd(S_Frobenius_values)
-
-# Plot histogram of Pearson values
-library(ggplot2)
-ggplot(data = data.frame(S_Pearson_values), aes(x = S_Pearson_values)) +
-  geom_histogram(breaks = seq(0, 1, length.out = 37),
-                 fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
-  geom_vline(aes(xintercept = S_mean_Pearson_value, color = "Mean"), linewidth = 0.2) + 
-  geom_vline(aes(xintercept = S_median_Pearson_value, color = "Median"), linewidth = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Pearson_value - S_sd_Pearson_value, color = "Mean - SD"), 
-             linetype = "dashed", linewidth = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Pearson_value + S_sd_Pearson_value, color = "Mean + SD"), 
-             linetype = "dashed", linewidth = 0.2) +
-  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
-                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
-                                                "Density" = "darkblue")) +
-  labs(title = expression(bold(paste("Histogram of Pearson values between ",
-                                     "S matrices for different values of Nearest Neighbors"))), 
-       x = "S Matrix Pearson Values", y = "Frequency") +
-  scale_x_continuous(name = "S Matrix Pearson Values", limits = c(0, 1),
-                     breaks = seq(0, 1, 0.1), expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(panel.background = element_blank(),
-        axis.line = element_line(linewidth = 0.25),
-        plot.title = element_text(face = "bold", size = 6.3),
-        axis.title = element_text(face = "bold", size = 5.8),
-        axis.text = element_text(size = 5),
-        axis.ticks = element_line(linewidth = 0.2),
-        legend.text = element_text(size = 4.5),
-        legend.title = element_text(size = 5, face = "bold"),
-        legend.key.spacing.y = unit(1, "mm"),
-        legend.key.size = unit(0.25, "cm"),
-        legend.box.background = element_rect(color = "black"))
-ggsave(filename = paste0(algorithm, "_S_matrix_Pearson_similarity_histogram.pdf"),
-       path = paste0(home, 
-                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 2880, height = 1820, device = 'pdf', units = "px",
-       dpi = 700)
-dev.off()
-
-# Plot histogram of Frobenius values
-ggplot(data = data.frame(S_Frobenius_values), aes(x = S_Frobenius_values)) +
-  geom_histogram(breaks = seq(0, 2, length.out = 37),
-                 fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
-  geom_vline(aes(xintercept = S_mean_Frobenius_value, color = "Mean"), size = 0.2) + 
-  geom_vline(aes(xintercept = S_median_Frobenius_value, color = "Median"), size = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Frobenius_value - S_sd_Frobenius_value, color = "Mean - SD"), 
-             linetype = "dashed", size = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Frobenius_value + S_sd_Frobenius_value, color = "Mean + SD"), 
-             linetype = "dashed", size = 0.2) +
-  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
-                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
-                                                "Density" = "darkblue")) +
-  labs(title = expression(bold(paste("Histogram of Frobenius values between ",
-                                     "S matrices for different values of Nearest Neighbors"))), 
-       x = "S Matrix Frobenius Values", y = "Frequency") +
-  scale_x_continuous(name = "S Matrix Frobenius Values", limits = c(0, 2),
-                     breaks = seq(0, 2, 0.2), expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(panel.background = element_blank(),
-        axis.line = element_line(linewidth = 0.25),
-        plot.title = element_text(face = "bold", size = 6.3),
-        axis.title = element_text(face = "bold", size = 5.8),
-        axis.text = element_text(size = 5),
-        axis.ticks = element_line(linewidth = 0.2),
-        legend.text = element_text(size = 4.5),
-        legend.title = element_text(size = 5, face = "bold"),
-        legend.key.spacing.y = unit(1, "mm"),
-        legend.key.size = unit(0.25, "cm"),
-        legend.box.background = element_rect(color = "black"))
-ggsave(filename = paste0(algorithm, "_S_matrix_Frobenius_similarity_histogram.pdf"),
-       path = paste0(home, 
-                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 2880, height = 1820, device = 'pdf', units = "px",
-       dpi = 700)
-dev.off()
-
-# Evidently, Pearson correlations are on the lower extreme and Frobenius norms are high
-conclusion1 = paste0("Average Pearson similarity across S matrices produced by different values of $nn'$ was ",
-                     S_mean_Pearson_value, ", which indicates generally ",
-                     ifelse(S_mean_Pearson_value < 0.75, "dissimilar", "similar"),
-                     " S matrices across $nn'$ values.")
-
-# Handle sig_status_final
-if (S_mean_Pearson_value > 0.75) {
-  sig_status_final = FALSE
-} else {
-  sig_status_final = TRUE
-}
-
-# If no significant differences are shown between/across hyperparameters then pick median values
-if (!sig_status_final){
-  optNN = 15 # arbitrary, but yielded good results in SNF
-}
-
-# We then choose the nn value for which the
-# fused similarity matrix has the "best" bimodal distribution of low and high values.
-# WE USE THIS APPROACH ONLY BECAUSE THE NUMBER OF CLUSTERS WE SEEK IS 2!
-
-# We combine two methodologies to do it:
-
-# 1. Get the sum of variance and IQR for every matrix
-# 2. Get the sum of absolute skewness and kurtosis
-# 3. Find the nn matrix for which the sum of 1 and 2 is maximum
-
-# Skewness and kurtosis
-library(e1071)
-contrast_list <- choose_matrix_contrasts(sim_matrices_S)
-skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(sim_matrices_S)
-contrast_values <- unlist(contrast_list)
-skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
-
-# Normalize the contrast values and skewness-kurtosis values
-normalized_contrast <- minmax_normalize_values(contrast_values)
-normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
-
-# Get the sum
-combined_scores <- normalized_contrast + normalized_skewness_kurtosis
-combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
-print(combined_scores_list)
-
-best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
-cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
-
-# We choose nn = 20
-optNN = as.numeric(substr(best_combined_matrix, 6, 7))
-conclusion2 = paste0("Best similarity matrix based on combined normalized scores is for $nn' = ", 
-                     optNN, "$. We therefore proceed with $nn' = ",
-                     optNN, "$.")
-conclusion = paste(conclusion1, conclusion2)
-
-# M3C k-means clustering
-library(M3C)
-
-# Import resources
+# Import color scheme and var2comp
 scheme = readRDS("Resources/scheme.rds")
 annCol = scheme$annCol
 annColors = scheme$annColors
 cluster_colors = scheme$clust.colors
 col.list = scheme$col.list
-var2comp = scheme$var2comp
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(Spectrum_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(Spectrum = paste0(algorithm, Cluster)) %>%
+  dplyr::select(Spectrum, everything()) %>%
+  dplyr::select(-Cluster)
 rm(scheme); gc()
 
-# Here we create a class column for ER status
-m3c_des = annCol
-m3c_des$class = m3c_des$`ER status`
-m3c_des$ID = rownames(m3c_des)
-m3c_input = t(similarity_object[[paste0("NN = ", optNN)]]$F) %>% as.data.frame()
-rownames(m3c_input) = c("t_SNE1", "t_SNE2")
-colnames(m3c_input) = colnames(input[["SNPs"]])
-
-RNGversion("4.2.2")
-consensus_km = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
-                   repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
-                   clusteralg = "km", maxK = 2)
-
-# Is the clustering significant?
-paste0(ifelse(consensus_km$scores$NORM_P < 0.05, "The clustering is significant.",
-              "The clustering is not significant."))
-
-# Normally, we would not proceed, but for the sake of comparisons across algorithms
-# we will produce the additional relevant plots
-
-# Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
-Spectrum_clusters = as.data.frame(list(Sample.ID = rownames(consensus_km[["realdataresults"]][[2]][["ordered_annotation"]]),
-                                    Cluster = consensus_km[["realdataresults"]][[2]][["ordered_annotation"]][["consensuscluster"]]))
-Spectrum_clusters$Sample.ID = gsub("\\.", "-", Spectrum_clusters$Sample.ID)
-rownames(Spectrum_clusters) = Spectrum_clusters$Sample.ID
-
 # Calculate ARI and NMI
 library(mclust)
 library(clue)
@@ -370,32 +201,9 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                                  paste0("_", algorithm)))
 
 # Very low statistics when compared to the MOVICS. Results differ
-
-# Import coloring scheme
-scheme = readRDS("Resources/scheme.rds")
-annCol = scheme$annCol
-annColors = scheme$annColors
-cluster_colors = scheme$clust.colors
-col.list = scheme$col.list
-var2comp = scheme$var2comp %>%
-  dplyr::select(-`Consensus Subtype`) %>%
-  mutate(Sample.ID = rownames(.)) %>%
-  inner_join(Spectrum_clusters, by = "Sample.ID") %>%
-  tibble::column_to_rownames(var = "Sample.ID") %>%
-  mutate(Spectrum = paste0(algorithm, Cluster)) %>%
-  dplyr::select(Spectrum, everything()) %>%
-  dplyr::select(-Cluster)
-rm(scheme); gc()
-
 # Silhouette
 library(MOVICS)
-Spectrum_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
-dimnames(Spectrum_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
-sil = compute_silhouette(cluster_df = Spectrum_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = Spectrum_matrix,
-                         normalize_matrix = TRUE)
-
-getSilhouette_ggplot(sil      = sil,
+getSilhouette_ggplot(sil      = optimal_Spectrum$Silhouette,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                      fig.name = "Silhouette",
                      height   = 5.5,
@@ -422,6 +230,15 @@ plotdata = getStdiz(
 
 plot_object = list(clust.res = Spectrum_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
+
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/",
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
 
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
@@ -1093,11 +910,11 @@ transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
                 Grade.pre.NAT, pCR.RD, Age, T.stage, PAM50, iC10,
                 NAT.regimen, Chemo.cycles,
                 aHER2.cycles, RCB.score, STAT1.gsva,
-                GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
-  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, Spectrum = clust_up),
-             by = "Donor.ID")
-rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
-transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
+                GGI.gsva, ESC.gsva, TMB, HRD.sum, Sample.ID) %>%
+  inner_join(expr_conc %>% dplyr::select(Sample.ID = samID, Spectrum = clust_up),
+             by = "Sample.ID")
+rownames(transNEO_var2comp) = transNEO_var2comp$Sample.ID
+transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Sample.ID)
 
 # Convert to factors
 transNEO_var2comp$LN.status.at.diagnosis = factor(transNEO_var2comp$LN.status.at.diagnosis,
@@ -1234,15 +1051,6 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           width = 8,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = "kappa_NTP_vs_PAM_transNEO")
-
-# Export consensus clustering object
-clust = as.data.frame(plot_object$clust.res)
-colnames(clust) = c("Sample.ID", "Cluster")
-clust$Cluster = paste0(algorithm, clust$Cluster)
-openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/",
-                                   algorithm, "_", data_source, "_",
-                                   data_types, "_eval_on_", evaluation_source,
-                                   "_clusterings.xlsx"))
 
 # Supplementary results #####
 

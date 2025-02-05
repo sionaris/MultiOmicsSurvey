@@ -1365,9 +1365,14 @@ compute_silhouette <- function(cluster_df, similarity_matrix, normalize_matrix =
   diag(similarity_matrix) <- 0  # Set diagonal to 0 (no self-similarity)
   
   # Optionally normalize the similarity matrix
-  if (normalize_matrix) {
+  if (normalize_matrix == "rowSums") {
     normalize <- function(X) X / rowSums(X)
     similarity_matrix <- normalize(similarity_matrix)
+  } else if (normalize_matrix == "minmax") {
+    normalize <- function(X) (X - min(X)) / (max(X) - min(X))
+    similarity_matrix <- normalize(similarity_matrix)
+  } else {
+    similarity_matrix <- similarity_matrix
   }
   
   # Check for singleton clusters

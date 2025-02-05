@@ -1,31 +1,31 @@
 Spectrum_bin_and_par <- function (
-    data, 
-    method = 1, 
-    silent = FALSE, 
-    showres = TRUE, 
-    diffusion = TRUE, 
-    kerneltype = c("density", "stsc"), 
-    maxk = 10, 
-    NN = 3, 
-    NN2 = 7, 
-    showpca = FALSE, 
-    frac = 2, 
-    thresh = 7, 
-    fontsize = 18, 
-    dotsize = 3, 
-    tunekernel = FALSE, 
-    clusteralg = "GMM", 
-    FASP = FALSE, 
-    FASPk = NULL, 
-    fixk = NULL, 
-    krangemax = 10, 
-    runrange = FALSE, 
-    diffusion_iters = 4, 
-    KNNs_p = 10, 
+    data,
+    method = 1,
+    silent = FALSE,
+    showres = TRUE,
+    diffusion = TRUE,
+    kerneltype = c("density", "stsc"),
+    maxk = 10,
+    NN = 3,
+    NN2 = 7,
+    showpca = FALSE,
+    frac = 2,
+    thresh = 7,
+    fontsize = 18,
+    dotsize = 3,
+    tunekernel = FALSE,
+    clusteralg = "GMM",
+    FASP = FALSE,
+    FASPk = NULL,
+    fixk = NULL,
+    krangemax = 10,
+    runrange = FALSE,
+    diffusion_iters = 4,
+    KNNs_p = 10,
     missing = FALSE,
     distances = "euclidean",  # Added distances argument
     cores = 1                 # Added cores argument
-) 
+)
 {
   # Load necessary libraries
   required_packages <- c("foreach", "doParallel", "diptest", "Rfast", "ggplot2")
@@ -73,7 +73,7 @@ Spectrum_bin_and_par <- function (
     "itakura_saito"
   )
   if (!all(distances %in% supported_distances)) {
-    stop(paste("Error: Unsupported distance type detected. Supported distances are:", 
+    stop(paste("Error: Unsupported distance type detected. Supported distances are:",
                paste(supported_distances, collapse = ", ")))
   }
   
@@ -136,12 +136,12 @@ Spectrum_bin_and_par <- function (
   # List of helper functions to export
   helper_functions <- c("CNN_kernel_mod", "kernfinder_mine_mod", "kernfinder_local_mod")
   #,
-  # "rbfkernel_b_mod", "EM_finder", "findk", 
-  # "plot_egap", "plot_multigap", "pca", 
+  # "rbfkernel_b_mod", "EM_finder", "findk",
+  # "plot_egap", "plot_multigap", "pca",
   # "harmonise_ids", "mean_imputation")
   
   # Parallelized kernel computation using foreach
-  kernellist <- foreach(platform = seq_along(datalist), 
+  kernellist <- foreach(platform = seq_along(datalist),
                         .packages = c("Spectrum", "Rfast", "ggplot2", "diptest"),
                         .export = helper_functions) %dopar% {
                           if (silent == FALSE) {
@@ -158,11 +158,11 @@ Spectrum_bin_and_par <- function (
                           if (kerneltype == "stsc") {
                             if (method == 2 && tunekernel) {
                               NN_current <- kernfinder_local_mod(
-                                datalist[[platform]], 
-                                maxk = maxk, 
-                                silent = silent, 
-                                fontsize = fontsize, 
-                                dotsize = dotsize, 
+                                datalist[[platform]],
+                                maxk = maxk,
+                                silent = silent,
+                                fontsize = fontsize,
+                                dotsize = dotsize,
                                 showres = showres,
                                 distance = current_distance  # Passing the specified distance
                               )
@@ -171,20 +171,20 @@ Spectrum_bin_and_par <- function (
                             
                             # Compute the RBF kernel based on the specified distance
                             kerneli <- rbfkernel_b_mod(
-                              datalist[[platform]], 
-                              K = NN, 
-                              sigma = 1, 
+                              datalist[[platform]],
+                              K = NN,
+                              sigma = 1,
                               distance = current_distance  # Passing the specified distance
                             )
                           }
                           else if (kerneltype == "density") {
                             if (method == 2 && tunekernel) {
                               NN_current <- kernfinder_mine_mod(
-                                datalist[[platform]], 
-                                maxk = maxk, 
-                                silent = silent, 
-                                showres = showres, 
-                                fontsize = fontsize, 
+                                datalist[[platform]],
+                                maxk = maxk,
+                                silent = silent,
+                                showres = showres,
+                                fontsize = fontsize,
                                 dotsize = dotsize,
                                 distance = current_distance  # Passing the specified distance
                               )
@@ -193,9 +193,9 @@ Spectrum_bin_and_par <- function (
                             
                             # Compute the CNN kernel based on the specified distance
                             kerneli <- CNN_kernel_mod(
-                              datalist[[platform]], 
-                              NN = NN, 
-                              NN2 = NN2, 
+                              datalist[[platform]],
+                              NN = NN,
+                              NN2 = NN2,
                               distance = current_distance  # Passing the specified distance
                             )
                           }
@@ -302,7 +302,7 @@ Spectrum_bin_and_par <- function (
     res <- Spectrum:::EM_finder(xi, silent = silent)
     d <- data.frame(K = seq_len(maxk + 1), Z = res[1:(maxk + 1), 2])
     if (showres == TRUE) {
-     Spectrum:::plot_multigap(d, maxk = maxk, dotsize = dotsize, fontsize = fontsize)
+      Spectrum:::plot_multigap(d, maxk = maxk, dotsize = dotsize, fontsize = fontsize)
     }
     optk <- Spectrum:::findk(res, maxk = maxk, frac = frac, thresh = thresh)
     if (silent == FALSE) {
@@ -327,7 +327,7 @@ Spectrum_bin_and_par <- function (
     registerDoParallel(cl_clustering)
     
     # Parallelized clustering over range of K
-    results <- foreach(tk = 2:krangemax, 
+    results <- foreach(tk = 2:krangemax,
                        .packages = c("Spectrum"),  # Replace "ClusterR" with "Spectrum"
                        .export = c(helper_functions, "cas", "d", "findk")) %dopar% {
                          xi <- decomp$vectors[, 1:tk]
@@ -337,15 +337,15 @@ Spectrum_bin_and_par <- function (
                          if (clusteralg == "GMM") {
                            # Assuming Spectrum has GMM and predict_GMM functions
                            gmm <- ClusterR:::GMM(
-                             yi, 
-                             tk, 
-                             verbose = FALSE, 
+                             yi,
+                             tk,
+                             verbose = FALSE,
                              seed_mode = "random_spread"
                            )
                            pr <- ClusterR::predict_GMM(
-                             yi, 
-                             gmm$centroids, 
-                             gmm$covariance_matrices, 
+                             yi,
+                             gmm$centroids,
+                             gmm$covariance_matrices,
                              gmm$weights
                            )
                            names(pr)[3] <- "cluster"
@@ -370,20 +370,20 @@ Spectrum_bin_and_par <- function (
                              casn <- casn[seq_along(casn)] <- pr$cluster[as.numeric(casn[seq_along(casn)])]
                              names(casn) <- names(cas)
                              list(
-                               allsample_assignments = casn, 
-                               centroid_assignments = pr$cluster, 
-                               eigenvector_analysis = d, 
-                               K = tk, 
-                               similarity_matrix = A2, 
+                               allsample_assignments = casn,
+                               centroid_assignments = pr$cluster,
+                               eigenvector_analysis = d,
+                               K = tk,
+                               similarity_matrix = A2,
                                eigensystem = decomp
                              )
                            }
                            else {
                              list(
-                               assignments = pr$cluster, 
-                               eigenvector_analysis = d, 
-                               K = tk, 
-                               similarity_matrix = A2, 
+                               assignments = pr$cluster,
+                               eigenvector_analysis = d,
+                               K = tk,
+                               similarity_matrix = A2,
                                eigensystem = decomp
                              )
                            }
@@ -404,15 +404,15 @@ Spectrum_bin_and_par <- function (
       }
       
       gmm <-ClusterR::GMM(
-        yi, 
-        optk, 
-        verbose = FALSE, 
+        yi,
+        optk,
+        verbose = FALSE,
         seed_mode = "random_spread"
       )
       pr <- ClusterR::predict_GMM(
-        yi, 
-        gmm$centroids, 
-        gmm$covariance_matrices, 
+        yi,
+        gmm$centroids,
+        gmm$covariance_matrices,
         gmm$weights
       )
       names(pr)[3] <- "cluster"
@@ -435,10 +435,10 @@ Spectrum_bin_and_par <- function (
     if (length(datalist) == 1 && showres == TRUE) {
       if (showpca == TRUE) {
         pca(
-          datalist[[1]], 
-          labels = as.factor(pr$cluster), 
-          axistextsize = fontsize, 
-          legendtextsize = fontsize, 
+          datalist[[1]],
+          labels = as.factor(pr$cluster),
+          axistextsize = fontsize,
+          legendtextsize = fontsize,
           dotsize = dotsize
         )
       }
@@ -449,20 +449,20 @@ Spectrum_bin_and_par <- function (
         casn <- casn[seq_along(casn)] <- pr$cluster[as.numeric(casn[seq_along(casn)])]
         names(casn) <- names(cas)
         results <- list(
-          allsample_assignments = casn, 
-          centroid_assignments = pr$cluster, 
-          eigenvector_analysis = d, 
-          K = optk, 
-          similarity_matrix = A2, 
+          allsample_assignments = casn,
+          centroid_assignments = pr$cluster,
+          eigenvector_analysis = d,
+          K = optk,
+          similarity_matrix = A2,
           eigensystem = decomp
         )
       }
       else {
         results <- list(
-          assignments = pr$cluster, 
-          eigenvector_analysis = d, 
-          K = optk, 
-          similarity_matrix = A2, 
+          assignments = pr$cluster,
+          eigenvector_analysis = d,
+          K = optk,
+          similarity_matrix = A2,
           eigensystem = decomp
         )
       }
@@ -473,18 +473,18 @@ Spectrum_bin_and_par <- function (
         casn <- casn[seq_along(casn)] <- pr$cluster[as.numeric(casn[seq_along(casn)])]
         names(casn) <- names(cas)
         results <- list(
-          allsample_assignments = casn, 
-          centroid_assignments = pr$cluster, 
-          K = optk, 
-          similarity_matrix = A2, 
+          allsample_assignments = casn,
+          centroid_assignments = pr$cluster,
+          K = optk,
+          similarity_matrix = A2,
           eigensystem = decomp
         )
       }
       else {
         results <- list(
-          assignments = pr$cluster, 
-          K = optk, 
-          similarity_matrix = A2, 
+          assignments = pr$cluster,
+          K = optk,
+          similarity_matrix = A2,
           eigensystem = decomp
         )
       }
@@ -498,7 +498,7 @@ Spectrum_bin_and_par <- function (
 }
 
 
-CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean") 
+CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
 {
   # Validate distance parameter
   supported_distances <- c(
@@ -526,7 +526,7 @@ CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
     "itakura_saito"
   )
   if (!(distance %in% supported_distances)) {
-    stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
+    stop(paste("Unsupported distance type:", distance, ". Supported distances are:",
                paste(supported_distances, collapse = ", ")))
   }
   
@@ -542,7 +542,7 @@ CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
     sortedvec <- sort.int(dm[i, ], index.return = FALSE)
     kn <- c(kn, sortedvec[NN + 1])
     nbs[[i]] <- names(sortedvec[2:(NN2 + 1)])
-    names(nbs)[[i]] <- names(sortedvec)[1]
+    names(nbs)[i] <- names(sortedvec)[1]
   }
   
   sigmamatrix <- kn %o% kn
@@ -566,8 +566,8 @@ CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
   return(out)
 }
 
-kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE, 
-                                showres = TRUE, dotsize = 2, distance = "euclidean") 
+kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
+                                showres = TRUE, dotsize = 2, distance = "euclidean")
 {
   # Validate distance parameter
   supported_distances <- c(
@@ -595,7 +595,7 @@ kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
     "itakura_saito"
   )
   if (!(distance %in% supported_distances)) {
-    stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
+    stop(paste("Unsupported distance type:", distance, ". Supported distances are:",
                paste(supported_distances, collapse = ", ")))
   }
   
@@ -636,23 +636,23 @@ kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   }
   
   d <- data.frame(x = seq(1, 10), y = rr)
-  py <- ggplot2::ggplot(data = d, aes(x = x, y = y)) + 
-    ggplot2::geom_point(colour = "black", size = dotsize) + 
-    ggplot2::theme_bw() + 
-    ggplot2::geom_line() + 
+  py <- ggplot2::ggplot(data = d, aes(x = x, y = y)) +
+    ggplot2::geom_point(colour = "black", size = dotsize) +
+    ggplot2::theme_bw() +
+    ggplot2::geom_line() +
     ggplot2::theme(
-      axis.text.y = ggplot2::element_text(size = fontsize, colour = "black"), 
-      axis.text.x = ggplot2::element_text(size = fontsize, colour = "black"), 
-      axis.title.x = ggplot2::element_text(size = fontsize), 
-      axis.title.y = ggplot2::element_text(size = fontsize), 
-      legend.text = ggplot2::element_text(size = fontsize), 
-      legend.title = ggplot2::element_text(size = fontsize), 
-      plot.title = ggplot2::element_text(size = fontsize, colour = "black", hjust = 0.5), 
-      panel.grid.major = ggplot2::element_blank(), 
+      axis.text.y = ggplot2::element_text(size = fontsize, colour = "black"),
+      axis.text.x = ggplot2::element_text(size = fontsize, colour = "black"),
+      axis.title.x = ggplot2::element_text(size = fontsize),
+      axis.title.y = ggplot2::element_text(size = fontsize),
+      legend.text = ggplot2::element_text(size = fontsize),
+      legend.title = ggplot2::element_text(size = fontsize),
+      plot.title = ggplot2::element_text(size = fontsize, colour = "black", hjust = 0.5),
+      panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank()
-    ) + 
-    ggplot2::ylab("D") + 
-    ggplot2::xlab("NN") + 
+    ) +
+    ggplot2::ylab("D") +
+    ggplot2::xlab("NN") +
     ggplot2::scale_x_continuous(limits = c(1, 10), breaks = seq(1, 10, by = 1))
   
   if (showres == TRUE) {
@@ -662,8 +662,8 @@ kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   return(optimalparam)
 }
 
-kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE, 
-                                 showres = TRUE, dotsize = 2, distance = "euclidean") 
+kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
+                                 showres = TRUE, dotsize = 2, distance = "euclidean")
 {
   # Validate distance parameter
   supported_distances <- c(
@@ -691,7 +691,7 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
     "itakura_saito"
   )
   if (!(distance %in% supported_distances)) {
-    stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
+    stop(paste("Unsupported distance type:", distance, ". Supported distances are:",
                paste(supported_distances, collapse = ", ")))
   }
   
@@ -706,7 +706,7 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
     }
     
     # Pass 'distance' to rbfkernel_b
-    kern <- rbfkernel_b(data, K = param, sigma = 1, distance = distance)
+    kern <- rbfkernel_b_mod(data, K = param, sigma = 1, distance = distance)
     
     # Handle non-finite values
     kern[!is.finite(kern)] <- 0
@@ -744,23 +744,23 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   
   # Plot the dip statistic differences
   d <- data.frame(x = seq(1, 10), y = rr)
-  py <- ggplot2::ggplot(data = d, aes(x = x, y = y)) + 
-    ggplot2::geom_point(colour = "black", size = dotsize) + 
-    ggplot2::theme_bw() + 
-    ggplot2::geom_line() + 
+  py <- ggplot2::ggplot(data = d, aes(x = x, y = y)) +
+    ggplot2::geom_point(colour = "black", size = dotsize) +
+    ggplot2::theme_bw() +
+    ggplot2::geom_line() +
     ggplot2::theme(
-      axis.text.y = ggplot2::element_text(size = fontsize, colour = "black"), 
-      axis.text.x = ggplot2::element_text(size = fontsize, colour = "black"), 
-      axis.title.x = ggplot2::element_text(size = fontsize), 
-      axis.title.y = ggplot2::element_text(size = fontsize), 
-      legend.text = ggplot2::element_text(size = fontsize), 
-      legend.title = ggplot2::element_text(size = fontsize), 
-      plot.title = ggplot2::element_text(size = fontsize, colour = "black", hjust = 0.5), 
-      panel.grid.major = ggplot2::element_blank(), 
+      axis.text.y = ggplot2::element_text(size = fontsize, colour = "black"),
+      axis.text.x = ggplot2::element_text(size = fontsize, colour = "black"),
+      axis.title.x = ggplot2::element_text(size = fontsize),
+      axis.title.y = ggplot2::element_text(size = fontsize),
+      legend.text = ggplot2::element_text(size = fontsize),
+      legend.title = ggplot2::element_text(size = fontsize),
+      plot.title = ggplot2::element_text(size = fontsize, colour = "black", hjust = 0.5),
+      panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank()
-    ) + 
-    ggplot2::ylab("D") + 
-    ggplot2::xlab("NN") + 
+    ) +
+    ggplot2::ylab("D") +
+    ggplot2::xlab("NN") +
     ggplot2::scale_x_continuous(limits = c(1, 10), breaks = seq(1, 10, by = 1))
   
   if (showres == TRUE) {
@@ -770,7 +770,7 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   return(optimalparam)
 }
 
-rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean") 
+rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
 {
   # Validate distance parameter
   supported_distances <- c(
@@ -799,7 +799,7 @@ rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
   )
   
   if (!(distance %in% supported_distances)) {
-    stop(paste("Unsupported distance type:", distance, ". Supported distances are:", 
+    stop(paste("Unsupported distance type:", distance, ". Supported distances are:",
                paste(supported_distances, collapse = ", ")))
   }
   
@@ -814,9 +814,9 @@ rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
   kn <- c()
   for (i in seq_len(n)) {
     sortedvec <- as.numeric(sort.int(dm[i, ]))
-    sortedvec <- sortedvec[!sortedvec == 0]  # Exclude zero distances
+    sortedvec <- sortedvec[sortedvec != 0] # Exclude zero distances
     if (length(sortedvec) < NN) {
-      stop(paste("Not enough neighbors for sample", colnames(mat)[i], 
+      stop(paste("Not enough neighbors for sample", colnames(mat)[i],
                  "with NN =", NN))
     }
     kn <- c(kn, sortedvec[NN])
@@ -841,4 +841,3 @@ rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
   
   return(out)
 }
-
