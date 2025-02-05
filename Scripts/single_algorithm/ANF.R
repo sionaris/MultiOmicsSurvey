@@ -104,7 +104,6 @@ num_neighbors_range = seq(10, 50, neighbor_step) # number of neighbors, usually 
 # iterations = seq(10, 100, iter_step)      # Number of Iterations, usually (10~20)
 # n_iterations = 50     # Number of Iterations, usually (10~20)
 
-
 # Modality types
 continuous = c("RNAseq", "CNV", "Methylation", "miRNA")
 categorical = c("SNPs")
@@ -223,96 +222,132 @@ for (i in 1:length(Fusions)) {
                              estimateNumberOfClustersGivenGraph_mod(fusion, NUMC=2:10)))
   numc_df = rbind(numc_df, optks)
 }
+rm(optks); gc()
 
 # Inspection of numc_df shows that 2 is unequivocally the optimal number of clusters
 optk = 2
 
-# We therefore proceed with picking the fused matrix with the highest separation
-# as per the heuristic below:
-
-# We then choose the nn value for which the
-# fused similarity matrix has the "best" bimodal distribution of low and high values.
-# WE USE THIS APPROACH ONLY BECAUSE THE NUMBER OF CLUSTERS WE SEEK IS 2!
-
-# We use combine two methodologies to do it:
-
-# 1. Get the sum of variance and IQR for every matrix
-# 2. Get the sum of absolute skewness and kurtosis
-# 3. Find the nn matrix for which the sum of 1 and 2 is maximum
-
-# Variance and IQR
-choose_matrix_contrasts <- function(similarity_matrices) {
-  contrast_values <- list()
-  
-  for (name in names(similarity_matrices)) {
-    similarity_values <- as.vector(similarity_matrices[[name]])
-    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
-    
-    # Calculate measures of contrast
-    variance <- var(similarity_values)
-    iqr <- IQR(similarity_values)
-    contrast_metric <- variance + iqr
-    contrast_values[[name]] <- contrast_metric
-  }
-  
-  return(contrast_values)
-}
-
-# Skewness and kurtosis
-library(e1071)
-
-choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
-  skewness_kurtosis_values <- list()
-  
-  for (name in names(similarity_matrices)) {
-    similarity_values <- as.vector(similarity_matrices[[name]])
-    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
-    
-    # Calculate skewness and kurtosis
-    skewness_value <- skewness(similarity_values)
-    kurtosis_value <- kurtosis(similarity_values)
-    
-    # Calculate a combined metric: |skewness| + kurtosis
-    combined_metric <- abs(skewness_value) + kurtosis_value
-    skewness_kurtosis_values[[name]] <- combined_metric
-  }
-  
-  return(skewness_kurtosis_values)
-}
-
-contrast_list <- choose_matrix_contrasts(Fusions)
-skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(Fusions)
-
-# Min-max normalization to [0,1]
-minmax_normalize_values <- function(values) {
-  min_value <- min(values)
-  max_value <- max(values)
-  
-  normalized_values <- (values - min_value) / (max_value - min_value)
-  return(normalized_values)
-}
-
-contrast_values <- unlist(contrast_list)
-skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
-
-# Normalize the contrast values and skewness-kurtosis values
-normalized_contrast <- minmax_normalize_values(contrast_values)
-normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
-
-# Get the sum
-combined_scores <- normalized_contrast + normalized_skewness_kurtosis
-combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
-print(combined_scores_list)
-
-best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
-cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
-
-# We choose nn = 15
-optN = as.numeric(substr(best_combined_matrix, 6, 7))
+### NOT RUN ###
+# # We therefore proceed with picking the fused matrix with the highest separation
+# # as per the heuristic below:
+# 
+# # We then choose the nn value for which the
+# # fused similarity matrix has the "best" bimodal distribution of low and high values.
+# # WE USE THIS APPROACH ONLY BECAUSE THE NUMBER OF CLUSTERS WE SEEK IS 2!
+# 
+# # We use combine two methodologies to do it:
+# 
+# # 1. Get the sum of variance and IQR for every matrix
+# # 2. Get the sum of absolute skewness and kurtosis
+# # 3. Find the nn matrix for which the sum of 1 and 2 is maximum
+# 
+# # Variance and IQR
+# choose_matrix_contrasts <- function(similarity_matrices) {
+#   contrast_values <- list()
+#   
+#   for (name in names(similarity_matrices)) {
+#     similarity_values <- as.vector(similarity_matrices[[name]])
+#     similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
+#     
+#     # Calculate measures of contrast
+#     variance <- var(similarity_values)
+#     iqr <- IQR(similarity_values)
+#     contrast_metric <- variance + iqr
+#     contrast_values[[name]] <- contrast_metric
+#   }
+#   
+#   return(contrast_values)
+# }
+# 
+# # Skewness and kurtosis
+# library(e1071)
+# 
+# choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
+#   skewness_kurtosis_values <- list()
+#   
+#   for (name in names(similarity_matrices)) {
+#     similarity_values <- as.vector(similarity_matrices[[name]])
+#     similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
+#     
+#     # Calculate skewness and kurtosis
+#     skewness_value <- skewness(similarity_values)
+#     kurtosis_value <- kurtosis(similarity_values)
+#     
+#     # Calculate a combined metric: |skewness| + kurtosis
+#     combined_metric <- abs(skewness_value) + kurtosis_value
+#     skewness_kurtosis_values[[name]] <- combined_metric
+#   }
+#   
+#   return(skewness_kurtosis_values)
+# }
+# 
+# contrast_list <- choose_matrix_contrasts(Fusions)
+# skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(Fusions)
+# 
+# # Min-max normalization to [0,1]
+# minmax_normalize_values <- function(values) {
+#   min_value <- min(values)
+#   max_value <- max(values)
+#   
+#   normalized_values <- (values - min_value) / (max_value - min_value)
+#   return(normalized_values)
+# }
+# 
+# contrast_values <- unlist(contrast_list)
+# skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+# 
+# # Normalize the contrast values and skewness-kurtosis values
+# normalized_contrast <- minmax_normalize_values(contrast_values)
+# normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+# 
+# # Get the sum
+# combined_scores <- normalized_contrast + normalized_skewness_kurtosis
+# combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
+# print(combined_scores_list)
+# 
+# best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
+# cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
 
 # Spectral clustering for the estimated optimal k by ANF
 RNGversion("4.2.2")
 set.seed(123)
+
+spectral_clustering_eig <- function (affinity, type = "rw", optk) {
+  # Adapted source code of ANF::spectral_clustering to return eigenvectors as well
+  library(cluster)
+  n = nrow(affinity)
+  d = rowSums(affinity)
+  d[d == 0] = .Machine$double.eps
+  L = diag(d) - affinity
+  NL = diag(1/d) %*% L
+  eig = eigen(NL)
+  Y = Re(eig$vectors[, -1:-(n - optk)])
+  labels = apply(pod(Y), 1, which.max)
+  U = as.data.frame(cbind(Y, labels))
+  U$Sample.ID = colnames(affinity)
+  colnames(U)[-2:-1] = c("Cluster", "Sample.ID")
+  return(U)
+}
+
+NN_runs = vector("list", length(Fusions))
+names(NN_runs) = names(Fusions)
+for (i in 1:length(Fusions)) {
+  res = spectral_clustering_eig(Fusions[[i]], optk, type = "rw")
+  col_index = ncol(res) - 2
+  sil = silhouette(as.integer(res$Cluster),
+                   dist = Rfast::Dist(res[, 1:col_index], method = "euclidean"))
+  avg_width = summary(sil)$avg.width
+  NN_runs[[names(Fusions)[i]]][["Results"]] = res
+  NN_runs[[names(Fusions)[i]]][["Silhouette"]] = sil
+  NN_runs[[names(Fusions)[i]]][["Avg. sil. width"]] = avg_width
+}
+rm(res, col_index, sil, avg_width, i); gc()
+
+# Optimal combination is for maximum avg. silhouette width
+# NN = 30
+opt_index = which.max(lapply(NN_runs, function(x) x[["Avg. sil. width"]]))
+optimal_ANF = NN_runs[[opt_index]]
+optN = as.numeric(substr(names(Fusions)[opt_index], 6, 7))
 
 final_affinity_matrix = Fusions[[paste0("NN = ", optN)]]
 ANF_optks = estimateNumberOfClustersGivenGraph(final_affinity_matrix, NUMC = 2:10)
@@ -332,11 +367,8 @@ conc_NMI = concordanceNetworkNMI_ANF(list(final_affinity_matrix,
 dimnames(conc_NMI) = list(c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"),
                           c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"))
 
-group = spectral_clustering(final_affinity_matrix, optk, type = "rw")
-names(group) = colnames(final_affinity_matrix)
-
-ANF_clusters = as.data.frame(list(Sample.ID = names(group),
-                                  Cluster = group))
+ANF_clusters = as.data.frame(list(Sample.ID = optimal_ANF$Results$Sample.ID,
+                                  Cluster = optimal_ANF$Results$Cluster))
 
 # Feature ranking
 library(parallel)
@@ -505,16 +537,7 @@ var2comp = scheme$var2comp %>%
 rm(scheme); gc()
 
 # Silhouette
-
-# transformed_aff = transform_affinity_matrix(final_affinity_matrix,
-#                                             threshold = 100, norm_quant = 0,
-#                                             norm_method = "divide by quantile")
-
-sil = compute_silhouette(cluster_df = ANF_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = final_affinity_matrix,
-                         normalize_matrix = TRUE)
-
-getSilhouette_ggplot(sil      = sil,
+getSilhouette_ggplot(sil      = optimal_ANF$Silhouette,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                      fig.name = "Silhouette",
                      height   = 5.5,
