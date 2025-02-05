@@ -536,14 +536,12 @@ rm(scheme); gc()
 
 # Silhouette
 library(MOVICS)
-cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
-dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
-sil = compute_silhouette(cluster_df = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID) %>%
-                           mutate(Cluster = as.numeric(gsub("CIMLR", "", Cluster))),
-                         similarity_matrix = cimlr_matrix,
-                         normalize_matrix = TRUE)
+library(cluster)
+silhouette = silhouette(as.integer(gsub("CIMLR", "", cluster_DF$Cluster)),
+                        dist = Rfast::Dist(cluster_DF[, grep("t_SNE", colnames(cluster_DF))],
+                                           method = "euclidean"))
 
-getSilhouette_ggplot(sil      = sil,
+getSilhouette_ggplot(sil      = silhouette,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                      fig.name = "Silhouette",
                      height   = 5.5,
@@ -1453,6 +1451,8 @@ pca_from_original_matrix(mydata = plotdata$Methylation,
                          title_add = "Methylation")
 
 # Draw a heatmap of the final S matrix ###
+cimlr_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
+dimnames(cimlr_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
 create_MO_heatmap(matrix = cimlr_matrix, algorithm = algorithm, 
                   need.diag.zero = FALSE, # already zero
                   clust_annot_pheno = clust_annot_pheno ,
