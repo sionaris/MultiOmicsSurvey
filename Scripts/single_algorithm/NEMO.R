@@ -535,37 +535,79 @@ ggsave(filename = paste0(algorithm, "_matrix_Frobenius_similarity_histogram.pdf"
        dpi = 700)
 dev.off()
 
-# We then choose the nn and sigma values for which the
-# fused similarity matrix has the "best" bimodal distribution of low and high values.
-
-# We use combine two methodologies to do it:
-
-# 1. Get the sum of variance and IQR for every matrix
-# 2. Get the sum of absolute skewness and kurtosis
-# 3. Find the nn matrix for which the sum of 1 and 2 is maximum
-
-# library(e1071)
-# contrast_list <- choose_matrix_contrasts(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
-# skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
-# contrast_values <- unlist(contrast_list)
-# skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+### NOT RUN ###
+# # We then choose the nn and sigma values for which the
+# # fused similarity matrix has the "best" bimodal distribution of low and high values.
 # 
-# # Normalize the contrast values and skewness-kurtosis values
-# normalized_contrast <- minmax_normalize_values(contrast_values)
-# normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+# # We use combine two methodologies to do it:
 # 
-# # Get the sum
-# combined_scores <- normalized_contrast + normalized_skewness_kurtosis
-# combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
-# print(combined_scores_list)
+# # 1. Get the sum of variance and IQR for every matrix
+# # 2. Get the sum of absolute skewness and kurtosis
+# # 3. Find the nn matrix for which the sum of 1 and 2 is maximum
 # 
-# best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
-# cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
-
-# # We choose nn = 10, sigma = 0.3
+# # library(e1071)
+# # contrast_list <- choose_matrix_contrasts(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
+# # skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(lapply(ARS_object, function(x) x[["affinity_matrix"]]))
+# # contrast_values <- unlist(contrast_list)
+# # skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
+# # 
+# # # Normalize the contrast values and skewness-kurtosis values
+# # normalized_contrast <- minmax_normalize_values(contrast_values)
+# # normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
+# # 
+# # # Get the sum
+# # combined_scores <- normalized_contrast + normalized_skewness_kurtosis
+# # combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
+# # print(combined_scores_list)
+# # 
+# # best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
+# # cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
+# 
+# # # We choose nn = 10, sigma = 0.3
 
 # Iteratively go through ARS matrices to find the one that produces the best clustering
 # (in terms of silhouette) for its optimal k as determined by nemo.num.clusters()
+
+RNGversion("4.2.2")
+set.seed(123)
+
+# Adapted source code to return eigenvectors as well
+spectralClustering_eig <- function (affinity, K, type = 3) 
+{
+  library(cluster)
+  d = rowSums(affinity)
+  d[d == 0] = .Machine$double.eps
+  D = diag(d)
+  L = D - affinity
+  if (type == 1) {
+    NL = L
+  }
+  else if (type == 2) {
+    Di = diag(1/d)
+    NL = Di %*% L
+  }
+  else if (type == 3) {
+    Di = diag(1/sqrt(d))
+    NL = Di %*% L %*% Di
+  }
+  eig = eigen(NL)
+  res = sort(abs(eig$values), index.return = TRUE)
+  U = eig$vectors[, res$ix[1:K]]
+  normalize <- function(x) x/sqrt(sum(x^2))
+  if (type == 3) {
+    U = t(apply(U, 1, normalize))
+  }
+  eigDiscrete = SNFtool:::.discretisation(U)
+  eigDiscrete = eigDiscrete$discrete
+  labels = apply(eigDiscrete, 1, which.max)
+  U = as.data.frame(cbind(U, labels))
+  U$Sample.ID = colnames(affinity)
+  colnames(U)[(ncol(U)-1):ncol(U)] = c("Cluster", "Sample.ID")
+  return(U)
+}
+
+
+# Initiate silhouette data frame
 silhouettes <- data.frame(
   NN = numeric(),
   sigma = numeric(),
@@ -600,38 +642,30 @@ for (i in 1:length(ARS_object)) {
   # Determine the optimal number of clusters
   numc <- nemo.num.clusters(aff, NUMC = 2:10)
   
-  # Perform spectral clustering
-  clust_numc <- spectralClustering(aff, numc)
-  names(clust_numc) <- colnames(aff)
+  # Perform spectral clustering and create data frame
+  clust_numc <- spectralClustering_eig(aff, K = numc)
   
   # Create clustering data frame
-  NEMO_clustdf <- data.frame(
-    samID = names(clust_numc),
-    Cluster = clust_numc,
-    stringsAsFactors = FALSE
-  )
+  NEMO_clustdf <- clust_numc %>% dplyr::select(samID = Sample.ID, Cluster)
   rownames(NEMO_clustdf) <- NEMO_clustdf$samID
   
-  # we compute the silhouette for each point and then take the mean across all points.
-  silw <- compute_silhouette(
-    cluster_df = NEMO_clustdf,
-    similarity_matrix = aff,
-    normalize_matrix = TRUE
-  ) %>%
-    as.data.frame() %>%
-    summarise(silw_out = mean(sil_width, na.rm = TRUE)) %>%
-    pull(silw_out)
+  # we compute the average silhouette width
+  col_index = ncol(clust_numc) - 2
+  sil = silhouette(as.integer(clust_numc$Cluster),
+                   dist = Rfast::Dist(clust_numc[, 1:col_index], method = "euclidean"))
+  avg_width = summary(sil)$avg.width
   
   # Store metrics in silhouettes data frame
   silhouettes[i, ] <- list(
     NN = hyperparams_NN,
     sigma = hyperparams_sigma,
     optk = numc,
-    avg.sil.width = silw
+    avg.sil.width = avg_width
   )
 }
 
-rm(hyperparams_NN, hyperparams_sigma, aff, numc, clust_numc, NEMO_clustdf, silw); gc()
+rm(hyperparams_NN, hyperparams_sigma, aff, numc, clust_numc, NEMO_clustdf, 
+   col_index, sil, avg_width); gc()
 
 # Remove any rows with NA values
 silhouettes <- silhouettes %>% dplyr::filter(!is.na(avg.sil.width))
@@ -641,7 +675,7 @@ silhouettes <- silhouettes %>% arrange(desc(avg.sil.width))
 best_hyperparams = paste0("NN: ", silhouettes$NN[1],
                           ", sigma: ", silhouettes$sigma[1],
                           ", K : ", silhouettes$optk[1])
-print(best_hyperparams) # The distribution method yielded NN = 10, sigma = 0.5 for comparison (bottom of these silhouettes; discordant)
+print(best_hyperparams) # The distribution method yielded NN = 10, sigma = 0.5 for comparison - 4th here
 
 optN = silhouettes$NN[1]
 optSigma = silhouettes$sigma[1]
@@ -657,16 +691,135 @@ set.seed(123)
 
 final_affinity_matrix = ARS_object[[paste0("NN = ", optN, ", sigma = ", optSigma)]]$affinity_matrix
 
-# NEMO estimation of number of clusters:
-num.clusters = nemo.num.clusters(final_affinity_matrix, NUMC = 2:10)
+# Produce final clustering
+optimal_NEMO = list(Results = spectralClustering_eig(final_affinity_matrix, K = optk))
+optimal_NEMO[["Silhouette"]] = silhouette(as.integer(optimal_NEMO$Results$Cluster),
+                 dist = Rfast::Dist(optimal_NEMO$Results[, 1:(ncol(optimal_NEMO$Results) - 2)],
+                                    method = "euclidean"))
+optimal_NEMO[["Avg. sil. width"]] = summary(optimal_NEMO[["Silhouette"]])$avg.width
 
-# 2 is the optimal number of clusters based on the NEMO process
-group = spectralClustering(final_affinity_matrix, num.clusters)
-names(group) = colnames(final_affinity_matrix)
-
-NEMO_clusters = as.data.frame(list(Sample.ID = names(group),
-                                  Cluster = group))
+NEMO_clusters = as.data.frame(list(Sample.ID = optimal_NEMO$Results$Sample.ID,
+                                   Cluster = optimal_NEMO$Results$Cluster))
+NEMO_clusters$Sample.ID = gsub("\\.", "-", NEMO_clusters$Sample.ID)
 rownames(NEMO_clusters) = NEMO_clusters$Sample.ID
+
+# Feature ranking
+NEMO_feature_ranks = list()
+binary_flags = c(TRUE, FALSE, FALSE, FALSE, FALSE)
+for (i in 1:length(input)) {
+  NEMO_feature_ranks[[i]] = rankFeaturesByNMI_parallely(data = list(input[[i]]), 
+                                                        W = final_affinity_matrix,
+                                                        ncores = 8,
+                                                        binary = binary_flags[i],
+                                                        nn = optN,
+                                                        sigma = optSigma)
+  cat("Done with", names(input)[i], "\n")
+}
+names(NEMO_feature_ranks) = names(input)
+
+rank_sum_nas = sapply(NEMO_feature_ranks, function(x) sum(is.na(x$NMI_ranks)))
+names(rank_sum_nas) = names(NEMO_feature_ranks)
+
+feature_ranks_text1 = paste0("Feature ranks could not be calculated for some features in the ",
+                             paste(names(rank_sum_nas)[which(rank_sum_nas > 0)], collapse = ", "), 
+                             ifelse(length(which(rank_sum_nas > 0)) > 1, " modalities (", " modality ("),
+                             paste(rank_sum_nas[which(rank_sum_nas > 0)], collapse = ", "),
+                             ").")
+rm(rank_sum_nas); gc()
+
+# Combine all modalities into a single data frame
+for (i in 1:length(NEMO_feature_ranks)) {
+  names(NEMO_feature_ranks[[i]]$NMI_scores) = colnames(input[[i]])
+}
+
+# Prepare data for plotting
+# Combine all modalities into a single data frame
+feature_data <- do.call(rbind, lapply(names(NEMO_feature_ranks), function(modality) {
+  data.frame(
+    Feature = paste(modality, seq_along(NEMO_feature_ranks[[modality]]$NMI_scores), sep = "_"),
+    Modality = modality,
+    NMI_Scores = NEMO_feature_ranks[[modality]]$NMI_scores
+  )
+}))
+
+# Remove features with NA NMI scores
+feature_data <- feature_data[!is.na(feature_data$NMI_Scores), ]
+
+# Calculate global ranks based on NMI scores
+feature_data$Global_Rank <- rank(-feature_data$NMI_Scores, ties.method = "first")
+
+# Filter the top 1000 features
+top_features <- feature_data[order(feature_data$Global_Rank), ][1:1000, ]
+
+# Ensure the data is ordered by rank for proper plotting
+top_features <- top_features[order(top_features$Global_Rank), ]
+
+# Create the bar plot
+ggplot(top_features, aes(x = NMI_Scores, y = Global_Rank, fill = Modality)) +
+  geom_bar(
+    stat = "identity",
+    orientation = "y",
+    width = 1,  # Bars fully adjacent with no gaps
+    alpha = 0.85,  # Apply transparency
+    color = NA  # Removes outlines completely
+  ) +
+  scale_fill_manual(
+    name = "Modality",
+    values = c(
+      "RNAseq" = "#1B9E77",
+      "miRNA" = "#7570B3",
+      "Methylation" = "deeppink4",
+      "CNV" = "#E7298A",
+      "SNPs" = "#66A61E"
+    )
+  ) +
+  scale_x_continuous(
+    breaks = seq(0, 1, by = 0.1),  
+    limits = c(-0.01, 1),  # Expand lower limit slightly
+    expand = c(0, 0)  # Remove extra padding on the x-axis
+  ) +
+  scale_y_reverse(
+    breaks = c(1, seq(100, 1000, by = 100)),  # Y-axis reversed
+    limits = c(1001, 0),  # Expand upper limit slightly
+    expand = c(0, 0)  # Remove extra padding on the y-axis
+  ) +
+  labs(
+    title = "Top 1000 Features Ranked by NMI with Subtypes",
+    x = "NMI Score",
+    y = "Global Rank"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 5),  # Smaller y-axis labels
+    axis.text.x = element_text(size = 5),  # Larger x-axis labels
+    axis.title = element_text(face = "bold", size = 6),
+    axis.line.y = element_line(linewidth = 0),
+    axis.line.x = element_line(linewidth = 0.1),
+    axis.ticks = element_line(linewidth = 0.05),
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 7),  # Bold and centrally aligned title
+    legend.title = element_text(face = "bold", size = 5),
+    legend.text = element_text(size = 5),
+    legend.key.size = unit(0.35, "cm"),
+    panel.grid.major.y = element_blank(),  # Remove horizontal grid lines
+    panel.grid.major.x = element_line(color = "gray90")  # Keep vertical grid lines
+  ) +
+  guides(color = "none", alpha = "none")
+
+ggsave(filename = paste0(algorithm, "_top_", nrow(top_features), "_feature_ranks.png"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 1920*1.2, height = 1920*1.5, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+feature_ranks_text2 = paste0("In the top ", nrow(top_features), " features, ",
+                             paste(names(table(top_features$Modality)), collapse = ", "),
+                             " features are found (",
+                             paste(table(top_features$Modality), collapse = ", "),
+                             ", respectively).")
+
+feature_ranks_text = paste(feature_ranks_text1, feature_ranks_text2, collapse = " ")
+rm(feature_ranks_text1, feature_ranks_text2); gc()
 
 # Import resources
 scheme = readRDS("Resources/scheme.rds")
@@ -708,16 +861,31 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
 
 # Very low statistics when compared to the MOVICS. Results differ
 
+# MOVICS-like analysis #####
 library(MOVICS)
-# Silhouette
-sil = compute_silhouette(cluster_df = NEMO_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = final_affinity_matrix,
-                         normalize_matrix = TRUE)
+library(ComplexHeatmap)
 
-getSilhouette_ggplot(sil      = sil,
+# Import coloring scheme
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(NEMO_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(NEMO = paste0(algorithm, Cluster)) %>%
+  dplyr::select(NEMO, everything()) %>%
+  dplyr::select(-Cluster)
+rm(scheme); gc()
+
+# Silhouette
+getSilhouette_ggplot(sil      = optimal_NEMO$Silhouette,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                      fig.name = "Silhouette",
-                     height   = 8.5,
+                     height   = 5.5,
                      width    = 5.5,
                      axis_label_size = 12,
                      axis_label_font = "bold",
@@ -727,9 +895,7 @@ getSilhouette_ggplot(sil      = sil,
                      save_plot = TRUE)
 dev.off()
 
-# MOVICS-like analysis #####
-library(ComplexHeatmap)
-
+# Heatmap prep
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[rowSums(mat != 0) > 0, ])
 plotdata = getStdiz(

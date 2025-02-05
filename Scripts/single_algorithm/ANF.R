@@ -325,7 +325,7 @@ spectral_clustering_eig <- function (affinity, type = "rw", optk) {
   labels = apply(pod(Y), 1, which.max)
   U = as.data.frame(cbind(Y, labels))
   U$Sample.ID = colnames(affinity)
-  colnames(U)[-2:-1] = c("Cluster", "Sample.ID")
+  colnames(U)[(ncol(U)-1):ncol(U)] = c("Cluster", "Sample.ID")
   return(U)
 }
 
@@ -350,11 +350,6 @@ optimal_ANF = NN_runs[[opt_index]]
 optN = as.numeric(substr(names(Fusions)[opt_index], 6, 7))
 
 final_affinity_matrix = Fusions[[paste0("NN = ", optN)]]
-ANF_optks = estimateNumberOfClustersGivenGraph(final_affinity_matrix, NUMC = 2:10)
-paste0("The optimal value for k using the eigen-gap method is ",
-       ANF_optks[[1]], ". The optimal value for k using the rotation method is ",
-       ANF_optks[[3]], ".")
-optk = ANF_optks[[1]]
 
 # Concordance between final matrix and individual modality affinity matrices: FAILS
 conc_NMI = concordanceNetworkNMI_ANF(list(final_affinity_matrix,

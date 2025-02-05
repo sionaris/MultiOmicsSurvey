@@ -784,8 +784,8 @@ spectralClustering_eig <- function (affinity, K, type = 3)
   eigDiscrete = eigDiscrete$discrete
   labels = apply(eigDiscrete, 1, which.max)
   U = as.data.frame(cbind(U, labels))
-  U$Sample.ID = colnames(final_affinity_matrix)
-  colnames(U)[-2:-1] = c("Cluster", "Sample.ID")
+  U$Sample.ID = colnames(affinity)
+  colnames(U)[(ncol(U)-1):ncol(U)] = c("Cluster", "Sample.ID")
   return(U)
 }
 
@@ -821,7 +821,8 @@ conc_NMI = concordanceNetworkNMI(list(final_affinity_matrix,
 dimnames(conc_NMI) = list(c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"),
                           c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "SNPs"))
 
-abSNF_clusters = optimal_abSNF$Results[, -2:-1]
+abSNF_clusters = as.data.frame(list(Sample.ID = optimal_abSNF$Results$Sample.ID,
+                                    Cluster = optimal_abSNF$Results$Cluster))
 abSNF_clusters$Sample.ID = gsub("\\.", "-", abSNF_clusters$Sample.ID)
 rownames(abSNF_clusters) = abSNF_clusters$Sample.ID
 
