@@ -720,7 +720,7 @@ spectralClustering_eig <- function (affinity, K, type = 3)
   labels = apply(eigDiscrete, 1, which.max)
   U = as.data.frame(cbind(U, labels))
   U$Sample.ID = colnames(final_affinity_matrix)
-  colnames(U)[-2:-1] = c("Sample.ID", "Cluster")
+  colnames(U)[-2:-1] = c("Cluster", "Sample.ID")
   return(U)
 }
 
