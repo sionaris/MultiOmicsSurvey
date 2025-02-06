@@ -194,6 +194,11 @@ ARI_heatmap <- Heatmap(
 )
 
 # Software legend
+library(png)
+r_array <- readPNG(file.path(home, "Resources/r_200x200.png"))
+py_array <- readPNG(file.path(home, "Resources/python_200x200.png"))
+res_array <- readPNG(file.path(home, "Resources/r_python_mashup.png"))
+
 lgd_software <- Legend(
   # Labels shown in the legend
   labels = c("R", "Python", "R & Python"),
