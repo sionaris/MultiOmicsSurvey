@@ -143,8 +143,8 @@ category_colors <- c(
   "Similarity Network" = carto_pal("Bold", n = 12)[1],
   "Multiple Kernel Learning" = carto_pal("Bold", n = 12)[2],
   "Matrix Factorization" = carto_pal("Antique", n = 12)[5],
-  "Graph-based Methods" = carto_pal("Bold", n = 12)[11],
-  "Bayesian" = carto_pal("Bold", n = 12)[4],
+  "Graph-based Methods" = carto_pal("Bold", n = 12)[4],
+  "Bayesian" = carto_pal("Bold", n = 12)[11],
   "Canonical Correlation" = carto_pal("Bold", n = 12)[9],
   "Low-rank Projection" = carto_pal("Bold", n = 12)[10],
   "Miscellaneous" = carto_pal("Bold", n = 12)[12]
