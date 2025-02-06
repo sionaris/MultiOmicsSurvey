@@ -17,10 +17,10 @@ evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER
 
 # Import clusterings
 R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "IntNMF", "KLIC",
-               "LRAcluster", "MDICC", "MFA", "mixKernel", "MOFA", "NEMO", "PIntMF",
-               "RGCCA", "RWR-F", "SGCCA", "SNF", "Spectrum")
+                 "LRAcluster", "MDICC", "MFA", "mixKernel", "MOFA", "NEMO", "PIntMF",
+                 "RGCCA", "RWR-F", "SGCCA", "SNF", "Spectrum")
 Python_algorithms = c("MONET", "MSNE", "PAMOGK" # "MOFA-GPU"
-                      )
+)
 algorithms = c(R_algorithms, Python_algorithms)
 algorithm_languages = c(rep("R", length(R_algorithms)),
                         rep("Python", length(Python_algorithms)))
@@ -54,11 +54,42 @@ for (Python_algorithm in Python_algorithms) {
     clusterings[[Python_algorithm]] = NA
   }
 }
-
-# Sort results alphabetically
 names(clusterings) = algorithms
-clusterings = clusterings[sort(algorithms)]
-algorithm_languages = algorithm_languages[names(clusterings)]
+
+# Set up method categories
+similarity_network_methods = c("ab-SNF", "ANF", "MDICC", "MSNE", "NEMO", "RWR-F", "SNF")
+multiple_kernel_learning = c("CIMLR","KLIC", "mixKernel") #, wMKL
+matrix_factorization = c("IntNMF", "MFA", "MOFA", "PIntMF")
+graph_methods = c("MONET", "PAMOGK")
+bayesian = c("iClusterBayes")
+cca_methods = c("RGCCA", "SGCCA")
+low_rank_methods = c("LRAcluster") #, moCluster, PINSPlus
+misc = c("COCA", "Spectrum")
+
+# Primary annotation
+primary_annotation_rag = c(rep("Similarity Network", length(similarity_network_methods)),
+                           rep("Multiple Kernel Learning", length(multiple_kernel_learning)),
+                           rep("Matrix Factorization", length(matrix_factorization)),
+                           rep("Graph-based Methods", length(graph_methods)),
+                           rep("Bayesian", length(bayesian)),
+                           rep("Canonical Correlation", length(cca_methods)),
+                           rep("Low-rank Projection", length(low_rank_methods)),
+                           rep("Miscellaneous", length(misc)))
+names(primary_annotation_rag) = c(similarity_network_methods, multiple_kernel_learning,
+                                  matrix_factorization, graph_methods, bayesian,
+                                  cca_methods, low_rank_methods, misc)
+
+clusterings = clusterings[names(primary_annotation_rag)]
+algorithm_languages = algorithm_languages[names(primary_annotation_rag)]
+
+# # Secondary annotation
+# secondary_annotation_rag = c(rep("Graph-based methods", 8),
+#                              rep("Low-rank Projection", 7),
+#                              rep("Miscellaneous", 7))
+# names(secondary_annotation_rag) = c(similarity_network_methods, "Spectrum",
+#                                     cca_methods, bayesian, matrix_factorization,
+#                                     multiple_kernel_learning, graph_methods,
+#                                     low_rank_methods, "COCA")
 
 # Convert individual cluster labels from "algorithm#" to just #
 generic_clusterings = clusterings
@@ -106,7 +137,21 @@ class(ari_matrix) <- "numeric"
 # Draw heatmap
 library(ComplexHeatmap)
 library(circlize)
+# Define colors for method categories
 library(rcartocolor)
+category_colors <- c(
+  "Similarity Network" = carto_pal("Bold", n = 12)[1],
+  "Multiple Kernel Learning" = carto_pal("Bold", n = 12)[2],
+  "Matrix Factorization" = carto_pal("Antique", n = 12)[5],
+  "Graph-based Methods" = carto_pal("Bold", n = 12)[11],
+  "Bayesian" = carto_pal("Bold", n = 12)[4],
+  "Canonical Correlation" = carto_pal("Bold", n = 12)[9],
+  "Low-rank Projection" = carto_pal("Bold", n = 12)[10],
+  "Miscellaneous" = carto_pal("Bold", n = 12)[12]
+)
+
+primary_annotation_rag <- factor(primary_annotation_rag, levels = names(category_colors))
+# secondary_annotation_rag <- factor(secondary_annotation_rag, levels = names(category_colors))
 
 # Convert language vector to factor
 algorithm_languages <- factor(algorithm_languages, levels = c("R", "Python", "R & Python"))
@@ -114,7 +159,7 @@ algorithm_languages <- factor(algorithm_languages, levels = c("R", "Python", "R 
 # Read in the logos
 # r_logo_img <- readPNG("Resources/r.png") # <a href="https://www.flaticon.com/free-icons/r" title="r icons">R icons created by Becris - Flaticon</a>
 # python_logo_img <- readPNG("Resources/python.png") # <a href="https://www.flaticon.com/free-icons/python" title="python icons">Python icons created by Freepik - Flaticon</a>
- 
+
 # Color-blind friendly palette
 color_palette <- carto_pal(n = 100, name = "RedOr")
 
@@ -128,7 +173,7 @@ ari_matrix_masked[upper.tri(ari_matrix_masked)] <- NA
 # Create a logo mashup
 # source("Scripts/create_logo_mashup.R")
 
-# Import logos
+# === Logo annotations (for software) ===
 logo_paths <- vapply(
   rownames(ari_matrix),
   FUN.VALUE = character(1),
@@ -144,13 +189,28 @@ logo_paths <- vapply(
     }
   }
 )
-row_logo <- rowAnnotation(
-  Software = anno_image(logo_paths, border = FALSE), gp = gpar(col = "white"),
-  show_annotation_name = FALSE, width = unit(5, "mm")
+
+# Primary track – show legend (with title "Method category")
+ROWannotation <- rowAnnotation(
+  Software = anno_image(logo_paths, border = FALSE, width = unit(6, "mm")),
+  Category = as.character(primary_annotation_rag),
+  col = list(Category = category_colors),
+  gp = gpar(col = "white"),
+  show_annotation_name = FALSE,
+  simple_anno_size = unit(1.5, "mm"),
+  # width = unit(7, "mm"),
+  show_legend = FALSE
 )
-column_logo <- HeatmapAnnotation(
-  Software = anno_image(logo_paths, border = FALSE), gp = gpar(col = "white"),
-  show_annotation_name = FALSE, height = unit(5, "mm")
+
+COLannotation <- HeatmapAnnotation(
+  Category = as.character(primary_annotation_rag),
+  Software = anno_image(logo_paths, border = FALSE, height = unit(6, "mm")),
+  col = list(Category = category_colors),
+  gp = gpar(col = "white"),
+  show_annotation_name = FALSE,
+  simple_anno_size = unit(1.5, "mm"),
+  # height = unit(7, "mm"),
+  show_legend = FALSE
 )
 
 ARI_heatmap <- Heatmap(
@@ -165,8 +225,8 @@ ARI_heatmap <- Heatmap(
   cluster_columns = FALSE, 
   show_row_names = TRUE, 
   show_column_names = TRUE,
-  left_annotation = row_logo,
-  bottom_annotation = column_logo,
+  left_annotation = ROWannotation,
+  bottom_annotation = COLannotation,
   row_names_gp = grid::gpar(fontsize = 7, fontface = "bold"), 
   column_names_gp = grid::gpar(fontsize = 7, fontface = "bold"),
   cell_fun = function(j, i, x, y, width, height, fill) {
@@ -205,13 +265,15 @@ lgd_software <- Legend(
   at = c("R", "Python", "R & Python"),
   
   # Title of the legend
-  title = "",
+  title = "Software",
+  title_position = "leftcenter",
   
   direction = "horizontal",
   nrow = 1,
   
   # Control the label/title font sizes
-  labels_gp = gpar(fontsize = 6),
+  labels_gp = gpar(fontsize = 7),
+  title_gp = gpar(fontsize = 9, fontface = "bold"),
   
   # These settings remove any drawn borders around the symbol boxes
   legend_gp = gpar(col = NA),
@@ -237,28 +299,31 @@ lgd_software <- Legend(
   )
 )
 
-png(paste0(home, "/Results/Comparisons/ARI_clusterings_heatmap.png"), 
-    width = 4300, height = 4300, res = 700)
-draw(ARI_heatmap, 
-     annotation_legend_list = list(lgd_software),
-     # merge_legend = TRUE, 
-     heatmap_legend_side = "right",
-     annotation_legend_side = "bottom")
+# Create legend for method categories
+lgd_methods <- Legend(
+  labels = names(category_colors),
+  legend_gp = gpar(fill = category_colors, col = NA),
+  title = "Category",
+  labels_gp = gpar(fontsize = 7),
+  title_gp = gpar(fontsize = 9, fontface = "bold"),
+  ncol = 4,
+  title_position = 'leftcenter'
+)
 
+png(paste0(home, "/Results/Comparisons/ARI_clusterings_heatmap.png"), 
+    width = 4300, height = 4600, res = 700)
+draw(ARI_heatmap, 
+     annotation_legend_list = packLegend(lgd_software, lgd_methods),
+     heatmap_legend_side = "right",
+     annotation_legend_side = "bottom",
+     align_annotation_legend = "heatmap_center")
 dev.off()
 
 pdf(paste0(home, "/Results/Comparisons/ARI_clusterings_heatmap.pdf"), 
-    width = 7, height = 7)
-
+    width = 7, height = 7.5)
 draw(ARI_heatmap,
-     annotation_legend_list = list(lgd_software),
-     # merge_legend = TRUE,
+     annotation_legend_list = packLegend(lgd_software, lgd_methods),
      heatmap_legend_side = "right",
-     annotation_legend_side = "bottom")
-
+     annotation_legend_side = "bottom",
+     align_annotation_legend = "heatmap_center")
 dev.off()
-
-# Save environment
-save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
-                  data_types, "_eval_on_", evaluation_source,
-                  "_env.RData"))
