@@ -110,8 +110,8 @@ library(parallel)
 similarity_object = list()
 for (nn in num_neighbors_range) {
   similarity_object[[paste0("NN = ", nn)]] = CIMLR_mod(X = input, c = ground_truth_k, 
-                                      k = nn, binary_flags = c("Yes", "No", "No", "No", "No"),
-                    binary_distance = "binary", nonbinary_distance = "sqeuclidean", cores.ratio = 0.25)
+                                                       k = nn, binary_flags = c("Yes", "No", "No", "No", "No"),
+                                                       binary_distance = "binary", nonbinary_distance = "sqeuclidean", cores.ratio = 0.25)
 }
 rm(nn)
 
@@ -172,10 +172,10 @@ ggplot(data = data.frame(S_Pearson_values), aes(x = S_Pearson_values)) +
         legend.key.size = unit(0.25, "cm"),
         legend.box.background = element_rect(color = "black"))
 ggsave(filename = paste0(algorithm, "_S_matrix_Pearson_similarity_histogram.pdf"),
-  path = paste0(home, 
-                "/Results/single_algorithm/", algorithm, "/Supplement"), 
-  width = 2880, height = 1820, device = 'pdf', units = "px",
-  dpi = 700)
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 2880, height = 1820, device = 'pdf', units = "px",
+       dpi = 700)
 dev.off()
 
 # Plot histogram of Frobenius values
@@ -299,8 +299,8 @@ for (i in 1:length(similarity_object)) {
   RNGversion("4.2.2")
   M3C_clusterings[[names(similarity_object)[i]]] = M3C(m3c_input, des = m3c_des,
                                                        iters = 100, repsref = 250, 
-                     repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
-                     clusteralg = "km", maxK = 10)
+                                                       repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
+                                                       clusteralg = "km", maxK = 10)
   cat("Done with", names(similarity_object)[i], ".", "\n")
 }
 
@@ -338,7 +338,7 @@ rcsi = ggplot(scores_df, aes(x = K, y = RCSI, group = NN, color = factor(NN)))+
   scale_y_continuous(limits = c(min(scores_df$RCSI - scores_df$RCSI_SE) - 0.15, 
                                 max(scores_df$RCSI + scores_df$RCSI_SE) + 0.15), 
                      breaks = c(-rev(seq(0, abs(round(min(scores_df$RCSI - scores_df$RCSI_SE), 1)), 0.5)), 
-                                  seq(0, round(max(scores_df$RCSI + scores_df$RCSI_SE), 1), 0.5)))+
+                                seq(0, round(max(scores_df$RCSI + scores_df$RCSI_SE), 1), 0.5)))+
   scale_colour_manual(values=rcartocolor::carto_pal(n = 9, "Safe"), name="NN") +
   theme(plot.title = element_text(size = 5*2, face = "bold"),
         axis.title.x = element_text(size = 4*2, face = "bold"),
@@ -368,12 +368,12 @@ library(ggnewscale)
 statsig_clust = ggplot(scores_df, aes(x = K, y = P_SCORE, color = factor(NN)))+
   geom_point(size = 1.5*2, alpha = 0.6)+
   scale_color_manual(values=c(rcartocolor::carto_pal(n = 9, "Safe")),
-                      name="NN") +
+                     name="NN") +
   new_scale("color") +
   geom_hline(linetype = "dashed", linewidth = 0.2*2,
              aes(yintercept = -log10(0.05), color = "grey40"))+
   scale_color_manual(values="grey40", labels = expression(-log[10]("0.05")),
-                      name="Statistical \nsignificance") +
+                     name="Statistical \nsignificance") +
   scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
   scale_y_continuous(limits = c(min(scores_df$P_SCORE) - 0.15, 
                                 max(scores_df$P_SCORE) + 0.15), 
@@ -465,7 +465,7 @@ cluster_scatter = ggplot(data = cluster_DF, aes(x = t_SNE1, y = t_SNE2, group = 
                                                 color = factor(Cluster))) +
   geom_point(size = 1) +
   scale_color_manual(values=c(rcartocolor::carto_pal(n = 12, "Safe")[1:2]),
-                                         name="Cluster") +
+                     name="Cluster") +
   theme_bw()+
   theme(plot.title = element_text(size = 5*2, face = "bold"),
         axis.title.x = element_text(size = 4*2, face = "bold"),
@@ -717,14 +717,14 @@ dev.off()
 
 # DGEA ###
 dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
-              expr = plotdata$RNAseq,
-              moic.res = plot_object,
-              prefix = "dgea_",
-              sort.p = TRUE,
-              overwt = TRUE,
-              verbose = TRUE,
-              res.path = paste0(home, "/Results/single_algorithm/", 
-                                algorithm),algorithm = algorithm)
+                  expr = plotdata$RNAseq,
+                  moic.res = plot_object,
+                  prefix = "dgea_",
+                  sort.p = TRUE,
+                  overwt = TRUE,
+                  verbose = TRUE,
+                  res.path = paste0(home, "/Results/single_algorithm/", 
+                                    algorithm),algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
@@ -1697,10 +1697,10 @@ Pheno_sunburst_CIMLR = Pheno_sunburst_CIMLR %>%
   as.data.frame()
 
 sunburst_coloring_CIMLR = data.frame(stringsAsFactors = FALSE,
-                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                      "#C11D9C", "#0F1682",  "grey40"))),
-                                   labels = c("CIMLR1", "CIMLR2",
-                                              "ER-", "ER+", "Unkn ER status"))
+                                     colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
+                                                                        "#C11D9C", "#0F1682",  "grey40"))),
+                                     labels = c("CIMLR1", "CIMLR2",
+                                                "ER-", "ER+", "Unkn ER status"))
 
 sunburstDF_CIMLR = as.sunburstDF(Pheno_sunburst_CIMLR, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_CIMLR, by = "labels")
@@ -1723,22 +1723,22 @@ load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval
 MOVICS_CIMLR = moic.res.list$CIMLR$clust.res
 
 ARI_to_MOVICS_CIMLR = calculate_ari_index(cluster_df1 = MOVICS_CIMLR %>%
-                                          dplyr::rename(Sample.ID = samID,
-                                                        Cluster = clust),
-                                        cluster_df2 = CIMLR_clusters,
-                                        sample_col = "Sample.ID",
-                                        clust_col = "Cluster",
-                                        suffixes = c(paste0("_MOVICS_", algorithm), 
-                                                     paste0("_", algorithm)))
+                                            dplyr::rename(Sample.ID = samID,
+                                                          Cluster = clust),
+                                          cluster_df2 = CIMLR_clusters,
+                                          sample_col = "Sample.ID",
+                                          clust_col = "Cluster",
+                                          suffixes = c(paste0("_MOVICS_", algorithm), 
+                                                       paste0("_", algorithm)))
 
 NMI_to_MOVICS_CIMLR = calculate_nmi_index(cluster_df1 = MOVICS_CIMLR %>%
-                                          dplyr::rename(Sample.ID = samID,
-                                                        Cluster = clust),
-                                        cluster_df2 = CIMLR_clusters,
-                                        sample_col = "Sample.ID",
-                                        clust_col = "Cluster",
-                                        suffixes = c(paste0("_MOVICS_", algorithm), 
-                                                     paste0("_", algorithm)))
+                                            dplyr::rename(Sample.ID = samID,
+                                                          Cluster = clust),
+                                          cluster_df2 = CIMLR_clusters,
+                                          sample_col = "Sample.ID",
+                                          clust_col = "Cluster",
+                                          suffixes = c(paste0("_MOVICS_", algorithm), 
+                                                       paste0("_", algorithm)))
 
 # Wrap up #####
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),

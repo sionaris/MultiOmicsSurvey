@@ -16,9 +16,9 @@ data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
 evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER 
 
 # Import clusterings
-R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "IntNMF", "KLIC",
+R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "KLIC",
                  "LRAcluster", "MDICC", "MFA", "mixKernel", "MOFA", "NEMO", "PIntMF",
-                 "RGCCA", "RWR-F", "SGCCA", "SNF", "Spectrum")
+                 "RGCCA", "RWR-F", "SGCCA", "SNF", "Spectrum", "wMKL")
 Python_algorithms = c("MONET", "MSNE", "PAMOGK" # "MOFA-GPU"
 )
 algorithms = c(R_algorithms, Python_algorithms)
@@ -58,8 +58,8 @@ names(clusterings) = algorithms
 
 # Set up method categories
 similarity_network_methods = c("ab-SNF", "ANF", "MDICC", "MSNE", "NEMO", "RWR-F", "SNF")
-multiple_kernel_learning = c("CIMLR","KLIC", "mixKernel") #, wMKL
-matrix_factorization = c("IntNMF", "MFA", "MOFA", "PIntMF")
+multiple_kernel_learning = c("CIMLR", "KLIC", "mixKernel", "wMKL")
+matrix_factorization = c("MFA", "MOFA", "PIntMF")
 graph_methods = c("MONET", "PAMOGK")
 bayesian = c("iClusterBayes")
 cca_methods = c("RGCCA", "SGCCA")
@@ -327,3 +327,8 @@ draw(ARI_heatmap,
      annotation_legend_side = "bottom",
      align_annotation_legend = "heatmap_center")
 dev.off()
+
+# Save environment
+save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
+                  data_types, "_eval_on_", evaluation_source,
+                  "_env.RData"))
