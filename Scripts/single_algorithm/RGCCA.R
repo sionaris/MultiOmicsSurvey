@@ -132,11 +132,10 @@ rgcca_results = readRDS("Resources/HPC output/RGCCA_HPC/rgcca_results.rds")
 # Inspect output
 summary(rgcca_results)
 
-# Check the ranges of the variate matrices
+# Check the summary stats of the variate matrices
 lapply(rgcca_results$variates, mean)
 lapply(rgcca_results$variates, sd)
 lapply(rgcca_results$variates, range)
-# The ranges are primarily on the same scale
 
 variates <- lapply(rgcca_results$variates, function(x) {
   x = as.data.frame(x)
@@ -193,10 +192,10 @@ rm(scheme); gc()
 m3c_des = annCol
 m3c_des$class = m3c_des$`ER status`
 m3c_des$ID = rownames(m3c_des)
-m3c_input = as.data.frame(t(zvar_df))
+m3c_input = as.data.frame(t(var_df))
 
 RNGversion("4.2.2")
-consensus_km = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
+consensus_pam = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250, 
                    repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
                    clusteralg = "pam", maxK = 10)
 
@@ -431,7 +430,8 @@ rm(scheme); gc()
 library(MOVICS)
 library(cluster)
 silhouette = silhouette(as.integer(gsub("RGCCA", "", RGCCA_clusters$Cluster)),
-                        dist = Rfast::Dist(zvar_df, method = "euclidean"))
+                        dist = Rfast::Dist(var_df, method = "manhattan"))
+# Here manhattan is used because it is conceptually closer to PAM
 
 getSilhouette_ggplot(sil      = silhouette,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
@@ -468,3 +468,9 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    algorithm, "_", data_source, "_",
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
+
+# Save environment
+save.image(paste0(home, "/Results/single_algorithm/", 
+                  algorithm, "/", algorithm, "_", data_source, "_",
+                  data_types, "_eval_on_", evaluation_source,
+                  "_env.RData"))
