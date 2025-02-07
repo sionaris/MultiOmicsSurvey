@@ -1,4 +1,4 @@
-RWR_fusion_neighbor <- function(sim_list,iteration_max=1000,gama=0.7,neighbor_num=10,alpha=0.9,beta=0.9) 
+RWR_fusion_neighbor <- function(sim_list,iteration_max=1000,gama=0.7,neighbor_num=10,alpha=0.9,beta=0.9)
 {
   
   ########
@@ -173,7 +173,7 @@ RWR_fusion_neighbor <- function(sim_list,iteration_max=1000,gama=0.7,neighbor_nu
   return(RWR_similarity)
 }
 
-RWR_fusion <- function(sim_list,iteration_max=1000,gama=0.7) 
+RWR_fusion <- function(sim_list,iteration_max=1000,gama=0.7)
 {
   
   ########

@@ -15,7 +15,7 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Preamble
 home = getwd()
-algorithm = "RWR-F"
+algorithm = "RWR-NF"
 alg_feature_pref = "cols" # Where does the algorithm expect the features to be
 citation = fetch_citation(algorithm = algorithm)
 data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
@@ -127,8 +127,8 @@ distL = lapply(input[continuous], function(x) {
 
 # Binary for SNPs (see ?dist for details)
 distL[["SNPs"]] = as.matrix(dist(as.matrix(input$SNPs),
-                                       as.matrix(input$SNPs),
-                                       method = "binary"))
+                                 as.matrix(input$SNPs),
+                                 method = "binary"))
 gc()
 
 # Run the Scripts/single_algorithm/RWR-F_HPC/*.R and *.sh scripts at an HPC
@@ -143,8 +143,8 @@ for (filename in list.files("Resources/HPC output/RWR-F_HPC/")[results_indices])
   NN_val = strsplit(filename, "_")[[1]][2]
   sigma_val = strsplit(filename, "_")[[1]][4]
   Fusions[[paste0("NN = ", NN_val, ", sigma = ", sigma_val)]] = readRDS(paste0("Resources/HPC output/RWR-F_HPC/",
-                                                                 filename))
-  Fusions[[paste0("NN = ", NN_val, ", sigma = ", sigma_val)]] = Fusions[[paste0("NN = ", NN_val, ", sigma = ", sigma_val)]]$fused_rwrf
+                                                                               filename))
+  Fusions[[paste0("NN = ", NN_val, ", sigma = ", sigma_val)]] = Fusions[[paste0("NN = ", NN_val, ", sigma = ", sigma_val)]]$fused_rwrnf
 }
 rm(NN_val, sigma_val); gc()
 
