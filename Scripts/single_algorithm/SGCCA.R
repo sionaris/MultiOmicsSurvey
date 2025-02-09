@@ -105,7 +105,7 @@ results_indices = grep(".rds", list.files("Resources/HPC output/SGCCA_HPC/"))
 
 for (filename in list.files("Resources/HPC output/SGCCA_HPC/")[results_indices]) {
   pen_val = strsplit(filename, "_")[[1]][3]
-  sgcca_results[[paste("penalty = ", pen_val)]] = readRDS(paste0("Resources/HPC output/SGCCA_HPC/",
+  sgcca_results[[paste0("penalty = ", pen_val)]] = readRDS(paste0("Resources/HPC output/SGCCA_HPC/",
                                                                  filename))
 }
 
@@ -166,15 +166,15 @@ for (i in 1:length(var_dfs)) {
 }
 
 # console logs:
-# penalty = 0.1, optimal K: 8
+# penalty = 0.1, optimal K: 2
 # penalty = 0.2, optimal K: 2
-# penalty = 0.3, optimal K: 3
-# penalty = 0.4, optimal K: 5
-# penalty = 0.5, optimal K: 6
-# penalty = 0.6, optimal K: 5
-# penalty = 0.7, optimal K: 5
-# penalty = 0.8, optimal K: 5
-# penalty = 0.9, optimal K: 8
+# penalty = 0.3, optimal K: 2
+# penalty = 0.4, optimal K: 2
+# penalty = 0.5, optimal K: 2
+# penalty = 0.6, optimal K: 2
+# penalty = 0.7, optimal K: 3
+# penalty = 0.8, optimal K: 3
+# penalty = 0.9, optimal K: 3
 
 # Inspection of clustering results #####
 scores_df = as.data.frame(cbind(list(Penalty = sort(rep(paste0("Penalty = ", seq(0.1, 0.9, 0.1)), 9))), 
@@ -304,19 +304,19 @@ best_clusterings = scores_df[scores_df$NORM_P < 0.05, ] %>%
   dplyr::arrange(desc(RCSI))
 
 # According to these criteria the best clustering is:
-print(best_clusterings[1, ]) # Penalty = , K = 2, very low entropy (low reference too though), borderline p-value, very high RCSI
+print(best_clusterings[1, ]) # Penalty = 0.3, K = 2
+optk = 2
 
 # Determine optPenalty
 optPen = as.numeric(substr(best_clusterings$Pen[1], 11, 14))
-conclusion2 = paste0("Best penalty value based on statistical significance and RCSI is", 
+conclusion = paste0("Best penalty value based on statistical significance and RCSI is", 
                      optPen, "$. We therefore proceed with $penalty = ",
                      optPen, "$.")
-conclusion = paste(conclusion1, conclusion2)
 
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
-SGCCA_clusters = as.data.frame(consensus_km$realdataresults[[optk]]$assignments) %>%
+SGCCA_clusters = as.data.frame(M3C_clusterings[[paste0("penalty = ", optPen)]]$realdataresults[[optk]]$assignments) %>%
   tibble::rownames_to_column(var = "Sample.ID")
 colnames(SGCCA_clusters)[2] = "Cluster"
 SGCCA_clusters$Sample.ID = gsub("\\.", "-", SGCCA_clusters$Sample.ID)
@@ -362,7 +362,8 @@ rm(scheme); gc()
 library(MOVICS)
 library(cluster)
 silhouette = silhouette(as.integer(gsub("SGCCA", "", SGCCA_clusters$Cluster)),
-                        dist = Rfast::Dist(zvar_df, method = "manhattan"))
+                        dist = Rfast::Dist(var_dfs[[paste0("penalty = ", optPen)]], 
+                                           method = "manhattan"))
 # Manhattan is conceptually closer to PAM
 
 getSilhouette_ggplot(sil      = silhouette,
@@ -382,13 +383,15 @@ dev.off()
 library(ComplexHeatmap)
 
 plotdata <- lapply(lapply(input, as.matrix), 
-                   function(mat) mat[rowSums(mat != 0) > 0, ])
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
 plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
   centerFlag = c(F, F, F, F, F),
   scaleFlag = c(F, F, F, F, F)
 )
+
 
 plot_object = list(clust.res = SGCCA_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
