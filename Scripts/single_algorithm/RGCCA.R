@@ -199,14 +199,14 @@ consensus_pam = M3C(m3c_input, des = m3c_des, iters = 100, repsref = 250,
                    repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
                    clusteralg = "pam", maxK = 10)
 
-optk = 3 # p = 1.450502e-208 - All p's but K=10 (which makes sense) are significant
-paste0(ifelse(consensus_km$scores$NORM_P[consensus_km$scores$K == 3] < 0.05, "The clustering is significant.",
+optk = 2 # p = 2.994041e-11
+paste0(ifelse(consensus_pam$scores$NORM_P[consensus_pam$scores$K == optk] < 0.05, "The clustering is significant.",
               "The clustering is not significant."))
 
 # Inspection of clustering results #####
 # Plotting clustering info
 # Consensus index plot
-ci_plot = ggplot(consensus_km[["plots"]][[1]][["data"]], aes(x = consensusindex, y = CDF,
+ci_plot = ggplot(consensus_pam[["plots"]][[1]][["data"]], aes(x = consensusindex, y = CDF,
                                                              group = k, alpha = 0.7))+
   geom_line(aes(color = factor(k)), linewidth = 0.5)+
   theme_bw()+
@@ -236,7 +236,7 @@ ggsave(filename = "Consensus_index.png",
 dev.off()
 
 # Entropy plot
-entropy = ggplot(consensus_km[["plots"]][[2]][["data"]], aes(x = K, y = PAC_SCORE, alpha = 0.7))+
+entropy = ggplot(consensus_pam[["plots"]][[2]][["data"]], aes(x = K, y = PAC_SCORE, alpha = 0.7))+
   geom_line(aes(color = "#7c1d6f"), linewidth = 0.5)+
   scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
   scale_y_continuous(limits = c(0, 100000), breaks = seq(0, 100000, 10000),
@@ -268,11 +268,11 @@ ggsave(filename = "Entropy.png",
        dpi = 700)
 dev.off()
 
-# Statistical significance of clusters
-inf_indices = which(consensus_km[["plots"]][[3]][["data"]]$P_SCORE == Inf)
+# Statistical significance of clusters (check for Inf's)
+inf_indices = which(consensus_pam[["plots"]][[3]][["data"]]$P_SCORE == Inf)
 inf_boolean = length(inf_indices) > 0
 if (inf_boolean) {
-  new_pscore = consensus_km[["plots"]][[3]][["data"]]
+  new_pscore = consensus_pam[["plots"]][[3]][["data"]]
   new_pscore$P_SCORE[inf_indices] = max(new_pscore$P_SCORE[-inf_indices])*1.2
   
   statsig_clust = ggplot(new_pscore, aes(x = K, y = P_SCORE, color = P_SCORE < -log10(0.05)))+
@@ -308,7 +308,7 @@ if (inf_boolean) {
          width = 1920, height = 1080, device = 'png', units = "px",
          dpi = 700)
 } else {
-  statsig_clust = ggplot(consensus_km[["plots"]][[3]][["data"]], 
+  statsig_clust = ggplot(consensus_pam[["plots"]][[3]][["data"]], 
                          aes(x = K, y = P_SCORE, color = P_SCORE < -log10(0.05)))+
     geom_point(size = 1.5, alpha = 0.6)+
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", linewidth = 0.2)+
@@ -316,9 +316,9 @@ if (inf_boolean) {
                        values = c("#6c2167", "grey"),
                        labels = c("p < 0.05", "p > 0.05")) +
     scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
-    scale_y_continuous(limits = c(min(consensus_km[["plots"]][[3]][["data"]]$P_SCORE) - 0.15, 
-                                  max(consensus_km[["plots"]][[3]][["data"]]$P_SCORE) + 0.15), 
-                       breaks = seq(0, max(consensus_km[["plots"]][[3]][["data"]]$P_SCORE) + 0.1, 1))+
+    scale_y_continuous(limits = c(min(consensus_pam[["plots"]][[3]][["data"]]$P_SCORE) - 0.15, 
+                                  max(consensus_pam[["plots"]][[3]][["data"]]$P_SCORE) + 0.15), 
+                       breaks = seq(0, max(consensus_pam[["plots"]][[3]][["data"]]$P_SCORE) + 0.1, 1))+
     theme_bw()+
     theme(panel.border = element_rect(linewidth = 0.2),
           panel.grid.major = element_blank(),
@@ -344,18 +344,18 @@ if (inf_boolean) {
 }
 
 # RCSI plot
-rcsi = ggplot(as.data.frame(consensus_km[["scores"]]), aes(x = consensus_km$scores$K,
-                                                           y = consensus_km$scores$RCSI))+
+rcsi = ggplot(as.data.frame(consensus_pam[["scores"]]), aes(x = consensus_pam$scores$K,
+                                                           y = consensus_pam$scores$RCSI))+
   geom_line(size = 0.3, color = "violet")+
-  geom_errorbar(aes(ymin = consensus_km$scores$RCSI - consensus_km$scores$RCSI_SE,
-                    ymax = consensus_km$scores$RCSI + consensus_km$scores$RCSI_SE,
+  geom_errorbar(aes(ymin = consensus_pam$scores$RCSI - consensus_pam$scores$RCSI_SE,
+                    ymax = consensus_pam$scores$RCSI + consensus_pam$scores$RCSI_SE,
                     color = "deeppink3"), width = 0.2, size = 0.1)+
   geom_point(size = 0.05, color ="deeppink3")+
   scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
-  scale_y_continuous(limits = c(min(consensus_km[["scores"]]$RCSI - consensus_km[["scores"]]$RCSI_SE) - 0.15, 
-                                max(consensus_km[["scores"]]$RCSI + consensus_km[["scores"]]$RCSI_SE) + 0.15), 
-                     breaks = c(-rev(seq(0, abs(round(min(consensus_km[["scores"]]$RCSI - consensus_km[["scores"]]$RCSI_SE), 1)), 0.5)), 
-                                seq(0, round(max(consensus_km[["scores"]]$RCSI + consensus_km[["scores"]]$RCSI_SE), 1), 0.5)))+
+  scale_y_continuous(limits = c(min(consensus_pam[["scores"]]$RCSI - consensus_pam[["scores"]]$RCSI_SE) - 0.15, 
+                                max(consensus_pam[["scores"]]$RCSI + consensus_pam[["scores"]]$RCSI_SE) + 0.15), 
+                     breaks = c(-rev(seq(0, abs(round(min(consensus_pam[["scores"]]$RCSI - consensus_pam[["scores"]]$RCSI_SE), 1)), 0.5)), 
+                                seq(0, round(max(consensus_pam[["scores"]]$RCSI + consensus_pam[["scores"]]$RCSI_SE), 1), 0.5)))+
   scale_colour_manual(values=rcartocolor::carto_pal(n = 9, "Safe"), name="NN") +
   theme(plot.title = element_text(size = 5, face = "bold"),
         axis.title.x = element_text(size = 4, face = "bold"),
@@ -378,13 +378,13 @@ ggsave(filename = "RCSI.png",
 dev.off()
 
 # Conclusion
-conclusion = paste0("The optimal value for k is ", optk, " ($p = ", consensus_km$scores$NORM_P[optk-1],
-                   ", RCSI = ", consensus_km$scores$RCSI[optk-1], "$).")
+conclusion = paste0("The optimal value for k is ", optk, " ($p = ", consensus_pam$scores$NORM_P[optk-1],
+                   ", RCSI = ", consensus_pam$scores$RCSI[optk-1], "$).")
 
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
-RGCCA_clusters = as.data.frame(consensus_km$realdataresults[[optk]]$assignments) %>%
+RGCCA_clusters = as.data.frame(consensus_pam$realdataresults[[optk]]$assignments) %>%
   tibble::rownames_to_column(var = "Sample.ID")
 colnames(RGCCA_clusters)[2] = "Cluster"
 RGCCA_clusters$Sample.ID = gsub("\\.", "-", RGCCA_clusters$Sample.ID)
@@ -450,7 +450,8 @@ dev.off()
 library(ComplexHeatmap)
 
 plotdata <- lapply(lapply(input, as.matrix), 
-                   function(mat) mat[rowSums(mat != 0) > 0, ])
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
 plotdata = getStdiz(
   data = plotdata,
   halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
