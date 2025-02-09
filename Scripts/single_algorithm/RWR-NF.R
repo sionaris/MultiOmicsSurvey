@@ -457,7 +457,7 @@ optSigma = 0.5
 # also plays a role, according only to parametric tests
 
 # Pearson and Frobenius histograms for different nn AND sigma = 0.5
-Fusions_filt = Fusions[which(grepl("sigma = 0.5", names(Fusions)))]
+Fusions_filt = Fusions[which(grepl(paste0("sigma = ", optSigma), names(Fusions)))]
 Pearson_hist_matrix = compute_matrix_similarity(Fusions_filt)$Pearson
 Pearson_values <- Pearson_hist_matrix[lower.tri(Pearson_hist_matrix, diag = FALSE)]
 mean_Pearson_value <- mean(Pearson_values)
@@ -547,17 +547,311 @@ ggsave(filename = paste0(algorithm, "_matrix_Frobenius_similarity_histogram.pdf"
        dpi = 700)
 dev.off()
 
-# Spectral clustering using kernlab
+# Spectral clustering using kernlab ###
+# Slightly modify the kernlab method to return embeddings as well
+setMethod("specc", signature(x = "kernelMatrix"),
+          function(x, centers, nystrom.red = FALSE, iterations = 200, ...) {
+            m <- nrow(x)
+            if (missing(centers))
+              stop("centers must be a number or a matrix")
+            if (length(centers) == 1) {
+              nc <- centers
+              if (m < centers)
+                stop("more cluster centers than data points.")
+            } else {
+              nc <- dim(centers)[2]
+            }
+            
+            if (dim(x)[1] != dim(x)[2]) {
+              nystrom.red <- TRUE
+              if (dim(x)[1] < dim(x)[2])
+                x <- t(x)
+              m <- nrow(x)
+              n <- ncol(x)
+            }
+            
+            if (nystrom.red == TRUE) {
+              A <- x[1:n, ]
+              B <- x[-(1:n), ]
+              d1 <- colSums(rbind(A, B))
+              d2 <- rowSums(B) + drop(matrix(colSums(B), 1) %*% .ginv(A) %*% t(B))
+              dhat <- sqrt(1/c(d1, d2))
+              
+              A <- A * (dhat[1:n] %*% t(dhat[1:n]))
+              B <- B * (dhat[(n+1):m] %*% t(dhat[1:n]))
+              
+              Asi <- .sqrtm(.ginv(A))
+              Q <- A + Asi %*% crossprod(B) %*% Asi
+              tmpres <- svd(Q)
+              U <- tmpres$u
+              L <- tmpres$d
+              
+              V <- rbind(A, B) %*% Asi %*% U %*% .ginv(sqrt(diag(L)))
+              yi <- matrix(0, m, nc)
+              
+              for (i in 1:nc)  # Compute the normalized embedding
+                yi[, i] <- V[, i] / sqrt(sum(V[, i]^2))
+              
+              res <- kmeans(yi, centers, iterations)
+            } else {
+              d <- 1/sqrt(rowSums(x))
+              l <- d * x %*% diag(d)
+              xi <- eigen(l)$vectors[, 1:nc]
+              yi <- xi / sqrt(rowSums(xi^2))
+              res <- kmeans(yi, centers, iterations)
+            }
+            
+            # Instead of returning a new "specc" object with just cluster assignments,
+            # return a list containing both the clusters and the computed embeddings.
+            return(list(cluster = res$cluster,
+                        embedding = yi,
+                        size = res$size,
+                        centers = matrix(0),      # Placeholder for centers
+                        withinss = c(0),          # Placeholder for withinss
+                        info = "Kernel Matrix used as input."))
+          })
+
+# Set RNG version and seed for reproducibility
 RNGversion("4.2.2")
 set.seed(123)
-clusterings = vector("list", 9)
-for (i in 1:length(Fusions_filt)) {
-  fusion = Fusions_filt[[i]]
-  class(fusion) = 'kernelMatrix'
+clusterings <- vector("list", length(Fusions_filt))
+names(clusterings) <- names(Fusions_filt)
+
+# Outer loop: iterate over the elements in Fusions_filt
+for (i in seq_along(Fusions_filt)) {
+  fusion <- Fusions_filt[[i]]
+  class(fusion) <- "kernelMatrix"
+  
   for(k in k_range) {
     clusterings[[names(Fusions_filt)[i]]][[paste0("k = ", k)]] = specc(fusion, centers = k)@.Data
   }
 }
+
+# Name the results and add silhouettes
+sil_ranks = list()
+for (i in 1:length(clusterings)) {
+  for (j in 1:length(clusterings[[i]])) {
+    clusterings[[i]][[j]]$silhouette = silhouette(as.integer(clusterings[[i]][[j]]$cluster),
+                                                  dist = Rfast::Dist(clusterings[[i]][[j]]$embedding, 
+                                                                     method = "euclidean"))
+    clusterings[[i]][[j]]$avg_width = summary(clusterings[[i]][[j]]$silhouette)$avg.width
+    sil_ranks[[paste0(names(clusterings)[i], ", ", names(clusterings[[i]])[j])]] = clusterings[[i]][[j]]$avg_width
+  }
+}
+
+# Best clustering
+best_sil = sil_ranks[which.max(unlist(sil_ranks))]
+optNN = as.numeric(substr(strsplit(names(best_sil), ", ")[[1]][1], 6, 7))
+optSigma = as.numeric(substr(strsplit(names(best_sil), ", ")[[1]][2], 9, 11))
+optk = as.numeric(substr(strsplit(names(best_sil), ", ")[[1]][3], 5, 
+                         nchar(strsplit(names(best_sil), ", ")[[1]][1])))
+
+best_clustering = clusterings[[paste0("NN = ", optNN, ", sigma = ", optSigma)]][[paste0("k = ", optk)]]
+
+RWRNF_clusters = as.data.frame(list(Cluster = best_clustering$cluster, 
+                                   Sample.ID = colnames(Fusions_filt[[paste0("NN = ", optNN, ", sigma = ", optSigma)]])))
+
+RWRNF_clusters$Sample.ID = gsub("\\.", "-", RWRNF_clusters$Sample.ID)
+rownames(RWRNF_clusters) = RWRNF_clusters$Sample.ID
+
+# Feature ranking
+RWRNF_feature_ranks = list()
+binary_flags = c(TRUE, FALSE, FALSE, FALSE, FALSE)
+for (i in 1:length(input)) {
+  RWRNF_feature_ranks[[i]] = rankFeaturesByNMI_parallely(data = list(input[[i]]), 
+                                                        W = final_affinity_matrix,
+                                                        ncores = 8,
+                                                        binary = binary_flags[i],
+                                                        nn = optN,
+                                                        sigma = optSigma)
+  cat("Done with", names(input)[i], "\n")
+}
+names(RWRNF_feature_ranks) = names(input)
+
+rank_sum_nas = sapply(RWRNF_feature_ranks, function(x) sum(is.na(x$NMI_ranks)))
+names(rank_sum_nas) = names(RWRNF_feature_ranks)
+
+feature_ranks_text1 = paste0("Feature ranks could not be calculated for some features in the ",
+                             paste(names(rank_sum_nas)[which(rank_sum_nas > 0)], collapse = ", "), 
+                             ifelse(length(which(rank_sum_nas > 0)) > 1, " modalities (", " modality ("),
+                             paste(rank_sum_nas[which(rank_sum_nas > 0)], collapse = ", "),
+                             ").")
+rm(rank_sum_nas); gc()
+
+# Combine all modalities into a single data frame
+for (i in 1:length(RWRNF_feature_ranks)) {
+  names(RWRNF_feature_ranks[[i]]$NMI_scores) = colnames(input[[i]])
+}
+
+# Prepare data for plotting
+# Combine all modalities into a single data frame
+feature_data <- do.call(rbind, lapply(names(RWRNF_feature_ranks), function(modality) {
+  data.frame(
+    Feature = paste(modality, seq_along(RWRNF_feature_ranks[[modality]]$NMI_scores), sep = "_"),
+    Modality = modality,
+    NMI_Scores = RWRNF_feature_ranks[[modality]]$NMI_scores
+  )
+}))
+
+# Remove features with NA NMI scores
+feature_data <- feature_data[!is.na(feature_data$NMI_Scores), ]
+
+# Calculate global ranks based on NMI scores
+feature_data$Global_Rank <- rank(-feature_data$NMI_Scores, ties.method = "first")
+
+# Filter the top 1000 features
+top_features <- feature_data[order(feature_data$Global_Rank), ][1:1000, ]
+
+# Ensure the data is ordered by rank for proper plotting
+top_features <- top_features[order(top_features$Global_Rank), ]
+
+# Create the bar plot
+ggplot(top_features, aes(x = NMI_Scores, y = Global_Rank, fill = Modality)) +
+  geom_bar(
+    stat = "identity",
+    orientation = "y",
+    width = 1,  # Bars fully adjacent with no gaps
+    alpha = 0.85,  # Apply transparency
+    color = NA  # Removes outlines completely
+  ) +
+  scale_fill_manual(
+    name = "Modality",
+    values = c(
+      "RNAseq" = "#1B9E77",
+      "miRNA" = "#7570B3",
+      "Methylation" = "deeppink4",
+      "CNV" = "#E7298A",
+      "SNPs" = "#66A61E"
+    )
+  ) +
+  scale_x_continuous(
+    breaks = seq(0, 1, by = 0.1),  
+    limits = c(-0.01, 1),  # Expand lower limit slightly
+    expand = c(0, 0)  # Remove extra padding on the x-axis
+  ) +
+  scale_y_reverse(
+    breaks = c(1, seq(100, 1000, by = 100)),  # Y-axis reversed
+    limits = c(1001, 0),  # Expand upper limit slightly
+    expand = c(0, 0)  # Remove extra padding on the y-axis
+  ) +
+  labs(
+    title = "Top 1000 Features Ranked by NMI with Subtypes",
+    x = "NMI Score",
+    y = "Global Rank"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 5),  # Smaller y-axis labels
+    axis.text.x = element_text(size = 5),  # Larger x-axis labels
+    axis.title = element_text(face = "bold", size = 6),
+    axis.line.y = element_line(linewidth = 0),
+    axis.line.x = element_line(linewidth = 0.1),
+    axis.ticks = element_line(linewidth = 0.05),
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 7),  # Bold and centrally aligned title
+    legend.title = element_text(face = "bold", size = 5),
+    legend.text = element_text(size = 5),
+    legend.key.size = unit(0.35, "cm"),
+    panel.grid.major.y = element_blank(),  # Remove horizontal grid lines
+    panel.grid.major.x = element_line(color = "gray90")  # Keep vertical grid lines
+  ) +
+  guides(color = "none", alpha = "none")
+
+ggsave(filename = paste0(algorithm, "_top_", nrow(top_features), "_feature_ranks.png"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 1920*1.2, height = 1920*1.5, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+feature_ranks_text2 = paste0("In the top ", nrow(top_features), " features, ",
+                             paste(names(table(top_features$Modality)), collapse = ", "),
+                             " features are found (",
+                             paste(table(top_features$Modality), collapse = ", "),
+                             ", respectively).")
+
+feature_ranks_text = paste(feature_ranks_text1, feature_ranks_text2, collapse = " ")
+rm(feature_ranks_text1, feature_ranks_text2); gc()
+
+# Main results ###
+# Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
+# (Jaccard may be misleading)
+
+# Calculate ARI and NMI
+library(mclust)
+library(clue)
+
+ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = RWRNF_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
+
+NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
+                                    cluster_df2 = RWRNF_clusters,
+                                    sample_col = "Sample.ID",
+                                    clust_col = "Cluster",
+                                    suffixes = c("_MOVICS_CS",
+                                                 paste0("_", algorithm)))
+
+# Low statistics when compared to the MOVICS. Results very different
+
+# MOVICS-like analysis #####
+library(MOVICS)
+library(ComplexHeatmap)
+
+# Import coloring scheme
+scheme = readRDS("Resources/scheme.rds")
+annCol = scheme$annCol
+annColors = scheme$annColors
+cluster_colors = scheme$clust.colors
+col.list = scheme$col.list
+var2comp = scheme$var2comp %>%
+  dplyr::select(-`Consensus Subtype`) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(RWRNF_clusters, by = "Sample.ID") %>%
+  tibble::column_to_rownames(var = "Sample.ID") %>%
+  mutate(RWRNF = paste0(algorithm, Cluster)) %>%
+  dplyr::select(RWRNF, everything()) %>%
+  dplyr::select(-Cluster)
+rm(scheme); gc()
+
+# Silhouette
+getSilhouette_ggplot(sil      = best_clustering$silhouette,
+                     fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                     fig.name = "Silhouette",
+                     height   = 5.5,
+                     width    = 5.5,
+                     axis_label_size = 12,
+                     axis_label_font = "bold",
+                     text_size = 1.5,
+                     title_size = 16,
+                     algorithm = algorithm,
+                     save_plot = TRUE)
+dev.off()
+
+# Heatmap prep
+plotdata <- lapply(lapply(input, as.matrix), 
+                   function(mat) mat[, colSums(mat != 0) > 0])
+plotdata <- lapply(plotdata, t)
+plotdata = getStdiz(
+  data = plotdata,
+  halfwidth = c(NA, 3, 3, 3, 3), # No halfwidth for SNPs
+  centerFlag = c(F, F, F, F, F),
+  scaleFlag = c(F, F, F, F, F)
+)
+
+plot_object = list(clust.res = RWRNF_clusters %>%
+                     dplyr::rename(samID = Sample.ID, clust = Cluster))
+
+# Export consensus clustering object
+clust = as.data.frame(plot_object$clust.res)
+colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
+openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
+                                   algorithm, "_", data_source, "_",
+                                   data_types, "_eval_on_", evaluation_source,
+                                   "_clusterings.xlsx"))
 
 # Save environment
 save.image(paste0(home, "/Results/single_algorithm/", 
