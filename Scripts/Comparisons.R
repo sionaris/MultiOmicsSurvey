@@ -18,7 +18,7 @@ evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER
 # Import clusterings
 R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "KLIC",
                  "LRAcluster", "MDICC", "MFA", "mixKernel", "MOFA", "NEMO", "PIntMF",
-                 "RGCCA", "RWR-F", "SGCCA", "SNF", "Spectrum", "wMKL")
+                 "RGCCA", "RWR-F", "RWR-NF", "SGCCA", "SNF", "Spectrum", "wMKL")
 Python_algorithms = c("MONET", "MSNE", "PAMOGK" # "MOFA-GPU"
 )
 algorithms = c(R_algorithms, Python_algorithms)
@@ -57,7 +57,7 @@ for (Python_algorithm in Python_algorithms) {
 names(clusterings) = algorithms
 
 # Set up method categories
-similarity_network_methods = c("ab-SNF", "ANF", "MDICC", "MSNE", "NEMO", "RWR-F", "SNF")
+similarity_network_methods = c("ab-SNF", "ANF", "MDICC", "MSNE", "NEMO", "RWR-F", "RWR-NF", "SNF")
 multiple_kernel_learning = c("CIMLR", "KLIC", "mixKernel", "wMKL")
 matrix_factorization = c("MFA", "MOFA", "PIntMF")
 graph_methods = c("MONET", "PAMOGK")
