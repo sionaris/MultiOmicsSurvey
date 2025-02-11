@@ -46,7 +46,7 @@ The values are very low and indicate that `r params$algorithm` produces differen
 ## Modality contribution
 The following figure, illustrates the final graph, where each edge is colored according to the modalities that contribute the most to the corresponding relationship. The relationships plotted are for the $N_i = 15$ nearest neighbors of each sample.
 
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/colored_Final_Fused_Affinity_15-NN_Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/colored_Final_Fused_Affinity_",params$hyperparameters$optimal_N,"-NN_Graph.png")`)
 
 ## Feature ranking
 The top 100 features ranked by NMI are shown in the figure below. `r params$hyperparameters$feature_ranks_text`
@@ -56,7 +56,7 @@ The top 100 features ranked by NMI are shown in the figure below. `r params$hype
 ## Clinical variables
 Results can also be found in the [summary file](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Summary_of_clinical_variables.txt")`) (Exact tests and non-parametric Kruskal-Wallis tests). The number of lymph nodes identified by immunohistochemical procedures (IHC) and H&E procedures, were also tested using the Jonckheere-Terpstra test for ordered differences.
 
-With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>race, PR status, ER status, ER and PR cell level percentages, the number of lymph nodes identified by either IHC or H&E, and histological type</b>.
+With respect to <u>clinical variables</u> statistically significant associations were found between the `r params[[algorithm]]` subtypes and <b>race, menopausal status, tumor stage, PR status, ER status, ER and PR cell level percentages, the number of lymph nodes identified by either IHC or H&E, and histological type</b>.
 
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-1.png")`)
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/pdf2png/Summary_of_clinical_variables-2.png")`)
@@ -203,12 +203,12 @@ To be specific, ``runPAM()`` first trains a partition around medoids (PAM) class
 ## Graphs of affinity matrices
 The graphs of the <u>original</u> $S$ matrices (neighborhood graphs) and the neighborhood graph of the <b>final fused affinity matrix</b> are shown below:
 
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/CNV Original Affinity 15-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/RNAseq Original Affinity 15-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/miRNA Original Affinity 15-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/Methylation Original Affinity 15-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/SNPs Original Affinity 15-NN Graph.png")`)
-![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/Final Fused Affinity 15-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/CNV Original Affinity ",params$hyperparameters$optimal_N,"-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/RNAseq Original Affinity ",params$hyperparameters$optimal_N,"-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/miRNA Original Affinity ",params$hyperparameters$optimal_N,"-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/Methylation Original Affinity ",params$hyperparameters$optimal_N,"-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/SNPs Original Affinity ",params$hyperparameters$optimal_N,"-NN Graph.png")`)
+![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/Final Fused Affinity ",params$hyperparameters$optimal_N,"-NN Graph.png")`)
 
 ## PCA from final affinity matrices
 ![](`r paste0(params$home,"/Results/single_algorithm/",params$algorithm,"/Supplement/",params$algorithm,"_CNV_kernelPCA.png")`)

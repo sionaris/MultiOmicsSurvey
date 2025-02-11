@@ -103,12 +103,14 @@ knitr::kable(params$hyperparameters$numc_df, caption = "Eigengap and discretizat
 
 <b>k = 2 is unequivocally the optimal choice for number of clusters.</b>
 
-For a given $sigma = 0.5$ and for all $N_i$, we calculated:
-<ol>
-  <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each final fused affinity matrix as an indication of spread.</li>
-  <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li>
-  <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li>
-  <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li>
-</ol>
+We cluster all 9 fused matrices (Fusions for $N_i \in \{10, 15, 20, 25, 30, 35, 40, 45, 50\}$) with spectral clustering and $k=2$ and pick the clustering with the highest average silhouette width: $k = `r hyperparameters[["optk"]]`$.
 
-This led to us to pick $N_i = `r hyperparameters[["optimal_N"]]`$. For the number of iterations $t$, we set it to $`r hyperparameters[["n_iter"]]`$, which is generally considered sufficiently high for achieving convergence.
+<!-- For a given $sigma = 0.5$ and for all $N_i$, we calculated: -->
+<!-- <ol> -->
+<!--   <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each final fused affinity matrix as an indication of spread.</li> -->
+<!--   <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li> -->
+<!--   <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li> -->
+<!--   <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li> -->
+<!-- </ol> -->
+
+<!-- This led to us to pick $N_i = `r hyperparameters[["optimal_N"]]`$. For the number of iterations $t$, we set it to $`r hyperparameters[["n_iter"]]`$, which is generally considered sufficiently high for achieving convergence. -->

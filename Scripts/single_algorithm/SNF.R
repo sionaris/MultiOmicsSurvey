@@ -2157,7 +2157,8 @@ dev.off()
 # Just significant ones now
 SNF_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(SNF, Race, Histology, 
-                                                       `ER status`, `PR status`)
+                                                       `ER status`, `PR status`, `Menopausal status`,
+                                                       Stage)
 plotdata_bar_sig$SNF = factor(plotdata_bar_sig$SNF)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -2190,13 +2191,13 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(SNF_barcharts_sig[[1]], SNF_barcharts_sig[[2]], SNF_barcharts_sig[[3]],
-          SNF_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          SNF_barcharts_sig[[4]], SNF_barcharts_sig[[5]], SNF_barcharts_sig[[6]],
+          ncol = 3, nrow = 2, labels = c("A", "B", "C", "D"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 7500, height = 5500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -2206,17 +2207,30 @@ Pheno_sunburst_SNF = clust_annot_pheno
 Pheno_sunburst_SNF$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_SNF$`ER status`)
 Pheno_sunburst_SNF$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_SNF$`ER status`)
 Pheno_sunburst_SNF$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_SNF$`ER status`)
+Pheno_sunburst_SNF$`Menopausal status` = gsub("Indeterminate", "Indet", Pheno_sunburst_SNF$`Menopausal status`)
+Pheno_sunburst_SNF$`Menopausal status` = gsub("Pre-menopausal", "Pre", Pheno_sunburst_SNF$`Menopausal status`)
+Pheno_sunburst_SNF$`Menopausal status` = gsub("Perimenopausal", "Peri", Pheno_sunburst_SNF$`Menopausal status`)
+Pheno_sunburst_SNF$`Menopausal status` = gsub("Post-menopausal", "Post", Pheno_sunburst_SNF$`Menopausal status`)
+Pheno_sunburst_SNF$`Menopausal status` = gsub("Unknown", "Unkn Meno", Pheno_sunburst_SNF$`Menopausal status`)
+Pheno_sunburst_SNF$Stage = gsub("Unknown", "Unkn Stage", Pheno_sunburst_SNF$Stage)
 Pheno_sunburst_SNF = Pheno_sunburst_SNF %>%
-  dplyr::select(SNF, `ER status`) %>%
-  group_by(SNF, `ER status`) %>%
+  dplyr::select(SNF, `ER status`, `Menopausal status`, Stage) %>%
+  group_by(SNF, `ER status`, `Menopausal status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_SNF = data.frame(stringsAsFactors = FALSE,
                                    colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                      "#C11D9C", "#0F1682",  "grey40"))),
+                                                                      "#C11D9C", "#0F1682",  "grey40",
+                                                                      "mistyrose2", "#FAA476", "#DC3977", 
+                                                                      "#7C1D6F", "grey40",
+                                                                      "#00C9FF", "#099CF5", "#097BF5", 
+                                                                      "#0B5684", "grey40"))),
                                    labels = c("SNF1", "SNF2",
-                                              "ER-", "ER+", "Unkn ER status"))
+                                              "ER-", "ER+", "Unkn ER status",
+                                              "Indet", "Pre", "Peri", "Post", "Unkn Meno",
+                                              "Stage I", "Stage II", "Stage III", "Stage IV",
+                                              "Unkn Stage"))
 
 sunburstDF_SNF = as.sunburstDF(Pheno_sunburst_SNF, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_SNF, by = "labels")
@@ -2449,7 +2463,8 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        conclusion = conclusion, # if there is agreement, np_conclusion can also be used
                        n_iter = n_iterations,
                        feature_ranks_text = feature_ranks_text,
-                       numc_df = numc_df
+                       numc_df = numc_df,
+                       optk = optk
                        )
 
 # Put all parameters in a list
