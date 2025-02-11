@@ -963,7 +963,7 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
 # comprehensive heatmap (may take a while)
 getMoHeatmap_single_algorithm(algorithm_name = algorithm,
                               data          = plotdata,
-             row.title     = names(heatmap_plotdata),
+             row.title     = names(plotdata),
              is.binary     = c(T,F,F,F,F), 
              legend.name   = c("SNPs",
                                "Standardized RNAseq norm. counts",
@@ -2461,6 +2461,7 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
               transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo(), home = home)
+
 
 # Render the R Markdown document with the parameters
 rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/", algorithm,
