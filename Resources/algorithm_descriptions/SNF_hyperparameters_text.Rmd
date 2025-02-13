@@ -8,7 +8,7 @@ The corresponding histogram of Pearson correlations is shown below:
 
 ![](`r paste0(params$home,"/Results/single_algorithm/SNF/Supplement/SNF_matrix_Pearson_similarity_histogram-1.png")`)
 
-The $sigma$ effect was not confirmed by the non-parametric tests.  We therefore set $sigma = `r hyperparameters[["optimal_sigma"]]`$, which is close to the median $sigma$ value (0.55, but rounded down to 0.5 which was actually included in our range of tested $sigma$ values). For $N_i$, we chose the optimal value based on two custom metrics we especially defined for this case where the optimal number of clusters is 2. 
+The $sigma$ effect was not confirmed by the non-parametric tests.  We therefore set $sigma = `r hyperparameters[["optimal_sigma"]]`$, which is close to the median $sigma$ value (0.55, but rounded down to 0.5 which was actually included in our range of tested $sigma$ values). 
 
 The fused matrices for $\sigma = 0.5$ and $N_i \in \{10, 15, 20, 25, 30, 35, 40, 45, 50\}$ are then used as input in the ``estimateNumberOfClustersGivenGraph`` of <em>SNFtool</em> to determine the optimal number of clusters in the data based on two methods: i) the eigengap method and ii) the discretization (rotation) method.
 
