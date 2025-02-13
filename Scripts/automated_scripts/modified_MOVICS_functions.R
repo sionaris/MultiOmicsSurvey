@@ -2642,7 +2642,7 @@ runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = 
     hcg <- FALSE
   }
   else {
-    hcg <- hclust(ClassDiscovery::distanceMatrix(t(as.matrix(es[, 
+    hcg <- fastcluster::hclust(ClassDiscovery::distanceMatrix(t(as.matrix(es[, 
                                                                 sam.order])), distance), linkage)
   }
   hm <- ComplexHeatmap::pheatmap(mat = es[, sam.order], border_color = NA, 
@@ -2747,7 +2747,7 @@ runGSVA_mod_4.4_single_algorithm <- function (algorithm_name = "CS",
     hcg <- FALSE
   }
   else {
-    hcg <- hclust(ClassDiscovery::distanceMatrix(t(as.matrix(es[, 
+    hcg <- fastcluster::hclust(ClassDiscovery::distanceMatrix(t(as.matrix(es[, 
                                                                 sam.order])), distance), linkage)
   }
   hm <- ComplexHeatmap::pheatmap(mat = es[, sam.order], border_color = NA, 
@@ -3243,7 +3243,7 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
   }
   ht <- list()
   for (i in 1:n_dat) {
-    hcg <- hclust(ClassDiscovery::distanceMatrix(as.matrix(t(data[[i]])), 
+    hcg <- fastcluster::hclust(ClassDiscovery::distanceMatrix(as.matrix(t(data[[i]])), 
                                                  clust.dist.row[i]), clust.method.row[i])
     if (is.null(annRow[[i]][1])) {
       rowlab <- ""
@@ -3357,6 +3357,300 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
   draw(ht_list, merge_legend = TRUE, heatmap_legend_side = "right")
   invisible(dev.off())
   draw(ht_list, merge_legend = TRUE, heatmap_legend_side = "right")
+  options(warn = defaultW)
+}
+
+getMoHeatmap_single_algorithm2 = function(
+    algorithm_name = "CS",
+    data = NULL,
+    is.binary = c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE),
+    row.title = c("Data1", "Data2", "Data3", "Data4", "Data5", "Data6"),
+    legend.name = c("Data1", "Data2", "Data3", "Data4", "Data5", "Data6"),
+    # Preexisting clustering (data frame with columns 'samID' and 'clust')
+    clust.res = NULL,
+    # Back-compat (unused) 
+    clust.dend = NULL,
+    # Control row & column clustering
+    cluster_rows = rep(FALSE, 6),
+    cluster_cols = rep(FALSE, 6),
+    # Show/hide the dendrogram once computed
+    show.row.dend = c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE),
+    show.col.dend = c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE),
+    show.rownames = c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE),
+    show.colnames = FALSE,
+    # Dist/method for row clustering
+    clust.dist.row = c("pearson","pearson","pearson","pearson","pearson","pearson"),
+    clust.method.row = c("ward.D","ward.D","ward.D","ward.D","ward.D","ward.D"),
+    # Dist/method for column clustering
+    clust.dist.col = c("pearson","pearson","pearson","pearson","pearson","pearson"),
+    clust.method.col = c("ward.D","ward.D","ward.D","ward.D","ward.D","ward.D"),
+    # Colors for the subtypes in annotation
+    clust.col = c("#2EC4B6","#E71D36","#FF9F1C","#BDD5EA","#FFA5AB",
+                  "#011627","#023E8A","#9D4EDD","#f09c6c","#09f3b3"),
+    # Color palettes for each dataset
+    color = rep(list(c("#00FF00", "#000000", "#FF0000")), 6),
+    annCol = NULL,
+    annColors = NULL,
+    annRow = NULL,
+    width = 6,
+    height = 4,
+    fig.path = getwd(),
+    fig.name = "moheatmap"
+) {
+  # Turn off messages from ComplexHeatmap
+  ht_opt$message = FALSE
+  
+  # Temporarily suppress warnings
+  defaultW <- getOption("warn")
+  options(warn = -1)
+  
+  # Ensure data has names
+  if (is.null(names(data))) {
+    names(data) <- sprintf("dat%s", seq_along(data))
+  }
+  n_dat <- length(data)
+  if (n_dat > 6) {
+    stop("Current version can support up to 6 datasets.")
+  }
+  if (n_dat < 2) {
+    stop("Need at least 2 omics data.")
+  }
+  
+  #---------------------------------------------
+  # 1) Possibly reorder columns by 'clust.res'
+  #---------------------------------------------
+  # We do a single reorder if ANY dataset has cluster_cols[i] = FALSE
+  # and we have a non-null clust.res. This ensures consistent sample
+  # order across all datasets in that scenario.
+  
+  reorder_needed <- any(cluster_cols == FALSE) && !is.null(clust.res)
+  
+  if (reorder_needed) {
+    # sort clust.res by cluster
+    # (assuming 'clust.res' has columns: samID, clust)
+    clust.res <- clust.res[order(clust.res$clust), , drop = FALSE]
+    # reorder all data sets to match that sample order
+    data <- lapply(data, function(mat) {
+      # keep only samples that are in clust.res$samID (and in the same order)
+      mat[, clust.res$samID, drop = FALSE]
+    })
+  }
+  
+  #---------------------------------------------
+  # 2) Build color mapping for the clusters
+  #---------------------------------------------
+  # If user gave us a clust.res, define colvec accordingly
+  if (!is.null(clust.res)) {
+    unique_clusters <- sort(unique(clust.res$clust))
+    colvec <- clust.col[seq_along(unique_clusters)]
+    names(colvec) <- paste0(algorithm_name, unique_clusters)
+  } else {
+    # fallback if no clust.res
+    colvec <- clust.col
+  }
+  
+  #---------------------------------------------
+  # 3) Validate annRow
+  #---------------------------------------------
+  if (!is.null(annRow) && !is.list(annRow)) {
+    stop("Argument 'annRow' should be a list if provided!")
+  }
+  
+  #---------------------------------------------
+  # 4) Helper to compute distances via Rfast or cor
+  #---------------------------------------------
+  compute_distance <- function(mat, dist_method, do_column = FALSE) {
+    if (dist_method %in% c("pearson","spearman")) {
+      # correlation-based
+      if (do_column) {
+        # columns => cor(mat)
+        cmat <- cor(mat, method = dist_method, use="pairwise.complete.obs")
+      } else {
+        # rows => cor(t(mat))
+        cmat <- cor(t(mat), method = dist_method, use="pairwise.complete.obs")
+      }
+      dist_mat <- as.dist(1 - cmat)
+    } else {
+      if (!requireNamespace("Rfast", quietly = TRUE)) {
+        stop("Package 'Rfast' not installed. Please install it or change dist method.")
+      }
+      if (do_column) {
+        dist_full <- Rfast::Dist(t(mat), method=dist_method)
+      } else {
+        dist_full <- Rfast::Dist(mat, method=dist_method)
+      }
+      dist_mat <- as.dist(dist_full)
+    }
+    dist_mat
+  }
+  
+  #---------------------------------------------
+  # 5) Build Heatmaps for Each Data Set
+  #---------------------------------------------
+  ht_list <- vector("list", n_dat)
+  
+  for (i in seq_len(n_dat)) {
+    
+    #--- Column Clustering or None
+    if (cluster_cols[i]) {
+      # do a new column dendrogram
+      col_dist_mat <- compute_distance(data[[i]], clust.dist.col[i], do_column=TRUE)
+      col_hclust   <- fastcluster::hclust(col_dist_mat, method = clust.method.col[i])
+    } else {
+      # no new column clustering
+      col_hclust <- FALSE
+      # The columns are already reordered above if reorder_needed=TRUE
+    }
+    
+    #--- Row Clustering or None
+    if (cluster_rows[i]) {
+      row_dist_mat <- compute_distance(data[[i]], clust.dist.row[i], do_column=FALSE)
+      row_hclust   <- fastcluster::hclust(row_dist_mat, method = clust.method.row[i])
+    } else {
+      row_hclust <- FALSE
+    }
+    
+    #--- Figure out row labels for anno_mark
+    if (!is.null(annRow) && !is.null(annRow[[i]]) && !is.na(annRow[[i]][1])) {
+      rowlab       <- intersect(rownames(data[[i]]), annRow[[i]])
+      rowlab.index <- match(rowlab, rownames(data[[i]]))
+    } else {
+      rowlab       <- character(0)
+      rowlab.index <- integer(0)
+    }
+    
+    #--- top_annotation only on the first heatmap
+    #---------------------------------------------
+    # Build Sample Annotation AFTER reorder
+    #---------------------------------------------
+    # Now annCol matches the new column order in data[[1]] if we did reorder
+    if (!is.null(annCol) && !is.null(annColors)) {
+      # subset annCol to match the new colnames of data[[1]]
+      annCol <- annCol[colnames(data[[1]]), , drop=FALSE]
+      if (!is.null(clust.res)) {
+        # Add Subtype info
+        annCol$Subtype <- paste0(algorithm_name, clust.res[colnames(data[[1]]), "clust"])
+        annColors[["Subtype"]] <- colvec
+      }
+      ha <- ComplexHeatmap::HeatmapAnnotation(df = annCol,
+                                              col = annColors,
+                                              border = FALSE)
+    } else {
+      # minimal annotation
+      if (!is.null(clust.res)) {
+        # build minimal df with cluster info
+        minimalAnn <- data.frame(
+          Subtype = paste0(algorithm_name, clust.res[colnames(data[[1]]), "clust"]),
+          row.names = colnames(data[[1]]),
+          stringsAsFactors = FALSE
+        )
+        annColorsLocal <- list(Subtype = colvec)
+        ha <- ComplexHeatmap::HeatmapAnnotation(df = minimalAnn,
+                                                col = annColorsLocal,
+                                                border = FALSE)
+      } else {
+        ha <- NULL
+      }
+    }
+    top_annotation <- if (i == 1) ha else NULL
+    
+    #--- Build the Heatmap object
+    if (!is.binary[i]) {
+      # continuous data
+      rng <- range(data[[i]], na.rm=TRUE)
+      cont_colors <- grDevices::colorRampPalette(color[[i]])(64)
+      ht_list[[i]] <- ComplexHeatmap::Heatmap(
+        matrix            = as.matrix(data[[i]]),
+        row_title         = row.title[i],
+        name              = legend.name[i],
+        cluster_rows      = row_hclust,
+        cluster_columns   = col_hclust,
+        show_row_dend     = show.row.dend[i],
+        show_column_dend  = show.col.dend[i],
+        show_row_names    = show.rownames[i],
+        show_column_names = show.colnames,
+        col = cont_colors,
+        top_annotation = top_annotation,
+        width  = grid::unit(width, "cm"),
+        height = grid::unit(height, "cm"),
+        heatmap_legend_param = list(
+          at     = pretty(rng),
+          labels = pretty(rng)
+        ),
+        right_annotation = ComplexHeatmap::rowAnnotation(
+          link = ComplexHeatmap::anno_mark(
+            at = rowlab.index,
+            labels = rowlab,
+            which = "row",
+            lines_gp = grid::gpar(fontsize = 5),
+            link_width = grid::unit(3, "mm"),
+            padding = grid::unit(0.8, "mm"),
+            labels_gp = grid::gpar(fontsize = 7)
+          )
+        )
+      )
+    } else {
+      # binary data
+      col_fun_bin <- circlize::colorRamp2(c(0, 1), color[[i]])
+      ht_list[[i]] <- ComplexHeatmap::Heatmap(
+        matrix            = as.matrix(data[[i]]),
+        row_title         = row.title[i],
+        name              = legend.name[i],
+        cluster_rows      = row_hclust,
+        cluster_columns   = col_hclust,
+        show_row_dend     = show.row.dend[i],
+        show_column_dend  = show.col.dend[i],
+        show_row_names    = show.rownames[i],
+        show_column_names = show.colnames,
+        col = color[[i]],   # or col_fun_bin
+        top_annotation = top_annotation,
+        width  = grid::unit(width, "cm"),
+        height = grid::unit(height, "cm"),
+        heatmap_legend_param = list(
+          at = c(0, 1),
+          legend_gp = grid::gpar(fill = col_fun_bin(c(0,1))),
+          labels = c("0", "1")
+        ),
+        right_annotation = ComplexHeatmap::rowAnnotation(
+          link = ComplexHeatmap::anno_mark(
+            at = rowlab.index,
+            labels = rowlab,
+            which = "row",
+            lines_gp = grid::gpar(fontsize = 5),
+            link_width = grid::unit(3, "mm"),
+            padding = grid::unit(0.8, "mm"),
+            labels_gp = grid::gpar(fontsize = 7)
+          )
+        )
+      )
+    }
+  }
+  
+  #---------------------------------------------
+  # 6) Combine & Output
+  #---------------------------------------------
+  ht_combined <- ht_list[[1]]
+  if (n_dat > 1) {
+    for (k in 2:n_dat) {
+      ht_combined <- ht_combined %v% ht_list[[k]]
+    }
+  }
+  
+  outFile <- file.path(fig.path, paste0(fig.name, ".pdf"))
+  # PDF height depends on presence of annotation
+  if (is.null(annCol)) {
+    pdf(outFile, width = width, height = height * n_dat / 2)
+  } else {
+    pdf(outFile, width = width, height = height * n_dat / 1.5)
+  }
+  
+  draw(ht_combined, merge_legend = TRUE, heatmap_legend_side = "right")
+  invisible(dev.off())
+  
+  # Also draw on current device
+  draw(ht_combined, merge_legend = TRUE, heatmap_legend_side = "right")
+  
+  # Restore warning level
   options(warn = defaultW)
 }
 

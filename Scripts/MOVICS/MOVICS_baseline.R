@@ -200,6 +200,27 @@ input$Methylation = na.omit(input$Methylation) # Remove the missing values
 saveRDS(input, "Resources/TCGA/mm_input.rds")
 rm(data_object); gc()
 
+# Calculate feature distance matrices once and use for all other algorithms
+# mainly for the comprehensive heatmap
+feature_hclusts = list()
+for (i in 1:length(input)) {
+  if (names(input)[i] == "SNPs") {
+    feature_hclusts[[i]] = fastcluster::hclust(dist(as.matrix(input$SNPs),
+                                          as.matrix(input$SNPs),
+                                          method = "binary"), method = "ward.D")
+  } else {
+  feature_hclusts[[i]] = fastcluster::hclust(as.dist(Rfast::Dist(input[[i]], 
+                                                                 method = "euclidean")),
+                                             method = "ward.D")
+  }
+}
+names(feature_hclusts) = names(input)
+orders = lapply(feature_hclusts, function(x) return(x$order))
+names(orders) = names(feature_hclusts)
+
+# Export orders for future use
+saveRDS(orders, "Resources/TCGA/mm_feature_orders.rds")
+
 # Run algorithm #####
 library(MOVICS)
 
