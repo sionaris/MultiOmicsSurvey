@@ -8,14 +8,74 @@ The corresponding histogram of Pearson correlations is shown below:
 
 ![](`r paste0(params$home,"/Results/single_algorithm/NEMO/Supplement/NEMO_matrix_Pearson_similarity_histogram-1.png")`)
 
-We chose the optimal hyperparameter values based on two custom metrics. 
+The fused matrices for $\sigma = 0.5$ and $N_i \in \{10, 15, 20, 25, 30, 35, 40, 45, 50\}$ are then used as input in the ``nemo.num.clusters`` of <em>NEMO</em> to determine the optimal number of clusters in the data.
 
-For all $nn$ and $\sigma$, we calculated:
-<ol>
-  <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each ARS matrix as an indication of spread.</li>
-  <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li>
-  <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li>
-  <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li>
-</ol>
+To determine the number of clusters, <em>NEMO</em> uses a modified eigengap method. The number of clusters is set to $\arg\text{max}_i (\lambda_{i+1} -\lambda_i) \cdot i$, where $\lambda$ are the $ARS$ eigenvalues. Intuitively, this objective maintains the idea of the eigengap while encouraging the solution to have a higher number of clusters. This is desired (according to the authors) since they observed that often some increase in the number of clusters compared to that prescribed by the eigengap method improved the prognostic value for cancer data. The number of clusters determined by this method is at least as high as the number determined using the eigengap method.
 
-This led to us to pick $nn = `r hyperparameters[["optimal_N"]]`$ and $\sigma = `r hyperparameters[["optimal_sigma"]]`$.
+<b>Full process:</b>
+1. <b>Symmetrization of the Affinity Matrix:</b>
+  <ul>
+    <li>The matrix $ARS$ is symmetrized by computing
+    $$
+    ARS_{\text{sym}} = \frac{ARS + ARS^T}{2},
+    $$
+    ensuring that the affinity matrix is symmetric.</li>
+    <li>The diagonal elements of the affinity matrix $ARS$ are set to 0, i.e., 
+    $$
+    \text{diag}(ARS) = 0,
+    $$
+    ensuring that self-affinities are excluded from the analysis.</li>
+  </ul>
+
+2. <b>Computation of the Degree Matrix:</b>
+  <ul>
+    <li>The degree matrix $D$ is computed based on the row sums of the affinity matrix $ARS$. Each element of $D$ is the sum of affinities for each node:
+    $$
+    D_{ii} = \sum_j ARS_{ij}.
+    $$
+    </li>
+    <li>For rows with zero degree (i.e., no connections), the degree is set to a small positive number to avoid computational issues, i.e., 
+    $$
+    D_{ii} = \epsilon \text{ if } D_{ii} = 0
+    $$
+    where $\epsilon \approx 2.22 \cdot 10^{-16}$.</li>
+  </ul>
+
+3. <b>Computation of the Normalized Laplacian:</b>
+  <ul>
+    <li> The graph Laplacian $L$ is computed as
+    $$
+    L = D - ARS.
+    $$</li>
+    </li>The Laplacian is then normalized using the degree matrix. The normalization step uses the formula
+    $$
+    L_{\text{norm}} = D^{-1/2} L D^{-1/2},
+    $$
+    ensuring that the Laplacian is scale-invariant and works properly with spectral clustering.</li>
+  </ul>
+
+4. <b>Eigenvalue Decomposition:</b>
+The eigenvalues and eigenvectors of the normalized Laplacian $L_{\text{norm}}$ are computed. The eigenvalues are then sorted in ascending order, and the corresponding eigenvectors are rearranged to match this order. 
+
+5. <b>Eigengap Calculation:</b>
+  <ul>
+    <li>The eigengap is the difference between consecutive eigenvalues. The eigengap is calculated as:
+    $$
+    \text{eigengap}_i = |\lambda_{i+1} - \lambda_i|,
+    $$
+    where $\lambda_i$ represents the $i$-th eigenvalue.</li>
+    <li>The function calculates the eigengap for each pair of consecutive eigenvalues.</li>
+  </ul>
+
+6. <b>Maximizing the Eigengap:</b>
+  <ul>
+    <li>The eigengap is scaled by multiplying it by the index of the eigenvalue difference:
+    $$
+    \text{eigengap}_i = i \cdot |\lambda_{i+1} - \lambda_i|.
+    $$</li>
+    <li>The function then sorts the eigengap values for the candidate number of clusters (specified by the user; default: $\{2, \ldots, 15\}$), selects the largest eigengap, and returns the corresponding number of clusters.</li>
+  </ul>
+
+For all combinations of $nn$ and $\sigma$, the optimal number of clusters is obtained through the process described above. Spectral clustering for each combination and for the optimal number of clusters. The clustering that achieves the highest average silhouette index is considered optimal. The silhouette is contextual, i.e. we calculate it using Euclidean distances in the "optimal-$k$"-dimensional eigenvector space for each clustering. In our case:
+
+$nn = `r hyperparameters[["optimal_N"]]`$, $\sigma = `r hyperparameters[["optimal_sigma"]]`$ and $k = `r hyperparameters[["eigengap_k"]]`$.
