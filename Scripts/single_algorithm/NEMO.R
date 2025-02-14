@@ -2031,7 +2031,7 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(NEMO_barcharts_sig[[1]], NEMO_barcharts_sig[[2]], NEMO_barcharts_sig[[3]],
           NEMO_barcharts_sig[[4]], NEMO_barcharts_sig[[5]],
-          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 

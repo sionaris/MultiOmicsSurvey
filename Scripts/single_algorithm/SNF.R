@@ -2201,12 +2201,12 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(SNF_barcharts_sig[[1]], SNF_barcharts_sig[[2]], SNF_barcharts_sig[[3]],
           SNF_barcharts_sig[[4]], SNF_barcharts_sig[[5]], SNF_barcharts_sig[[6]],
-          ncol = 3, nrow = 2, labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 7500, height = 5500, device = 'png', units = "px",
+       width = 5500, height = 8500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
