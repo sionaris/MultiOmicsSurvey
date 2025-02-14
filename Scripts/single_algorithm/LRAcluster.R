@@ -397,15 +397,9 @@ var2comp = scheme$var2comp %>%
 rm(scheme); gc()
 
 # Silhouette
-
-# transformed_aff = transform_affinity_matrix(final_affinity_matrix,
-#                                             threshold = 100, norm_quant = 0,
-#                                             norm_method = "divide by quantile")
-
-cor_mat = cor(as.matrix(results_list[[paste0("dim_", optr)]][["coordinate"]]), method = "spearman")
-sil = compute_silhouette(cluster_df = LRAcluster_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = cor_mat,
-                         normalize_matrix = TRUE)
+library(cluster)
+sil = silhouette(as.integer(LRAcluster_clusters$Cluster),
+                 Rfast::Dist(t(results_list[[paste0("dim_", optr)]][["coordinate"]])[LRAcluster_clusters$Sample.ID, ]))
 
 getSilhouette_ggplot(sil      = sil,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
@@ -442,30 +436,39 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
 
-# comprehensive heatmap (may take a while)
-getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-                              row.title     = names(plotdata),
-                              is.binary     = c(T,F,F,F,F), 
-                              legend.name   = c("SNPs",
-                                                "Standardized RNAseq norm. counts",
-                                                "Standardized CNV",
-                                                "Standardized miRNA norm. counts",
-                                                "Standardized Methylation M-values"
-                              ),
-                              clust.res     = plot_object$clust.res, # consensusMOIC-like results
-                              clust.dend    = NULL, # show no dendrogram for samples
-                              show.rownames = c(F,F,F,F,F), # specify for each omics data
-                              show.colnames = FALSE, # show no sample names
-                              show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
-                              annRow        = NULL, # no selected features
-                              color         = col.list,
-                              annCol        = annCol, # annotation for samples
-                              annColors     = annColors, # annotation color
-                              width         = 20, # width of each subheatmap
-                              height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
-                              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+# Order features
+feature_orders = readRDS("Resources/TCGA/mm_feature_orders.rds")
+for (i in 1:length(plotdata)) {
+  plotdata[[i]] = plotdata[[i]][feature_orders[[names(plotdata)[i]]], , drop = FALSE]
+}
+
+getMoHeatmap_single_algorithm2(algorithm_name = algorithm,
+                               data          = plotdata,
+                               row.title     = names(plotdata),
+                               is.binary     = c(T,F,F,F,F), 
+                               legend.name   = c("SNPs",
+                                                 "Standardized RNAseq norm. counts",
+                                                 "Standardized CNV",
+                                                 "Standardized miRNA norm. counts",
+                                                 "Standardized Methylation M-values"
+                               ),
+                               cluster_rows = rep(F, length(plotdata)),
+                               cluster_cols = rep(F, length(plotdata)),
+                               show.col.dend = rep(F, length(plotdata)),
+                               show.colnames = FALSE,
+                               show.row.dend = rep(F, length(plotdata)),
+                               show.rownames = rep(F, length(plotdata)),
+                               clust.res     = plot_object$clust.res, # consensusMOIC-like results
+                               # clust.dist.row = c("manhattan", rep("euclidean", 4)),
+                               # clust.method.row = rep("ward.D", length(plotdata)),
+                               annRow        = NULL, # no selected features
+                               color         = col.list,
+                               annCol        = annCol, # annotation for samples
+                               annColors     = annColors, # annotation color
+                               width         = 20, # width of each subheatmap
+                               height        = 10, # height of each subheatmap
+                               fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
+                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
