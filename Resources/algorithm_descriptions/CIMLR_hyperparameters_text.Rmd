@@ -8,14 +8,16 @@ The corresponding histogram of Pearson correlations is shown below:
 
 ![](`r paste0(params$home,"/Results/single_algorithm/CIMLR/Supplement/CIMLR_S_matrix_Pearson_similarity_histogram-1.png")`)
 
-For $nn'$, we chose the optimal value based on two custom metrics we especially defined for this case where the optimal number of clusters is 2. 
+<!-- For $nn'$, we chose the optimal value based on two custom metrics we especially defined for this case where the optimal number of clusters is 2.  -->
 
-For all $nn'$, we calculated:
-<ol>
-  <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each final fused affinity matrix as an indication of spread.</li>
-  <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li>
-  <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li>
-  <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li>
-</ol>
+<!-- For all $nn'$, we calculated: -->
+<!-- <ol> -->
+<!--   <li>The sum of the <b>variance</b> and the <b>interquartile range (IQR)</b> for the upper-triangular values (<u>excluding the diagonal</u>) of each final fused affinity matrix as an indication of spread.</li> -->
+<!--   <li>The sum of the <b>kurtosis</b> and <b>absolute skewness</b> (<u>excluding the diagonal</u>), as high skewness or kurtosis can indicate that the values are concentrated towards the tails, which might suggest better separation.</li> -->
+<!--   <li>The min-max (rescaling to $[0,1]$) normalized (across matrices) values for each metric.</li> -->
+<!--   <li>The matrix for which the sum of the two "min-max normalized" metrics is the highest, is chosen.</li> -->
+<!-- </ol> -->
+
+We therefore ran the M3C Monte Carlo reference-based clustering process for `r hyperparameters[["cluster_trials_neighbors_text"]]` and the number of clusters $k$ ranging from 2 to 10.
 
 <b>Automatic conclusion:</b> `r hyperparameters[["conclusion2"]]`

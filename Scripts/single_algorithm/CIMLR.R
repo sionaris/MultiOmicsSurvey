@@ -567,40 +567,51 @@ plotdata = getStdiz(
 )
 
 plot_object = list(clust.res = CIMLR_clusters %>%
-                     dplyr::rename(samID = Sample.ID, clust = Cluster))
+                     dplyr::rename(samID = Sample.ID, clust = Cluster) %>%
+                     dplyr::mutate(clust = gsub(algorithm, "", clust)))
 
 # Export consensus clustering object
 clust = as.data.frame(plot_object$clust.res)
 colnames(clust) = c("Sample.ID", "Cluster")
+clust$Cluster = paste0(algorithm, clust$Cluster)
 openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/",
                                    algorithm, "_", data_source, "_",
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
 
-# comprehensive heatmap (may take a while)
-getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-                              row.title     = names(plotdata),
-                              is.binary     = c(T,F,F,F,F), 
-                              legend.name   = c("SNPs",
-                                                "Standardized RNAseq norm. counts",
-                                                "Standardized CNV",
-                                                "Standardized miRNA norm. counts",
-                                                "Standardized Methylation M-values"
-                              ),
-                              clust.res     = plot_object$clust.res, # consensusMOIC-like results
-                              clust.dend    = NULL, # show no dendrogram for samples
-                              show.rownames = c(F,F,F,F,F), # specify for each omics data
-                              show.colnames = FALSE, # show no sample names
-                              show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
-                              annRow        = NULL, # no selected features
-                              color         = col.list,
-                              annCol        = annCol, # annotation for samples
-                              annColors     = annColors, # annotation color
-                              width         = 20, # width of each subheatmap
-                              height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
-                              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+# Order features
+feature_orders = readRDS("Resources/TCGA/mm_feature_orders.rds")
+for (i in 1:length(plotdata)) {
+  plotdata[[i]] = plotdata[[i]][feature_orders[[names(plotdata)[i]]], , drop = FALSE]
+}
+
+getMoHeatmap_single_algorithm2(algorithm_name = algorithm,
+                               data          = plotdata,
+                               row.title     = names(plotdata),
+                               is.binary     = c(T,F,F,F,F), 
+                               legend.name   = c("SNPs",
+                                                 "Standardized RNAseq norm. counts",
+                                                 "Standardized CNV",
+                                                 "Standardized miRNA norm. counts",
+                                                 "Standardized Methylation M-values"
+                               ),
+                               cluster_rows = rep(F, length(plotdata)),
+                               cluster_cols = rep(F, length(plotdata)),
+                               show.col.dend = rep(F, length(plotdata)),
+                               show.colnames = FALSE,
+                               show.row.dend = rep(F, length(plotdata)),
+                               show.rownames = rep(F, length(plotdata)),
+                               clust.res     = plot_object$clust.res, # consensusMOIC-like results
+                               # clust.dist.row = c("manhattan", rep("euclidean", 4)),
+                               # clust.method.row = rep("ward.D", length(plotdata)),
+                               annRow        = NULL, # no selected features
+                               color         = col.list,
+                               annCol        = annCol, # annotation for samples
+                               annColors     = annColors, # annotation color
+                               width         = 20, # width of each subheatmap
+                               height        = 10, # height of each subheatmap
+                               fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
+                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
@@ -688,8 +699,6 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                       fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
                                       res.path     = paste0(home, "/Results/single_algorithm/", algorithm))
 
-# Similar to MOVICS: TP53 and PIK3CA patterns
-
 # Drug sensitivity comparison ###
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  moic.res    = plot_object,
@@ -716,6 +725,7 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
 dev.off()
 
 # DGEA ###
+# DGEA ###
 dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                   expr = plotdata$RNAseq,
                   moic.res = plot_object,
@@ -723,8 +733,8 @@ dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                   sort.p = TRUE,
                   overwt = TRUE,
                   verbose = TRUE,
-                  res.path = paste0(home, "/Results/single_algorithm/", 
-                                    algorithm),algorithm = algorithm)
+                  res.path = paste0(home, "/Results/single_algorithm/", algorithm),
+                  algorithm = algorithm)
 
 # # Identify unique subtype biomarkers
 # # 1. Up-regulated markers
@@ -1406,7 +1416,9 @@ rownames(clust_annot_pheno) = clust_annot_pheno$samID
 afh_colnames = colnames(annCol)
 
 # Same data frame. Different columns. Just for easiness
-CIMLR_clust_res = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID, CIMLR = Cluster)
+CIMLR_clust_res = CIMLR_clusters %>% dplyr::rename(samID = Sample.ID, 
+                                                   CIMLR = Cluster) %>%
+  dplyr::mutate(CIMLR = gsub(algorithm, "", CIMLR))
 
 # PCA from original matrices ###
 # RNA
@@ -1641,8 +1653,8 @@ dev.off()
 
 # Just significant ones now
 CIMLR_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(CIMLR, Histology, 
-                                                             `ER status`, `PR status`)
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(CIMLR, `Menopausal status`, `Lymph node status`, 
+                                                             `ER status`, `PR status`, `HER2 status`)
 plotdata_bar_sig$CIMLR = factor(plotdata_bar_sig$CIMLR)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1675,12 +1687,13 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(CIMLR_barcharts_sig[[1]], CIMLR_barcharts_sig[[2]], CIMLR_barcharts_sig[[3]],
-          ncol = 1, nrow = 3, labels = c("A", "B", "C"),
+          CIMLR_barcharts_sig[[4]], CIMLR_barcharts_sig[[5]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 2500, height = 8000, device = 'png', units = "px",
+       width = 5500, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1690,17 +1703,27 @@ Pheno_sunburst_CIMLR = clust_annot_pheno
 Pheno_sunburst_CIMLR$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_CIMLR$`ER status`)
 Pheno_sunburst_CIMLR$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_CIMLR$`ER status`)
 Pheno_sunburst_CIMLR$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_CIMLR$`ER status`)
+Pheno_sunburst_CIMLR$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                          Pheno_sunburst_CIMLR$`HER2 status`)
+Pheno_sunburst_CIMLR$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_CIMLR$`HER2 status`)
+Pheno_sunburst_CIMLR$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_CIMLR$`HER2 status`)
+Pheno_sunburst_CIMLR$`Lymph node status` = gsub("Unknown", "Unkn LN status", Pheno_sunburst_CIMLR$`Lymph node status`)
 Pheno_sunburst_CIMLR = Pheno_sunburst_CIMLR %>%
-  dplyr::select(CIMLR, `ER status`) %>%
-  group_by(CIMLR, `ER status`) %>%
+  dplyr::select(CIMLR, `ER status`, `HER2 status`, `Lymph node status`) %>%
+  group_by(CIMLR, `ER status`, `HER2 status`, `Lymph node status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-
 sunburst_coloring_CIMLR = data.frame(stringsAsFactors = FALSE,
                                      colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                        "#C11D9C", "#0F1682",  "grey40"))),
+                                                                        "#C11D9C", "#0F1682",  "grey40",
+                                                                        "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                        "hotpink4", "grey40",
+                                                                        "grey75", "#4A0558", "grey40"))),
                                      labels = c("CIMLR1", "CIMLR2",
-                                                "ER-", "ER+", "Unkn ER status"))
+                                                "ER-", "ER+", "Unkn ER status",
+                                                "HER2-", "HER2+", "Indeterminate",
+                                                "Equivocal", "Unkn HER2 status",
+                                                "Yes", "No", "Unkn LN status"))
 
 sunburstDF_CIMLR = as.sunburstDF(Pheno_sunburst_CIMLR, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_CIMLR, by = "labels")
@@ -1747,7 +1770,15 @@ hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        optimal_NN = optNN,
                        conclusion1 = conclusion1,
                        conclusion2 = conclusion2,
-                       conclusion = conclusion
+                       conclusion = conclusion,
+                       cluster_trials_neighbors_text = ifelse(length(M3C_clusterings) > 1,
+                                                              paste0(length(M3C_clusterings), " values of $nn'$ (",
+                                                                     str_c(unlist(lapply(names(M3C_clusterings), function(x) {
+                                                                       strsplit(x, " = ")[[1]][2]
+                                                                     })), collapse = ", "), ")"),
+                                                              paste0("$nn' = ", 
+                                                                     strsplit(names(M3C_clusterings)[i], " = ")[[1]][2],
+                                                                     "$"))
 )
 
 # Put all parameters in a list
