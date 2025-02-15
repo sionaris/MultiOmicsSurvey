@@ -33,7 +33,7 @@ kernel_matrices <- foreach(j = seq_along(input),
                                input[[j]],
                                kernel.func = "abundance",
                                method = method,
-                               test.pos.semidef = TRUE
+                               test.pos.semidef = FALSE
                              )
                            }
 

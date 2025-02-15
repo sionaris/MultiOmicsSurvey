@@ -13,7 +13,7 @@ set.seed(123)
 miRNA_kernel = compute.kernel(input,
                              kernel.func = "abundance",
                              method = "euclidean",
-                             test.pos.semidef = TRUE)
+                             test.pos.semidef = FALSE)
 
 saveRDS(miRNA_kernel, "miRNA_kernel.rds")
 writeLines(capture.output(sessionInfo()), "miRNA_kernel_sessionInfo.txt")

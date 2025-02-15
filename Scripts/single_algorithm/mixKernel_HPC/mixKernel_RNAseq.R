@@ -13,7 +13,7 @@ set.seed(123)
 RNAseq_kernel = compute.kernel(input,
                             kernel.func = "abundance",
                             method = "euclidean",
-                            test.pos.semidef = TRUE)
+                            test.pos.semidef = FALSE)
 
 saveRDS(RNAseq_kernel, "RNAseq_kernel.rds")
 writeLines(capture.output(sessionInfo()), "RNAseq_kernel_sessionInfo.txt")

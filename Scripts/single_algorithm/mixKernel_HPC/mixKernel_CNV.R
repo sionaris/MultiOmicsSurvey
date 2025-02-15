@@ -13,7 +13,7 @@ set.seed(123)
 CNV_kernel = compute.kernel(input,
                                     kernel.func = "abundance",
                                     method = "euclidean",
-                                    test.pos.semidef = TRUE)
+                                    test.pos.semidef = FALSE)
 
 saveRDS(CNV_kernel, "CNV_kernel.rds")
 writeLines(capture.output(sessionInfo()), "CNV_kernel_sessionInfo.txt")

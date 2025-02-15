@@ -13,7 +13,7 @@ set.seed(123)
 SNPs_kernel = compute.kernel(input,
                              kernel.func = "abundance",
                              method = "jaccard",
-                             test.pos.semidef = TRUE)
+                             test.pos.semidef = FALSE)
 
 saveRDS(SNPs_kernel, "SNPs_kernel.rds")
 writeLines(capture.output(sessionInfo()), "SNPs_kernel_sessionInfo.txt")
