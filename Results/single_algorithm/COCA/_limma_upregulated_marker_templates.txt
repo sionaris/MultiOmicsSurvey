@@ -1,0 +1,4 @@
+probe	class	dirct
+hsa-mir-6764	COCA2	up
+hsa-mir-454	COCA2	up
+hsa-mir-610	COCA2	up

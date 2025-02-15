@@ -163,7 +163,7 @@ print(gap_stat$Tab)
 # the highest silhouette. k = 5 would normally be selected
 
 # However, after observing the corresponding table
-table(list_of_k[[paste0("k = ", optk)]]$cluster)
+table(list_of_k[[paste0("k = 5")]]$cluster)
 
 # 1   2   3   4   5 
 # 549  68   3   1   4
@@ -219,14 +219,8 @@ var2comp = scheme$var2comp %>%
 rm(scheme); gc()
 
 # Silhouette
-
-# transformed_aff = transform_affinity_matrix(final_affinity_matrix,
-#                                             threshold = 100, norm_quant = 0,
-#                                             norm_method = "divide by quantile")
-
-sil = compute_silhouette(cluster_df = COCA_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = 1 - as.matrix(vgd),
-                         normalize_matrix = FALSE)
+sil = silhouette(as.integer(COCA_clusters[colnames(as.matrix(vgd)), ]$Cluster),
+                 as.matrix(vgd))
 
 getSilhouette_ggplot(sil      = sil,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
@@ -252,7 +246,6 @@ plotdata = getStdiz(
   scaleFlag = c(F, F, F, F, F)
 )
 
-
 plot_object = list(clust.res = COCA_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
 
@@ -265,30 +258,39 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
 
-# comprehensive heatmap (may take a while)
-getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-                              row.title     = names(plotdata),
-                              is.binary     = c(T,F,F,F,F), 
-                              legend.name   = c("SNPs",
-                                                "Standardized RNAseq norm. counts",
-                                                "Standardized CNV",
-                                                "Standardized miRNA norm. counts",
-                                                "Standardized Methylation M-values"
-                              ),
-                              clust.res     = plot_object$clust.res, # consensusMOIC-like results
-                              clust.dend    = NULL, # show no dendrogram for samples
-                              show.rownames = c(F,F,F,F,F), # specify for each omics data
-                              show.colnames = FALSE, # show no sample names
-                              show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
-                              annRow        = NULL, # no selected features
-                              color         = col.list,
-                              annCol        = annCol, # annotation for samples
-                              annColors     = annColors, # annotation color
-                              width         = 20, # width of each subheatmap
-                              height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
-                              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+# Order features
+feature_orders = readRDS("Resources/TCGA/mm_feature_orders.rds")
+for (i in 1:length(plotdata)) {
+  plotdata[[i]] = plotdata[[i]][feature_orders[[names(plotdata)[i]]], , drop = FALSE]
+}
+
+getMoHeatmap_single_algorithm2(algorithm_name = algorithm,
+                               data          = plotdata,
+                               row.title     = names(plotdata),
+                               is.binary     = c(T,F,F,F,F), 
+                               legend.name   = c("SNPs",
+                                                 "Standardized RNAseq norm. counts",
+                                                 "Standardized CNV",
+                                                 "Standardized miRNA norm. counts",
+                                                 "Standardized Methylation M-values"
+                               ),
+                               cluster_rows = rep(F, length(plotdata)),
+                               cluster_cols = rep(F, length(plotdata)),
+                               show.col.dend = rep(F, length(plotdata)),
+                               show.colnames = FALSE,
+                               show.row.dend = rep(F, length(plotdata)),
+                               show.rownames = rep(F, length(plotdata)),
+                               clust.res     = plot_object$clust.res, # consensusMOIC-like results
+                               # clust.dist.row = c("manhattan", rep("euclidean", 4)),
+                               # clust.method.row = rep("ward.D", length(plotdata)),
+                               annRow        = NULL, # no selected features
+                               color         = col.list,
+                               annCol        = annCol, # annotation for samples
+                               annColors     = annColors, # annotation color
+                               width         = 20, # width of each subheatmap
+                               height        = 10, # height of each subheatmap
+                               fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
+                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
@@ -357,26 +359,25 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          pdf_tab_font_size = 9)
 
 # Oncoprint ###
-oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
-                                      moic.res  = plot_object,
-                                      mut.matrix   = plotdata$SNPs, # binary somatic mutation matrix
-                                      doWord       = TRUE, # generate table in .docx format
-                                      doPlot       = TRUE, # draw OncoPrint
-                                      freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
-                                      p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
-                                      innerclust   = TRUE, # perform clustering within each subtype
-                                      annCol       = annCol, # same annotation for heatmap
-                                      annColors    = annColors, # same annotation color for heatmap
-                                      width        = 12, 
-                                      height       = 6,
-                                      fig.name     = paste0(algorithm, "_", data_source, "_",
-                                                            data_types, "_eval_on_", evaluation_source,
-                                                            "_oncoprint"),
-                                      tab.name     = "Independent test between subtype and mutation",
-                                      fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
-                                      res.path     = paste0(home, "/Results/single_algorithm/", algorithm))
-
-# Similar to MOVICS: TP53 and PIK3CA patterns
+# No significant mutations
+# oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
+#                                       moic.res  = plot_object,
+#                                       mut.matrix   = plotdata$SNPs, # binary somatic mutation matrix
+#                                       doWord       = TRUE, # generate table in .docx format
+#                                       doPlot       = TRUE, # draw OncoPrint
+#                                       freq.cutoff  = 0.05, # keep those genes that mutated in at least 5% of samples
+#                                       p.adj.cutoff = 0.05, # keep those genes with adjusted p value < 0.05 to draw OncoPrint
+#                                       innerclust   = TRUE, # perform clustering within each subtype
+#                                       annCol       = annCol, # same annotation for heatmap
+#                                       annColors    = annColors, # same annotation color for heatmap
+#                                       width        = 12, 
+#                                       height       = 6,
+#                                       fig.name     = paste0(algorithm, "_", data_source, "_",
+#                                                             data_types, "_eval_on_", evaluation_source,
+#                                                             "_oncoprint"),
+#                                       tab.name     = "Independent test between subtype and mutation",
+#                                       fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
+#                                       res.path     = paste0(home, "/Results/single_algorithm/", algorithm))
 
 # Drug sensitivity comparison ###
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
@@ -776,7 +777,7 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
   }
 }
 
-timestamp() # ~5.5 mins
+timestamp() # ~3h
 stopCluster(cl)
 gc()
 names(hclust_output) <- names(hclust_input)
@@ -798,8 +799,7 @@ saveWorkbook(wb, file = paste0(home, "/Results/single_algorithm/", algorithm, "/
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
-                                                present_clusters = c("COCA1", "COCA2",
-                                                                     "COCA3", "COCA4"),
+                                                present_clusters = c("COCA1", "COCA2"),
                                                 representative = TRUE, moic.res = plot_object,
                                                 subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                 norm.method = "mean", dirct = "up",
@@ -810,8 +810,7 @@ hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl
 
 hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
                                                   norm.expr = plotdata$RNAseq, 
-                                                  present_clusters = c("COCA1", "COCA2",
-                                                                       "COCA3", "COCA4"),
+                                                  present_clusters = c("COCA1", "COCA2"),
                                                   representative = TRUE, moic.res = plot_object,
                                                   subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                   norm.method = "mean", dirct = "down",
@@ -881,55 +880,54 @@ dgea.marker.down_1000 <- runMarker_single_algorithm_no_export(algorithm_name = a
                                                               dirct         = "down" # direction of dysregulation in expression
 )
 
+# NTP does not run due to the small number of features.
 # Up-regulated expression features
-RNGversion("4.2.2")
-timestamp()
-transNEO_ntp_expr_up = runNTP(
-  expr = transcr,
-  templates = dgea.marker.up_1000$templates,
-  scaleFlag = TRUE,
-  centerFlag = TRUE,
-  nPerm = 10000,
-  seed = 123,
-  distance = "cosine", # default
-  doPlot = TRUE,
-  height = 8,
-  width = 12,
-  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-  fig.name = "ntp_expr_up_heatmap_transNEO")
-timestamp() # 11 min
+# RNGversion("4.2.2")
+# timestamp()
+# transNEO_ntp_expr_up = runNTP(
+#   expr = transcr,
+#   templates = dgea.marker.up_1000$templates,
+#   scaleFlag = TRUE,
+#   centerFlag = TRUE,
+#   nPerm = 10000,
+#   seed = 123,
+#   distance = "cosine", # default
+#   doPlot = TRUE,
+#   height = 8,
+#   width = 12,
+#   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+#   fig.name = "ntp_expr_up_heatmap_transNEO")
+# timestamp() # 11 min
+# 
+# # down-regulated
+# RNGversion("4.2.2")
+# timestamp()
+# transNEO_ntp_expr_down = runNTP(
+#   expr = transcr,
+#   templates = dgea.marker.down_1000$templates,
+#   scaleFlag = TRUE,
+#   centerFlag = TRUE,
+#   nPerm = 10000,
+#   seed = 123,
+#   distance = "cosine", # default
+#   doPlot = TRUE,
+#   height = 8,
+#   width = 12,
+#   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+#   fig.name = "ntp_expr_down_heatmap_transNEO")
+# timestamp() # 2.5 min
 
-# down-regulated
-RNGversion("4.2.2")
-timestamp()
-transNEO_ntp_expr_down = runNTP(
-  expr = transcr,
-  templates = dgea.marker.down_1000$templates,
-  scaleFlag = TRUE,
-  centerFlag = TRUE,
-  nPerm = 10000,
-  seed = 123,
-  distance = "cosine", # default
-  doPlot = TRUE,
-  height = 8,
-  width = 12,
-  fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-  fig.name = "ntp_expr_down_heatmap_transNEO")
-timestamp() # 2.5 min
+# Run PAM ###
+RNGversion("4.2.2.")
+set.seed(123)
+transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
+                                       train.expr = plotdata$RNAseq,
+                                       moic.res   = plot_object,
+                                       test.expr  = transcr)
+
 
 # Check concordance
-expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
-  dplyr::rename(clust_down = clust) %>%
-  inner_join(as.data.frame(transNEO_ntp_expr_up$clust.res) %>%
-               dplyr::rename(clust_up = clust),
-             by = "samID")
-
-# This is counter-intuitive but due to opposite directions of deregulation this
-# is how it works (perhaps this was expected)
-expr_conc$agreement = ifelse(expr_conc$clust_down!=expr_conc$clust_up, "Yes", "No")
-paste("Agremeent of NTP subtypes with respect to expression data from the external cohort is: ",
-      length(which(expr_conc$agreement == "Yes"))/nrow(expr_conc)*100, "% (", nrow(expr_conc),
-      " samples).")
+expr_conc = as.data.frame(transNEO_pam$clust.res)
 
 # Compare clinical variables of interest across clusters
 transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
@@ -938,7 +936,7 @@ transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
                 NAT.regimen, Chemo.cycles,
                 aHER2.cycles, RCB.score, STAT1.gsva,
                 GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
-  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, COCA = clust_up),
+  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, COCA = clust),
              by = "Donor.ID")
 rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
 transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
@@ -978,7 +976,7 @@ for (i in 1:ncol(transNEO_var2comp)) {
 rm(nas, empties); gc()
 
 transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = "",
-                                                 moic.res = transNEO_ntp_expr_up,
+                                                 moic.res = transNEO_pam,
                                                  var2comp = transNEO_var2comp_nonas,
                                                  strata = algorithm,
                                                  factorVars = c("ER.status", "HER2.status",
@@ -999,10 +997,10 @@ transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = "",
                                                  pdf_test_col_width = "5em",
                                                  pdf_tab_font_size = 9)
 
-transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
-transNEO_ntp_expr_up_ord$clust.res$clust = gsub(algorithm, "", transNEO_ntp_expr_up_ord$clust.res$clust)
+transNEO_pam_ord = transNEO_pam
+transNEO_pam_ord$clust.res$clust = gsub(algorithm, "", transNEO_pam_ord$clust.res$clust)
 transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
-                                                                 moic.res = transNEO_ntp_expr_up_ord,
+                                                                 moic.res = transNEO_pam_ord,
                                                                  var2comp = transNEO_var2comp_nonas %>%
                                                                    dplyr::select(Grade.pre.NAT, 
                                                                                  Chemo.cycles, 
@@ -1023,38 +1021,17 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                  pdf_test_col_width = "5em",
                                                                  pdf_tab_font_size = 9)
 
-# Run PAM ###
-RNGversion("4.2.2.")
-set.seed(123)
-transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
-                                       train.expr = plotdata$RNAseq,
-                                       moic.res   = plot_object,
-                                       test.expr  = transcr)
-
-# Check consistency across methods
-
 # Get predictions for TCGA (discovery cohort)
 RNGversion("4.2.2.")
 set.seed(123)
-TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, plot_object$clust.res$samID],
-                       templates = dgea.marker.up_1000$templates, distance = "cosine",
-                       doPlot = F, nPerm = 10000)
+# TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, plot_object$clust.res$samID],
+#                        templates = dgea.marker.up_1000$templates, distance = "cosine",
+#                        doPlot = F, nPerm = 10000)
 
 TCGA.pam.pred = runPAM_single_algorithm(algorithm_name = algorithm,
                                         train.expr = plotdata$RNAseq[, plot_object$clust.res$samID],
                                         moic.res = plot_object,
                                         test.expr = plotdata$RNAseq[, plot_object$clust.res$samID])
-
-# consensus TCGA vs NTP TCGA
-runKappa_single_algorithm(algorithm_name = algorithm,
-                          subt1 = plot_object$clust.res$clust,
-                          subt2 = gsub(algorithm, "", TCGA.ntp.pred$clust.res$clust),
-                          subt1.lab = algorithm,
-                          subt2.lab = "NTP TCGA",
-                          height = 8,
-                          width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                          fig.name = paste0("kappa_", algorithm, "_vs_NTP_TCGA"))
 
 # consensus TCGA vs PAM TCGA
 runKappa_single_algorithm(algorithm_name = algorithm,
@@ -1067,18 +1044,6 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
-# NTP transNEO vs PAM transNEO
-runKappa_single_algorithm(algorithm_name = algorithm,
-                          subt1 = as.numeric(gsub(algorithm, "",
-                                                  transNEO_ntp_expr_up$clust.res$clust)),
-                          subt2 = as.numeric(transNEO_pam$clust.res$clust),
-                          subt1.lab = "transNEO NTP",
-                          subt2.lab = "transNEO PAM",
-                          height = 8,
-                          width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                          fig.name = "kappa_NTP_vs_PAM_transNEO")
-
 # Supplementary results #####
 
 # Create subdirectory for supplementary plots
@@ -1088,7 +1053,7 @@ if (!dir.exists(paste0(home, "/Results/single_algorithm/", algorithm, "/Suppleme
 
 # Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
-cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA")
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
   dplyr::rename(COCA = Cluster, samID = "Sample.ID")
@@ -1103,7 +1068,7 @@ COCA_clust_res = COCA_clusters %>% dplyr::rename(samID = Sample.ID, COCA = Clust
 pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = algorithm, 
                          clust_res = COCA_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "RNAseq")
 
@@ -1111,7 +1076,7 @@ pca_from_original_matrix(mydata = plotdata$RNAseq,
 pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = algorithm, 
                          clust_res = COCA_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "miRNA")
 
@@ -1119,7 +1084,7 @@ pca_from_original_matrix(mydata = plotdata$miRNA,
 pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = algorithm, 
                          clust_res = COCA_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "CNV")
 
@@ -1128,7 +1093,7 @@ pca_from_original_matrix(mydata = plotdata$CNV,
 mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = algorithm, 
                          clust_res = COCA_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36"), 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "SNPs")
 
@@ -1136,7 +1101,7 @@ mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
 pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = algorithm, 
                          clust_res = COCA_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"),
+                         cluster_colors = c("#2EC4B6", "#E71D36"),
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "Methylation")
 
@@ -1314,10 +1279,8 @@ dev.off()
 
 # Just significant ones now
 COCA_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(COCA, Race, Histology, 
-                                                             `ER status`, `PR status`, 
-                                                             `HER2 status`, Stage,
-                                                             Metastasis)
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(COCA,
+                                                             `ER status`)
 plotdata_bar_sig$COCA = factor(plotdata_bar_sig$COCA)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1349,50 +1312,36 @@ names(COCA_barcharts_sig) = voi_sig
 rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
-ggarrange(COCA_barcharts_sig[[1]], COCA_barcharts_sig[[2]], COCA_barcharts_sig[[3]],
-          COCA_barcharts_sig[[4]], COCA_barcharts_sig[[5]], COCA_barcharts_sig[[6]],
-          COCA_barcharts_sig[[7]], 
-          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G"),
+ggarrange(COCA_barcharts_sig[[1]], 
+          ncol = 1, nrow = 1, labels = c("A"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 6000, height = 2320*4, device = 'png', units = "px",
+       width = 2500, height = 2500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Sunburst plot ###
 library(plotly)
 Pheno_sunburst_COCA = clust_annot_pheno
-Pheno_sunburst_COCA$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_COCA$`ER status`)
-Pheno_sunburst_COCA$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_COCA$`ER status`)
-Pheno_sunburst_COCA$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_COCA$`ER status`)
 Pheno_sunburst_COCA$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
                                                Pheno_sunburst_COCA$`HER2 status`)
 Pheno_sunburst_COCA$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_COCA$`HER2 status`)
 Pheno_sunburst_COCA$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_COCA$`HER2 status`)
-Pheno_sunburst_COCA$Stage = gsub("Unkown", "Unkn stage", Pheno_sunburst_COCA$Stage)
 Pheno_sunburst_COCA = Pheno_sunburst_COCA %>%
-  dplyr::select(COCA, `ER status`, `HER2 status`, Stage) %>%
-  group_by(COCA, `ER status`, `HER2 status`, Stage) %>%
+  dplyr::select(COCA, `HER2 status`) %>%
+  group_by(COCA, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_COCA = data.frame(stringsAsFactors = FALSE,
-                                          colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
-                                                                             "#C11D9C", "#0F1682",  "grey40",
+                                          colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36",
                                                                              "#0B9EF8", "#560DA7", "mistyrose1", 
-                                                                             "hotpink4", "grey40",
-                                                                             "#00C9FF", "#099CF5", 
-                                                                             "#097BF5", "#0B5684", 
-                                                                             "grey40"))),
+                                                                             "hotpink4", "grey40"))),
                                           labels = c("COCA1", "COCA2",
-                                                     "COCA3", "COCA4",
-                                                     "ER-", "ER+", "Unkn ER status",
                                                      "HER2-", "HER2+", "Indeterminate",
-                                                     "Equivocal", "Unkn HER2 status",
-                                                     "Stage I", "Stage II",
-                                                     "Stage III", "Stage IV", "Unkn stage"))
+                                                     "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_COCA = as.sunburstDF(Pheno_sunburst_COCA, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_COCA, by = "labels")
@@ -1433,11 +1382,7 @@ NMI_to_MOVICS_COCA = calculate_nmi_index(cluster_df1 = MOVICS_COCA %>%
                                                             paste0("_", algorithm)))
 
 # Wrap up #####
-hyperparameters = list(num_dimensions_min = min(dimensions_to_try),
-                       num_dimensions_max = max(dimensions_to_try),
-                       optimal_r = optr,
-                       optimal_k = optk
-)
+hyperparameters = list(optimal_k = optk)
 
 # Put all parameters in a list
 params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
