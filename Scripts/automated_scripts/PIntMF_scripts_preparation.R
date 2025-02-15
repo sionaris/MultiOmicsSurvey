@@ -66,7 +66,7 @@ echo "Current R library paths:"
 Rscript -e "print(.libPaths())"
 
 # Optional: install any missing packages
-Rscript -e "packages <- c(\'PintMF\'); to_install <- setdiff(packages, installed.packages()[,\'Package\']); if(length(to_install)>0) devtools::install_github("mpierrejean/pintmf")
+Rscript -e "packages <- c(\'PintMF\'); to_install <- setdiff(packages, installed.packages()[,\'Package\']); if(length(to_install)>0) devtools::install_github(\'mpierrejean/pintmf\')"
 
 # Run the R script
 Rscript PIntMF_ndim_<ndim>_maxiter_<max.iter>_initflav_<flav_init>_modflav_<flav_mod>.R
