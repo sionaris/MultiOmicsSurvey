@@ -364,6 +364,8 @@ dimnames(conc_NMI) = list(c("Fusion", "RNAseq", "CNV", "Methylation", "miRNA", "
 
 ANF_clusters = as.data.frame(list(Sample.ID = optimal_ANF$Results$Sample.ID,
                                   Cluster = optimal_ANF$Results$Cluster))
+ANF_clusters$Sample.ID = gsub("\\.", "-", ANF_clusters$Sample.ID)
+rownames(ANF_clusters) = ANF_clusters$Sample.ID
 
 # Feature ranking
 library(parallel)
@@ -568,35 +570,39 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
 
-save.image(paste0(home, "/Results/single_algorithm/", 
-                  algorithm, "/", algorithm, "_", data_source, "_",
-                  data_types, "_eval_on_", evaluation_source,
-                  "_env.RData"))
+# Order features
+feature_orders = readRDS("Resources/TCGA/mm_feature_orders.rds")
+for (i in 1:length(plotdata)) {
+  plotdata[[i]] = plotdata[[i]][feature_orders[[names(plotdata)[i]]], , drop = FALSE]
+}
 
-# comprehensive heatmap (may take a while)
-getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-                              row.title     = names(heatmap_plotdata),
-                              is.binary     = c(T,F,F,F,F), 
-                              legend.name   = c("SNPs",
-                                                "Standardized RNAseq norm. counts",
-                                                "Standardized CNV",
-                                                "Standardized miRNA norm. counts",
-                                                "Standardized Methylation M-values"
-                              ),
-                              clust.res     = plot_object$clust.res, # consensusMOIC-like results
-                              clust.dend    = NULL, # show no dendrogram for samples
-                              show.rownames = c(F,F,F,F,F), # specify for each omics data
-                              show.colnames = FALSE, # show no sample names
-                              show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
-                              annRow        = NULL, # no selected features
-                              color         = col.list,
-                              annCol        = annCol, # annotation for samples
-                              annColors     = annColors, # annotation color
-                              width         = 20, # width of each subheatmap
-                              height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
-                              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+getMoHeatmap_single_algorithm2(algorithm_name = algorithm,
+                               data          = plotdata,
+                               row.title     = names(plotdata),
+                               is.binary     = c(T,F,F,F,F), 
+                               legend.name   = c("SNPs",
+                                                 "Standardized RNAseq norm. counts",
+                                                 "Standardized CNV",
+                                                 "Standardized miRNA norm. counts",
+                                                 "Standardized Methylation M-values"
+                               ),
+                               cluster_rows = rep(F, length(plotdata)),
+                               cluster_cols = rep(F, length(plotdata)),
+                               show.col.dend = rep(F, length(plotdata)),
+                               show.colnames = FALSE,
+                               show.row.dend = rep(F, length(plotdata)),
+                               show.rownames = rep(F, length(plotdata)),
+                               clust.res     = plot_object$clust.res, # consensusMOIC-like results
+                               # clust.dist.row = c("manhattan", rep("euclidean", 4)),
+                               # clust.method.row = rep("ward.D", length(plotdata)),
+                               annRow        = NULL, # no selected features
+                               color         = col.list,
+                               annCol        = annCol, # annotation for samples
+                               annColors     = annColors, # annotation color
+                               width         = 20, # width of each subheatmap
+                               height        = 10, # height of each subheatmap
+                               fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
+                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
@@ -1385,15 +1391,6 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = "kappa_NTP_vs_PAM_transNEO")
 
-# Export consensus clustering object
-clust = as.data.frame(plot_object$clust.res)
-colnames(clust) = c("Sample.ID", "Cluster")
-clust$Cluster = paste0(algorithm, clust$Cluster)
-openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm, "/", 
-                                   algorithm, "_", data_source, "_",
-                                   data_types, "_eval_on_", evaluation_source,
-                                   "_clusterings.xlsx"))
-
 # Supplementary results #####
 
 # Create subdirectory for supplementary plots
@@ -1412,39 +1409,39 @@ afh_colnames = colnames(annCol)
 
 # Prepare affinity matrices
 aff_CNV = normalize_affinity_matrix(
-  ANF::affinityMatrix(
-    ANF::dist2(input$CNV,
-                   input$CNV),
-    K = optN, sigma = optSigma))
+  ANF::affinity_matrix(
+    SNFtool::dist2(input$CNV,
+               input$CNV),
+    k = optN, alpha = 1/6, beta = 1/6))
 colnames(aff_CNV) = rownames(aff_CNV) = rownames(input$CNV)
 
 aff_rna = normalize_affinity_matrix(
-  ANF::affinityMatrix(
-    ANF::dist2(input$RNAseq,
-                   input$RNAseq),
-    K = optN, sigma = optSigma))
+  ANF::affinity_matrix(
+    SNFtool::dist2(input$RNAseq,
+               input$RNAseq),
+    k = optN, alpha = 1/6, beta = 1/6))
 colnames(aff_rna) = rownames(aff_rna) = rownames(input$RNA)
 
 aff_miRNA = normalize_affinity_matrix(
-  ANF::affinityMatrix(
-    ANF::dist2(input$miRNA,
-                   input$miRNA),
-    K = optN, sigma = optSigma))
+  ANF::affinity_matrix(
+    SNFtool::dist2(input$miRNA,
+               input$miRNA),
+    k = optN, alpha = 1/6, beta = 1/6))
 colnames(aff_miRNA) = rownames(aff_miRNA) = rownames(input$miRNA)
 
 aff_Methyl = normalize_affinity_matrix(
-  ANF::affinityMatrix(
-    ANF::dist2(input$Methylation,
-                   input$Methylation),
-    K = optN, sigma = optSigma))
+  ANF::affinity_matrix(
+    SNFtool::dist2(input$Methylation,
+               input$Methylation),
+    k = optN, alpha = 1/6, beta = 1/6))
 colnames(aff_Methyl) = rownames(aff_Methyl) = rownames(input$Methylation)
 
 aff_SNPs = normalize_affinity_matrix(
-  ANF::affinityMatrix(
+  ANF::affinity_matrix(
     as.matrix(dist(as.matrix(input$SNPs),
                    as.matrix(input$SNPs),
                    method = "binary")),
-    K = optN, sigma = optSigma))
+    k = optN, alpha = 1/6, beta = 1/6))
 colnames(aff_SNPs) = rownames(aff_SNPs) = rownames(input$SNPs)
 
 aff_final = final_affinity_matrix
@@ -1740,9 +1737,9 @@ for (i in 1:length(voi)) {
                                              chifit = chifit,
                                              na.action = "na.omit",
                                              algorithm = algorithm,
-                                             barchart_ylim = 650,
-                                             text_y = 600, rect_ymin = 500,
-                                             rect_ymax = 620, x_annot = 1.5,
+                                             barchart_ylim = 680,
+                                             text_y = 630, rect_ymin = 530,
+                                             rect_ymax = 650, x_annot = 1.5,
                                              v_gap = 35, rect_xmin = 1,
                                              rect_xmax = 2, 
                                              annot_text_size = 2.25,
@@ -1779,7 +1776,8 @@ dev.off()
 # Just significant ones now
 ANF_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(ANF, Race, Histology, 
-                                                             `ER status`, `PR status`)
+                                                             `ER status`, `PR status`, `Menopausal status`,
+                                                             Stage)
 plotdata_bar_sig$ANF = factor(plotdata_bar_sig$ANF)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1790,9 +1788,9 @@ for (i in 1:length(voi_sig)) {
                                                  chifit = chifit,
                                                  na.action = "na.omit",
                                                  algorithm = algorithm,
-                                                 barchart_ylim = 650,
-                                                 text_y = 600, rect_ymin = 500,
-                                                 rect_ymax = 620, x_annot = 1.5,
+                                                 barchart_ylim = 680,
+                                                 text_y = 630, rect_ymin = 530,
+                                                 rect_ymax = 650, x_annot = 1.5,
                                                  v_gap = 35, rect_xmin = 1,
                                                  rect_xmax = 2, 
                                                  annot_text_size = 2.25,
@@ -1812,13 +1810,13 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(ANF_barcharts_sig[[1]], ANF_barcharts_sig[[2]], ANF_barcharts_sig[[3]],
-          ANF_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          ANF_barcharts_sig[[4]], ANF_barcharts_sig[[5]], ANF_barcharts_sig[[6]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 5500, height = 8500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1828,17 +1826,30 @@ Pheno_sunburst_ANF = clust_annot_pheno
 Pheno_sunburst_ANF$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_ANF$`ER status`)
 Pheno_sunburst_ANF$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_ANF$`ER status`)
 Pheno_sunburst_ANF$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_ANF$`ER status`)
+Pheno_sunburst_ANF$`Menopausal status` = gsub("Indeterminate", "Indet", Pheno_sunburst_ANF$`Menopausal status`)
+Pheno_sunburst_ANF$`Menopausal status` = gsub("Pre-menopausal", "Pre", Pheno_sunburst_ANF$`Menopausal status`)
+Pheno_sunburst_ANF$`Menopausal status` = gsub("Perimenopausal", "Peri", Pheno_sunburst_ANF$`Menopausal status`)
+Pheno_sunburst_ANF$`Menopausal status` = gsub("Post-menopausal", "Post", Pheno_sunburst_ANF$`Menopausal status`)
+Pheno_sunburst_ANF$`Menopausal status` = gsub("Unknown", "Unkn Meno", Pheno_sunburst_ANF$`Menopausal status`)
+Pheno_sunburst_ANF$Stage = gsub("Unknown", "Unkn Stage", Pheno_sunburst_ANF$Stage)
 Pheno_sunburst_ANF = Pheno_sunburst_ANF %>%
-  dplyr::select(ANF, `ER status`) %>%
-  group_by(ANF, `ER status`) %>%
+  dplyr::select(ANF, `ER status`, `Menopausal status`, Stage) %>%
+  group_by(ANF, `ER status`, `Menopausal status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_ANF = data.frame(stringsAsFactors = FALSE,
                                    colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                      "#C11D9C", "#0F1682",  "grey40"))),
+                                                                      "#C11D9C", "#0F1682",  "grey40",
+                                                                      "mistyrose2", "#FAA476", "#DC3977", 
+                                                                      "#7C1D6F", "grey40",
+                                                                      "#00C9FF", "#099CF5", "#097BF5", 
+                                                                      "#0B5684", "grey40"))),
                                    labels = c("ANF1", "ANF2",
-                                              "ER-", "ER+", "Unkn ER status"))
+                                              "ER-", "ER+", "Unkn ER status",
+                                              "Indet", "Pre", "Peri", "Post", "Unkn Meno",
+                                              "Stage I", "Stage II", "Stage III", "Stage IV",
+                                              "Unkn Stage"))
 
 sunburstDF_ANF = as.sunburstDF(Pheno_sunburst_ANF, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_ANF, by = "labels")
@@ -2037,40 +2048,14 @@ legend(x = 1.2, y = 1,  # Manually adjust the position of the legend to the righ
 
 dev.off()
 
-# Compare these ANF results with the ANF output from MOVICS ###
-load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
-MOVICS_ANF = moic.res.list$ANF$clust.res
-
-ARI_to_MOVICS_ANF = calculate_ari_index(cluster_df1 = MOVICS_ANF %>%
-                                          dplyr::rename(Sample.ID = samID,
-                                                        Cluster = clust),
-                                        cluster_df2 = ANF_clusters,
-                                        sample_col = "Sample.ID",
-                                        clust_col = "Cluster",
-                                        suffixes = c(paste0("_MOVICS_", algorithm),
-                                                     paste0("_", algorithm)))
-
-NMI_to_MOVICS_ANF = calculate_nmi_index(cluster_df1 = MOVICS_ANF %>%
-                                          dplyr::rename(Sample.ID = samID,
-                                                        Cluster = clust),
-                                        cluster_df2 = ANF_clusters,
-                                        sample_col = "Sample.ID",
-                                        clust_col = "Cluster",
-                                        suffixes = c(paste0("_MOVICS_", algorithm),
-                                                     paste0("_", algorithm)))
-
 # Wrap up #####
 hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
                        num_neighbors_max = max(num_neighbors_range),
                        num_neighbors_step = neighbor_step,
-                       sigma_min = min(sigma_range),
-                       sigma_max = max(sigma_range),
-                       sigma_step = sigma_step,
                        optimal_N = optN,
-                       optimal_sigma = optSigma,
                        conclusion = conclusion, # if there is agreement, np_conclusion can also be used
-                       n_iter = n_iterations,
-                       feature_ranks_text = feature_ranks_text
+                       feature_ranks_text = feature_ranks_text,
+                       optk = optk
 )
 
 # Put all parameters in a list
@@ -2078,10 +2063,10 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
-              NMI_to_MOVICS_ANF = NMI_to_MOVICS_ANF, ARI_to_MOVICS_ANF = ARI_to_MOVICS_ANF,
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
               transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo(), home = home)
+
 
 # Render the R Markdown document with the parameters
 rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/", algorithm,
