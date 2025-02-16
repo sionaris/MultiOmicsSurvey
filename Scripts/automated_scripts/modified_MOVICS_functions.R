@@ -2000,6 +2000,7 @@ compClinvar_ordinal_single_algorithm <- function(algorithm_name = "CS",
   }
   
   # Reorder the columns to be: Variable, Levels, SNF1, SNF2, ..., p, test
+  colnames(results_table) = c("Variable", "Levels", unique_subtypes, "p", "test")
   results_table <- results_table[, c("Variable", "Levels", unique_subtypes, "p", "test")]
   
   # PDF generation
