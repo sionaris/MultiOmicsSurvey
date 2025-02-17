@@ -2373,7 +2373,7 @@ compAgree_single_algorithm = function (algorithm_name = "CS",
   library(ggalluvial)
   library(cowplot)
   dat <- moic.res$clust.res
-  colnames(dat)[2] <- "Subtype"
+  colnames(dat)[which(colnames(dat) == "clust")] <- "Subtype"
   dat$Subtype <- paste0(algorithm_name, dat$Subtype)
   comsam <- intersect(dat$samID, rownames(subt2comp))
   if (length(comsam) == nrow(dat)) {
@@ -4586,6 +4586,10 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
   
   if (!(is.logical(representative) && length(representative) == 1)) {
     stop("The 'representative' argument must either be TRUE or FALSE")
+  }
+  
+  if (length(present_clusters) != length(gsea.lists)) {
+    gsea.lists = gsea.lists[paste0(dirct, "_", present_clusters)]
   }
   
   if (representative) {

@@ -136,7 +136,8 @@ plotHeatmap(tune_results$fit[[which.min(lapply(tune_results$fit, function(x) x$B
             row.order = c(T, T, T, T, T))
 
 # Setting the optimal fit
-optimal.fit = tune_results$fit[[4]] # k = 5
+optk = 5
+optimal.fit = tune_results$fit[[optk - 1]] # k = 5
 
 # SNPs
 plot(optimal.fit$beta.pp[[1]],xlab="Genes",ylab="Posterior probability",
@@ -160,7 +161,9 @@ plot(optimal.fit$beta.pp[[3]],xlab="Genes",ylab="Posterior probability",
 
 # Extract clusters
 iClusterBayes_clusters = as.data.frame(list(Cluster = optimal.fit$clusters)) %>%
-  dplyr::mutate(Sample.ID = rownames(input$SNPs))
+  dplyr::mutate(Sample.ID = rownames(input$SNPs)) %>%
+  dplyr::select(Sample.ID, Cluster)
+rownames(iClusterBayes_clusters) = iClusterBayes_clusters$Sample.ID
 
 # Feature selection #####
 features = alist()
@@ -199,11 +202,12 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     suffixes = c("_MOVICS_CS",
                                                  paste0("_", algorithm)))
 
-# Good agreement compared to the MOVICS. Results differ
+# Good agreement compared to the MOVICS. Results somewhat similar
 
 # MOVICS-like analysis #####
 library(MOVICS)
 library(ComplexHeatmap)
+library(ggplot2)
 
 # Import coloring scheme
 scheme = readRDS("Resources/scheme.rds")
@@ -223,16 +227,9 @@ var2comp = scheme$var2comp %>%
 rm(scheme); gc()
 
 # Silhouette
-
-# transformed_aff = transform_affinity_matrix(final_affinity_matrix,
-#                                             threshold = 100, norm_quant = 0,
-#                                             norm_method = "divide by quantile")
-
-z_spearman_matrix = cor(t(optimal.fit$meanZ), method = "spearman")
-dimnames(z_spearman_matrix) = list(rownames(input$SNPs), rownames(input$SNPs))
-sil = compute_silhouette(cluster_df = iClusterBayes_clusters %>% dplyr::rename(samID = Sample.ID),
-                         similarity_matrix = z_spearman_matrix,
-                         normalize_matrix = TRUE)
+library(cluster)
+sil = silhouette(as.integer(optimal.fit$clusters),
+                 Rfast::Dist(optimal.fit$meanZ, method = "euclidean"))
 
 getSilhouette_ggplot(sil      = sil,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
@@ -270,30 +267,39 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
 
-# comprehensive heatmap (may take a while)
-getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-                              row.title     = names(heatmap_plotdata),
-                              is.binary     = c(T,F,F,F,F), 
-                              legend.name   = c("SNPs",
-                                                "Standardized RNAseq norm. counts",
-                                                "Standardized CNV",
-                                                "Standardized miRNA norm. counts",
-                                                "Standardized Methylation M-values"
-                              ),
-                              clust.res     = plot_object$clust.res, # consensusMOIC-like results
-                              clust.dend    = NULL, # show no dendrogram for samples
-                              show.rownames = c(F,F,F,F,F), # specify for each omics data
-                              show.colnames = FALSE, # show no sample names
-                              show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
-                              annRow        = NULL, # no selected features
-                              color         = col.list,
-                              annCol        = annCol, # annotation for samples
-                              annColors     = annColors, # annotation color
-                              width         = 20, # width of each subheatmap
-                              height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
-                              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+# Order features
+feature_orders = readRDS("Resources/TCGA/mm_feature_orders.rds")
+for (i in 1:length(plotdata)) {
+  plotdata[[i]] = plotdata[[i]][feature_orders[[names(plotdata)[i]]], , drop = FALSE]
+}
+
+getMoHeatmap_single_algorithm2(algorithm_name = algorithm,
+                               data          = plotdata,
+                               row.title     = names(plotdata),
+                               is.binary     = c(T,F,F,F,F), 
+                               legend.name   = c("SNPs",
+                                                 "Standardized RNAseq norm. counts",
+                                                 "Standardized CNV",
+                                                 "Standardized miRNA norm. counts",
+                                                 "Standardized Methylation M-values"
+                               ),
+                               cluster_rows = rep(F, length(plotdata)),
+                               cluster_cols = rep(F, length(plotdata)),
+                               show.col.dend = rep(F, length(plotdata)),
+                               show.colnames = FALSE,
+                               show.row.dend = rep(F, length(plotdata)),
+                               show.rownames = rep(F, length(plotdata)),
+                               clust.res     = plot_object$clust.res, # consensusMOIC-like results
+                               # clust.dist.row = c("manhattan", rep("euclidean", 4)),
+                               # clust.method.row = rep("ward.D", length(plotdata)),
+                               annRow        = NULL, # no selected features
+                               color         = col.list,
+                               annCol        = annCol, # annotation for samples
+                               annColors     = annColors, # annotation color
+                               width         = 20, # width of each subheatmap
+                               height        = 10, # height of each subheatmap
+                               fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
+                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
@@ -381,8 +387,6 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                       fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
                                       res.path     = paste0(home, "/Results/single_algorithm/", algorithm))
 
-# Similar to MOVICS: TP53 and PIK3CA patterns
-
 # Drug sensitivity comparison ###
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  moic.res    = plot_object,
@@ -402,10 +406,10 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
                                                 subt2comp = annCol[, c("ER status", "PR status",
                                                                        "HER2 status", "Metastasis", "Stage")],
                                                 doPlot    = TRUE,
-                                                box.width = 0.2,
+                                                box.width = 1.5,
                                                 fig.name  = "Classification_agreement",
                                                 fig.path  = paste0(home, "/Results/single_algorithm/", algorithm),
-                                                width     = 12)
+                                                width     = 20)
 dev.off()
 
 # DGEA ###
@@ -633,7 +637,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             minGSSize = 5,
                                             maxGSSize = 500,
                                             fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                            width = 14, height = 12)
+                                            width = 14, height = 18)
 
 # GSEA down-regulated
 RNGversion("4.2.2")
@@ -658,7 +662,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               minGSSize = 5,
                                               maxGSSize = 500,
                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                              width = 14, height = 12)
+                                              width = 14, height = 18)
 
 # Gene set variation analysis #####
 # locate ABSOLUTE path of gene set file
@@ -787,12 +791,16 @@ gc()
 names(hclust_output) <- names(hclust_input)
 
 # Are there any null sets?
-which(hclust_output == "hclust impossible")
+which(hclust_output == "hclust impossible") # 3 and 8, for iClusterBayes3
+exclusions = which(hclust_output == "hclust impossible")
 
 # Export
 library(openxlsx)
 wb = createWorkbook()
 for (j in 1:length(hclust_output)) {
+  if (j %in% exclusions) {
+    next
+  }
   addWorksheet(wb, names(hclust_output)[j])
   writeData(wb, names(hclust_output)[j], hclust_output[[j]])
 }
@@ -803,25 +811,27 @@ saveWorkbook(wb, file = paste0(home, "/Results/single_algorithm/", algorithm, "/
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
-                                                present_clusters = c("iClusterBayes1", "iClusterBayes2"),
+                                                present_clusters = c("iClusterBayes1", "iClusterBayes2",
+                                                                     "iClusterBayes4", "iClusterBayes5"),
                                                 representative = TRUE, moic.res = plot_object,
                                                 subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                 norm.method = "mean", dirct = "up",
                                                 fig.name = "upregulated_pathway_heatmap",
                                                 name = "GSVA scores",
                                                 fig.path = paste0(home, "/Results/single_algorithm/", algorithm), 
-                                                width = 15, height = 10, gsva.method = "gsva")
+                                                width = 15, height = 16, gsva.method = "gsva")
 
 hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
                                                   norm.expr = plotdata$RNAseq, 
-                                                  present_clusters = c("iClusterBayes1", "iClusterBayes2"),
+                                                  present_clusters = c("iClusterBayes1", "iClusterBayes2",
+                                                                       "iClusterBayes4", "iClusterBayes5"),
                                                   representative = TRUE, moic.res = plot_object,
                                                   subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                   norm.method = "mean", dirct = "down",
                                                   fig.name = "downregulated_pathway_heatmap",
                                                   name = "GSVA scores",
                                                   fig.path = paste0(home, "/Results/single_algorithm/", algorithm), 
-                                                  width = 15, height = 10, gsva.method = "gsva")
+                                                  width = 15, height = 16, gsva.method = "gsva")
 
 # Fraction Genome Altered ###
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
@@ -1048,39 +1058,17 @@ TCGA.pam.pred = runPAM_single_algorithm(algorithm_name = algorithm,
                                         moic.res = plot_object,
                                         test.expr = plotdata$RNAseq[, plot_object$clust.res$samID])
 
-# consensus TCGA vs NTP TCGA
-runKappa_single_algorithm(algorithm_name = algorithm,
-                          subt1 = plot_object$clust.res$clust,
-                          subt2 = gsub(algorithm, "", TCGA.ntp.pred$clust.res$clust),
-                          subt1.lab = algorithm,
-                          subt2.lab = "NTP TCGA",
-                          height = 8,
-                          width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                          fig.name = paste0("kappa_", algorithm, "_vs_NTP_TCGA"))
-
+# NTP fails to get any iCB3 subtypes. PAM is the only full complete mapping
 # consensus TCGA vs PAM TCGA
 runKappa_single_algorithm(algorithm_name = algorithm,
                           subt1 = plot_object$clust.res$clust,
                           subt2 = gsub(algorithm, "", TCGA.pam.pred$clust.res$clust),
                           subt1.lab = algorithm,
                           subt2.lab = "PAM TCGA",
-                          height = 8,
-                          width = 8,
+                          height = 16,
+                          width = 16,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
-
-# NTP transNEO vs PAM transNEO
-runKappa_single_algorithm(algorithm_name = algorithm,
-                          subt1 = as.numeric(gsub(algorithm, "",
-                                                  transNEO_ntp_expr_up$clust.res$clust)),
-                          subt2 = as.numeric(transNEO_pam$clust.res$clust),
-                          subt1.lab = "transNEO NTP",
-                          subt2.lab = "transNEO PAM",
-                          height = 8,
-                          width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                          fig.name = "kappa_NTP_vs_PAM_transNEO")
 
 # Supplementary results #####
 
@@ -1091,206 +1079,84 @@ if (!dir.exists(paste0(home, "/Results/single_algorithm/", algorithm, "/Suppleme
 
 # Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
-cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36", 
+                           "#FF9F1C", "#BDD5EA", "#FFA5AB")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
   dplyr::rename(iClusterBayes = Cluster, samID = "Sample.ID")
 rownames(clust_annot_pheno) = clust_annot_pheno$samID
-afh_colnames = colnames(annCol)
 
-# Prepare affinity matrices
-aff_CNV = normalize_affinity_matrix(
-  iClusterBayestool::affinityMatrix(
-    iClusterBayestool::dist2(input$CNV,
-                   input$CNV),
-    K = optN, sigma = optSigma))
-colnames(aff_CNV) = rownames(aff_CNV) = rownames(input$CNV)
+# Same data frame. Different columns. Just for easiness
+iClusterBayes_clust_res = iClusterBayes_clusters %>% dplyr::rename(samID = Sample.ID, 
+                                                   iClusterBayes = Cluster) %>%
+  dplyr::mutate(iClusterBayes = gsub(algorithm, "", iClusterBayes))
 
-aff_rna = normalize_affinity_matrix(
-  iClusterBayestool::affinityMatrix(
-    iClusterBayestool::dist2(input$RNAseq,
-                   input$RNAseq),
-    K = optN, sigma = optSigma))
-colnames(aff_rna) = rownames(aff_rna) = rownames(input$RNA)
-
-aff_miRNA = normalize_affinity_matrix(
-  iClusterBayestool::affinityMatrix(
-    iClusterBayestool::dist2(input$miRNA,
-                   input$miRNA),
-    K = optN, sigma = optSigma))
-colnames(aff_miRNA) = rownames(aff_miRNA) = rownames(input$miRNA)
-
-aff_Methyl = normalize_affinity_matrix(
-  iClusterBayestool::affinityMatrix(
-    iClusterBayestool::dist2(input$Methylation,
-                   input$Methylation),
-    K = optN, sigma = optSigma))
-colnames(aff_Methyl) = rownames(aff_Methyl) = rownames(input$Methylation)
-
-aff_SNPs = normalize_affinity_matrix(
-  iClusterBayestool::affinityMatrix(
-    as.matrix(dist(as.matrix(input$SNPs),
-                   as.matrix(input$SNPs),
-                   method = "binary")),
-    K = optN, sigma = optSigma))
-colnames(aff_SNPs) = rownames(aff_SNPs) = rownames(input$SNPs)
-
-aff_final = final_affinity_matrix
-
-# CNV
-create_MO_heatmap(matrix = aff_CNV, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
+# MO heatmap from meanZ ###
+iClusterBayes_z_matrix = optimal.fit$meanZ
+rownames(iClusterBayes_z_matrix) = rownames(input$SNPs)
+distz = Rfast::Dist(iClusterBayes_z_matrix, method = "euclidean")
+dimnames(distz) = list(rownames(iClusterBayes_z_matrix), rownames(iClusterBayes_z_matrix))
+create_MO_heatmap(matrix = distz, algorithm = algorithm, 
+                  need.diag.zero = TRUE,
                   clust_annot_pheno = clust_annot_pheno,
                   afh_colnames = afh_colnames, 
                   colors = colors_heatmap,
                   annColors = annColors,
-                  heatmap_title = "CNV first affinity heatmap",
+                  heatmap_title = "Final iClusterBayes meanZ distance heatmap",
                   cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
                   cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
                   splits_flag = TRUE,
+                  legend_title = "Distance",
                   output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
-                                            "/Supplement/aff_CNV_heatmap.png"))
+                                            "/Supplement/iClusterBayes_meanZ_distance_heatmap.png"))
 
-# RNAseq
-create_MO_heatmap(matrix = aff_rna, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "RNAseq first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
-                                            "/Supplement/aff_RNAseq_heatmap.png"))
+# PCA from original matrices ###
+# RNA
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
+                         algorithm = algorithm, 
+                         clust_res = iClusterBayes_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", 
+                                            "#FF9F1C", "#BDD5EA", "#FFA5AB"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "RNAseq")
 
 # miRNA
-create_MO_heatmap(matrix = aff_miRNA, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "miRNA first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/aff_miRNA_heatmap.png"))
+pca_from_original_matrix(mydata = plotdata$miRNA, 
+                         algorithm = algorithm, 
+                         clust_res = iClusterBayes_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", 
+                                            "#FF9F1C", "#BDD5EA", "#FFA5AB"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "miRNA")
 
-# Methylation
-create_MO_heatmap(matrix = aff_Methyl, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Methylation first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
-                                            "/Supplement/aff_Methylation_heatmap.png"))
-
-# SNPs
-create_MO_heatmap(matrix = aff_SNPs, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "SNPs first affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/aff_SNPs_heatmap.png"))
-
-# Final affinity matrix
-create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Final affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = FALSE,
-                  cluster_rows_flag = FALSE,
-                  splits_flag = TRUE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/aff_final_affinity_heatmap.png"))
-
-# Final affinity matrix with clustered rows and columns
-create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
-                  need.diag.zero = TRUE, 
-                  clust_annot_pheno = clust_annot_pheno,
-                  afh_colnames = afh_colnames, 
-                  colors = colors_heatmap,
-                  annColors = annColors,
-                  heatmap_title = "Final affinity heatmap",
-                  cluster_colors = cluster_colors_heatmap,
-                  legend_title = "Normalized affinity",
-                  cluster_cols_flag = TRUE,
-                  cluster_rows_flag = TRUE,
-                  splits_flag = FALSE,
-                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm,
-                                            "/Supplement/hclust_aff_final_affinity_heatmap.png"))
-
-# PCA ###
 # CNV
-pca_from_sim_matrix(sim_matrix = aff_CNV, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "CNV")
+pca_from_original_matrix(mydata = plotdata$CNV, 
+                         algorithm = algorithm, 
+                         clust_res = iClusterBayes_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", 
+                                            "#FF9F1C", "#BDD5EA", "#FFA5AB"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "CNV")
 
-# RNAseq
-pca_from_sim_matrix(sim_matrix = aff_rna, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "RNAseq")
-
-# miRNA
-pca_from_sim_matrix(sim_matrix = aff_miRNA, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "miRNA")
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
+                         algorithm = algorithm, 
+                         clust_res = iClusterBayes_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", 
+                                            "#FF9F1C", "#BDD5EA", "#FFA5AB"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "SNPs")
 
 # Methylation
-pca_from_sim_matrix(sim_matrix = aff_Methyl, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "Methylation")
-
-# SNPs
-pca_from_sim_matrix(sim_matrix = aff_SNPs, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "SNPs")
-
-# Final affinity
-pca_from_sim_matrix(sim_matrix = aff_final, algorithm = algorithm, 
-                    clust_res = clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-                    cluster_colors = cluster_colors_heatmap, 
-                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
-                    title_add = "Fusion")
+pca_from_original_matrix(mydata = plotdata$Methylation, 
+                         algorithm = algorithm, 
+                         clust_res = iClusterBayes_clust_res,
+                         cluster_colors = c("#2EC4B6", "#E71D36", 
+                                            "#FF9F1C", "#BDD5EA", "#FFA5AB"), 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "Methylation")
 
 # Setup for barcharts ###
 # Stage
@@ -1428,11 +1294,11 @@ for (i in 1:length(voi)) {
                                              chifit = chifit,
                                              na.action = "na.omit",
                                              algorithm = algorithm,
-                                             barchart_ylim = 650,
-                                             text_y = 600, rect_ymin = 500,
-                                             rect_ymax = 620, x_annot = 1.5,
-                                             v_gap = 35, rect_xmin = 1,
-                                             rect_xmax = 2, 
+                                             barchart_ylim = 500,
+                                             text_y = 450, rect_ymin = 350,
+                                             rect_ymax = 470, x_annot = 3,
+                                             v_gap = 35, rect_xmin = 2.5,
+                                             rect_xmax = 3.5, 
                                              annot_text_size = 2.25,
                                              legend.text.size = 5,
                                              x.axis.text.size = 5) +
@@ -1441,7 +1307,7 @@ for (i in 1:length(voi)) {
   ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/single_algorithm/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 3520, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1460,14 +1326,16 @@ ggarrange(iClusterBayes_barcharts[[1]], iClusterBayes_barcharts[[2]], iClusterBa
 ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 7000, height = 8000, device = 'png', units = "px",
+       width = 12000, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Just significant ones now
 iClusterBayes_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(iClusterBayes, Race, Histology, 
-                                                             `ER status`, `PR status`)
+                                                             `Lymph node status`, `HER2 status`,
+                                                             `ER status`, `PR status`,
+                                                             Metastasis, Stage)
 plotdata_bar_sig$iClusterBayes = factor(plotdata_bar_sig$iClusterBayes)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1475,23 +1343,23 @@ for (i in 1:length(voi_sig)) {
   loc = which(grepl(voi_sig[i], chifit$Comparison))
   chifit = chifit[loc, ]
   iClusterBayes_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
-                                                 chifit = chifit,
-                                                 na.action = "na.omit",
-                                                 algorithm = algorithm,
-                                                 barchart_ylim = 650,
-                                                 text_y = 600, rect_ymin = 500,
-                                                 rect_ymax = 620, x_annot = 1.5,
-                                                 v_gap = 35, rect_xmin = 1,
-                                                 rect_xmax = 2, 
-                                                 annot_text_size = 2.25,
-                                                 legend.text.size = 5,
-                                                 x.axis.text.size = 5) +
+                                                           chifit = chifit,
+                                                           na.action = "na.omit",
+                                                           algorithm = algorithm,
+                                                           barchart_ylim = 500,
+                                                           text_y = 450, rect_ymin = 350,
+                                                           rect_ymax = 470, x_annot = 3,
+                                                           v_gap = 35, rect_xmin = 2.5,
+                                                           rect_xmax = 3.5, 
+                                                           annot_text_size = 2.25,
+                                                           legend.text.size = 5,
+                                                           x.axis.text.size = 5) +
     barchart_scales[[voi_sig[i]]]
   print(iClusterBayes_barcharts_sig[[i]])
   ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/single_algorithm/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 3520, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1500,13 +1368,14 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(iClusterBayes_barcharts_sig[[1]], iClusterBayes_barcharts_sig[[2]], iClusterBayes_barcharts_sig[[3]],
-          iClusterBayes_barcharts_sig[[4]], 
-          ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"),
+          iClusterBayes_barcharts_sig[[4]], iClusterBayes_barcharts_sig[[5]], iClusterBayes_barcharts_sig[[6]],
+          iClusterBayes_barcharts_sig[[7]], iClusterBayes_barcharts_sig[[8]],
+          ncol = 2, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 5500, height = 5500, device = 'png', units = "px",
+       width = 6500, height = 10000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1516,17 +1385,30 @@ Pheno_sunburst_iClusterBayes = clust_annot_pheno
 Pheno_sunburst_iClusterBayes$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_iClusterBayes$`ER status`)
 Pheno_sunburst_iClusterBayes$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_iClusterBayes$`ER status`)
 Pheno_sunburst_iClusterBayes$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_iClusterBayes$`ER status`)
+Pheno_sunburst_iClusterBayes$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                          Pheno_sunburst_iClusterBayes$`HER2 status`)
+Pheno_sunburst_iClusterBayes$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_iClusterBayes$`HER2 status`)
+Pheno_sunburst_iClusterBayes$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_iClusterBayes$`HER2 status`)
+Pheno_sunburst_iClusterBayes$`Lymph node status` = gsub("Unknown", "Unkn LN status", Pheno_sunburst_iClusterBayes$`Lymph node status`)
 Pheno_sunburst_iClusterBayes = Pheno_sunburst_iClusterBayes %>%
-  dplyr::select(iClusterBayes, `ER status`) %>%
-  group_by(iClusterBayes, `ER status`) %>%
+  dplyr::select(iClusterBayes, `ER status`, `HER2 status`, `Lymph node status`) %>%
+  group_by(iClusterBayes, `ER status`, `HER2 status`, `Lymph node status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
-
 sunburst_coloring_iClusterBayes = data.frame(stringsAsFactors = FALSE,
-                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                      "#C11D9C", "#0F1682",  "grey40"))),
-                                   labels = c("iClusterBayes1", "iClusterBayes2",
-                                              "ER-", "ER+", "Unkn ER status"))
+                                     colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
+                                                                        "#FF9F1C", "#BDD5EA", "#FFA5AB",
+                                                                        "#C11D9C", "#0F1682",  "grey40",
+                                                                        "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                        "hotpink4", "grey40",
+                                                                        "grey75", "#4A0558", "grey40"))),
+                                     labels = c("iClusterBayes1", "iClusterBayes2",
+                                                "iClusterBayes3", "iClusterBayes4",
+                                                "iClusterBayes5",
+                                                "ER-", "ER+", "Unkn ER status",
+                                                "HER2-", "HER2+", "Indeterminate",
+                                                "Equivocal", "Unkn HER2 status",
+                                                "Yes", "No", "Unkn LN status"))
 
 sunburstDF_iClusterBayes = as.sunburstDF(Pheno_sunburst_iClusterBayes, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_iClusterBayes, by = "labels")
@@ -1543,187 +1425,6 @@ pie_iClusterBayes = plot_ly() %>%
   )
 pie_iClusterBayes
 rm(Pheno_sunburst_iClusterBayes, sunburstDF_iClusterBayes, sunburst_coloring_iClusterBayes, pie_iClusterBayes); gc()
-
-# Graphs ###
-library(igraph)
-
-aff_CNV_S = calculate_S(aff_CNV)
-aff_rna_S = calculate_S(aff_rna)
-aff_miRNA_S = calculate_S(aff_miRNA)
-aff_Methyl_S = calculate_S(aff_Methyl)
-aff_SNPs_S = calculate_S(aff_SNPs)
-aff_final_S = calculate_S(aff_final)
-
-list_aff_S = list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, 
-                  aff_SNPs_S, aff_final_S)
-names(list_aff_S) = c(paste0("CNV Original Affinity ", optN, "-NN Graph"),
-                      paste0("RNAseq Original Affinity ", optN, "-NN Graph"),
-                      paste0("miRNA Original Affinity ", optN, "-NN Graph"),
-                      paste0("Methylation Original Affinity ", optN, "-NN Graph"),
-                      paste0("SNPs Original Affinity ", optN, "-NN Graph"),
-                      paste0("Final Fused Affinity ", optN, "-NN Graph"))
-
-for (i in 1:length(list_aff_S)) {
-  
-  # Prepare the graph object
-  g <- graph_from_adjacency_matrix(list_aff_S[[i]],  weighted = TRUE, diag = FALSE,
-                                   mode = "max")
-  g <- delete_edges(g, E(g)[weight == 0])
-  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
-  nodes_data <- data.frame(name = V(g)$name) %>%
-    inner_join(clust_annot_pheno %>% dplyr::select(samID, iClusterBayes),
-               by = c("name" = "samID"))
-  
-  # Set iClusterBayes as a factor for coloring
-  nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-  V(g)$iClusterBayes <- nodes_data[[algorithm]] # modify `$iClusterBayes` manually
-  
-  # Set color based on iClusterBayes
-  V(g)$color <- fifelse(V(g)$iClusterBayes == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
-  
-  png(paste0(home, 
-             "/Results/single_algorithm/", algorithm, "/Supplement/",
-             names(list_aff_S)[i], ".png"),
-      width = 6000, height = 6000, res = 700)
-  
-  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
-  
-  # Plot the graph with a layout that spreads nodes well
-  plot(g, vertex.color = V(g)$color,
-       edge.width = E(g)$width,
-       vertex.size = 4, 
-       vertex.label = NA, 
-       edge.color = "gray85",
-       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
-       main = "")
-  
-  # Add title with reduced size using title() function
-  title(main = names(list_aff_S)[i], cex.main = 1.7)
-  
-  # Add a legend to the right of the plot
-  legend("bottomright", 
-         title="Node Color Legend",    
-         legend=c(paste0(algorithm, "1"),
-                  paste0(algorithm, "2")), 
-         fill=cluster_colors_heatmap,  
-         cex=0.7,      
-         box.lwd=1)  
-  
-  dev.off() 
-}
-rm(g, nodes_data)
-
-# Define the affinity matrices for each modality
-# Function to determine the important modalities for each edge
-determine_edge_support <- function(edge_weights) {
-  sorted_weights <- sort(edge_weights, decreasing = TRUE)
-  # If the highest weight is more than 10% greater than all others, it is supported by a single modality
-  if (sorted_weights[1] > sorted_weights[2] * 1.1) {
-    return(which(edge_weights == sorted_weights[1]))
-  }
-  # If the difference between the two highest weights is less than 10%, it is supported by those two modalities
-  else if (sorted_weights[1] <= sorted_weights[2] * 1.1 && sorted_weights[2] > sorted_weights[3] * 1.1) {
-    return(which(edge_weights >= sorted_weights[2]))
-  }
-  # If the difference between all weights is less than 10%, it is supported by all modalities
-  else {
-    return(which(edge_weights >= sorted_weights[1] * 0.9))
-  }
-}
-
-# Prepare the graph object for the final affinity matrix
-g <- graph_from_adjacency_matrix(aff_final_S, mode = "undirected", weighted = TRUE, diag = FALSE)
-g <- delete_edges(g, E(g)[weight == 0])
-
-# Calculate the weights of each edge in individual networks
-edge_weights_list <- list(aff_CNV_S, aff_rna_S, aff_miRNA_S, aff_Methyl_S, aff_SNPs_S)
-edge_support_list <- lapply(E(g), function(e) {
-  from <- ends(g, e)[1]
-  to <- ends(g, e)[2]
-  sapply(edge_weights_list, function(mat) mat[from, to])
-})
-
-# Assign color to each edge based on the modalities that support it
-edge_colors <- c("#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#F3FF33")  # Define unique colors for each modality
-combinations_colors <- list()
-
-for (i in 1:length(E(g))) {
-  supported_modalities <- determine_edge_support(edge_support_list[[i]])
-  if (length(supported_modalities) == 5) {
-    combinations_colors[[i]] <- "black"  # Assign black color if all modalities support the edge
-  } else if (length(supported_modalities) == 1) {
-    combinations_colors[[i]] <- edge_colors[supported_modalities]
-  } else {
-    combination <- paste(supported_modalities, collapse = " + ")
-    if (!is.null(combinations_colors[[combination]])) {
-      combinations_colors[[i]] <- combinations_colors[[combination]]
-    } else {
-      new_color <- colorRampPalette(edge_colors[supported_modalities])(1)
-      combinations_colors[[combination]] <- new_color
-      combinations_colors[[i]] <- new_color
-    }
-  }
-}
-
-E(g)$color <- unlist(combinations_colors)
-
-# Prepare the node data
-nodes_data <- data.frame(name = V(g)$name) %>%
-  inner_join(clust_annot_pheno %>% dplyr::select(samID, iClusterBayes), by = c("name" = "samID"))
-nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-V(g)$iClusterBayes <- nodes_data[[algorithm]]
-
-# Set color based on iClusterBayes
-V(g)$color <- fifelse(V(g)$iClusterBayes == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
-
-# Draw the graph for the final affinity matrix
-png(paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/", "colored_Final_Fused_Affinity_", optN, "-NN_Graph.png"),
-    width = 6000, height = 6000, res = 700)
-
-par(mar = c(0, 0, 0, 17))  # Adjust right margin to make enough space for the legend
-
-# Plot the graph
-plot(g, vertex.color = V(g)$color,
-     edge.width = E(g)$width * 0.1,  # Make the edges thinner
-     vertex.size = 3,  # Make the nodes smaller
-     vertex.label = NA, 
-     edge.color = adjustcolor(E(g)$color, alpha.f = 0.35),  # Add transparency to edges
-     layout = layout_with_fr(g, niter = 1000))
-
-# Add a legend for the edge colors
-legend(x = 1.2, y = 1,  # Manually adjust the position of the legend to the right of the plot
-       xpd = TRUE,  # Allow legend to be drawn outside the plot area
-       title="Edge Color Legend",
-       legend=c("RNA-seq", "miRNA", "Methylation", "CNV", "SNPs", 
-                "RNA-seq + miRNA", "RNA-seq + Methylation", "RNA-seq + CNV", "RNA-seq + SNPs", 
-                "miRNA + Methylation", "miRNA + CNV", "miRNA + SNPs", 
-                "Methylation + CNV", "Methylation + SNPs", 
-                "CNV + SNPs", 
-                "RNA-seq + miRNA + Methylation", "RNA-seq + miRNA + CNV", "RNA-seq + miRNA + SNPs", 
-                "RNA-seq + Methylation + CNV", "RNA-seq + Methylation + SNPs", 
-                "RNA-seq + CNV + SNPs", 
-                "miRNA + Methylation + CNV", "miRNA + Methylation + SNPs", 
-                "miRNA + CNV + SNPs", 
-                "Methylation + CNV + SNPs", 
-                "RNA-seq + miRNA + Methylation + CNV", "RNA-seq + miRNA + Methylation + SNPs", 
-                "RNA-seq + miRNA + CNV + SNPs", "RNA-seq + Methylation + CNV + SNPs", 
-                "miRNA + Methylation + CNV + SNPs", 
-                "RNA-seq + miRNA + Methylation + CNV + SNPs"),
-       fill=c("#33FF57", "#3357FF", "#FF5733", "#FF33A1", "#F3FF33", 
-              "#abcdef", "#123456", "#654321", "#fedcba", 
-              "#a1b2c3", "#b2c3d4", "#c3d4e5", 
-              "#d4e5f6", "#e5f6a7", "#f6a7b8", 
-              "#aabbcc", "#bbccdd", "#ccddee", 
-              "#ddeeff", "#eeffaa", "#ffaabb", 
-              "#aaffcc", "#bbffdd", "#ccffee", 
-              "#ffccaa", 
-              "#112233", "#223344", "#334455", 
-              "#445566", "#556677", "#667788", 
-              "black"),
-       cex=0.7,
-       box.lwd=1)
-
-dev.off()
 
 # Compare these iClusterBayes results with the iClusterBayes output from MOVICS ###
 load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
@@ -1748,17 +1449,14 @@ NMI_to_MOVICS_iClusterBayes = calculate_nmi_index(cluster_df1 = MOVICS_iClusterB
                                                      paste0("_", algorithm)))
 
 # Wrap up #####
-hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
-                       num_neighbors_max = max(num_neighbors_range),
-                       num_neighbors_step = neighbor_step,
-                       sigma_min = min(sigma_range),
-                       sigma_max = max(sigma_range),
-                       sigma_step = sigma_step,
-                       optimal_N = optN,
-                       optimal_sigma = optSigma,
-                       conclusion = conclusion, # if there is agreement, np_conclusion can also be used
-                       n_iter = n_iterations,
-                       feature_ranks_text = feature_ranks_text
+hyperparameters = list(sdev_values = c(0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.05),
+                       beta_var_scale_values = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 1.25,
+                                                  1.5, 2, 2.5, 3),
+                       thin = 3,
+                       pp_cutoff = 0.5,
+                       prior_gamma = rep(0.5, 5),
+                       n_burnin = 1200,
+                       n_draw = 1800
 )
 
 # Put all parameters in a list
