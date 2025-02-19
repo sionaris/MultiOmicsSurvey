@@ -166,19 +166,42 @@ iClusterBayes_clusters = as.data.frame(list(Cluster = optimal.fit$clusters)) %>%
 rownames(iClusterBayes_clusters) = iClusterBayes_clusters$Sample.ID
 
 # Feature selection #####
-features = alist()
-for (i in 1:length(input)) {
-  features[[i]] = colnames(input[[i]])
+# Collect feature names per dataset
+features <- alist()
+for (i in seq_along(input)) {
+  features[[i]] <- colnames(input[[i]])
 }
 
-sigfeatures=alist()
-for(i in 1:length(input)){
-  rowsum=apply(abs(optimal.fit$beta[[i]]),1, sum)
-  upper=quantile(rowsum,prob=0.75)
-  sigfeatures[[i]]=(features[[i]])[which(rowsum>upper)]
+# Build a "feature ranking" data frame
+featres <- data.frame()
+
+for (i in seq_along(input)) {
+  rowSumVal <- apply(abs(optimal.fit$beta[[i]]), 1, sum)
+  
+  ## Create a local data frame for the i-th dataset
+  tmpdf <- data.frame(
+    feature = features[[i]],
+    dataset = rep(names(input)[i], length(rowSumVal)), 
+    score   = rowSumVal,
+    stringsAsFactors = FALSE
+  )
+  tmpdf <- tmpdf[order(tmpdf$score, decreasing = TRUE), ]
+  
+  ## Rank each feature within the dataset
+  tmpdf$rank <- seq_len(nrow(tmpdf))
+  featres <- rbind(featres, tmpdf)
 }
 
-names(sigfeatures) = names(input)
+# Keep the top 25% quantile features per dataset
+featres_sig <- do.call(rbind, lapply(split(featres, featres$dataset), function(df) {
+  cutoff <- quantile(df$score, 0.75)  # 75th percentile
+  df_sub <- df[df$score > cutoff, ]
+  df_sub$rank_after_slice <- seq_len(nrow(df_sub))
+  df_sub
+}))
+
+openxlsx::write.xlsx(featres, "iClusterBayes_full_feature_ranking.xlsx")
+openxlsx::write.xlsx(featres_sig, "iClusterBayes_top0.25_feature_ranking.xlsx")
 
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
