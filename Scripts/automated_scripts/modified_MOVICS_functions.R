@@ -2196,51 +2196,55 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
     sig.mut <- as.character(out[which(as.numeric(out$pvalue) < 
                                         p.cutoff & as.numeric(out$padj) < p.adj.cutoff), 
                                 "Gene (Mutated)"])
-    onco_dat <- t(binarymut[rownames(annCol), sig.mut, drop = FALSE])
-    onco_dat[onco_dat == "Normal"] <- ""
-    onco_dat <- as.data.frame(onco_dat)
-    alter_fun = list(background = function(x, y, w, h) {
-      grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, 
-                                                          "mm"), gp = gpar(fill = bg.col, col = NA))
-    }, Mutated = function(x, y, w, h) {
-      grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, 
-                                                          "mm"), gp = gpar(fill = mut.col, col = NA))
-    })
-    col = c(Mutated = mut.col)
-    if (innerclust) {
-      sam.reorder <- c()
-      for (i in 1:n.moic) {
-        sam <- moic.res$clust.res[which(moic.res$clust.res$clust == 
-                                          i), "samID"]
-        tmp <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat[, 
-                                                        sam], get_type = function(x) x, alter_fun = alter_fun, 
-                                               col = col, remove_empty_columns = FALSE, show_pct = FALSE, 
-                                               bottom_annotation = NULL, top_annotation = NULL, 
-                                               show_heatmap_legend = FALSE))
-        sam.reorder <- c(sam.reorder, sam[tmp@column_order])
+    if (length(sig.mut) == 0) {
+      
+    } else {
+      onco_dat <- t(binarymut[rownames(annCol), sig.mut, drop = FALSE])
+      onco_dat[onco_dat == "Normal"] <- ""
+      onco_dat <- as.data.frame(onco_dat)
+      alter_fun = list(background = function(x, y, w, h) {
+        grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, 
+                                                            "mm"), gp = gpar(fill = bg.col, col = NA))
+      }, Mutated = function(x, y, w, h) {
+        grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, 
+                                                            "mm"), gp = gpar(fill = mut.col, col = NA))
+      })
+      col = c(Mutated = mut.col)
+      if (innerclust) {
+        sam.reorder <- c()
+        for (i in 1:n.moic) {
+          sam <- moic.res$clust.res[which(moic.res$clust.res$clust == 
+                                            i), "samID"]
+          tmp <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat[, 
+                                                                   sam], get_type = function(x) x, alter_fun = alter_fun, 
+                                                          col = col, remove_empty_columns = FALSE, show_pct = FALSE, 
+                                                          bottom_annotation = NULL, top_annotation = NULL, 
+                                                          show_heatmap_legend = FALSE))
+          sam.reorder <- c(sam.reorder, sam[tmp@column_order])
+        }
+        my_annotation = ComplexHeatmap::HeatmapAnnotation(df = annCol[sam.reorder, 
+                                                                      , drop = FALSE], col = annColors)
+        p <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat[, 
+                                                               sam.reorder], get_type = function(x) x, alter_fun = alter_fun, 
+                                                      col = col, remove_empty_columns = FALSE, column_order = sam.reorder, 
+                                                      show_pct = TRUE, bottom_annotation = my_annotation, 
+                                                      top_annotation = NULL, show_heatmap_legend = FALSE))
       }
-      my_annotation = ComplexHeatmap::HeatmapAnnotation(df = annCol[sam.reorder, 
-                                                                    , drop = FALSE], col = annColors)
-      p <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat[, 
-                                                    sam.reorder], get_type = function(x) x, alter_fun = alter_fun, 
-                                           col = col, remove_empty_columns = FALSE, column_order = sam.reorder, 
-                                           show_pct = TRUE, bottom_annotation = my_annotation, 
-                                           top_annotation = NULL, show_heatmap_legend = FALSE))
+      else {
+        my_annotation = ComplexHeatmap::HeatmapAnnotation(df = annCol, 
+                                                          col = annColors)
+        p <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat, get_type = function(x) x, 
+                                                      alter_fun = alter_fun, col = col, remove_empty_columns = FALSE, 
+                                                      column_order = colnames(onco_dat), show_pct = TRUE, 
+                                                      bottom_annotation = my_annotation, top_annotation = NULL, 
+                                                      show_heatmap_legend = FALSE))
+      }
+      pdf(file.path(fig.path, outFig), width = width, height = height)
+      draw(p)
+      invisible(dev.off())
+      draw(p)
+    } 
     }
-    else {
-      my_annotation = ComplexHeatmap::HeatmapAnnotation(df = annCol, 
-                                                        col = annColors)
-      p <- MOVICS:::quiet(ComplexHeatmap::oncoPrint(onco_dat, get_type = function(x) x, 
-                                           alter_fun = alter_fun, col = col, remove_empty_columns = FALSE, 
-                                           column_order = colnames(onco_dat), show_pct = TRUE, 
-                                           bottom_annotation = my_annotation, top_annotation = NULL, 
-                                           show_heatmap_legend = FALSE))
-    }
-    pdf(file.path(fig.path, outFig), width = width, height = height)
-    draw(p)
-    invisible(dev.off())
-    draw(p)
-  }
   return(out)
 }
 
