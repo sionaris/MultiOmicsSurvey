@@ -201,9 +201,9 @@ featres_sig <- do.call(rbind, lapply(split(featres, featres$dataset), function(d
 }))
 
 openxlsx::write.xlsx(featres, paste0("Results/single_algorithm/", algorithm, 
-                                     "iClusterBayes_full_feature_ranking.xlsx"))
+                                     "/iClusterBayes_full_feature_ranking.xlsx"))
 openxlsx::write.xlsx(featres_sig, paste0("Results/single_algorithm/", algorithm, 
-                                         "iClusterBayes_top0.25_feature_ranking.xlsx"))
+                                         "/iClusterBayes_top0.25_feature_ranking.xlsx"))
 
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
