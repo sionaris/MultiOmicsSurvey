@@ -1,14 +1,14 @@
 # Parameters
 dimensions = c(2:10)
 max.iters = c(20)
-init_flavors = c("snf")
-flavor_mods = c("glmnet")
+init_flavors = "snf"
+flavor_mods = "glmnet"
 
 r_script_template <- '
 suppressPackageStartupMessages(library(PintMF))
 
 # Load input data
-input = readRDS("PIntNMF_input.rds")
+input = readRDS("PIntMF_input.rds")
 
 RNGversion("4.2.2")
 set.seed(123)
@@ -16,10 +16,10 @@ set.seed(123)
 # Hyperparameter setup ###
 p = <ndim>
 max.it = <max.iter>
-init_flavor = <flav_init>
-flavor_mod = <flav_mod>
+init_flavor = "<flav_init>"
+flavor_mod = "<flav_mod>"
 
-# Run PIntNMF
+# Run PIntMF
 pintmf = SolveInt(
   Y=input, 
   p=p, 

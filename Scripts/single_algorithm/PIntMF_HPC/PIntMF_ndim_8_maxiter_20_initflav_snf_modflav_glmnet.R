@@ -2,7 +2,7 @@
 suppressPackageStartupMessages(library(PintMF))
 
 # Load input data
-input = readRDS("PIntNMF_input.rds")
+input = readRDS("PIntMF_input.rds")
 
 RNGversion("4.2.2")
 set.seed(123)
@@ -10,10 +10,10 @@ set.seed(123)
 # Hyperparameter setup ###
 p = 8
 max.it = 20
-init_flavor = snf
-flavor_mod = glmnet
+init_flavor = "snf"
+flavor_mod = "glmnet"
 
-# Run PIntNMF
+# Run PIntMF
 pintmf = SolveInt(
   Y=input, 
   p=p, 
