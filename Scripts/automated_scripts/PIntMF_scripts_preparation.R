@@ -46,7 +46,7 @@ slurm_script_template <- '#!/bin/bash
 #SBATCH --error=logs/PIntMF_ndim_<ndim>_maxiter_<max.iter>_initflav_<flav_init>_modflav_<flav_mod>.err
 #SBATCH --time=11:59:59
 #SBATCH --cpus-per-task=10
-#SBATCH --mem=100G
+#SBATCH --mem=500G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=as3582@cam.ac.uk
 

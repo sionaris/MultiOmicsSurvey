@@ -6,7 +6,7 @@
 #SBATCH --error=logs/PIntMF_ndim_3_maxiter_20_initflav_snf_modflav_glmnet.err
 #SBATCH --time=11:59:59
 #SBATCH --cpus-per-task=10
-#SBATCH --mem=100G
+#SBATCH --mem=500G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=as3582@cam.ac.uk
 

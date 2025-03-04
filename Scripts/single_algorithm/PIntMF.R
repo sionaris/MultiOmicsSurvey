@@ -16,7 +16,7 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 # Preamble
 home = getwd()
 algorithm = "PIntMF"
-alg_feature_pref = "rows" # Where does the algorithm expect the features to be
+alg_feature_pref = "cols" # Where does the algorithm expect the features to be
 citation = fetch_citation(algorithm = algorithm)
 data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
 data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
@@ -98,16 +98,16 @@ clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 # Export for HPC run
 saveRDS(input, "Resources/PIntMF_input.rds")
 
-# Setup #####
-priors = c("binary", rep("gaussian", 4))
-
-# Increase the future.globals.maxSize limit to 850 MiB
-# 850*1024^2 = 891289600
-options(future.globals.maxSize=850*1024^2)
-
-t1 = Sys.time()
-PIntMF = future.apply::future_lapply(2:10, function(p) {
-  SolveInt(Y=input, p=p, max.it=20, verbose=FALSE, init_flavor="snf", 
-           flavor_mod="glmnet")
-}, future.seed = 123L)
-dt = Sys.time() - t1
+# # Setup #####
+# priors = c("binary", rep("gaussian", 4))
+# 
+# # Increase the future.globals.maxSize limit to 850 MiB
+# # 850*1024^2 = 891289600
+# options(future.globals.maxSize=850*1024^2)
+# 
+# t1 = Sys.time()
+# PIntMF = future.apply::future_lapply(2:10, function(p) {
+#   SolveInt(Y=input, p=p, max.it=20, verbose=FALSE, init_flavor="snf", 
+#            flavor_mod="glmnet")
+# }, future.seed = 123L)
+# dt = Sys.time() - t1
