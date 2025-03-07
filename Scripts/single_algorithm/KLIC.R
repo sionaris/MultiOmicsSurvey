@@ -1515,7 +1515,7 @@ for (i in 1:length(voi_sig)) {
   chifit = output
   loc = which(grepl(voi_sig[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  KLIC_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
+  KLIC_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi_sig[i],
                                                   chifit = chifit,
                                                   na.action = "na.omit",
                                                   algorithm = algorithm,
@@ -1546,7 +1546,7 @@ ggarrange(KLIC_barcharts_sig[[1]], KLIC_barcharts_sig[[2]], KLIC_barcharts_sig[[
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 5500, height = 9500, device = 'png', units = "px",
+       width = 2300, height = 7000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
