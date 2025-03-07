@@ -201,422 +201,83 @@ weights = cont_weights
 weights[["SNPs"]] = bin_weights
 weights = weights[names(input)]
 
+# Distance methods
+distance_methods = c("binary", rep("sqeuclidean", 4)) # square Euclidean is the default
+
 # Optimal number of clusters
 RNGversion("4.2.2")
 set.seed(123)
-num_results=CIMLR_Estimate_Number_of_Clusters_weight(input,
+num_results = CIMLR_Estimate_Number_of_Clusters_weight_mod(input,
                                                      NUMC = 2:10,
                                                      cores.ratio = 0,
-                                                     weight = weights)
+                                                     weight = weights,
+                                                     methods = distance_methods)
 
-Estimate_num=which.min(num_results$K1)+1
+optk = which.min(num_results$K1) + 1
 
-#perform the CIMLR.weight clustering algorithm
-cluster_results=CIMLR.weight(X = input, c = Estimate_num,
+# perform the CIMLR.weight clustering algorithm
+t1 = Sys.time()
+cluster_results = CIMLR.weight_mod(X = input, c = optk,
                              cores.ratio = 0,
-                             weight=weights)
+                             weight = weights,
+                             methods = distance_methods)
+dt = Sys.time() - t1 # ~4.5 mins
 
+# Computing the multiple Kernels.
+# Performing network diffusion.
+# Iteration:  1 
+# Iteration:  2 
+# Iteration:  3 
+# Iteration:  4 
+# Iteration:  5 
+# Iteration:  6 
+# Iteration:  7 
+# Iteration:  8 
+# Iteration:  9 
+# Iteration:  10 
+# Performing t-SNE.
+# Epoch: Iteration # 100  error is:  0.1322815 
+# Epoch: Iteration # 200  error is:  0.1085342 
+# Epoch: Iteration # 300  error is:  0.09815787 
+# Epoch: Iteration # 400  error is:  0.09284991 
+# Epoch: Iteration # 500  error is:  0.0898325 
+# Epoch: Iteration # 600  error is:  0.08782597 
+# Epoch: Iteration # 700  error is:  0.08635315 
+# Epoch: Iteration # 800  error is:  0.08519087 
+# Epoch: Iteration # 900  error is:  0.0842451 
+# Epoch: Iteration # 1000  error is:  0.08344559 
+# Performing Kmeans.
+# Performing t-SNE.
+# Epoch: Iteration # 100  error is:  11.36326 
+# Epoch: Iteration # 200  error is:  0.2706709 
+# Epoch: Iteration # 300  error is:  0.2124627 
+# Epoch: Iteration # 400  error is:  0.1993325 
+# Epoch: Iteration # 500  error is:  0.1940114 
+# Epoch: Iteration # 600  error is:  0.1905818 
+# Epoch: Iteration # 700  error is:  0.1881677 
+# Epoch: Iteration # 800  error is:  0.1863444 
+# Epoch: Iteration # 900  error is:  0.1849099 
+# Epoch: Iteration # 1000  error is:  0.1837464 
 
-# Setup ###
-# Hyperparameter tuning
-neighbor_step = 5
-num_neighbors_range = seq(10, 50, neighbor_step) # number of neighbors, usually (10~30)
-gc()
+# The function returns a list of objects
+# y / y_spectral: Two different final cluster assignments of the data. y is kmeans, y_spectral is spectral
+# S: Learned similarity matrix from all kernels. Final affinity matrix
+# F: Final t-SNE embedding in user-specified dimension(s).
+# ydata: Another t-SNE embedding, typically 2D for plotting.
+# alphaK: Learned weights that combine the multiple kernel matrices.
+# execution.time: Runtime measurement.
+# converge: Convergence metric across iterations.
+# LF: Final eigenvector-based embedding from the Laplacian.
 
-# Similarity matrices ###
-# Parallelization occurs already within the function. We do not parallelize further
-library(Matrix)
-library(parallel)
-similarity_object = list()
-for (nn in num_neighbors_range) {
-  similarity_object[[paste0("NN = ", nn)]] = wMKL_mod(X = input, c = ground_truth_k, 
-                                                      k = nn, binary_flags = c("Yes", "No", "No", "No", "No"),
-                                                      binary_distance = "binary", nonbinary_distance = "sqeuclidean", cores.ratio = 0.25)
-}
-rm(nn)
-
-# Compare similarity matrices similarly to what we did to SNF
-sim_matrices_S = lapply(similarity_object, function(x) x[["S"]])
-D2_matrices_F = lapply(similarity_object, function(x) x[["F"]])
-names(sim_matrices_S) = names(D2_matrices_F) = names(similarity_object)
-
-# Check similarities for a given nn
-S_similarities = compute_matrix_similarity(sim_matrices_S)
-dimnames(S_similarities$Frobenius) = dimnames(S_similarities$Pearson) =
-  list(names(similarity_object), names(similarity_object))
-
-# Examine Pearson matrices ###
-S_Pearson_matrix <- S_similarities$Pearson
-S_Frobenius_matrix <- S_similarities$Frobenius
-
-S_Pearson_values <- S_Pearson_matrix[lower.tri(S_Pearson_matrix, diag = FALSE)]
-S_mean_Pearson_value <- mean(S_Pearson_values)
-S_median_Pearson_value <- median(S_Pearson_values)
-S_sd_Pearson_value <- sd(S_Pearson_values)
-
-S_Frobenius_values <- S_Frobenius_matrix[lower.tri(S_Frobenius_matrix, diag = FALSE)]
-S_mean_Frobenius_value <- mean(S_Frobenius_values)
-S_median_Frobenius_value <- median(S_Frobenius_values)
-S_sd_Frobenius_value <- sd(S_Frobenius_values)
-
-# Plot histogram of Pearson values
-library(ggplot2)
-ggplot(data = data.frame(S_Pearson_values), aes(x = S_Pearson_values)) +
-  geom_histogram(breaks = seq(0, 1, length.out = 37),
-                 fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
-  geom_vline(aes(xintercept = S_mean_Pearson_value, color = "Mean"), linewidth = 0.2) + 
-  geom_vline(aes(xintercept = S_median_Pearson_value, color = "Median"), linewidth = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Pearson_value - S_sd_Pearson_value, color = "Mean - SD"), 
-             linetype = "dashed", linewidth = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Pearson_value + S_sd_Pearson_value, color = "Mean + SD"), 
-             linetype = "dashed", linewidth = 0.2) +
-  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
-                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
-                                                "Density" = "darkblue")) +
-  labs(title = expression(bold(paste("Histogram of Pearson values between ",
-                                     "S matrices for different values of Nearest Neighbors"))), 
-       x = "S Matrix Pearson Values", y = "Frequency") +
-  scale_x_continuous(name = "S Matrix Pearson Values", limits = c(0, 1),
-                     breaks = seq(0, 1, 0.1), expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(panel.background = element_blank(),
-        axis.line = element_line(linewidth = 0.25),
-        plot.title = element_text(face = "bold", size = 6.3),
-        axis.title = element_text(face = "bold", size = 5.8),
-        axis.text = element_text(size = 5),
-        axis.ticks = element_line(linewidth = 0.2),
-        legend.text = element_text(size = 4.5),
-        legend.title = element_text(size = 5, face = "bold"),
-        legend.key.spacing.y = unit(1, "mm"),
-        legend.key.size = unit(0.25, "cm"),
-        legend.box.background = element_rect(color = "black"))
-ggsave(filename = paste0(algorithm, "_S_matrix_Pearson_similarity_histogram.pdf"),
-       path = paste0(home, 
-                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 2880, height = 1820, device = 'pdf', units = "px",
-       dpi = 700)
-dev.off()
-
-# Plot histogram of Frobenius values
-ggplot(data = data.frame(S_Frobenius_values), aes(x = S_Frobenius_values)) +
-  geom_histogram(breaks = seq(0, 2, length.out = 37),
-                 fill = "skyblue", color = "lightblue", size = 0.15) +
-  stat_density(aes(color = "Density"), geom = "line", size = 0.4) +
-  geom_vline(aes(xintercept = S_mean_Frobenius_value, color = "Mean"), size = 0.2) + 
-  geom_vline(aes(xintercept = S_median_Frobenius_value, color = "Median"), size = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Frobenius_value - S_sd_Frobenius_value, color = "Mean - SD"), 
-             linetype = "dashed", size = 0.2) + 
-  geom_vline(aes(xintercept = S_mean_Frobenius_value + S_sd_Frobenius_value, color = "Mean + SD"), 
-             linetype = "dashed", size = 0.2) +
-  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
-                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
-                                                "Density" = "darkblue")) +
-  labs(title = expression(bold(paste("Histogram of Frobenius values between ",
-                                     "S matrices for different values of Nearest Neighbors"))), 
-       x = "S Matrix Frobenius Values", y = "Frequency") +
-  scale_x_continuous(name = "S Matrix Frobenius Values", limits = c(0, 2),
-                     breaks = seq(0, 2, 0.2), expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(panel.background = element_blank(),
-        axis.line = element_line(linewidth = 0.25),
-        plot.title = element_text(face = "bold", size = 6.3),
-        axis.title = element_text(face = "bold", size = 5.8),
-        axis.text = element_text(size = 5),
-        axis.ticks = element_line(linewidth = 0.2),
-        legend.text = element_text(size = 4.5),
-        legend.title = element_text(size = 5, face = "bold"),
-        legend.key.spacing.y = unit(1, "mm"),
-        legend.key.size = unit(0.25, "cm"),
-        legend.box.background = element_rect(color = "black"))
-ggsave(filename = paste0(algorithm, "_S_matrix_Frobenius_similarity_histogram.pdf"),
-       path = paste0(home, 
-                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 2880, height = 1820, device = 'pdf', units = "px",
-       dpi = 700)
-dev.off()
-
-# Evidently, Pearson correlations are on the lower extreme and Frobenius norms are high
-conclusion1 = paste0("Average Pearson similarity across S matrices produced by different values of $nn'$ was ",
-                     S_mean_Pearson_value, ", which indicates generally ",
-                     ifelse(S_mean_Pearson_value < 0.75, "dissimilar", "similar"),
-                     " S matrices across $nn'$ values.")
-
-# Handle sig_status_final
-if (S_mean_Pearson_value > 0.75) {
-  sig_status_final = FALSE
-} else {
-  sig_status_final = TRUE
-}
-
-# If no significant differences are shown between/across hyperparameters then pick median values
-if (!sig_status_final){
-  optNN = 15 # arbitrary, but yielded good results in SNF
-}
-
-# # We then choose the nn value for which the
-# # fused similarity matrix has the "best" bimodal distribution of low and high values.
-# 
-# # We combine two methodologies to do it:
-# 
-# # 1. Get the sum of variance and IQR for every matrix
-# # 2. Get the sum of absolute skewness and kurtosis
-# # 3. Find the nn matrix for which the sum of 1 and 2 is maximum
-# 
-# # Skewness and kurtosis
-# library(e1071)
-# contrast_list <- choose_matrix_contrasts(sim_matrices_S)
-# skewness_kurtosis_list <- choose_matrix_skewness_kurtosis(sim_matrices_S)
-# contrast_values <- unlist(contrast_list)
-# skewness_kurtosis_values <- unlist(skewness_kurtosis_list)
-# 
-# # Normalize the contrast values and skewness-kurtosis values
-# normalized_contrast <- minmax_normalize_values(contrast_values)
-# normalized_skewness_kurtosis <- minmax_normalize_values(skewness_kurtosis_values)
-# 
-# # Get the sum
-# combined_scores <- normalized_contrast + normalized_skewness_kurtosis
-# combined_scores_list <- setNames(as.list(combined_scores), names(contrast_list))
-# print(combined_scores_list)
-# 
-# best_combined_matrix <- names(combined_scores_list)[which.max(combined_scores)]
-# cat("Best similarity matrix based on combined normalized scores:", best_combined_matrix, "\n")
-# 
-# # We choose nn = 20
-# optNN = as.numeric(substr(best_combined_matrix, 6, 7))
-
-# This process results in optNN = 20
-# We consider the full approach below to see if it made sense
-# Update, the best clustering  is for NN = 15, although several values for k
-# were significant for NN = 20, consistently in the top 10
-
-# M3C k-means clustering ###
-library(M3C)
-
-# Import resources
-scheme = readRDS("Resources/scheme.rds")
-annCol = scheme$annCol
-annColors = scheme$annColors
-cluster_colors = scheme$clust.colors
-col.list = scheme$col.list
-var2comp = scheme$var2comp
-rm(scheme); gc()
-
-# Here we create a class column for ER status
-m3c_des = annCol
-m3c_des$class = m3c_des$`ER status`
-m3c_des$ID = rownames(m3c_des)
-
-# Run a loop of M3C for all results. In the end pick the one that achieves the
-# best combo of entropy, RCSI, p-value
-
-M3C_clusterings = list()
-for (i in 1:length(similarity_object)) {
-  m3c_input = t(similarity_object[[i]]$F) %>% as.data.frame()
-  rownames(m3c_input) = c("t_SNE1", "t_SNE2")
-  colnames(m3c_input) = colnames(input[["SNPs"]])
-  
-  RNGversion("4.2.2")
-  M3C_clusterings[[names(similarity_object)[i]]] = M3C(m3c_input, des = m3c_des,
-                                                       iters = 100, repsref = 250, 
-                                                       repsreal = 250, seed = 123, fsize = 18, lthick = 2, dotsize = 1.25,
-                                                       clusteralg = "km", maxK = 10)
-  cat("Done with", names(similarity_object)[i], ".", "\n")
-}
-
-# console logs:
-# NN = 10, optimal K: 8
-# NN = 15, optimal K: 2
-# NN = 20, optimal K: 3
-# NN = 25, optimal K: 5
-# NN = 30, optimal K: 6
-# NN = 35, optimal K: 5
-# NN = 40, optimal K: 5
-# NN = 45, optimal K: 5
-# NN = 50, optimal K: 8
-
-# Inspection of clustering results #####
-scores_df = as.data.frame(cbind(list(NN = sort(rep(paste0("NN = ", seq(10, 50, 5)), 9))), 
-                                rbind(M3C_clusterings[["NN = 10"]][["scores"]],
-                                      M3C_clusterings[["NN = 15"]][["scores"]],
-                                      M3C_clusterings[["NN = 20"]][["scores"]],
-                                      M3C_clusterings[["NN = 25"]][["scores"]],
-                                      M3C_clusterings[["NN = 30"]][["scores"]],
-                                      M3C_clusterings[["NN = 35"]][["scores"]],
-                                      M3C_clusterings[["NN = 40"]][["scores"]],
-                                      M3C_clusterings[["NN = 45"]][["scores"]],
-                                      M3C_clusterings[["NN = 50"]][["scores"]])))
-
-# RCSI plot
-rcsi = ggplot(scores_df, aes(x = K, y = RCSI, group = NN, color = factor(NN)))+
-  geom_line(linewidth = 0.3*2)+
-  # geom_errorbar(aes(ymin = RCSI - RCSI_SE,
-  #                   ymax = RCSI + RCSI_SE,
-  #                   color = "grey"), width = 0.05, linewidth = 0.1*2)+
-  geom_point(size = 1)+
-  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
-  scale_y_continuous(limits = c(min(scores_df$RCSI - scores_df$RCSI_SE) - 0.15, 
-                                max(scores_df$RCSI + scores_df$RCSI_SE) + 0.15), 
-                     breaks = c(-rev(seq(0, abs(round(min(scores_df$RCSI - scores_df$RCSI_SE), 1)), 0.5)), 
-                                seq(0, round(max(scores_df$RCSI + scores_df$RCSI_SE), 1), 0.5)))+
-  scale_colour_manual(values=rcartocolor::carto_pal(n = 9, "Safe"), name="NN") +
-  theme(plot.title = element_text(size = 5*2, face = "bold"),
-        axis.title.x = element_text(size = 4*2, face = "bold"),
-        axis.title.y = element_text(size = 4*2, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15*2),
-        axis.text.x = element_text(size = 4*2),
-        axis.text.y = element_text(size = 4*2),
-        legend.position = "right",
-        legend.text = element_text(size = 5),
-        legend.title = element_text(face = "bold", size = 6.5, hjust = 0.5),
-        legend.key.spacing = unit(2, "mm"),
-        panel.background = element_rect(fill = "white", 
-                                        colour = "white"),
-        panel.grid = element_blank(),
-        axis.line = element_line(linewidth = 0.2*2))+
-  labs(title = "RCSI vs. number of clusters K for different NN values",
-       x = "K", y = "RCSI")
-rcsi
-ggsave(filename = "RCSI.pdf",
-       path = "Results/single_algorithm/wMKL", 
-       width = 140, height = 100, device = 'pdf', units = "mm",
-       dpi = 350)
-dev.off()
-
-# Statistical significance of clusters
-library(ggnewscale)
-statsig_clust = ggplot(scores_df, aes(x = K, y = P_SCORE, color = factor(NN)))+
-  geom_point(size = 1.5*2, alpha = 0.6)+
-  scale_color_manual(values=c(rcartocolor::carto_pal(n = 9, "Safe")),
-                     name="NN") +
-  new_scale("color") +
-  geom_hline(linetype = "dashed", linewidth = 0.2*2,
-             aes(yintercept = -log10(0.05), color = "grey40"))+
-  scale_color_manual(values="grey40", labels = expression(-log[10]("0.05")),
-                     name="Statistical \nsignificance") +
-  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
-  scale_y_continuous(limits = c(min(scores_df$P_SCORE) - 0.15, 
-                                max(scores_df$P_SCORE) + 0.15), 
-                     breaks = seq(0, max(scores_df$P_SCORE) + 0.1, 1))+
-  theme_bw()+
-  theme(plot.title = element_text(size = 5*2, face = "bold"),
-        axis.title.x = element_text(size = 4*2, face = "bold"),
-        axis.title.y = element_text(size = 4*2, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15*2),
-        axis.text.x = element_text(size = 4*2),
-        axis.text.y = element_text(size = 4*2),
-        legend.position = "right",
-        legend.text = element_text(size = 5),
-        legend.title = element_text(face = "bold", size = 6.5, hjust = 0.5),
-        legend.key.spacing = unit(2, "mm"),
-        panel.background = element_rect(fill = "white", 
-                                        colour = "white"),
-        panel.grid = element_blank(),
-        axis.line = element_line(linewidth = 0.2*2))+
-  labs(title = "Statistical significance of different values of K",
-       y = bquote(bold(-log[10]("p"))))
-statsig_clust
-ggsave(filename = "Stat_Sig.pdf",
-       path = "Results/single_algorithm/wMKL", 
-       width = 140, height = 100, device = 'pdf', units = "mm",
-       dpi = 350)
-dev.off()
-
-# Entropy
-entropy = ggplot(scores_df, aes(x = K, y = ENTROPY_REAL, alpha = 0.85, 
-                                group = NN, color = factor(NN)))+
-  geom_line(linewidth = 0.6)+
-  geom_point(size = 1) +
-  scale_x_continuous(limits = c(1.9, 10.1), breaks = seq(2, 10, 1))+
-  scale_y_continuous(limits = c(0, 100000), breaks = seq(0, 100000, 10000),
-                     labels = scales::label_comma()) +
-  scale_colour_manual(values=rcartocolor::carto_pal(n = 9, "Safe"), name="NN") +
-  theme_bw()+
-  theme(panel.border = element_rect(linewidth = 0.2*2),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(size = 5*2, face = "bold", vjust = 0.5, hjust = 0.5),
-        legend.title = element_text(face = "bold", size = 4*2, hjust = 0.5),
-        legend.text = element_text(size = 3*2),
-        legend.key.size = unit(0.2*2, "cm"),
-        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
-        legend.spacing.y = unit(0.5*2, units = "mm"),
-        axis.title.x = element_text(size = 4*2, face = "bold"),
-        axis.title.y = element_text(size = 4*2, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15*2),
-        axis.text.x = element_text(size = 4*2),
-        axis.text.y = element_text(size = 4*2))+
-  labs(y = "Entropy",
-       x = "K",
-       title = "Entropy in Real Data")+
-  guides(alpha = "none")
-entropy
-ggsave(filename = "Entropy.pdf",
-       path = "Results/single_algorithm/wMKL", 
-       width = 140, height = 100, device = 'pdf', units = "mm",
-       dpi = 350)
-dev.off()
-
-# Determine the best clustering based on p-value filtering and then examining the RCSI
-# Entropy is biased for higher K
-best_clusterings = scores_df[scores_df$NORM_P < 0.05, ] %>%
-  dplyr::arrange(desc(RCSI))
-
-# According to these criteria the best clustering is:
-print(best_clusterings[1, ]) # NN = 15, K = 2, very low entropy (low reference too though), borderline p-value, very high RCSI
-
-# Determine optNN
-optNN = as.numeric(substr(best_clusterings$NN[1], 6, 8))
-conclusion2 = paste0("Best similarity matrix based on statistical significance and RCSI is for $nn' = ", 
-                     optNN, "$. We therefore proceed with $nn' = ",
-                     optNN, "$.")
-conclusion = paste(conclusion1, conclusion2)
-
-# Exploratory plot of the results
-assignments = as.data.frame(M3C_clusterings[[best_clusterings$NN[1]]]$realdataresults[[2]]$assignments) %>%
-  tibble::rownames_to_column(var = "Sample.ID")
-colnames(assignments)[2] = "Cluster"
-cluster_DF = as.data.frame(similarity_object[[best_clusterings$NN[1]]]$F) %>%
-  mutate(Sample.ID = colnames(input$SNPs)) %>% # add Sample ID's in order
-  inner_join(assignments, by = "Sample.ID") %>%
-  dplyr::rename(t_SNE1 = V1, t_SNE2 = V2)
-cluster_DF$Cluster = paste0("wMKL", cluster_DF$Cluster)
-cluster_scatter = ggplot(data = cluster_DF, aes(x = t_SNE1, y = t_SNE2, group = Cluster,
-                                                color = factor(Cluster))) +
-  geom_point(size = 1) +
-  scale_color_manual(values=c(rcartocolor::carto_pal(n = 12, "Safe")[1:2]),
-                     name="Cluster") +
-  theme_bw()+
-  theme(plot.title = element_text(size = 5*2, face = "bold"),
-        axis.title.x = element_text(size = 4*2, face = "bold"),
-        axis.title.y = element_text(size = 4*2, face = "bold"),
-        axis.ticks = element_line(linewidth = 0.15*2),
-        axis.text.x = element_text(size = 4*2),
-        axis.text.y = element_text(size = 4*2),
-        legend.position = "right",
-        legend.text = element_text(size = 8),
-        legend.title = element_text(face = "bold", size = 6.5, hjust = 0.5),
-        legend.key.spacing = unit(2, "mm"),
-        panel.background = element_rect(fill = "white", 
-                                        colour = "white"),
-        panel.grid = element_blank(),
-        axis.line = element_line(linewidth = 0.2*2))+
-  labs(title = paste0("Cluster scatter plot for ", best_clusterings$NN[1],
-                      " and K = ", best_clusterings$K[1]),
-       x = "t-SNE1", y = "t-SNE2")
-cluster_scatter
-ggsave(filename = "Cluster_scatter.pdf",
-       path = "Results/single_algorithm/wMKL", 
-       width = 140, height = 100, device = 'pdf', units = "mm",
-       dpi = 350)
-dev.off()
+# Our clustering assignments are the y_spectral in this case
+wMKL_clusters = as.data.frame(list(Sample.ID = colnames(input$SNPs),
+                                   Cluster = cluster_results$y_spectral))
+wMKL_clusters$Sample.ID = gsub("\\.", "-", wMKL_clusters$Sample.ID)
+rownames(wMKL_clusters) = wMKL_clusters$Sample.ID
 
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
-wMKL_clusters = cluster_DF %>% dplyr::select(Sample.ID, Cluster)
-wMKL_clusters$Sample.ID = gsub("\\.", "-", wMKL_clusters$Sample.ID)
-rownames(wMKL_clusters) = wMKL_clusters$Sample.ID
 
 # Calculate ARI and NMI
 library(mclust)
@@ -636,13 +297,15 @@ NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
                                     suffixes = c("_MOVICS_CS",
                                                  paste0("_", algorithm)))
 
-# Very low statistics when compared to the MOVICS. Results differ
+# Low to moderate statistics; slightly similar results; NMI might be biased due to a large
+# number of clusters in wMKL
 
 # Import coloring scheme
 scheme = readRDS("Resources/scheme.rds")
 annCol = scheme$annCol
 annColors = scheme$annColors
-cluster_colors = scheme$clust.colors
+cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
+                   "#FFA5AB", "#011627", "#023E8A", "#9D4EDD")
 col.list = scheme$col.list
 var2comp = scheme$var2comp %>%
   dplyr::select(-`Consensus Subtype`) %>%
@@ -657,8 +320,46 @@ rm(scheme); gc()
 # Silhouette
 library(MOVICS)
 library(cluster)
-silhouette = silhouette(as.integer(gsub("wMKL", "", cluster_DF$Cluster)),
-                        dist = Rfast::Dist(cluster_DF[, grep("t_SNE", colnames(cluster_DF))],
+
+# Extract the eign-space in which spectral clustering takes place under the hood
+# in wMKL:::spectralClustering
+extract_eigenspace = function (affinity, K, type = 3) 
+{
+  d <- rowSums(affinity)
+  d[d == 0] <- .Machine$double.eps
+  D <- diag(d)
+  L <- D - affinity
+  if (type == 1) {
+    NL <- L
+  }
+  else if (type == 2) {
+    Di <- diag(1/d)
+    NL <- Di %*% L
+  }
+  else if (type == 3) {
+    Di <- diag(1/sqrt(d))
+    NL <- Di %*% L %*% Di
+  }
+  eig <- eigen(NL)
+  res <- sort(abs(eig$values), index.return = TRUE)
+  U <- eig$vectors[, res$ix[1:K]]
+  normalize <- function(x) x/sqrt(sum(x^2))
+  if (type == 3) {
+    U <- t(apply(U, 1, normalize))
+  }
+  eigDiscrete <- wMKL:::.discretisation(U)
+  eigDiscrete <- eigDiscrete$discrete
+  labels <- apply(eigDiscrete, 1, which.max)
+  return(list(labels = labels, U = U, eigDiscrete = eigDiscrete))
+}
+
+U = extract_eigenspace(affinity = cluster_results$S, K = optk)$U
+rownames(U) = colnames(input$SNPs)
+colnames(U) = paste0("eig", seq(1, optk, 1))
+U = as.data.frame(U)
+
+silhouette = silhouette(as.integer(wMKL_clusters$Cluster),
+                        dist = Rfast::Dist(U,
                                            method = "euclidean"))
 
 getSilhouette_ggplot(sil      = silhouette,
@@ -687,8 +388,7 @@ plotdata = getStdiz(
 )
 
 plot_object = list(clust.res = wMKL_clusters %>%
-                     dplyr::rename(samID = Sample.ID, clust = Cluster) %>%
-                     dplyr::mutate(clust = gsub(algorithm, "", clust)))
+                     dplyr::rename(samID = Sample.ID, clust = Cluster))
 
 # Export consensus clustering object
 clust = as.data.frame(plot_object$clust.res)
@@ -773,11 +473,11 @@ clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          tab.name = "Summary_of_clinical_variables",
                                          res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                          output_pdf = TRUE,
-                                         pdf_level_col_width = c("7em", "10em"),
-                                         pdf_count_col_width = "10em",
+                                         pdf_level_col_width = c("3em", "3em"),
+                                         pdf_count_col_width = "5em",
                                          pdf_pval_col_width = "3em",
-                                         pdf_test_col_width = "8em",
-                                         pdf_tab_font_size = 9)
+                                         pdf_test_col_width = "3em",
+                                         pdf_tab_font_size = 7)
 
 clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
                                                          moic.res = plot_object,
@@ -793,11 +493,11 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                          output_pdf = TRUE,
                                                          pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
-                                                         pdf_level_col_width = c("7em", "10em"),
-                                                         pdf_count_col_width = "10em",
+                                                         pdf_level_col_width = c("3em", "3em"),
+                                                         pdf_count_col_width = "5em",
                                                          pdf_pval_col_width = "3em",
-                                                         pdf_test_col_width = "8em",
-                                                         pdf_tab_font_size = 9)
+                                                         pdf_test_col_width = "3em",
+                                                         pdf_tab_font_size = 7)
 
 # Oncoprint ###
 oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
@@ -817,7 +517,9 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                                             "_oncoprint"),
                                       tab.name     = "Independent test between subtype and mutation",
                                       fig.path     = paste0(home, "/Results/single_algorithm/", algorithm),
-                                      res.path     = paste0(home, "/Results/single_algorithm/", algorithm))
+                                      res.path     = paste0(home, "/Results/single_algorithm/", algorithm),
+                                      test.method = "chisq" # large number of groups
+                                      )
 
 # Drug sensitivity comparison ###
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
@@ -830,6 +532,8 @@ drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
                                                  test.method = "nonparametric", # statistical testing method
                                                  prefix      = "Violin_plot_of_IC50",
                                                  seed = 123,
+                                                 width = 10,
+                                                 height = 10,
                                                  fig.path = paste0(home, "/Results/single_algorithm/", algorithm))
 
 # Agreement with other subtypes ###
@@ -844,7 +548,6 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
                                                 width     = 12)
 dev.off()
 
-# DGEA ###
 # DGEA ###
 dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                   expr = plotdata$RNAseq,
@@ -872,7 +575,7 @@ dgea.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                              norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
                                              annCol        = annCol, # sample annotation in heatmap
                                              annColors     = annColors, # colors for sample annotation
-                                             show_rownames = TRUE, # show no rownames (biomarker name)
+                                             show_rownames = FALSE, # show no rownames (biomarker name)
                                              centerFlag = F,
                                              scaleFlag = F,
                                              halfwidth = 3,
@@ -899,14 +602,14 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                norm.expr     = plotdata$RNAseq, # use normalized expression as heatmap input
                                                annCol        = annCol, # sample annotation in heatmap
                                                annColors     = annColors, # colors for sample annotation
-                                               show_rownames = TRUE, # show no rownames (biomarker name)
+                                               show_rownames = FALSE, # show no rownames (biomarker name)
                                                centerFlag = F,
                                                scaleFlag = F,
                                                halfwidth = 3,
                                                fig.name      = "downregulated_biomarkers_heatmap",
                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
-                                               height = 12,
+                                               height = 18,
                                                fontsize_row = 3,
                                                name = "normalized RNA-seq")
 dev.off()
@@ -938,7 +641,7 @@ methyl.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
                                                annCol        = annCol, # sample annotation in heatmap
                                                annColors     = annColors, # colors for sample annotation
-                                               show_rownames = TRUE, # show no rownames (biomarker name)
+                                               show_rownames = FALSE, # show no rownames (biomarker name)
                                                centerFlag = F,
                                                scaleFlag = F,
                                                halfwidth = 3,
@@ -965,7 +668,7 @@ methyl.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                  norm.expr     = plotdata$Methylation, # use normalized expression as heatmap input
                                                  annCol        = annCol, # sample annotation in heatmap
                                                  annColors     = annColors, # colors for sample annotation
-                                                 show_rownames = TRUE, # show no rownames (biomarker name)
+                                                 show_rownames = FALSE, # show no rownames (biomarker name)
                                                  centerFlag = F,
                                                  scaleFlag = F,
                                                  halfwidth = 3,
@@ -1004,7 +707,7 @@ miRNA.marker.up <- runMarker_single_algorithm(algorithm_name = algorithm,
                                               norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
                                               annCol        = annCol, # sample annotation in heatmap
                                               annColors     = annColors, # colors for sample annotation
-                                              show_rownames = TRUE, # show no rownames (biomarker name)
+                                              show_rownames = FALSE, # show no rownames (biomarker name)
                                               centerFlag = F,
                                               scaleFlag = F,
                                               halfwidth = 3,
@@ -1031,7 +734,7 @@ miRNA.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                 norm.expr     = plotdata$miRNA, # use normalized expression as heatmap input
                                                 annCol        = annCol, # sample annotation in heatmap
                                                 annColors     = annColors, # colors for sample annotation
-                                                show_rownames = TRUE, # show no rownames (biomarker name)
+                                                show_rownames = FALSE, # show no rownames (biomarker name)
                                                 centerFlag = F,
                                                 scaleFlag = F,
                                                 halfwidth = 3,
@@ -1059,7 +762,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                             norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                             dirct        = "up", # direction of dysregulation in pathway
-                                            n.path       = 20,
+                                            n.path       = 10,
                                             p.cutoff     = 0.05, # p cutoff to identify significant pathways
                                             p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                             gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -1070,7 +773,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             minGSSize = 10,
                                             maxGSSize = 500,
                                             fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                            width = 14, height = 12)
+                                            width = 14, height = 20)
 
 # GSEA down-regulated
 RNGversion("4.2.2")
@@ -1084,7 +787,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                               norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                               dirct        = "down", # direction of dysregulation in pathway
-                                              n.path       = 20,
+                                              n.path       = 10,
                                               p.cutoff     = 0.05, # p cutoff to identify significant pathways
                                               p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                               gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -1095,7 +798,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               minGSSize = 10,
                                               maxGSSize = 500,
                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                              width = 14, height = 12)
+                                              width = 14, height = 20)
 
 # Gene set variation analysis #####
 # locate ABSOLUTE path of gene set file
@@ -1218,7 +921,7 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
   }
 }
 
-timestamp() # ~2.5 mins
+timestamp() # ~2 mins
 stopCluster(cl)
 gc()
 names(hclust_output) <- names(hclust_input)
@@ -1240,9 +943,9 @@ saveWorkbook(wb, file = paste0(home, "/Results/single_algorithm/", algorithm, "/
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
-                                                present_clusters = c("wMKL1", "wMKL2"),
+                                                present_clusters = c(paste0("wMKL", seq(1, optk, 1))),
                                                 representative = TRUE, moic.res = plot_object,
-                                                subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
+                                                subtype_prefix = algorithm, n.path = 10, msigdb.path = MSIGDB.FILE,
                                                 norm.method = "mean", dirct = "up",
                                                 fig.name = "upregulated_pathway_heatmap",
                                                 name = "GSVA scores",
@@ -1251,9 +954,9 @@ hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl
 
 hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
                                                   norm.expr = plotdata$RNAseq, 
-                                                  present_clusters = c("wMKL1", "wMKL2"),
+                                                  present_clusters = c(paste0("wMKL", seq(1, optk, 1))),
                                                   representative = TRUE, moic.res = plot_object,
-                                                  subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
+                                                  subtype_prefix = algorithm, n.path = 10, msigdb.path = MSIGDB.FILE,
                                                   norm.method = "mean", dirct = "down",
                                                   fig.name = "downregulated_pathway_heatmap",
                                                   name = "GSVA scores",
@@ -1263,7 +966,7 @@ hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[gre
 # Fraction Genome Altered ###
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
 
-fga.SNF <- compFGA_optimized(moic.res     = plot_object,
+fga.wMKL <- compFGA_optimized(moic.res     = plot_object,
                              segment      = fga_df,
                              iscopynumber = TRUE, 
                              test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -1275,7 +978,7 @@ fga.SNF <- compFGA_optimized(moic.res     = plot_object,
                              clust.col = cluster_colors,
                              title = paste0(algorithm, " FGA plot: simple criteria"))
 
-fga.SNF.COSMIC <- compFGA_optimized(moic.res     = plot_object,
+fga.wMKL.COSMIC <- compFGA_optimized(moic.res     = plot_object,
                                     segment      = fga_df,
                                     iscopynumber = TRUE, 
                                     test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -1337,7 +1040,7 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
-timestamp() # 4 min
+timestamp() # 10 min
 
 # down-regulated
 RNGversion("4.2.2")
@@ -1355,7 +1058,7 @@ transNEO_ntp_expr_down = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_down_heatmap_transNEO")
-timestamp() # 2.5 min
+timestamp() # 11 min
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -1433,11 +1136,11 @@ transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                  tab.name = "transNEO_Summary_of_clinical_variables",
                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                  output_pdf = TRUE,
-                                                 pdf_level_col_width = c("7em", "10em"),
-                                                 pdf_count_col_width = "10em",
+                                                 pdf_level_col_width = c("3em", "3em"),
+                                                 pdf_count_col_width = "5em",
                                                  pdf_pval_col_width = "3em",
-                                                 pdf_test_col_width = "8em",
-                                                 pdf_tab_font_size = 9)
+                                                 pdf_test_col_width = "3em",
+                                                 pdf_tab_font_size = 7)
 
 transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
 transNEO_ntp_expr_up_ord$clust.res$clust = gsub(algorithm, "", transNEO_ntp_expr_up_ord$clust.res$clust)
@@ -1457,11 +1160,11 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                                  output_pdf = TRUE,
                                                                  pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
-                                                                 pdf_level_col_width = c("7em", "10em"),
-                                                                 pdf_count_col_width = "10em",
+                                                                 pdf_level_col_width = c("3em", "3em"),
+                                                                 pdf_count_col_width = "5em",
                                                                  pdf_pval_col_width = "3em",
-                                                                 pdf_test_col_width = "8em",
-                                                                 pdf_tab_font_size = 9)
+                                                                 pdf_test_col_width = "3em",
+                                                                 pdf_tab_font_size = 7)
 
 # Run PAM ###
 RNGversion("4.2.2.")
@@ -1507,17 +1210,17 @@ runKappa_single_algorithm(algorithm_name = algorithm,
                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                           fig.name = paste0("kappa_", algorithm, "_vs_PAM_TCGA"))
 
-# NTP transNEO vs PAM transNEO
-runKappa_single_algorithm(algorithm_name = algorithm,
-                          subt1 = as.numeric(gsub(algorithm, "",
-                                                  transNEO_ntp_expr_up$clust.res$clust)),
-                          subt2 = as.numeric(transNEO_pam$clust.res$clust),
-                          subt1.lab = "transNEO NTP",
-                          subt2.lab = "transNEO PAM",
-                          height = 8,
-                          width = 8,
-                          fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                          fig.name = "kappa_NTP_vs_PAM_transNEO")
+# NTP transNEO vs PAM transNEO - CANNOT be produced because there is a subtype present only in one classification
+# runKappa_single_algorithm(algorithm_name = algorithm,
+#                           subt1 = as.numeric(gsub(algorithm, "",
+#                                                   transNEO_ntp_expr_up$clust.res$clust)),
+#                           subt2 = as.numeric(transNEO_pam$clust.res$clust),
+#                           subt1.lab = "transNEO NTP",
+#                           subt2.lab = "transNEO PAM",
+#                           height = 8,
+#                           width = 8,
+#                           fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
+#                           fig.name = "kappa_NTP_vs_PAM_transNEO")
 
 # Supplementary results #####
 
@@ -1528,7 +1231,7 @@ if (!dir.exists(paste0(home, "/Results/single_algorithm/", algorithm, "/Suppleme
 
 # Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
-cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
+cluster_colors_heatmap = cluster_colors
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
   dplyr::rename(wMKL = Cluster, samID = "Sample.ID")
@@ -1540,12 +1243,74 @@ wMKL_clust_res = wMKL_clusters %>% dplyr::rename(samID = Sample.ID,
                                                  wMKL = Cluster) %>%
   dplyr::mutate(wMKL = gsub(algorithm, "", wMKL))
 
+# PCA from final similarity matrix S
+final_affinity_matrix = cluster_results$S
+dimnames(final_affinity_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
+pca_from_sim_matrix(sim_matrix = final_affinity_matrix, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, wMKL),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
+                    title_add = "Final similarity matrix S")
+
 # PCA from original matrices ###
+# t-SNE projection
+tsne_2D = cluster_results$ydata
+colnames(tsne_2D) = c("t-SNE1", "t-SNE2")
+rownames(tsne_2D) = colnames(input$SNPs)
+tsne_2D = as.data.frame(tsne_2D) %>%
+  mutate(Sample.ID = rownames(.)) %>%
+  inner_join(wMKL_clusters, by = "Sample.ID") %>%
+  dplyr::rename(wMKL = Cluster) %>%
+  dplyr::mutate(wMKL = paste0(algorithm, wMKL))
+
+ggplot(data = tsne_2D, aes(x = `t-SNE1`, y = `t-SNE2`, color = wMKL)) +
+  geom_point() +
+  aes(shape = as.character(wMKL), 
+      size = as.character(wMKL),
+      alpha = as.character(wMKL), 
+      color = as.character(wMKL)) +
+  scale_size_manual(name = algorithm, 
+                    values = rep(0.4, length(unique(tsne_2D$wMKL))), 
+                    labels = sort(unique(tsne_2D$wMKL))) +
+  scale_alpha_manual(name = algorithm, 
+                     values = rep(0.7, length(unique(tsne_2D$wMKL))), 
+                     labels = sort(unique(tsne_2D$wMKL))) +
+  scale_shape_manual(name = algorithm, 
+                     values = rep(16, length(unique(tsne_2D$wMKL))), 
+                     labels = sort(unique(tsne_2D$wMKL)))+
+  scale_color_manual(name = algorithm, 
+                     limits = sort(unique(tsne_2D$wMKL)),
+                     values = setNames(cluster_colors, sort(unique(tsne_2D$wMKL))), 
+                     labels = sort(unique(tsne_2D$wMKL))) +
+  theme_bw()+
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_rect(linewidth = 0.2),
+        plot.title = element_text(size = 5, face = "bold"),
+        axis.title = element_text(size = 4, face = "bold"),
+        axis.text = element_text(size = 4),
+        axis.ticks = element_line(linewidth = 0.15),
+        legend.background = element_rect(fill = "white", linetype = "solid"),
+        #legend.position = c(0.90, 0.86),
+        legend.key.size = unit(0.5, "lines"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.1, units = "cm"), 
+        legend.title = ggplot2::element_text(size = 4, face = "bold"), 
+        legend.text = ggplot2::element_text(size = 3))+
+  labs(title = paste0(algorithm, " clusters in 2D t-SNE projection"),
+       legend = algorithm) +
+  guides(size = "none", alpha = "none", shape = "none")
+ggsave(filename = paste0(algorithm, "_t-SNE_2D_projection.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 1920, height = 1080, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
 # RNA
 pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = algorithm, 
                          clust_res = wMKL_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "RNAseq")
 
@@ -1553,7 +1318,7 @@ pca_from_original_matrix(mydata = plotdata$RNAseq,
 pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = algorithm, 
                          clust_res = wMKL_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "miRNA")
 
@@ -1561,7 +1326,7 @@ pca_from_original_matrix(mydata = plotdata$miRNA,
 pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = algorithm, 
                          clust_res = wMKL_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "CNV")
 
@@ -1570,7 +1335,7 @@ pca_from_original_matrix(mydata = plotdata$CNV,
 mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = algorithm, 
                          clust_res = wMKL_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "SNPs")
 
@@ -1578,14 +1343,12 @@ mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
 pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = algorithm, 
                          clust_res = wMKL_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "Methylation")
 
 # Draw a heatmap of the final S matrix ###
-wMKL_matrix = similarity_object[[paste0("NN = ", optNN)]][["S"]]
-dimnames(wMKL_matrix) = list(colnames(input$SNPs), colnames(input$SNPs))
-create_MO_heatmap(matrix = wMKL_matrix, algorithm = algorithm, 
+create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
                   need.diag.zero = FALSE, # already zero
                   clust_annot_pheno = clust_annot_pheno ,
                   afh_colnames = afh_colnames, 
@@ -1596,7 +1359,7 @@ create_MO_heatmap(matrix = wMKL_matrix, algorithm = algorithm,
                   cluster_rows_flag = FALSE,
                   cluster_cols_flag = FALSE,
                   splits_flag = TRUE,
-                  legend_title = "Final kernel similarity",
+                  legend_title = "Final wMKL similarity",
                   output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
                                             "/Supplement/wMKL_final_S_matrix_heatmap.png"))
 
@@ -1735,11 +1498,11 @@ for (i in 1:length(voi)) {
                                               chifit = chifit,
                                               na.action = "na.omit",
                                               algorithm = algorithm,
-                                              barchart_ylim = 650,
-                                              text_y = 600, rect_ymin = 500,
-                                              rect_ymax = 620, x_annot = 1.5,
-                                              v_gap = 35, rect_xmin = 1,
-                                              rect_xmax = 2, 
+                                              barchart_ylim = 300,
+                                              text_y = 250, rect_ymin = 165,
+                                              rect_ymax = 265, x_annot = 4.5,
+                                              v_gap = 35, rect_xmin = 3.5,
+                                              rect_xmax = 5.5, 
                                               annot_text_size = 2.25,
                                               legend.text.size = 5,
                                               x.axis.text.size = 5) +
@@ -1748,7 +1511,7 @@ for (i in 1:length(voi)) {
   ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/single_algorithm/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 3320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1767,14 +1530,15 @@ ggarrange(wMKL_barcharts[[1]], wMKL_barcharts[[2]], wMKL_barcharts[[3]],
 ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 7000, height = 8000, device = 'png', units = "px",
+       width = 10000, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Just significant ones now
 wMKL_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(wMKL, `Menopausal status`, `Lymph node status`, 
-                                                             `ER status`, `PR status`, `HER2 status`)
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(wMKL, Race, Histology, 
+                                                             `ER status`, `PR status`, `HER2 status`,
+                                                             `Metastasis`)
 plotdata_bar_sig$wMKL = factor(plotdata_bar_sig$wMKL)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1785,11 +1549,11 @@ for (i in 1:length(voi_sig)) {
                                                   chifit = chifit,
                                                   na.action = "na.omit",
                                                   algorithm = algorithm,
-                                                  barchart_ylim = 650,
-                                                  text_y = 600, rect_ymin = 500,
-                                                  rect_ymax = 620, x_annot = 1.5,
-                                                  v_gap = 35, rect_xmin = 1,
-                                                  rect_xmax = 2, 
+                                                  barchart_ylim = 300,
+                                                  text_y = 250, rect_ymin = 165,
+                                                  rect_ymax = 265, x_annot = 4.5,
+                                                  v_gap = 35, rect_xmin = 3.5,
+                                                  rect_xmax = 5.5, 
                                                   annot_text_size = 2.25,
                                                   legend.text.size = 5,
                                                   x.axis.text.size = 5) +
@@ -1807,13 +1571,13 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(wMKL_barcharts_sig[[1]], wMKL_barcharts_sig[[2]], wMKL_barcharts_sig[[3]],
-          wMKL_barcharts_sig[[4]], wMKL_barcharts_sig[[5]],
-          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
+          wMKL_barcharts_sig[[4]], wMKL_barcharts_sig[[5]], wMKL_barcharts_sig[[6]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 5500, height = 8000, device = 'png', units = "px",
+       width = 6700, height = 6500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1827,23 +1591,25 @@ Pheno_sunburst_wMKL$`HER2 status` = gsub("Unknown", "Unkn HER2 status",
                                          Pheno_sunburst_wMKL$`HER2 status`)
 Pheno_sunburst_wMKL$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_wMKL$`HER2 status`)
 Pheno_sunburst_wMKL$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_wMKL$`HER2 status`)
-Pheno_sunburst_wMKL$`Lymph node status` = gsub("Unknown", "Unkn LN status", Pheno_sunburst_wMKL$`Lymph node status`)
+Pheno_sunburst_wMKL$Metastasis = gsub("Unknown", "Unkn metast. status", Pheno_sunburst_wMKL$Metastasis)
 Pheno_sunburst_wMKL = Pheno_sunburst_wMKL %>%
-  dplyr::select(wMKL, `ER status`, `HER2 status`, `Lymph node status`) %>%
-  group_by(wMKL, `ER status`, `HER2 status`, `Lymph node status`) %>%
+  dplyr::select(wMKL, `ER status`, `HER2 status`, Metastasis) %>%
+  group_by(wMKL, `ER status`, `HER2 status`, Metastasis) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 sunburst_coloring_wMKL = data.frame(stringsAsFactors = FALSE,
-                                    colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
+                                    colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA",
+                                                                       "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", 
                                                                        "#C11D9C", "#0F1682",  "grey40",
                                                                        "#0B9EF8", "#560DA7", "mistyrose1", 
                                                                        "hotpink4", "grey40",
-                                                                       "grey75", "#4A0558", "grey40"))),
-                                    labels = c("wMKL1", "wMKL2",
+                                                                       "deeppink4", "cadetblue2", "grey40"))),
+                                    labels = c("wMKL1", "wMKL2", "wMKL3", "wMKL4",
+                                               "wMKL5", "wMKL6", "wMKL7", "wMKL8",
                                                "ER-", "ER+", "Unkn ER status",
                                                "HER2-", "HER2+", "Indeterminate",
                                                "Equivocal", "Unkn HER2 status",
-                                               "Yes", "No", "Unkn LN status"))
+                                               "Yes", "No", "Unkn metast. status"))
 
 sunburstDF_wMKL = as.sunburstDF(Pheno_sunburst_wMKL, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_wMKL, by = "labels")
@@ -1861,52 +1627,75 @@ pie_wMKL = plot_ly() %>%
 pie_wMKL
 rm(Pheno_sunburst_wMKL, sunburstDF_wMKL, sunburst_coloring_wMKL, pie_wMKL); gc()
 
-# Compare these wMKL results with the wMKL output from MOVICS ###
-load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
-MOVICS_wMKL = moic.res.list$wMKL$clust.res
+# Graphs ###
+library(igraph)
+list_aff_S = list(final_affinity_matrix)
+names(list_aff_S) = c(paste0("Final Fused Affinity (S matrix)"))
 
-ARI_to_MOVICS_wMKL = calculate_ari_index(cluster_df1 = MOVICS_wMKL %>%
-                                           dplyr::rename(Sample.ID = samID,
-                                                         Cluster = clust),
-                                         cluster_df2 = wMKL_clusters,
-                                         sample_col = "Sample.ID",
-                                         clust_col = "Cluster",
-                                         suffixes = c(paste0("_MOVICS_", algorithm), 
-                                                      paste0("_", algorithm)))
-
-NMI_to_MOVICS_wMKL = calculate_nmi_index(cluster_df1 = MOVICS_wMKL %>%
-                                           dplyr::rename(Sample.ID = samID,
-                                                         Cluster = clust),
-                                         cluster_df2 = wMKL_clusters,
-                                         sample_col = "Sample.ID",
-                                         clust_col = "Cluster",
-                                         suffixes = c(paste0("_MOVICS_", algorithm), 
-                                                      paste0("_", algorithm)))
+for (i in 1:length(list_aff_S)) {
+  
+  # Prepare the graph object
+  g <- graph_from_adjacency_matrix(list_aff_S[[i]],  weighted = TRUE, diag = FALSE,
+                                   mode = "max")
+  g <- delete_edges(g, E(g)[weight == 0])
+  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
+  nodes_data <- data.frame(name = V(g)$name) %>%
+    inner_join(clust_annot_pheno %>% dplyr::select(samID, wMKL),
+               by = c("name" = "samID"))
+  
+  # Set wMKL as a factor for coloring
+  nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
+  V(g)$wMKL <- nodes_data[[algorithm]] # modify `$wMKL` manually
+  
+  # Set color based on wMKL
+  V(g)$color <- fifelse(V(g)$wMKL == paste0(algorithm, "1"), "#2EC4B6", 
+                        fifelse(V(g)$wMKL == paste0(algorithm, "2"), "#E71D36",
+                        fifelse(V(g)$wMKL == paste0(algorithm, "3"), "#FF9F1C",
+                        fifelse(V(g)$wMKL == paste0(algorithm, "4"), "#BDD5EA",
+                        fifelse(V(g)$wMKL == paste0(algorithm, "5"), "#FFA5AB",
+                        fifelse(V(g)$wMKL == paste0(algorithm, "6"), "#011627",
+                        fifelse(V(g)$wMKL == paste0(algorithm, "7"), "#023E8A", "#9D4EDD")))))))
+  
+  png(paste0(home, 
+             "/Results/single_algorithm/", algorithm, "/Supplement/",
+             names(list_aff_S)[i], " graph.png"),
+      width = 6000, height = 6000, res = 700)
+  
+  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
+  
+  # Plot the graph with a layout that spreads nodes well
+  plot(g, vertex.color = V(g)$color,
+       edge.width = E(g)$width,
+       vertex.size = 4, 
+       vertex.label = NA, 
+       edge.color = "gray85",
+       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
+       main = "")
+  
+  # Add title with reduced size using title() function
+  title(main = names(list_aff_S)[i], cex.main = 1.7)
+  
+  # Add a legend to the right of the plot
+  legend("bottomright", 
+         title="Node Color Legend",    
+         legend=c(paste0(algorithm, "1"),
+                  paste0(algorithm, "2")), 
+         fill=cluster_colors_heatmap,  
+         cex=0.7,      
+         box.lwd=1)  
+  
+  dev.off() 
+}
+rm(g, nodes_data)
 
 # Wrap up #####
-hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
-                       num_neighbors_max = max(num_neighbors_range),
-                       num_neighbors_step = neighbor_step,
-                       optimal_NN = optNN,
-                       conclusion1 = conclusion1,
-                       conclusion2 = conclusion2,
-                       conclusion = conclusion,
-                       cluster_trials_neighbors_text = ifelse(length(M3C_clusterings) > 1,
-                                                              paste0(length(M3C_clusterings), " values of $nn'$ (",
-                                                                     str_c(unlist(lapply(names(M3C_clusterings), function(x) {
-                                                                       strsplit(x, " = ")[[1]][2]
-                                                                     })), collapse = ", "), ")"),
-                                                              paste0("$nn' = ", 
-                                                                     strsplit(names(M3C_clusterings)[i], " = ")[[1]][2],
-                                                                     "$"))
-)
+hyperparameters = list()
 
 # Put all parameters in a list
 params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
-              NMI_to_MOVICS_wMKL = NMI_to_MOVICS_wMKL, ARI_to_MOVICS_wMKL = ARI_to_MOVICS_wMKL,
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
               transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo(), home = home)
