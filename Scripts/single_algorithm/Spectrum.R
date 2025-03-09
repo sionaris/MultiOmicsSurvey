@@ -27,7 +27,7 @@ subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types,
 in_a_nutshell = fetch_in_a_nutshell(algorithm = algorithm)
 ground_truth_labels = openxlsx::read.xlsx("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")
 ground_truth_k = 2 # optk from MOVICS
-optk_boolean = "FALSE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
+optk_boolean = "TRUE" # either TRUE or FALSE. Answers whether the algorithm suggests an optimal k
 optk_text = ifelse(optk_boolean == TRUE,
                    "<u>suggests</u> an estimate of the optimal number of multi-omic clusters $k$",
                    "<u>does not suggest</u> an optimal number of multi-omic clusters $k$")
@@ -96,7 +96,7 @@ saveRDS(input, "Resources/Spectrum_input.rds")
 
 # Setup ###
 library(Spectrum)
-source("Scripts/single_algorithm/automated_scripts/Spectrum_functions.R")
+source("Scripts/automated_scripts/Spectrum_functions.R")
 
 parameters = list(
   method = 2, # multimodality gap method (Gaussian/non-Gaussian clusters)
@@ -154,13 +154,15 @@ rm(embeddings, i); gc()
 
 # Optimal combination is for maximum avg. silhouette width
 optimal_Spectrum = Spectrum_runs[[which.max(lapply(Spectrum_runs, function(x) x[["Avg. sil. width"]]))]]
+optNN = as.numeric(strsplit(names(Spectrum_runs)[[which.max(lapply(Spectrum_runs, function(x) x[["Avg. sil. width"]]))]],
+                 " = ")[[1]][2])
 optk = optimal_Spectrum$K # 2
 
 # Optimal KNN_p value
 names(Spectrum_runs)[which.max(lapply(Spectrum_runs, function(x) x[["Avg. sil. width"]]))] # 20
 
 Spectrum_clusters = as.data.frame(list(Sample.ID = colnames(input$SNPs), 
-                                    Cluster = paste0("Spectrum", optimal_Spectrum$assignments)))
+                                    Cluster = optimal_Spectrum$assignments))
 Spectrum_clusters$Sample.ID = gsub("\\.", "-", Spectrum_clusters$Sample.ID)
 rownames(Spectrum_clusters) = Spectrum_clusters$Sample.ID
 
@@ -240,30 +242,39 @@ openxlsx::write.xlsx(clust, paste0(home, "/Results/single_algorithm/", algorithm
                                    data_types, "_eval_on_", evaluation_source,
                                    "_clusterings.xlsx"))
 
-# comprehensive heatmap (may take a while)
-getMoHeatmap_single_algorithm(algorithm_name = algorithm,
-                              data          = plotdata,
-                              row.title     = names(plotdata),
-                              is.binary     = c(T,F,F,F,F), 
-                              legend.name   = c("SNPs",
-                                                "Standardized RNAseq norm. counts",
-                                                "Standardized CNV",
-                                                "Standardized miRNA norm. counts",
-                                                "Standardized Methylation M-values"
-                              ),
-                              clust.res     = plot_object$clust.res, # consensusMOIC-like results
-                              clust.dend    = NULL, # show no dendrogram for samples
-                              show.rownames = c(F,F,F,F,F), # specify for each omics data
-                              show.colnames = FALSE, # show no sample names
-                              show.row.dend = c(F,F,F,F,F), # show no dendrogram for features
-                              annRow        = NULL, # no selected features
-                              color         = col.list,
-                              annCol        = annCol, # annotation for samples
-                              annColors     = annColors, # annotation color
-                              width         = 20, # width of each subheatmap
-                              height        = 10, # height of each subheatmap
-                              fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
-                              fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
+# Order features
+feature_orders = readRDS("Resources/TCGA/mm_feature_orders.rds")
+for (i in 1:length(plotdata)) {
+  plotdata[[i]] = plotdata[[i]][feature_orders[[names(plotdata)[i]]], , drop = FALSE]
+}
+
+getMoHeatmap_single_algorithm2(algorithm_name = algorithm,
+                               data          = plotdata,
+                               row.title     = names(plotdata),
+                               is.binary     = c(T,F,F,F,F), 
+                               legend.name   = c("SNPs",
+                                                 "Standardized RNAseq norm. counts",
+                                                 "Standardized CNV",
+                                                 "Standardized miRNA norm. counts",
+                                                 "Standardized Methylation M-values"
+                               ),
+                               cluster_rows = rep(F, length(plotdata)),
+                               cluster_cols = rep(F, length(plotdata)),
+                               show.col.dend = rep(F, length(plotdata)),
+                               show.colnames = FALSE,
+                               show.row.dend = rep(F, length(plotdata)),
+                               show.rownames = rep(F, length(plotdata)),
+                               clust.res     = plot_object$clust.res, # consensusMOIC-like results
+                               # clust.dist.row = c("manhattan", rep("euclidean", 4)),
+                               # clust.method.row = rep("ward.D", length(plotdata)),
+                               annRow        = NULL, # no selected features
+                               color         = col.list,
+                               annCol        = annCol, # annotation for samples
+                               annColors     = annColors, # annotation color
+                               width         = 20, # width of each subheatmap
+                               height        = 10, # height of each subheatmap
+                               fig.path      = paste0(home, "/Results/single_algorithm/", algorithm),
+                               fig.name      = paste0("default_", algorithm, "_Comprehensive_heatmap"))
 dev.off()
 gc()
 
@@ -331,6 +342,7 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          pdf_test_col_width = "8em",
                                                          pdf_tab_font_size = 9)
 
+library(ggplot2)
 # Oncoprint ###
 oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                       moic.res  = plot_object,
@@ -751,7 +763,7 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
   }
 }
 
-timestamp() # ~2.5 mins
+timestamp() # ~6 mins
 stopCluster(cl)
 gc()
 names(hclust_output) <- names(hclust_input)
@@ -796,7 +808,7 @@ hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[gre
 # Fraction Genome Altered ###
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
 
-fga.SNF <- compFGA_optimized(moic.res     = plot_object,
+fga.Spectrum <- compFGA_optimized(moic.res     = plot_object,
                              segment      = fga_df,
                              iscopynumber = TRUE, 
                              test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -808,7 +820,7 @@ fga.SNF <- compFGA_optimized(moic.res     = plot_object,
                              clust.col = cluster_colors,
                              title = paste0(algorithm, " FGA plot: simple criteria"))
 
-fga.SNF.COSMIC <- compFGA_optimized(moic.res     = plot_object,
+fga.Spectrum.COSMIC <- compFGA_optimized(moic.res     = plot_object,
                                     segment      = fga_df,
                                     iscopynumber = TRUE, 
                                     test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -870,7 +882,7 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
-timestamp() # 4 min
+timestamp() # 5 min
 
 # down-regulated
 RNGversion("4.2.2")
@@ -888,7 +900,7 @@ transNEO_ntp_expr_down = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_down_heatmap_transNEO")
-timestamp() # 2.5 min
+timestamp() # 5 min
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -910,11 +922,11 @@ transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
                 Grade.pre.NAT, pCR.RD, Age, T.stage, PAM50, iC10,
                 NAT.regimen, Chemo.cycles,
                 aHER2.cycles, RCB.score, STAT1.gsva,
-                GGI.gsva, ESC.gsva, TMB, HRD.sum, Sample.ID) %>%
-  inner_join(expr_conc %>% dplyr::select(Sample.ID = samID, Spectrum = clust_up),
-             by = "Sample.ID")
-rownames(transNEO_var2comp) = transNEO_var2comp$Sample.ID
-transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Sample.ID)
+                GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
+  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, Spectrum = clust_up),
+             by = "Donor.ID")
+rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
+transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
 
 # Convert to factors
 transNEO_var2comp$LN.status.at.diagnosis = factor(transNEO_var2comp$LN.status.at.diagnosis,
@@ -966,11 +978,11 @@ transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                  tab.name = "transNEO_Summary_of_clinical_variables",
                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                  output_pdf = TRUE,
-                                                 pdf_level_col_width = c("7em", "10em"),
-                                                 pdf_count_col_width = "10em",
+                                                 pdf_level_col_width = c("3em", "3em"),
+                                                 pdf_count_col_width = "5em",
                                                  pdf_pval_col_width = "3em",
-                                                 pdf_test_col_width = "8em",
-                                                 pdf_tab_font_size = 9)
+                                                 pdf_test_col_width = "3em",
+                                                 pdf_tab_font_size = 7)
 
 transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
 transNEO_ntp_expr_up_ord$clust.res$clust = gsub(algorithm, "", transNEO_ntp_expr_up_ord$clust.res$clust)
@@ -990,11 +1002,11 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                                  output_pdf = TRUE,
                                                                  pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
-                                                                 pdf_level_col_width = c("7em", "10em"),
-                                                                 pdf_count_col_width = "10em",
+                                                                 pdf_level_col_width = c("3em", "3em"),
+                                                                 pdf_count_col_width = "5em",
                                                                  pdf_pval_col_width = "3em",
-                                                                 pdf_test_col_width = "8em",
-                                                                 pdf_tab_font_size = 9)
+                                                                 pdf_test_col_width = "3em",
+                                                                 pdf_tab_font_size = 7)
 
 # Run PAM ###
 RNGversion("4.2.2.")
@@ -1067,6 +1079,7 @@ clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   dplyr::rename(Spectrum = Cluster, samID = "Sample.ID")
 rownames(clust_annot_pheno) = clust_annot_pheno$samID
 afh_colnames = colnames(annCol)
+final_affinity_matrix = optimal_Spectrum$similarity_matrix
 
 # Same data frame. Different columns. Just for easiness
 Spectrum_clust_res = Spectrum_clusters %>% dplyr::rename(samID = Sample.ID, Spectrum = Cluster)
@@ -1076,7 +1089,7 @@ Spectrum_clust_res = Spectrum_clusters %>% dplyr::rename(samID = Sample.ID, Spec
 pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = algorithm, 
                          clust_res = Spectrum_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors_heatmap, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "RNAseq")
 
@@ -1084,7 +1097,7 @@ pca_from_original_matrix(mydata = plotdata$RNAseq,
 pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = algorithm, 
                          clust_res = Spectrum_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors_heatmap, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "miRNA")
 
@@ -1092,7 +1105,7 @@ pca_from_original_matrix(mydata = plotdata$miRNA,
 pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = algorithm, 
                          clust_res = Spectrum_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors_heatmap, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "CNV")
 
@@ -1101,7 +1114,7 @@ pca_from_original_matrix(mydata = plotdata$CNV,
 mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = algorithm, 
                          clust_res = Spectrum_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors_heatmap, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "SNPs")
 
@@ -1109,12 +1122,19 @@ mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
 pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = algorithm, 
                          clust_res = Spectrum_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = cluster_colors_heatmap, 
                          output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
                          title_add = "Methylation")
 
-# Draw a heatmap of the final S matrix ###
-create_MO_heatmap(matrix = Spectrum_matrix, algorithm = algorithm, 
+# Fused affinity
+pca_from_sim_matrix(sim_matrix = final_affinity_matrix, algorithm = algorithm, 
+                    clust_res = clust_annot_pheno %>% dplyr::select(samID, Spectrum),
+                    cluster_colors = cluster_colors_heatmap, 
+                    output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"), 
+                    title_add = "Final Affinity Matrix")
+
+# Draw a heatmap of the final fused matrix ###
+create_MO_heatmap(matrix = final_affinity_matrix, algorithm = algorithm, 
                   need.diag.zero = FALSE, # already zero
                   clust_annot_pheno = clust_annot_pheno ,
                   afh_colnames = afh_colnames, 
@@ -1302,8 +1322,8 @@ dev.off()
 
 # Just significant ones now
 Spectrum_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(Spectrum, Histology, 
-                                                             `ER status`, `PR status`)
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(Spectrum, Race, Histology, 
+                                                             `ER status`, `PR status`, Stage)
 plotdata_bar_sig$Spectrum = factor(plotdata_bar_sig$Spectrum)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1336,12 +1356,13 @@ rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 ggarrange(Spectrum_barcharts_sig[[1]], Spectrum_barcharts_sig[[2]], Spectrum_barcharts_sig[[3]],
-          ncol = 1, nrow = 3, labels = c("A", "B", "C"),
+          Spectrum_barcharts_sig[[4]], Spectrum_barcharts_sig[[5]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/single_algorithm/", algorithm, "/Supplement"), 
-       width = 2500, height = 8000, device = 'png', units = "px",
+       width = 5500, height = 7500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1351,17 +1372,22 @@ Pheno_sunburst_Spectrum = clust_annot_pheno
 Pheno_sunburst_Spectrum$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_Spectrum$`ER status`)
 Pheno_sunburst_Spectrum$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_Spectrum$`ER status`)
 Pheno_sunburst_Spectrum$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_Spectrum$`ER status`)
+Pheno_sunburst_Spectrum$Stage = gsub("Unknown", "Unkn Stage", Pheno_sunburst_Spectrum$Stage)
 Pheno_sunburst_Spectrum = Pheno_sunburst_Spectrum %>%
-  dplyr::select(Spectrum, `ER status`) %>%
-  group_by(Spectrum, `ER status`) %>%
+  dplyr::select(Spectrum, `ER status`, Stage) %>%
+  group_by(Spectrum, `ER status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_Spectrum = data.frame(stringsAsFactors = FALSE,
                                      colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
-                                                                        "#C11D9C", "#0F1682",  "grey40"))),
+                                                                        "#C11D9C", "#0F1682",  "grey40",
+                                                                        "#00C9FF", "#099CF5", "#097BF5", 
+                                                                        "#0B5684", "grey40"))),
                                      labels = c("Spectrum1", "Spectrum2",
-                                                "ER-", "ER+", "Unkn ER status"))
+                                                "ER-", "ER+", "Unkn ER status",
+                                                "Stage I", "Stage II", "Stage III", "Stage IV",
+                                                "Unkn Stage"))
 
 sunburstDF_Spectrum = as.sunburstDF(Pheno_sunburst_Spectrum, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_Spectrum, by = "labels")
@@ -1379,36 +1405,65 @@ pie_Spectrum = plot_ly() %>%
 pie_Spectrum
 rm(Pheno_sunburst_Spectrum, sunburstDF_Spectrum, sunburst_coloring_Spectrum, pie_Spectrum); gc()
 
-# Compare these Spectrum results with the Spectrum output from MOVICS ###
-load("Results/MOVICS_baseline/MOVICS_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_moic.res.list.rda")
-MOVICS_Spectrum = moic.res.list$Spectrum$clust.res
+# Graphs ###
+library(igraph)
+list_aff_S = list(final_affinity_matrix)
+names(list_aff_S) = c(paste0("Final Fused Affinity (S matrix)"))
 
-ARI_to_MOVICS_Spectrum = calculate_ari_index(cluster_df1 = MOVICS_Spectrum %>%
-                                            dplyr::rename(Sample.ID = samID,
-                                                          Cluster = clust),
-                                          cluster_df2 = Spectrum_clusters,
-                                          sample_col = "Sample.ID",
-                                          clust_col = "Cluster",
-                                          suffixes = c(paste0("_MOVICS_", algorithm), 
-                                                       paste0("_", algorithm)))
-
-NMI_to_MOVICS_Spectrum = calculate_nmi_index(cluster_df1 = MOVICS_Spectrum %>%
-                                            dplyr::rename(Sample.ID = samID,
-                                                          Cluster = clust),
-                                          cluster_df2 = Spectrum_clusters,
-                                          sample_col = "Sample.ID",
-                                          clust_col = "Cluster",
-                                          suffixes = c(paste0("_MOVICS_", algorithm), 
-                                                       paste0("_", algorithm)))
+for (i in 1:length(list_aff_S)) {
+  
+  # Prepare the graph object
+  g <- graph_from_adjacency_matrix(list_aff_S[[i]],  weighted = TRUE, diag = FALSE,
+                                   mode = "max")
+  g <- delete_edges(g, E(g)[weight == 0])
+  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
+  nodes_data <- data.frame(name = V(g)$name) %>%
+    inner_join(clust_annot_pheno %>% dplyr::select(samID, Spectrum),
+               by = c("name" = "samID"))
+  
+  # Set Spectrum as a factor for coloring
+  nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
+  V(g)$Spectrum <- nodes_data[[algorithm]] # modify `$Spectrum` manually
+  
+  # Set color based on Spectrum
+  V(g)$color <- fifelse(V(g)$Spectrum == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
+  
+  png(paste0(home, 
+             "/Results/single_algorithm/", algorithm, "/Supplement/",
+             names(list_aff_S)[i], " graph.png"),
+      width = 6000, height = 6000, res = 700)
+  
+  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
+  
+  # Plot the graph with a layout that spreads nodes well
+  plot(g, vertex.color = V(g)$color,
+       edge.width = E(g)$width,
+       vertex.size = 4, 
+       vertex.label = NA, 
+       edge.color = "gray85",
+       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
+       main = "")
+  
+  # Add title with reduced size using title() function
+  title(main = names(list_aff_S)[i], cex.main = 1.7)
+  
+  # Add a legend to the right of the plot
+  legend("bottomright", 
+         title="Node Color Legend",    
+         legend=c(paste0(algorithm, "1"),
+                  paste0(algorithm, "2")), 
+         fill=cluster_colors_heatmap,  
+         cex=0.7,      
+         box.lwd=1)  
+  
+  dev.off() 
+}
+rm(g, nodes_data)
 
 # Wrap up #####
-hyperparameters = list(num_neighbors_min = min(num_neighbors_range),
-                       num_neighbors_max = max(num_neighbors_range),
-                       num_neighbors_step = neighbor_step,
-                       optimal_NN = optNN,
-                       conclusion1 = conclusion1,
-                       conclusion2 = conclusion2,
-                       conclusion = conclusion
+hyperparameters = c(list(optimal_NN = optNN,
+                       optk = optk),
+                    parameters
 )
 
 # Put all parameters in a list
@@ -1416,7 +1471,6 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               evaluation_source = evaluation_source, title = title, subtitle = subtitle,
               description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
               citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
-              NMI_to_MOVICS_Spectrum = NMI_to_MOVICS_Spectrum, ARI_to_MOVICS_Spectrum = ARI_to_MOVICS_Spectrum,
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
               transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo(), home = home)
