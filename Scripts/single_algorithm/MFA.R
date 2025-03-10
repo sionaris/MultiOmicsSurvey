@@ -92,16 +92,41 @@ rm(rogue_indices, index); gc()
 # Import clinical data for the TCGA samples of interest
 clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 
-# Export input for HPC
+# Keep the top 10% features for each continuous dataset based on MAD
 mfa_input = input
 
+# for continuous datasets
+mfa_input[c("RNAseq", "CNV", "Methylation", "miRNA")] = lapply(mfa_input[c("RNAseq", "CNV", "Methylation", "miRNA")], function(x) {
+  colMAD <- apply(x, 2, mad, na.rm = TRUE)
+  ordered_cols <- order(colMAD, decreasing = TRUE)
+  n_top <- ceiling(0.1 * ncol(x))
+  x[, ordered_cols[1:n_top]]
+})
+
+# Keep cancer drivers and the top 10%  most mutated genes of the rest for SNPs
+COSMIC_BC_drivers = read.csv("Resources/COSMIC_CGC_Breast_somatic.csv")$Gene.Symbol %>%
+  as.character()
+
+snp_mat <- input[["SNPs"]]
+mutation_counts <- colSums(snp_mat, na.rm = TRUE)
+non_drivers <- setdiff(colnames(snp_mat), COSMIC_BC_drivers)
+ordered_non_drivers <- non_drivers[order(mutation_counts[non_drivers], decreasing = TRUE)]
+n_top <- ceiling(0.1 * length(non_drivers))
+top_non_drivers <- ordered_non_drivers[1:n_top]
+genes_to_keep <- unique(c(COSMIC_BC_drivers, top_non_drivers))
+mfa_input[["SNPs"]] <- snp_mat[, intersect(colnames(snp_mat), genes_to_keep)]
+
+# Export input for HPC
 for (i in 1:length(mfa_input)) {
-  colnames(mfa_input[[i]]) = paste0(names(input)[i], "_", colnames(input[[i]]))
+  colnames(mfa_input[[i]]) = paste0(names(mfa_input)[i], "_", colnames(mfa_input[[i]]))
 }
+snps_no = as.numeric(length(intersect(colnames(snp_mat), genes_to_keep)))
 mfa_input = do.call(cbind, mfa_input)
 mfa_input = as.data.frame(mfa_input) %>%
-  mutate(across(1:12926, as.factor)) # Convert SNPs to factors
+  mutate(across(1:snps_no, as.factor)) # Convert SNPs to factors
 saveRDS(mfa_input, "Resources/MFA_input.rds")
+rm(i, snps_no, snp_mat, mutation_counts, non_drivers, ordered_non_drivers,
+   n_top, top_non_drivers, genes_to_keep); gc()
 
 # Setup ###
 # Hyperparameter tuning
