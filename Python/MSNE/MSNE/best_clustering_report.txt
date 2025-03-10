@@ -1,0 +1,6 @@
+Best Clustering:
+Job Name: MSNE_k_50_nw_200_emb_50_win_5_wl_40
+Silhouette Score: 0.0379
+N Samples: 625  N Clusters: 5
+Embeddings File: output_MSNE_k_50_nw_200_emb_50_win_5_wl_40_embeddings.csv
+Clusters File: output_MSNE_k_50_nw_200_emb_50_win_5_wl_40_clusters.csv

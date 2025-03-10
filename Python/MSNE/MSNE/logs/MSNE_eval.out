@@ -1,0 +1,6 @@
+source /home/as3582/.cache/pypoetry/virtualenvs/msne-KLKgEehK-py3.11/bin/activate
+Starting evaluation of MSNE runs...
+Best clustering job: MSNE_k_50_nw_200_emb_50_win_5_wl_40
+Silhouette: 0.03792874940774336
+N samples: 625 N clusters: 5
+Evaluation completed!

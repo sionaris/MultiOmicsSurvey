@@ -1,0 +1,13 @@
+source /home/as3582/.cache/pypoetry/virtualenvs/msne-KLKgEehK-py3.11/bin/activate
+Starting MSNE_k_15_nw_100_emb_100_win_5_wl_30 with SEED=123
+construct similarity networks finished
+Preprocess node alias
+Preprocess node alias
+Preprocess node alias
+Preprocess node alias
+Preprocess node alias
+sample sequences finished
+Learning embedding vectors...
+Learning embedding vectors done!
+get embedding vector and clusters
+MSNE_k_15_nw_100_emb_100_win_5_wl_30 run completed.
