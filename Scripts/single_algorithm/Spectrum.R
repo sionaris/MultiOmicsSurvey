@@ -142,6 +142,164 @@ for (kNN_p in parameters$KNNs_p) {
 dt = Sys.time() - t1
 gc()
 
+# Function to compute both Frobenius norm and Pearson correlation between matrices
+compute_matrix_similarity <- function(matrices) {
+  num_matrices <- length(matrices)
+  similarity_frobenius <- matrix(0, nrow = num_matrices, ncol = num_matrices)
+  similarity_pearson <- matrix(0, nrow = num_matrices, ncol = num_matrices)
+  
+  for (i in 1:num_matrices) {
+    for (j in 1:num_matrices) {
+      if (i != j) {
+        similarity_frobenius[i, j] <- frobenius_norm(matrices[[i]], matrices[[j]])
+        similarity_pearson[i, j] <- pearson_correlation(matrices[[i]], matrices[[j]])
+      }
+    }
+  }
+  
+  # Set row names and column names
+  
+  rownames(similarity_frobenius) <- colnames(similarity_frobenius) <- 
+    rownames(similarity_pearson) <- colnames(similarity_pearson) <- names(matrices)
+  
+  return(list(Frobenius = similarity_frobenius, Pearson = similarity_pearson))
+}
+
+# Check similarities for a given nn
+Spectrum_aff_matrices = lapply(Spectrum_runs, function(x) return(x$similarity_matrix))
+kNNs_p_similarities = compute_matrix_similarity(Spectrum_aff_matrices)
+print(kNNs_p_similarities)
+
+# Overall tests ###
+# Get summary statistics
+# Initialize kNNs_p_summary
+kNNs_p_Pearson_summary <- data.frame(       
+  mean = numeric(),      
+  median = numeric(),    
+  sd = numeric()         
+)
+
+kNNs_p_Frobenius_summary <- data.frame(       
+  mean = numeric(),      
+  median = numeric(),    
+  sd = numeric()         
+)
+
+# Calculate kNNs_p_summary
+pearson_matrix <- kNNs_p_similarities$Pearson
+pearson_values <- pearson_matrix[lower.tri(pearson_matrix, diag = FALSE)]
+
+# Compute mean, median, and standard deviation
+mean_pearson_value <- mean(pearson_values)
+median_pearson_value <- median(pearson_values)
+sd_pearson_value <- sd(pearson_values)
+
+# Append the results to kNNs_p_summary
+kNNs_p_Pearson_summary <- rbind(kNNs_p_Pearson_summary, data.frame(
+  mean = mean_pearson_value,
+  median = median_pearson_value,
+  sd = sd_pearson_value
+))
+
+# Calculate kNNs_p_summary
+frobenius_matrix <- kNNs_p_similarities$Frobenius
+frobenius_values <- frobenius_matrix[lower.tri(frobenius_matrix, diag = FALSE)]
+
+# Compute mean, median, and standard deviation
+mean_frobenius_value <- mean(frobenius_values)
+median_frobenius_value <- median(frobenius_values)
+sd_frobenius_value <- sd(frobenius_values)
+
+# Append the results to kNNs_p_summary
+kNNs_p_Frobenius_summary <- rbind(kNNs_p_Frobenius_summary, data.frame(
+  mean = mean_frobenius_value,
+  median = median_frobenius_value,
+  sd = sd_frobenius_value
+))
+
+# Display the summary
+print(kNNs_p_Pearson_summary)
+print(kNNs_p_Frobenius_summary)
+
+conclusion = ifelse(kNNs_p_Pearson_summary$mean > 0.8 && kNNs_p_Pearson_summary$median > 0.8,
+                    "The different fused affinity matrices are practically similar.",
+                    "The number of nearest neighbors affects the final fused matrix.")
+
+# Plot histogram of Pearson values
+library(ggplot2)
+ggplot(data = data.frame(pearson_values), aes(x = pearson_values)) +
+  geom_histogram(breaks = seq(0, 1.07, length.out = length(pearson_values)),
+                 fill = "skyblue", color = "lightblue", size = 0.15) +
+  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
+  geom_vline(aes(xintercept = mean_pearson_value, color = "Mean"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = median_pearson_value, color = "Median"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = mean_pearson_value - sd_pearson_value, color = "Mean - SD"), 
+             linetype = "dashed", linewidth = 0.2) + 
+  geom_vline(aes(xintercept = mean_pearson_value + sd_pearson_value, color = "Mean + SD"), 
+             linetype = "dashed", linewidth = 0.2) +
+  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
+                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
+                                                "Density" = "darkblue")) +
+  labs(title = expression(bold(paste("Histogram of Pearson values between affinity matrices for varying kNN_p values"))), 
+       x = "Affinity Matrix Pearson Values", y = "Frequency") +
+  scale_x_continuous(name = "Affinity Matrix Pearson Values", limits = c(0, 1.07),
+                     breaks = seq(0, 1.07, 0.1), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(linewidth = 0.25),
+        plot.title = element_text(face = "bold", size = 6.3),
+        axis.title = element_text(face = "bold", size = 5.8),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.2),
+        legend.text = element_text(size = 4.5),
+        legend.title = element_text(size = 5, face = "bold"),
+        legend.key.spacing.y = unit(1, "mm"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.box.background = element_rect(color = "black"))
+ggsave(filename = paste0(algorithm, "_matrix_Pearson_similarity_histogram.pdf"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 2880, height = 1820, device = 'pdf', units = "px",
+       dpi = 700)
+dev.off()
+
+# Plot histogram of Frobenius values
+ggplot(data = data.frame(frobenius_values), aes(x = frobenius_values)) +
+  geom_histogram(breaks = seq(0, 26, length.out = length(frobenius_values)),
+                 fill = "skyblue", color = "lightblue", size = 0.15) +
+  stat_density(aes(color = "Density"), geom = "line", linewidth = 0.4) +
+  geom_vline(aes(xintercept = mean_frobenius_value, color = "Mean"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = median_frobenius_value, color = "Median"), linewidth = 0.2) + 
+  geom_vline(aes(xintercept = mean_frobenius_value - sd_frobenius_value, color = "Mean - SD"), 
+             linetype = "dashed", linewidth = 0.2) + 
+  geom_vline(aes(xintercept = mean_frobenius_value + sd_frobenius_value, color = "Mean + SD"), 
+             linetype = "dashed", linewidth = 0.2) +
+  scale_color_manual(name = "Lines", values = c("Mean" = "red", "Median" = "orange", 
+                                                "Mean - SD" = "grey25", "Mean + SD" = "grey25",
+                                                "Density" = "darkblue")) +
+  labs(title = expression(bold(paste("Histogram of Frobenius values between affinity matrices for varying kNNs_p values"))), 
+       x = "Affinity Matrix Frobenius Values", y = "Frequency") +
+  scale_x_continuous(name = "Affinity Matrix Frobenius Values", limits = c(0, 26),
+                     breaks = seq(0, 26, 5), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(linewidth = 0.25),
+        plot.title = element_text(face = "bold", size = 6.3),
+        axis.title = element_text(face = "bold", size = 5.8),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.2),
+        legend.text = element_text(size = 4.5),
+        legend.title = element_text(size = 5, face = "bold"),
+        legend.key.spacing.y = unit(1, "mm"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.box.background = element_rect(color = "black"))
+ggsave(filename = paste0(algorithm, "_matrix_Frobenius_similarity_histogram.pdf"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 2880, height = 1820, device = 'pdf', units = "px",
+       dpi = 700)
+dev.off()
+
 # Pick the best clustering based on average silhouette width
 library(cluster)
 for (i in 1:length(Spectrum_runs)) {
@@ -342,7 +500,6 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          pdf_test_col_width = "8em",
                                                          pdf_tab_font_size = 9)
 
-library(ggplot2)
 # Oncoprint ###
 oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                       moic.res  = plot_object,
@@ -1463,7 +1620,8 @@ rm(g, nodes_data)
 # Wrap up #####
 hyperparameters = c(list(optimal_NN = optNN,
                        optk = optk),
-                    parameters
+                    parameters,
+                    conclusion = conclusion
 )
 
 # Put all parameters in a list
