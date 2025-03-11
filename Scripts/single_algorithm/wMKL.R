@@ -1562,7 +1562,7 @@ for (i in 1:length(voi_sig)) {
   ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/single_algorithm/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 3320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1630,7 +1630,7 @@ rm(Pheno_sunburst_wMKL, sunburstDF_wMKL, sunburst_coloring_wMKL, pie_wMKL); gc()
 # Graphs ###
 library(igraph)
 list_aff_S = list(final_affinity_matrix)
-names(list_aff_S) = c(paste0("Final Fused Affinity (S matrix)"))
+names(list_aff_S) = c(paste0("Final Fused wMKL matrix"))
 
 for (i in 1:length(list_aff_S)) {
   
@@ -1679,7 +1679,13 @@ for (i in 1:length(list_aff_S)) {
   legend("bottomright", 
          title="Node Color Legend",    
          legend=c(paste0(algorithm, "1"),
-                  paste0(algorithm, "2")), 
+                  paste0(algorithm, "2"),
+                  paste0(algorithm, "3"),
+                  paste0(algorithm, "4"),
+                  paste0(algorithm, "5"),
+                  paste0(algorithm, "6"),
+                  paste0(algorithm, "7"),
+                  paste0(algorithm, "8")), 
          fill=cluster_colors_heatmap,  
          cex=0.7,      
          box.lwd=1)  
