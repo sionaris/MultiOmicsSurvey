@@ -121,23 +121,37 @@ for (i in 1:length(mfa_input)) {
   colnames(mfa_input[[i]]) = paste0(names(mfa_input)[i], "_", colnames(mfa_input[[i]]))
 }
 snps_no = as.numeric(length(intersect(colnames(snp_mat), genes_to_keep)))
+
 mfa_input = do.call(cbind, mfa_input)
-mfa_input = as.data.frame(mfa_input) %>%
-  mutate(across(1:snps_no, as.factor)) # Convert SNPs to factors
+snp_cols = sum(grepl("SNPs_", colnames(mfa_input)))
+rna_cols = sum(grepl("RNAseq_", colnames(mfa_input)))
+cnv_cols = sum(grepl("CNV_", colnames(mfa_input)))
+mirna_cols = sum(grepl("miRNA_", colnames(mfa_input)))
+methyl_cols = sum(grepl("Methylation_", colnames(mfa_input)))
+
+mfa_input = as.data.frame(mfa_input)
+mfa_input[, 1:snps_no] <- lapply(mfa_input[, 1:snps_no], as.factor)
+
 saveRDS(mfa_input, "Resources/MFA_input.rds")
 rm(i, snps_no, snp_mat, mutation_counts, non_drivers, ordered_non_drivers,
    n_top, top_non_drivers, genes_to_keep); gc()
 
 # Setup ###
-# Hyperparameter tuning
+# Hyperparameter tuning - example with ncp = 10
 
-# timestamp()
+# t1 = Sys.time()
 # mfa = MFA(mfa_input,
-#           group = as.numeric(paste(lapply(input, ncol))),
+#           group = c(as.numeric(snp_cols), 
+#                     as.numeric(rna_cols), 
+#                     as.numeric(cnv_cols), 
+#                     as.numeric(mirna_cols), 
+#                     as.numeric(methyl_cols)), # dimensionalities of the datasets
 #           type = c("n", rep("c", 4)),
 #           excl = NULL,
 #           ncp = 10,
-#           name.group = names(input),
-#           graph = TRUE,
+#           name.group = c("SNPs", "RNAseq", "CNV", "miRNA", "Methylation"),
+#           graph = FALSE,
 #           axes = c(1,2))
-# timestamp()
+# 
+# dt = Sys.time() - t1
+# print(dt)
