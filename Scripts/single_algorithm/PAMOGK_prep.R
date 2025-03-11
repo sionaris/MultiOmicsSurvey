@@ -85,7 +85,7 @@ print(dimensions_df)
 # Remove miRNAs
 up_input = up_input[c("RNAseq", "CNV", "SNPs", "Methylation")]
 
-# Due to large running times keep the top 10% of features ranked by MAD
+# Due to large running times keep the top 20% of features ranked by MAD
 # PAMOGK however works with pathway/interaction network information from UniProt
 # meaning we might be dropping a significant amount of biologically relevant information here
 
@@ -93,11 +93,11 @@ up_input = up_input[c("RNAseq", "CNV", "SNPs", "Methylation")]
 up_input[c("RNAseq", "CNV", "Methylation")] = lapply(up_input[c("RNAseq", "CNV", "Methylation")], function(x) {
   rowMAD <- apply(x, 1, mad, na.rm = TRUE)
   ordered_rows <- order(rowMAD, decreasing = TRUE)
-  n_top <- ceiling(0.1 * nrow(x))
+  n_top <- ceiling(0.2 * nrow(x))
   x[ordered_rows[1:n_top], ]
 })
 
-# Keep cancer drivers and the top 10%  most mutated genes of the rest for SNPs
+# Keep cancer drivers and the top 20% most mutated genes of the rest for SNPs
 COSMIC_BC_drivers = read.csv("Resources/COSMIC_CGC_Breast_somatic.csv")$Gene.Symbol %>%
   as.character()
 
@@ -105,7 +105,7 @@ snp_mat <- up_input[["SNPs"]]
 mutation_counts <- rowSums(snp_mat, na.rm = TRUE)
 non_drivers <- setdiff(rownames(snp_mat), COSMIC_BC_drivers)
 ordered_non_drivers <- non_drivers[order(mutation_counts[non_drivers], decreasing = TRUE)]
-n_top <- ceiling(0.1 * length(non_drivers))
+n_top <- ceiling(0.2 * length(non_drivers))
 top_non_drivers <- ordered_non_drivers[1:n_top]
 genes_to_keep <- unique(c(COSMIC_BC_drivers, top_non_drivers))
 up_input[["SNPs"]] <- snp_mat[intersect(rownames(snp_mat), genes_to_keep), ]
