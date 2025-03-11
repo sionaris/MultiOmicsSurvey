@@ -35,5 +35,6 @@
 /Resources/METABRIC/METABRIC_mutation_data.txt
 /Side Quests
 /Scripts/inspect_mut_data.R
+/Scripts/single_algorithm/MOFA_local.R
 /Results/single_algorithm/RGCCA/*
 /Results/single_algoroithm/SGCCA/*
