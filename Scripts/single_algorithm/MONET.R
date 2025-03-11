@@ -101,7 +101,7 @@ py_run_string("import pickle")
 # py_install("pandas==2.2.3")
 py_run_string("import networkx as nx")
 py_run_string("from monet import monet")
-py_run_string("monet_results = pickle.load(open('Python/MONET/monet_results/monet_output.pkl', 'rb')) ")
+py_run_string("monet_results = pickle.load(open('Python/MONET/monet_results/monet_full_output.pkl', 'rb')) ")
 
 # Create R variable
 MONET = py$monet_results
