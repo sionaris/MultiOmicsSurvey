@@ -106,15 +106,23 @@ clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 # Clusters File: output_MSNE_k_50_nw_200_emb_50_win_5_wl_40_clusters.csv
 
 # Import files in R
-embeddings = read.csv("Python/MSNE/MSNE/output_MSNE_k_50_nw_200_emb_50_win_5_wl_40_embeddings.csv")
+filename = "Python/MSNE/MSNE/output_MSNE_k_50_nw_200_emb_50_win_5_wl_40"
+embeddings = read.csv(paste0(filename, "_embeddings.csv"))
 colnames(embeddings) = c("Sample.ID", paste0("dim", 1:(ncol(embeddings) -1)))
-MSNE_clusters = read.csv("Python/MSNE/MSNE/output_MSNE_k_50_nw_200_emb_50_win_5_wl_40_clusters.csv")
+MSNE_clusters = read.csv(paste0(filename, "_clusters.csv"))
 
 # Python output labels clusters starting from 0; change
 colnames(MSNE_clusters) = c("Sample.ID", "Cluster")
 MSNE_clusters$Cluster = MSNE_clusters$Cluster + 1
 rownames(MSNE_clusters) = MSNE_clusters$Sample.ID
+
+# Optimal parameters
 optk = length(unique(MSNE_clusters$Cluster))
+opt_topk_neighbors = as.numeric(strsplit(filename, "_")[[1]][4])
+opt_nw_per_node = as.numeric(strsplit(filename, "_")[[1]][6])
+opt_embeddings_size = as.numeric(strsplit(filename, "_")[[1]][8])
+opt_window_size = as.numeric(strsplit(filename, "_")[[1]][10])
+opt_walk_length = as.numeric(strsplit(filename, "_")[[1]][12])
 
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
@@ -180,6 +188,7 @@ dev.off()
 
 # MOVICS-like analysis #####
 library(ComplexHeatmap)
+library(ggplot2)
 
 plotdata <- lapply(lapply(input, as.matrix), 
                    function(mat) mat[rowSums(mat != 0) > 0, ])
@@ -276,11 +285,11 @@ clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                          tab.name = "Summary_of_clinical_variables",
                                          res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                          output_pdf = TRUE,
-                                         pdf_level_col_width = c("3em", "3em"),
+                                         pdf_level_col_width = c("5em", "5em"),
                                          pdf_count_col_width = "5em",
                                          pdf_pval_col_width = "3em",
                                          pdf_test_col_width = "3em",
-                                         pdf_tab_font_size = 7)
+                                         pdf_tab_font_size = 10)
 
 clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
                                                          moic.res = plot_object,
@@ -296,11 +305,11 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                          output_pdf = TRUE,
                                                          pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
-                                                         pdf_level_col_width = c("3em", "3em"),
+                                                         pdf_level_col_width = c("5em", "5em"),
                                                          pdf_count_col_width = "5em",
                                                          pdf_pval_col_width = "3em",
                                                          pdf_test_col_width = "3em",
-                                                         pdf_tab_font_size = 7)
+                                                         pdf_tab_font_size = 10)
 
 # Oncoprint ###
 oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
@@ -939,11 +948,11 @@ transNEO_clincomp = compClinvar_single_algorithm(algorithm_name = algorithm,
                                                  tab.name = "transNEO_Summary_of_clinical_variables",
                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                  output_pdf = TRUE,
-                                                 pdf_level_col_width = c("3em", "3em"),
+                                                 pdf_level_col_width = c("5em", "5em"),
                                                  pdf_count_col_width = "5em",
                                                  pdf_pval_col_width = "3em",
                                                  pdf_test_col_width = "3em",
-                                                 pdf_tab_font_size = 7)
+                                                 pdf_tab_font_size = 10)
 
 transNEO_ntp_expr_up_ord = transNEO_ntp_expr_up
 transNEO_ntp_expr_up_ord$clust.res$clust = gsub(algorithm, "", transNEO_ntp_expr_up_ord$clust.res$clust)
@@ -963,11 +972,11 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                  res.path = paste0(home, "/Results/single_algorithm/", algorithm, "/"),
                                                                  output_pdf = TRUE,
                                                                  pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
-                                                                 pdf_level_col_width = c("3em", "3em"),
+                                                                 pdf_level_col_width = c("5em", "5em"),
                                                                  pdf_count_col_width = "5em",
                                                                  pdf_pval_col_width = "3em",
                                                                  pdf_test_col_width = "3em",
-                                                                 pdf_tab_font_size = 7)
+                                                                 pdf_tab_font_size = 10)
 
 # Run PAM ###
 RNGversion("4.2.2.")
@@ -1440,7 +1449,20 @@ for (i in 1:length(list_aff_S)) {
 rm(g, nodes_data)
 
 # Wrap up #####
-hyperparameters = list()
+hyperparameters = list(top_k_neighbors_min = 10,
+                       top_k_neighbors_max = 50,
+                       top_k_neighbors_step = 10,
+                       n_rw_per_node = c(50, 100, 200),
+                       embeddings_size = c(50, 100, 200),
+                       skip_gram_window_size = c(5, 10, 15),
+                       walk_length = c(20, 30, 40),
+                       n_workers = 10,
+                       optk = optk,
+                       opt_topk_neighbors = opt_topk_neighbors,
+                       opt_nw_per_node = opt_nw_per_node,
+                       opt_embeddings_size = opt_embeddings_size,
+                       opt_window_size = opt_window_size,
+                       opt_walk_length = opt_walk_length)
 
 # Put all parameters in a list
 params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
