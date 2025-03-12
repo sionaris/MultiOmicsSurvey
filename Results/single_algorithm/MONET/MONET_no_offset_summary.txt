@@ -1,0 +1,50 @@
+------- Omic: CNV 
+Offset: 0 
+Number of edges: 39001 
+Edge weights summary:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+-0.58533 -0.23029 -0.18059  0.02617  0.26778  1.00000 
+
+--- Fraction of negative edges: 51.55 %
+-------------------
+
+------- Omic: Methylation 
+Offset: 0 
+Number of edges: 39001 
+Edge weights summary:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+-0.45794 -0.21611 -0.17303  0.01329  0.24963  0.76737 
+
+--- Fraction of negative edges: 52.85 %
+-------------------
+
+------- Omic: SNPs 
+Offset: 0 
+Number of edges: 39064 
+Edge weights summary:
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-0.019673 -0.004361 -0.003495  0.017694  0.048797  0.353458 
+
+--- Fraction of negative edges: 66.78 %
+-------------------
+
+------- Omic: RNAseq 
+Offset: 0 
+Number of edges: 39001 
+Edge weights summary:
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-0.331097 -0.135047 -0.106525  0.005131  0.151012  0.546494 
+
+--- Fraction of negative edges: 52.65 %
+-------------------
+
+------- Omic: miRNA 
+Offset: 0 
+Number of edges: 39001 
+Edge weights summary:
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-0.277004 -0.103471 -0.080798  0.004684  0.116457  0.542343 
+
+--- Fraction of negative edges: 53.18 %
+-------------------
+
