@@ -5,6 +5,7 @@
 *.tar.gz
 *_report.Rmd
 *.html
+*.hdf5
 .Ruserdata
 /GDCdata/
 /Resources/TCGA/*.rds
@@ -30,6 +31,7 @@
 /Python/MONET/build
 /Python/MONET/monet/__pycache__
 /Python/PAMOGK/*.csv
+/Python/MOFA/Omics_input
 /Resources/METABRIC/METABRIC_data_CNA.txt
 /Resources/METABRIC/METABRIC_data_Expression.txt
 /Resources/METABRIC/METABRIC_mutation_data.txt
