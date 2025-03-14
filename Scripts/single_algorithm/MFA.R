@@ -92,18 +92,18 @@ rm(rogue_indices, index); gc()
 # Import clinical data for the TCGA samples of interest
 clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
 
-# Keep the top 10% features for each continuous dataset based on MAD
+# Keep the top 33% features for each continuous dataset based on MAD
 mfa_input = input
 
 # for continuous datasets
 mfa_input[c("RNAseq", "CNV", "Methylation", "miRNA")] = lapply(mfa_input[c("RNAseq", "CNV", "Methylation", "miRNA")], function(x) {
   colMAD <- apply(x, 2, mad, na.rm = TRUE)
   ordered_cols <- order(colMAD, decreasing = TRUE)
-  n_top <- ceiling(0.1 * ncol(x))
+  n_top <- ceiling(0.33 * ncol(x))
   x[, ordered_cols[1:n_top]]
 })
 
-# Keep cancer drivers and the top 10%  most mutated genes of the rest for SNPs
+# Keep cancer drivers and the top 33%  most mutated genes of the rest for SNPs
 COSMIC_BC_drivers = read.csv("Resources/COSMIC_CGC_Breast_somatic.csv")$Gene.Symbol %>%
   as.character()
 
@@ -111,7 +111,7 @@ snp_mat <- input[["SNPs"]]
 mutation_counts <- colSums(snp_mat, na.rm = TRUE)
 non_drivers <- setdiff(colnames(snp_mat), COSMIC_BC_drivers)
 ordered_non_drivers <- non_drivers[order(mutation_counts[non_drivers], decreasing = TRUE)]
-n_top <- ceiling(0.1 * length(non_drivers))
+n_top <- ceiling(0.33 * length(non_drivers))
 top_non_drivers <- ordered_non_drivers[1:n_top]
 genes_to_keep <- unique(c(COSMIC_BC_drivers, top_non_drivers))
 mfa_input[["SNPs"]] <- snp_mat[, intersect(colnames(snp_mat), genes_to_keep)]

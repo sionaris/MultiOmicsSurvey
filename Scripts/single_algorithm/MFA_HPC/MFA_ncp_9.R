@@ -12,11 +12,11 @@ mfa_input = readRDS("MFA_input.rds")
 ncp = 9
 
 # Run for ncp = 9
-snp_cols = sum(grep("SNPs_", colnames(mfa_input)))
-rna_cols = sum(grep("RNAseq_", colnames(mfa_input)))
-cnv_cols = sum(grep("CNV_", colnames(mfa_input)))
-mirna_cols = sum(grep("miRNA_", colnames(mfa_input)))
-methyl_cols = sum(grep("Methylation_", colnames(mfa_input)))
+snp_cols = sum(grepl("SNPs_", colnames(mfa_input)))
+rna_cols = sum(grepl("RNAseq_", colnames(mfa_input)))
+cnv_cols = sum(grepl("CNV_", colnames(mfa_input)))
+mirna_cols = sum(grepl("miRNA_", colnames(mfa_input)))
+methyl_cols = sum(grepl("Methylation_", colnames(mfa_input)))
 
 t1 = Sys.time()
 mfa = MFA(mfa_input,
@@ -28,6 +28,7 @@ mfa = MFA(mfa_input,
           graph = FALSE,
           axes = c(1,2))
 dt = Sys.time() - t1
+print(dt)
 
 # Export
 saveRDS(mfa, paste0("MFA_ncp_", ncp, "_results.rds"))
