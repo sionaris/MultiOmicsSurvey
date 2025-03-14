@@ -421,7 +421,7 @@ dgea.marker.down <- runMarker_single_algorithm(algorithm_name = algorithm,
                                                fig.name      = "downregulated_biomarkers_heatmap",
                                                fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                                                width = 14,
-                                               height = 18,
+                                               height = 12,
                                                fontsize_row = 3,
                                                name = "normalized RNA-seq")
 dev.off()
@@ -574,7 +574,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                             norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                             dirct        = "up", # direction of dysregulation in pathway
-                                            n.path       = 10,
+                                            n.path       = 20,
                                             p.cutoff     = 0.05, # p cutoff to identify significant pathways
                                             p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                             gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -585,7 +585,7 @@ gsea.up <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                             minGSSize = 10,
                                             maxGSSize = 500,
                                             fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                            width = 14, height = 20)
+                                            width = 14, height = 18)
 
 # GSEA down-regulated
 RNGversion("4.2.2")
@@ -599,7 +599,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               msigdb.path  = MSIGDB.FILE, # MUST be the ABSOLUTE path of msigdb file
                                               norm.expr    = plotdata$RNAseq, # use normalized expression to calculate enrichment score
                                               dirct        = "down", # direction of dysregulation in pathway
-                                              n.path       = 10,
+                                              n.path       = 20,
                                               p.cutoff     = 0.05, # p cutoff to identify significant pathways
                                               p.adj.cutoff = 0.05, # padj cutoff to identify significant pathways
                                               gsva.method  = "gsva", # method to calculate single sample enrichment score
@@ -610,7 +610,7 @@ gsea.down <- runGSEA_mod_4.4_single_algorithm(algorithm_name = algorithm,
                                               minGSSize = 10,
                                               maxGSSize = 500,
                                               fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
-                                              width = 14, height = 20)
+                                              width = 14, height = 18)
 
 # Gene set variation analysis #####
 # locate ABSOLUTE path of gene set file
