@@ -1,0 +1,10 @@
+name: mofa_env_gpu
+channels:
+  - conda-forge
+dependencies:
+  - cupy
+  - cudatoolkit=11.4 # note that you might have to change this depending on your desired cuda version
+  - dtw-python
+  - pip
+  - pip:
+    - mofapy2==0.7.2

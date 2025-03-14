@@ -1,0 +1,719 @@
+Changed directory to /home/as3582/MO_survey/MOFA2.
+
+JobID: 5903283
+======
+Time: Sat Mar  1 16:14:40 GMT 2025
+Running on master node: gpu-q-39
+Current directory: /home/as3582/MO_survey/MOFA2
+
+Nodes allocated:
+================
+gpu-q-39
+
+numtasks=1, numnodes=1, mpi_tasks_per_node=1 (OMP_NUM_THREADS=1)
+
+Executing command:
+==================
+python MOFA_ncp20.py 
+
+11080
+OS                           : Linux-4.18.0-553.34.1.el8_10.x86_64-x86_64-with-glibc2.28
+Python Version               : 3.12.8
+CuPy Version                 : 13.3.0
+CuPy Platform                : NVIDIA CUDA
+NumPy Version                : 2.2.2
+SciPy Version                : 1.15.1
+Cython Build Version         : 0.29.37
+Cython Runtime Version       : None
+CUDA Root                    : /usr/local/software/cuda/11.4
+nvcc PATH                    : /usr/local/software/cuda/11.4/bin/nvcc
+CUDA Build Version           : 11080
+CUDA Driver Version          : 12040
+CUDA Runtime Version         : 11080 (linked to CuPy) / 11040 (locally installed)
+CUDA Extra Include Dirs      : []
+cuBLAS Version               : (available)
+cuFFT Version                : 10502
+cuRAND Version               : 10205
+cuSOLVER Version             : (11, 2, 0)
+cuSPARSE Version             : (available)
+NVRTC Version                : (11, 4)
+Thrust Version               : 200600
+CUB Build Version            : 200600
+Jitify Build Version         : <unknown>
+cuDNN Build Version          : None
+cuDNN Version                : None
+NCCL Build Version           : None
+NCCL Runtime Version         : None
+cuTENSOR Version             : None
+cuSPARSELt Build Version     : None
+Device 0 Name                : NVIDIA A100-SXM4-80GB
+Device 0 Compute Capability  : 80
+Device 0 PCI Bus ID          : 0000:01:00.0
+None
+
+        #########################################################
+        ###           __  __  ____  ______                    ### 
+        ###          |  \/  |/ __ \|  ____/\    _             ### 
+        ###          | \  / | |  | | |__ /  \ _| |_           ### 
+        ###          | |\/| | |  | |  __/ /\ \_   _|          ###
+        ###          | |  | | |__| | | / ____ \|_|            ###
+        ###          |_|  |_|\____/|_|/_/    \_\              ###
+        ###                                                   ### 
+        ######################################################### 
+       
+ 
+        
+Features names not provided, using default naming convention:
+- feature1_view1, featureD_viewM
+
+Groups names not provided, using default naming convention:
+- group1, group2, ..., groupG
+
+Samples names not provided, using default naming convention:
+- sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG
+
+Successfully loaded view='CNV' group='group0' with N=625 samples and D=35858 features...
+Successfully loaded view='Methylation' group='group0' with N=625 samples and D=36761 features...
+Successfully loaded view='SNPs' group='group0' with N=625 samples and D=12926 features...
+Successfully loaded view='RNAseq' group='group0' with N=625 samples and D=56717 features...
+Successfully loaded view='miRNA' group='group0' with N=625 samples and D=1568 features...
+
+
+Model options:
+- Automatic Relevance Determination prior on the factors: False
+- Automatic Relevance Determination prior on the weights: True
+- Spike-and-slab prior on the factors: False
+- Spike-and-slab prior on the weights: False
+Likelihoods:
+- View 0 (CNV): gaussian
+- View 1 (Methylation): gaussian
+- View 2 (SNPs): bernoulli
+- View 3 (RNAseq): gaussian
+- View 4 (miRNA): gaussian
+
+
+
+GPU mode is activated
+
+
+
+######################################
+## Training the model with seed 123 ##
+######################################
+
+
+ELBO before training: -1096391367.30 
+
+Iteration 1: time=7.52, ELBO=-114007784.04, deltaELBO=982383583.256 (89.60154308%), Factors=20
+Iteration 2: time=5.12, Factors=20
+Iteration 3: time=4.74, Factors=20
+Iteration 4: time=4.73, Factors=20
+Iteration 5: time=4.73, Factors=20
+Iteration 6: time=4.86, ELBO=-99531228.72, deltaELBO=14476555.320 (1.32038210%), Factors=20
+Iteration 7: time=4.73, Factors=20
+Iteration 8: time=4.73, Factors=20
+Iteration 9: time=4.72, Factors=20
+Iteration 10: time=4.74, Factors=20
+Iteration 11: time=4.86, ELBO=-99324734.03, deltaELBO=206494.688 (0.01883403%), Factors=20
+Iteration 12: time=4.73, Factors=20
+Iteration 13: time=4.73, Factors=20
+Iteration 14: time=4.73, Factors=20
+Iteration 15: time=4.73, Factors=20
+Iteration 16: time=4.86, ELBO=-99195249.25, deltaELBO=129484.787 (0.01181009%), Factors=20
+Iteration 17: time=4.73, Factors=20
+Iteration 18: time=4.71, Factors=20
+Iteration 19: time=4.73, Factors=20
+Iteration 20: time=4.72, Factors=20
+Iteration 21: time=4.87, ELBO=-99133249.82, deltaELBO=61999.427 (0.00565486%), Factors=20
+Iteration 22: time=4.72, Factors=20
+Iteration 23: time=4.72, Factors=20
+Iteration 24: time=4.72, Factors=20
+Iteration 25: time=4.72, Factors=20
+Iteration 26: time=4.84, ELBO=-99098305.52, deltaELBO=34944.299 (0.00318721%), Factors=20
+Iteration 27: time=4.73, Factors=20
+Iteration 28: time=4.73, Factors=20
+Iteration 29: time=4.72, Factors=20
+Iteration 30: time=4.72, Factors=20
+Iteration 31: time=4.85, ELBO=-99071626.57, deltaELBO=26678.955 (0.00243334%), Factors=20
+Iteration 32: time=4.73, Factors=20
+Iteration 33: time=4.73, Factors=20
+Iteration 34: time=4.72, Factors=20
+Iteration 35: time=4.73, Factors=20
+Iteration 36: time=4.85, ELBO=-99047641.24, deltaELBO=23985.324 (0.00218766%), Factors=20
+Iteration 37: time=4.72, Factors=20
+Iteration 38: time=4.73, Factors=20
+Iteration 39: time=4.73, Factors=20
+Iteration 40: time=4.73, Factors=20
+Iteration 41: time=4.85, ELBO=-99025376.68, deltaELBO=22264.564 (0.00203071%), Factors=20
+Iteration 42: time=4.72, Factors=20
+Iteration 43: time=4.72, Factors=20
+Iteration 44: time=4.72, Factors=20
+Iteration 45: time=4.73, Factors=20
+Iteration 46: time=4.87, ELBO=-99004334.36, deltaELBO=21042.321 (0.00191923%), Factors=20
+Iteration 47: time=4.73, Factors=20
+Iteration 48: time=4.72, Factors=20
+Iteration 49: time=4.73, Factors=20
+Iteration 50: time=4.71, Factors=20
+Iteration 51: time=4.86, ELBO=-98983505.92, deltaELBO=20828.434 (0.00189973%), Factors=20
+Iteration 52: time=4.72, Factors=20
+Iteration 53: time=4.73, Factors=20
+Iteration 54: time=4.72, Factors=20
+Iteration 55: time=4.73, Factors=20
+Iteration 56: time=4.85, ELBO=-98962585.55, deltaELBO=20920.371 (0.00190811%), Factors=20
+Iteration 57: time=4.72, Factors=20
+Iteration 58: time=4.72, Factors=20
+Iteration 59: time=4.72, Factors=20
+Iteration 60: time=4.72, Factors=20
+Iteration 61: time=4.87, ELBO=-98942692.87, deltaELBO=19892.677 (0.00181438%), Factors=20
+Iteration 62: time=4.71, Factors=20
+Iteration 63: time=4.73, Factors=20
+Iteration 64: time=4.71, Factors=20
+Iteration 65: time=4.72, Factors=20
+Iteration 66: time=4.85, ELBO=-98925336.17, deltaELBO=17356.702 (0.00158308%), Factors=20
+Iteration 67: time=4.72, Factors=20
+Iteration 68: time=4.72, Factors=20
+Iteration 69: time=4.72, Factors=20
+Iteration 70: time=4.73, Factors=20
+Iteration 71: time=4.85, ELBO=-98910813.71, deltaELBO=14522.467 (0.00132457%), Factors=20
+Iteration 72: time=4.72, Factors=20
+Iteration 73: time=4.72, Factors=20
+Iteration 74: time=4.71, Factors=20
+Iteration 75: time=4.73, Factors=20
+Iteration 76: time=4.85, ELBO=-98898548.78, deltaELBO=12264.924 (0.00111866%), Factors=20
+Iteration 77: time=4.73, Factors=20
+Iteration 78: time=4.72, Factors=20
+Iteration 79: time=4.71, Factors=20
+Iteration 80: time=4.73, Factors=20
+Iteration 81: time=4.86, ELBO=-98888065.40, deltaELBO=10483.384 (0.00095617%), Factors=20
+Iteration 82: time=4.72, Factors=20
+Iteration 83: time=4.73, Factors=20
+Iteration 84: time=4.72, Factors=20
+Iteration 85: time=4.72, Factors=20
+Iteration 86: time=4.86, ELBO=-98879264.31, deltaELBO=8801.085 (0.00080273%), Factors=20
+Iteration 87: time=4.74, Factors=20
+Iteration 88: time=4.71, Factors=20
+Iteration 89: time=4.74, Factors=20
+Iteration 90: time=4.73, Factors=20
+Iteration 91: time=4.85, ELBO=-98872322.76, deltaELBO=6941.553 (0.00063313%), Factors=20
+Iteration 92: time=4.73, Factors=20
+Iteration 93: time=4.71, Factors=20
+Iteration 94: time=4.72, Factors=20
+Iteration 95: time=4.72, Factors=20
+Iteration 96: time=4.84, ELBO=-98867328.11, deltaELBO=4994.646 (0.00045555%), Factors=20
+Iteration 97: time=4.72, Factors=20
+Iteration 98: time=4.71, Factors=20
+Iteration 99: time=4.71, Factors=20
+Iteration 100: time=4.70, Factors=20
+Iteration 101: time=4.84, ELBO=-98863869.64, deltaELBO=3458.476 (0.00031544%), Factors=20
+Iteration 102: time=4.70, Factors=20
+Iteration 103: time=4.69, Factors=20
+Iteration 104: time=4.71, Factors=20
+Iteration 105: time=4.71, Factors=20
+Iteration 106: time=4.82, ELBO=-98861307.35, deltaELBO=2562.288 (0.00023370%), Factors=20
+Iteration 107: time=4.70, Factors=20
+Iteration 108: time=4.70, Factors=20
+Iteration 109: time=4.71, Factors=20
+Iteration 110: time=4.70, Factors=20
+Iteration 111: time=4.83, ELBO=-98859231.37, deltaELBO=2075.978 (0.00018935%), Factors=20
+Iteration 112: time=4.70, Factors=20
+Iteration 113: time=4.72, Factors=20
+Iteration 114: time=4.70, Factors=20
+Iteration 115: time=4.70, Factors=20
+Iteration 116: time=4.83, ELBO=-98857450.85, deltaELBO=1780.522 (0.00016240%), Factors=20
+Iteration 117: time=4.70, Factors=20
+Iteration 118: time=4.70, Factors=20
+Iteration 119: time=4.70, Factors=20
+Iteration 120: time=4.70, Factors=20
+Iteration 121: time=4.83, ELBO=-98855871.46, deltaELBO=1579.391 (0.00014405%), Factors=20
+Iteration 122: time=4.69, Factors=20
+Iteration 123: time=4.71, Factors=20
+Iteration 124: time=4.70, Factors=20
+Iteration 125: time=4.70, Factors=20
+Iteration 126: time=4.84, ELBO=-98854437.39, deltaELBO=1434.069 (0.00013080%), Factors=20
+Iteration 127: time=4.70, Factors=20
+Iteration 128: time=4.71, Factors=20
+Iteration 129: time=4.70, Factors=20
+Iteration 130: time=4.69, Factors=20
+Iteration 131: time=4.83, ELBO=-98853109.81, deltaELBO=1327.580 (0.00012109%), Factors=20
+Iteration 132: time=4.71, Factors=20
+Iteration 133: time=4.70, Factors=20
+Iteration 134: time=4.70, Factors=20
+Iteration 135: time=4.70, Factors=20
+Iteration 136: time=4.83, ELBO=-98851858.38, deltaELBO=1251.434 (0.00011414%), Factors=20
+Iteration 137: time=4.70, Factors=20
+Iteration 138: time=4.70, Factors=20
+Iteration 139: time=4.71, Factors=20
+Iteration 140: time=4.70, Factors=20
+Iteration 141: time=4.83, ELBO=-98850657.46, deltaELBO=1200.915 (0.00010953%), Factors=20
+Iteration 142: time=4.70, Factors=20
+Iteration 143: time=4.70, Factors=20
+Iteration 144: time=4.71, Factors=20
+Iteration 145: time=4.70, Factors=20
+Iteration 146: time=4.83, ELBO=-98849484.25, deltaELBO=1173.215 (0.00010701%), Factors=20
+Iteration 147: time=4.71, Factors=20
+Iteration 148: time=4.70, Factors=20
+Iteration 149: time=4.70, Factors=20
+Iteration 150: time=4.70, Factors=20
+Iteration 151: time=4.83, ELBO=-98848317.65, deltaELBO=1166.599 (0.00010640%), Factors=20
+Iteration 152: time=4.70, Factors=20
+Iteration 153: time=4.70, Factors=20
+Iteration 154: time=4.70, Factors=20
+Iteration 155: time=4.70, Factors=20
+Iteration 156: time=4.83, ELBO=-98847137.66, deltaELBO=1179.984 (0.00010762%), Factors=20
+Iteration 157: time=4.70, Factors=20
+Iteration 158: time=4.70, Factors=20
+Iteration 159: time=4.71, Factors=20
+Iteration 160: time=4.71, Factors=20
+Iteration 161: time=4.84, ELBO=-98845925.00, deltaELBO=1212.665 (0.00011061%), Factors=20
+Iteration 162: time=4.70, Factors=20
+Iteration 163: time=4.70, Factors=20
+Iteration 164: time=4.69, Factors=20
+Iteration 165: time=4.71, Factors=20
+Iteration 166: time=4.84, ELBO=-98844660.89, deltaELBO=1264.105 (0.00011530%), Factors=20
+Iteration 167: time=4.70, Factors=20
+Iteration 168: time=4.70, Factors=20
+Iteration 169: time=4.70, Factors=20
+Iteration 170: time=4.70, Factors=20
+Iteration 171: time=4.83, ELBO=-98843327.18, deltaELBO=1333.710 (0.00012165%), Factors=20
+Iteration 172: time=4.70, Factors=20
+Iteration 173: time=4.70, Factors=20
+Iteration 174: time=4.69, Factors=20
+Iteration 175: time=4.70, Factors=20
+Iteration 176: time=4.82, ELBO=-98841906.61, deltaELBO=1420.570 (0.00012957%), Factors=20
+Iteration 177: time=4.70, Factors=20
+Iteration 178: time=4.69, Factors=20
+Iteration 179: time=4.70, Factors=20
+Iteration 180: time=4.69, Factors=20
+Iteration 181: time=4.83, ELBO=-98840383.47, deltaELBO=1523.139 (0.00013892%), Factors=20
+Iteration 182: time=4.69, Factors=20
+Iteration 183: time=4.70, Factors=20
+Iteration 184: time=4.70, Factors=20
+Iteration 185: time=4.70, Factors=20
+Iteration 186: time=4.82, ELBO=-98838744.64, deltaELBO=1638.837 (0.00014948%), Factors=20
+Iteration 187: time=4.70, Factors=20
+Iteration 188: time=4.71, Factors=20
+Iteration 189: time=4.70, Factors=20
+Iteration 190: time=4.69, Factors=20
+Iteration 191: time=4.84, ELBO=-98836981.03, deltaELBO=1763.601 (0.00016086%), Factors=20
+Iteration 192: time=4.69, Factors=20
+Iteration 193: time=4.70, Factors=20
+Iteration 194: time=4.69, Factors=20
+Iteration 195: time=4.70, Factors=20
+Iteration 196: time=4.83, ELBO=-98835089.58, deltaELBO=1891.450 (0.00017252%), Factors=20
+Iteration 197: time=4.70, Factors=20
+Iteration 198: time=4.70, Factors=20
+Iteration 199: time=4.70, Factors=20
+Iteration 200: time=4.69, Factors=20
+Iteration 201: time=4.84, ELBO=-98833075.37, deltaELBO=2014.213 (0.00018371%), Factors=20
+Iteration 202: time=4.70, Factors=20
+Iteration 203: time=4.70, Factors=20
+Iteration 204: time=4.70, Factors=20
+Iteration 205: time=4.70, Factors=20
+Iteration 206: time=4.83, ELBO=-98830953.68, deltaELBO=2121.692 (0.00019352%), Factors=20
+Iteration 207: time=4.70, Factors=20
+Iteration 208: time=4.70, Factors=20
+Iteration 209: time=4.70, Factors=20
+Iteration 210: time=4.70, Factors=20
+Iteration 211: time=4.83, ELBO=-98828751.12, deltaELBO=2202.562 (0.00020089%), Factors=20
+Iteration 212: time=4.70, Factors=20
+Iteration 213: time=4.71, Factors=20
+Iteration 214: time=4.69, Factors=20
+Iteration 215: time=4.70, Factors=20
+Iteration 216: time=4.84, ELBO=-98826504.84, deltaELBO=2246.274 (0.00020488%), Factors=20
+Iteration 217: time=4.70, Factors=20
+Iteration 218: time=4.70, Factors=20
+Iteration 219: time=4.71, Factors=20
+Iteration 220: time=4.70, Factors=20
+Iteration 221: time=4.84, ELBO=-98824259.09, deltaELBO=2245.749 (0.00020483%), Factors=20
+Iteration 222: time=4.70, Factors=20
+Iteration 223: time=4.70, Factors=20
+Iteration 224: time=4.70, Factors=20
+Iteration 225: time=4.70, Factors=20
+Iteration 226: time=4.82, ELBO=-98822059.06, deltaELBO=2200.035 (0.00020066%), Factors=20
+Iteration 227: time=4.71, Factors=20
+Iteration 228: time=4.70, Factors=20
+Iteration 229: time=4.70, Factors=20
+Iteration 230: time=4.70, Factors=20
+Iteration 231: time=4.83, ELBO=-98819943.56, deltaELBO=2115.504 (0.00019295%), Factors=20
+Iteration 232: time=4.71, Factors=20
+Iteration 233: time=4.69, Factors=20
+Iteration 234: time=4.70, Factors=20
+Iteration 235: time=4.69, Factors=20
+Iteration 236: time=4.83, ELBO=-98817939.03, deltaELBO=2004.530 (0.00018283%), Factors=20
+Iteration 237: time=4.71, Factors=20
+Iteration 238: time=4.70, Factors=20
+Iteration 239: time=4.71, Factors=20
+Iteration 240: time=4.70, Factors=20
+Iteration 241: time=4.84, ELBO=-98816057.06, deltaELBO=1881.968 (0.00017165%), Factors=20
+Iteration 242: time=4.70, Factors=20
+Iteration 243: time=4.70, Factors=20
+Iteration 244: time=4.70, Factors=20
+Iteration 245: time=4.70, Factors=20
+Iteration 246: time=4.83, ELBO=-98814295.92, deltaELBO=1761.143 (0.00016063%), Factors=20
+Iteration 247: time=4.71, Factors=20
+Iteration 248: time=4.69, Factors=20
+Iteration 249: time=4.70, Factors=20
+Iteration 250: time=4.70, Factors=20
+Iteration 251: time=4.83, ELBO=-98812644.70, deltaELBO=1651.214 (0.00015060%), Factors=20
+Iteration 252: time=4.70, Factors=20
+Iteration 253: time=4.70, Factors=20
+Iteration 254: time=4.69, Factors=20
+Iteration 255: time=4.71, Factors=20
+Iteration 256: time=4.83, ELBO=-98811088.12, deltaELBO=1556.587 (0.00014197%), Factors=20
+Iteration 257: time=4.69, Factors=20
+Iteration 258: time=4.69, Factors=20
+Iteration 259: time=4.70, Factors=20
+Iteration 260: time=4.69, Factors=20
+Iteration 261: time=4.82, ELBO=-98809610.30, deltaELBO=1477.811 (0.00013479%), Factors=20
+Iteration 262: time=4.70, Factors=20
+Iteration 263: time=4.69, Factors=20
+Iteration 264: time=4.71, Factors=20
+Iteration 265: time=4.71, Factors=20
+Iteration 266: time=4.84, ELBO=-98808197.33, deltaELBO=1412.977 (0.00012888%), Factors=20
+Iteration 267: time=4.71, Factors=20
+Iteration 268: time=4.71, Factors=20
+Iteration 269: time=4.69, Factors=20
+Iteration 270: time=4.70, Factors=20
+Iteration 271: time=4.83, ELBO=-98806838.34, deltaELBO=1358.991 (0.00012395%), Factors=20
+Iteration 272: time=4.71, Factors=20
+Iteration 273: time=4.69, Factors=20
+Iteration 274: time=4.69, Factors=20
+Iteration 275: time=4.69, Factors=20
+Iteration 276: time=4.83, ELBO=-98805525.87, deltaELBO=1312.466 (0.00011971%), Factors=20
+Iteration 277: time=4.70, Factors=20
+Iteration 278: time=4.70, Factors=20
+Iteration 279: time=4.70, Factors=20
+Iteration 280: time=4.71, Factors=20
+Iteration 281: time=4.84, ELBO=-98804255.59, deltaELBO=1270.280 (0.00011586%), Factors=20
+Iteration 282: time=4.70, Factors=20
+Iteration 283: time=4.70, Factors=20
+Iteration 284: time=4.69, Factors=20
+Iteration 285: time=4.70, Factors=20
+Iteration 286: time=4.82, ELBO=-98803025.71, deltaELBO=1229.876 (0.00011217%), Factors=20
+Iteration 287: time=4.71, Factors=20
+Iteration 288: time=4.70, Factors=20
+Iteration 289: time=4.70, Factors=20
+Iteration 290: time=4.69, Factors=20
+Iteration 291: time=4.83, ELBO=-98801836.32, deltaELBO=1189.398 (0.00010848%), Factors=20
+Iteration 292: time=4.70, Factors=20
+Iteration 293: time=4.70, Factors=20
+Iteration 294: time=4.70, Factors=20
+Iteration 295: time=4.70, Factors=20
+Iteration 296: time=4.81, ELBO=-98800688.62, deltaELBO=1147.695 (0.00010468%), Factors=20
+Iteration 297: time=4.71, Factors=20
+Iteration 298: time=4.70, Factors=20
+Iteration 299: time=4.71, Factors=20
+Iteration 300: time=4.70, Factors=20
+Iteration 301: time=4.84, ELBO=-98799584.37, deltaELBO=1104.247 (0.00010072%), Factors=20
+Iteration 302: time=4.70, Factors=20
+Iteration 303: time=4.70, Factors=20
+Iteration 304: time=4.70, Factors=20
+Iteration 305: time=4.70, Factors=20
+Iteration 306: time=4.83, ELBO=-98798525.34, deltaELBO=1059.032 (0.00009659%), Factors=20
+Iteration 307: time=4.70, Factors=20
+Iteration 308: time=4.69, Factors=20
+Iteration 309: time=4.69, Factors=20
+Iteration 310: time=4.69, Factors=20
+Iteration 311: time=4.83, ELBO=-98797512.97, deltaELBO=1012.374 (0.00009234%), Factors=20
+Iteration 312: time=4.70, Factors=20
+Iteration 313: time=4.70, Factors=20
+Iteration 314: time=4.70, Factors=20
+Iteration 315: time=4.70, Factors=20
+Iteration 316: time=4.84, ELBO=-98796548.18, deltaELBO=964.787 (0.00008800%), Factors=20
+Iteration 317: time=4.71, Factors=20
+Iteration 318: time=4.70, Factors=20
+Iteration 319: time=4.70, Factors=20
+Iteration 320: time=4.70, Factors=20
+Iteration 321: time=4.83, ELBO=-98795631.33, deltaELBO=916.850 (0.00008362%), Factors=20
+Iteration 322: time=4.69, Factors=20
+Iteration 323: time=4.71, Factors=20
+Iteration 324: time=4.70, Factors=20
+Iteration 325: time=4.70, Factors=20
+Iteration 326: time=4.84, ELBO=-98794762.22, deltaELBO=869.110 (0.00007927%), Factors=20
+Iteration 327: time=4.71, Factors=20
+Iteration 328: time=4.70, Factors=20
+Iteration 329: time=4.71, Factors=20
+Iteration 330: time=4.70, Factors=20
+Iteration 331: time=4.83, ELBO=-98793940.20, deltaELBO=822.026 (0.00007498%), Factors=20
+Iteration 332: time=4.71, Factors=20
+Iteration 333: time=4.69, Factors=20
+Iteration 334: time=4.70, Factors=20
+Iteration 335: time=4.70, Factors=20
+Iteration 336: time=4.83, ELBO=-98793164.25, deltaELBO=775.949 (0.00007077%), Factors=20
+Iteration 337: time=4.70, Factors=20
+Iteration 338: time=4.70, Factors=20
+Iteration 339: time=4.70, Factors=20
+Iteration 340: time=4.70, Factors=20
+Iteration 341: time=4.83, ELBO=-98792433.12, deltaELBO=731.126 (0.00006668%), Factors=20
+Iteration 342: time=4.70, Factors=20
+Iteration 343: time=4.69, Factors=20
+Iteration 344: time=4.69, Factors=20
+Iteration 345: time=4.70, Factors=20
+Iteration 346: time=4.82, ELBO=-98791745.40, deltaELBO=687.721 (0.00006273%), Factors=20
+Iteration 347: time=4.71, Factors=20
+Iteration 348: time=4.70, Factors=20
+Iteration 349: time=4.71, Factors=20
+Iteration 350: time=4.69, Factors=20
+Iteration 351: time=4.83, ELBO=-98791099.56, deltaELBO=645.842 (0.00005891%), Factors=20
+Iteration 352: time=4.69, Factors=20
+Iteration 353: time=4.70, Factors=20
+Iteration 354: time=4.69, Factors=20
+Iteration 355: time=4.70, Factors=20
+Iteration 356: time=4.83, ELBO=-98790493.99, deltaELBO=605.567 (0.00005523%), Factors=20
+Iteration 357: time=4.71, Factors=20
+Iteration 358: time=4.70, Factors=20
+Iteration 359: time=4.70, Factors=20
+Iteration 360: time=4.70, Factors=20
+Iteration 361: time=4.83, ELBO=-98789927.02, deltaELBO=566.964 (0.00005171%), Factors=20
+Iteration 362: time=4.70, Factors=20
+Iteration 363: time=4.72, Factors=20
+Iteration 364: time=4.70, Factors=20
+Iteration 365: time=4.70, Factors=20
+Iteration 366: time=4.83, ELBO=-98789396.92, deltaELBO=530.103 (0.00004835%), Factors=20
+Iteration 367: time=4.70, Factors=20
+Iteration 368: time=4.70, Factors=20
+Iteration 369: time=4.70, Factors=20
+Iteration 370: time=4.70, Factors=20
+Iteration 371: time=4.84, ELBO=-98788901.87, deltaELBO=495.054 (0.00004515%), Factors=20
+Iteration 372: time=4.70, Factors=20
+Iteration 373: time=4.70, Factors=20
+Iteration 374: time=4.70, Factors=20
+Iteration 375: time=4.71, Factors=20
+Iteration 376: time=4.83, ELBO=-98788439.98, deltaELBO=461.886 (0.00004213%), Factors=20
+Iteration 377: time=4.71, Factors=20
+Iteration 378: time=4.71, Factors=20
+Iteration 379: time=4.70, Factors=20
+Iteration 380: time=4.70, Factors=20
+Iteration 381: time=4.84, ELBO=-98788009.33, deltaELBO=430.655 (0.00003928%), Factors=20
+Iteration 382: time=4.70, Factors=20
+Iteration 383: time=4.70, Factors=20
+Iteration 384: time=4.70, Factors=20
+Iteration 385: time=4.70, Factors=20
+Iteration 386: time=4.84, ELBO=-98787607.93, deltaELBO=401.394 (0.00003661%), Factors=20
+Iteration 387: time=4.71, Factors=20
+Iteration 388: time=4.70, Factors=20
+Iteration 389: time=4.69, Factors=20
+Iteration 390: time=4.70, Factors=20
+Iteration 391: time=4.84, ELBO=-98787233.82, deltaELBO=374.110 (0.00003412%), Factors=20
+Iteration 392: time=4.70, Factors=20
+Iteration 393: time=4.70, Factors=20
+Iteration 394: time=4.71, Factors=20
+Iteration 395: time=4.70, Factors=20
+Iteration 396: time=4.83, ELBO=-98786885.05, deltaELBO=348.776 (0.00003181%), Factors=20
+Iteration 397: time=4.70, Factors=20
+Iteration 398: time=4.69, Factors=20
+Iteration 399: time=4.69, Factors=20
+Iteration 400: time=4.70, Factors=20
+Iteration 401: time=4.84, ELBO=-98786559.71, deltaELBO=325.339 (0.00002967%), Factors=20
+Iteration 402: time=4.70, Factors=20
+Iteration 403: time=4.70, Factors=20
+Iteration 404: time=4.70, Factors=20
+Iteration 405: time=4.71, Factors=20
+Iteration 406: time=5.06, ELBO=-98786255.99, deltaELBO=303.716 (0.00002770%), Factors=20
+Iteration 407: time=4.72, Factors=20
+Iteration 408: time=4.71, Factors=20
+Iteration 409: time=4.71, Factors=20
+Iteration 410: time=4.70, Factors=20
+Iteration 411: time=4.83, ELBO=-98785972.18, deltaELBO=283.811 (0.00002589%), Factors=20
+Iteration 412: time=4.70, Factors=20
+Iteration 413: time=4.70, Factors=20
+Iteration 414: time=4.70, Factors=20
+Iteration 415: time=4.70, Factors=20
+Iteration 416: time=4.83, ELBO=-98785706.67, deltaELBO=265.511 (0.00002422%), Factors=20
+Iteration 417: time=4.70, Factors=20
+Iteration 418: time=4.70, Factors=20
+Iteration 419: time=4.70, Factors=20
+Iteration 420: time=4.70, Factors=20
+Iteration 421: time=4.84, ELBO=-98785457.97, deltaELBO=248.699 (0.00002268%), Factors=20
+Iteration 422: time=4.70, Factors=20
+Iteration 423: time=4.69, Factors=20
+Iteration 424: time=4.70, Factors=20
+Iteration 425: time=4.70, Factors=20
+Iteration 426: time=4.83, ELBO=-98785224.71, deltaELBO=233.258 (0.00002128%), Factors=20
+Iteration 427: time=4.70, Factors=20
+Iteration 428: time=4.69, Factors=20
+Iteration 429: time=4.69, Factors=20
+Iteration 430: time=4.70, Factors=20
+Iteration 431: time=4.82, ELBO=-98785005.64, deltaELBO=219.071 (0.00001998%), Factors=20
+Iteration 432: time=4.70, Factors=20
+Iteration 433: time=4.70, Factors=20
+Iteration 434: time=4.70, Factors=20
+Iteration 435: time=4.70, Factors=20
+Iteration 436: time=4.82, ELBO=-98784799.61, deltaELBO=206.029 (0.00001879%), Factors=20
+Iteration 437: time=4.70, Factors=20
+Iteration 438: time=4.69, Factors=20
+Iteration 439: time=4.70, Factors=20
+Iteration 440: time=4.69, Factors=20
+Iteration 441: time=4.83, ELBO=-98784605.58, deltaELBO=194.030 (0.00001770%), Factors=20
+Iteration 442: time=4.70, Factors=20
+Iteration 443: time=4.70, Factors=20
+Iteration 444: time=4.70, Factors=20
+Iteration 445: time=4.70, Factors=20
+Iteration 446: time=4.82, ELBO=-98784422.60, deltaELBO=182.980 (0.00001669%), Factors=20
+Iteration 447: time=4.70, Factors=20
+Iteration 448: time=4.69, Factors=20
+Iteration 449: time=4.70, Factors=20
+Iteration 450: time=4.69, Factors=20
+Iteration 451: time=4.84, ELBO=-98784249.81, deltaELBO=172.792 (0.00001576%), Factors=20
+Iteration 452: time=4.70, Factors=20
+Iteration 453: time=4.70, Factors=20
+Iteration 454: time=4.70, Factors=20
+Iteration 455: time=4.70, Factors=20
+Iteration 456: time=4.83, ELBO=-98784086.42, deltaELBO=163.388 (0.00001490%), Factors=20
+Iteration 457: time=4.70, Factors=20
+Iteration 458: time=4.71, Factors=20
+Iteration 459: time=4.70, Factors=20
+Iteration 460: time=4.69, Factors=20
+Iteration 461: time=4.82, ELBO=-98783931.72, deltaELBO=154.700 (0.00001411%), Factors=20
+Iteration 462: time=4.69, Factors=20
+Iteration 463: time=4.70, Factors=20
+Iteration 464: time=4.70, Factors=20
+Iteration 465: time=4.69, Factors=20
+Iteration 466: time=4.82, ELBO=-98783785.06, deltaELBO=146.664 (0.00001338%), Factors=20
+Iteration 467: time=4.69, Factors=20
+Iteration 468: time=4.69, Factors=20
+Iteration 469: time=4.69, Factors=20
+Iteration 470: time=4.69, Factors=20
+Iteration 471: time=4.83, ELBO=-98783645.84, deltaELBO=139.223 (0.00001270%), Factors=20
+Iteration 472: time=4.70, Factors=20
+Iteration 473: time=4.70, Factors=20
+Iteration 474: time=4.69, Factors=20
+Iteration 475: time=4.70, Factors=20
+Iteration 476: time=4.81, ELBO=-98783513.51, deltaELBO=132.326 (0.00001207%), Factors=20
+Iteration 477: time=4.70, Factors=20
+Iteration 478: time=4.69, Factors=20
+Iteration 479: time=4.70, Factors=20
+Iteration 480: time=4.70, Factors=20
+Iteration 481: time=4.83, ELBO=-98783387.58, deltaELBO=125.928 (0.00001149%), Factors=20
+Iteration 482: time=4.70, Factors=20
+Iteration 483: time=4.69, Factors=20
+Iteration 484: time=4.70, Factors=20
+Iteration 485: time=4.70, Factors=20
+Iteration 486: time=4.83, ELBO=-98783267.60, deltaELBO=119.986 (0.00001094%), Factors=20
+Iteration 487: time=4.70, Factors=20
+Iteration 488: time=4.70, Factors=20
+Iteration 489: time=4.69, Factors=20
+Iteration 490: time=4.70, Factors=20
+Iteration 491: time=4.83, ELBO=-98783153.13, deltaELBO=114.464 (0.00001044%), Factors=20
+Iteration 492: time=4.70, Factors=20
+Iteration 493: time=4.70, Factors=20
+Iteration 494: time=4.69, Factors=20
+Iteration 495: time=4.69, Factors=20
+Iteration 496: time=4.83, ELBO=-98783043.80, deltaELBO=109.327 (0.00000997%), Factors=20
+Iteration 497: time=4.70, Factors=20
+Iteration 498: time=4.70, Factors=20
+Iteration 499: time=4.70, Factors=20
+Iteration 500: time=4.70, Factors=20
+Iteration 501: time=4.83, ELBO=-98782939.26, deltaELBO=104.544 (0.00000954%), Factors=20
+Iteration 502: time=4.70, Factors=20
+Iteration 503: time=4.70, Factors=20
+Iteration 504: time=4.70, Factors=20
+Iteration 505: time=4.69, Factors=20
+Iteration 506: time=4.83, ELBO=-98782839.17, deltaELBO=100.088 (0.00000913%), Factors=20
+Iteration 507: time=4.70, Factors=20
+Iteration 508: time=4.70, Factors=20
+Iteration 509: time=4.70, Factors=20
+Iteration 510: time=4.70, Factors=20
+Iteration 511: time=4.84, ELBO=-98782743.24, deltaELBO=95.931 (0.00000875%), Factors=20
+Iteration 512: time=4.70, Factors=20
+Iteration 513: time=4.70, Factors=20
+Iteration 514: time=4.70, Factors=20
+Iteration 515: time=4.70, Factors=20
+Iteration 516: time=4.83, ELBO=-98782651.19, deltaELBO=92.051 (0.00000840%), Factors=20
+Iteration 517: time=4.70, Factors=20
+Iteration 518: time=4.70, Factors=20
+Iteration 519: time=4.69, Factors=20
+Iteration 520: time=4.70, Factors=20
+Iteration 521: time=4.84, ELBO=-98782562.76, deltaELBO=88.426 (0.00000807%), Factors=20
+Iteration 522: time=4.70, Factors=20
+Iteration 523: time=4.71, Factors=20
+Iteration 524: time=4.70, Factors=20
+Iteration 525: time=4.69, Factors=20
+Iteration 526: time=4.83, ELBO=-98782477.73, deltaELBO=85.037 (0.00000776%), Factors=20
+Iteration 527: time=4.70, Factors=20
+Iteration 528: time=4.70, Factors=20
+Iteration 529: time=4.70, Factors=20
+Iteration 530: time=4.70, Factors=20
+Iteration 531: time=4.83, ELBO=-98782395.86, deltaELBO=81.864 (0.00000747%), Factors=20
+Iteration 532: time=4.70, Factors=20
+Iteration 533: time=4.70, Factors=20
+Iteration 534: time=4.70, Factors=20
+Iteration 535: time=4.70, Factors=20
+Iteration 536: time=4.82, ELBO=-98782316.97, deltaELBO=78.892 (0.00000720%), Factors=20
+Iteration 537: time=4.69, Factors=20
+Iteration 538: time=4.70, Factors=20
+Iteration 539: time=4.70, Factors=20
+Iteration 540: time=4.70, Factors=20
+Iteration 541: time=4.83, ELBO=-98782240.87, deltaELBO=76.105 (0.00000694%), Factors=20
+Iteration 542: time=4.69, Factors=20
+Iteration 543: time=4.69, Factors=20
+Iteration 544: time=4.68, Factors=20
+Iteration 545: time=4.70, Factors=20
+Iteration 546: time=4.82, ELBO=-98782167.38, deltaELBO=73.488 (0.00000670%), Factors=20
+Iteration 547: time=4.70, Factors=20
+Iteration 548: time=4.69, Factors=20
+Iteration 549: time=4.69, Factors=20
+Iteration 550: time=4.68, Factors=20
+Iteration 551: time=4.82, ELBO=-98782096.35, deltaELBO=71.030 (0.00000648%), Factors=20
+Iteration 552: time=4.69, Factors=20
+Iteration 553: time=4.68, Factors=20
+Iteration 554: time=4.69, Factors=20
+Iteration 555: time=4.68, Factors=20
+Iteration 556: time=4.81, ELBO=-98782027.63, deltaELBO=68.717 (0.00000627%), Factors=20
+Iteration 557: time=4.69, Factors=20
+Iteration 558: time=4.68, Factors=20
+Iteration 559: time=4.68, Factors=20
+Iteration 560: time=4.68, Factors=20
+Iteration 561: time=4.82, ELBO=-98781961.09, deltaELBO=66.539 (0.00000607%), Factors=20
+Iteration 562: time=4.69, Factors=20
+Iteration 563: time=4.69, Factors=20
+Iteration 564: time=4.69, Factors=20
+Iteration 565: time=4.69, Factors=20
+Iteration 566: time=4.81, ELBO=-98781896.60, deltaELBO=64.486 (0.00000588%), Factors=20
+Iteration 567: time=4.69, Factors=20
+Iteration 568: time=4.69, Factors=20
+Iteration 569: time=4.69, Factors=20
+Iteration 570: time=4.69, Factors=20
+Iteration 571: time=4.82, ELBO=-98781834.06, deltaELBO=62.549 (0.00000570%), Factors=20
+Iteration 572: time=4.69, Factors=20
+Iteration 573: time=4.69, Factors=20
+Iteration 574: time=4.69, Factors=20
+Iteration 575: time=4.69, Factors=20
+Iteration 576: time=4.81, ELBO=-98781773.34, deltaELBO=60.718 (0.00000554%), Factors=20
+Iteration 577: time=4.68, Factors=20
+Iteration 578: time=4.69, Factors=20
+Iteration 579: time=4.69, Factors=20
+Iteration 580: time=4.68, Factors=20
+Iteration 581: time=4.82, ELBO=-98781714.35, deltaELBO=58.986 (0.00000538%), Factors=20
+Iteration 582: time=4.69, Factors=20
+Iteration 583: time=4.68, Factors=20
+Iteration 584: time=4.68, Factors=20
+Iteration 585: time=4.70, Factors=20
+Iteration 586: time=4.81, ELBO=-98781657.01, deltaELBO=57.346 (0.00000523%), Factors=20
+Iteration 587: time=4.69, Factors=20
+Iteration 588: time=4.69, Factors=20
+Iteration 589: time=4.69, Factors=20
+Iteration 590: time=4.69, Factors=20
+Iteration 591: time=4.83, ELBO=-98781601.21, deltaELBO=55.792 (0.00000509%), Factors=20
+Iteration 592: time=4.69, Factors=20
+Iteration 593: time=4.69, Factors=20
+Iteration 594: time=4.69, Factors=20
+Iteration 595: time=4.69, Factors=20
+Iteration 596: time=4.82, ELBO=-98781546.90, deltaELBO=54.316 (0.00000495%), Factors=20
+Iteration 597: time=4.69, Factors=20
+Iteration 598: time=4.69, Factors=20
+Iteration 599: time=4.69, Factors=20
+Iteration 600: time=4.69, Factors=20
+Iteration 601: time=4.83, ELBO=-98781493.98, deltaELBO=52.913 (0.00000483%), Factors=20
+
+Converged!
+
+
+
+#######################
+## Training finished ##
+#######################
+
+
+Saving model in MOFA_output_factors20_iter20000_R2_-1.hdf5...
+MOFA training complete. Results saved to "MOFA_output_factors20_iter20000_R2_-1.hdf5"

@@ -1,0 +1,294 @@
+Changed directory to /home/as3582/MO_survey/MOFA2.
+
+JobID: 5903282
+======
+Time: Sat Mar  1 16:14:40 GMT 2025
+Running on master node: gpu-q-43
+Current directory: /home/as3582/MO_survey/MOFA2
+
+Nodes allocated:
+================
+gpu-q-43
+
+numtasks=1, numnodes=1, mpi_tasks_per_node=1 (OMP_NUM_THREADS=1)
+
+Executing command:
+==================
+python MOFA_ncp2.py 
+
+11080
+OS                           : Linux-4.18.0-553.34.1.el8_10.x86_64-x86_64-with-glibc2.28
+Python Version               : 3.12.8
+CuPy Version                 : 13.3.0
+CuPy Platform                : NVIDIA CUDA
+NumPy Version                : 2.2.2
+SciPy Version                : 1.15.1
+Cython Build Version         : 0.29.37
+Cython Runtime Version       : None
+CUDA Root                    : /usr/local/software/cuda/11.4
+nvcc PATH                    : /usr/local/software/cuda/11.4/bin/nvcc
+CUDA Build Version           : 11080
+CUDA Driver Version          : 12040
+CUDA Runtime Version         : 11080 (linked to CuPy) / 11040 (locally installed)
+CUDA Extra Include Dirs      : []
+cuBLAS Version               : (available)
+cuFFT Version                : 10502
+cuRAND Version               : 10205
+cuSOLVER Version             : (11, 2, 0)
+cuSPARSE Version             : (available)
+NVRTC Version                : (11, 4)
+Thrust Version               : 200600
+CUB Build Version            : 200600
+Jitify Build Version         : <unknown>
+cuDNN Build Version          : None
+cuDNN Version                : None
+NCCL Build Version           : None
+NCCL Runtime Version         : None
+cuTENSOR Version             : None
+cuSPARSELt Build Version     : None
+Device 0 Name                : NVIDIA A100-SXM4-80GB
+Device 0 Compute Capability  : 80
+Device 0 PCI Bus ID          : 0000:01:00.0
+None
+
+        #########################################################
+        ###           __  __  ____  ______                    ### 
+        ###          |  \/  |/ __ \|  ____/\    _             ### 
+        ###          | \  / | |  | | |__ /  \ _| |_           ### 
+        ###          | |\/| | |  | |  __/ /\ \_   _|          ###
+        ###          | |  | | |__| | | / ____ \|_|            ###
+        ###          |_|  |_|\____/|_|/_/    \_\              ###
+        ###                                                   ### 
+        ######################################################### 
+       
+ 
+        
+Features names not provided, using default naming convention:
+- feature1_view1, featureD_viewM
+
+Groups names not provided, using default naming convention:
+- group1, group2, ..., groupG
+
+Samples names not provided, using default naming convention:
+- sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG
+
+Successfully loaded view='CNV' group='group0' with N=625 samples and D=35858 features...
+Successfully loaded view='Methylation' group='group0' with N=625 samples and D=36761 features...
+Successfully loaded view='SNPs' group='group0' with N=625 samples and D=12926 features...
+Successfully loaded view='RNAseq' group='group0' with N=625 samples and D=56717 features...
+Successfully loaded view='miRNA' group='group0' with N=625 samples and D=1568 features...
+
+
+Model options:
+- Automatic Relevance Determination prior on the factors: False
+- Automatic Relevance Determination prior on the weights: True
+- Spike-and-slab prior on the factors: False
+- Spike-and-slab prior on the weights: False
+Likelihoods:
+- View 0 (CNV): gaussian
+- View 1 (Methylation): gaussian
+- View 2 (SNPs): bernoulli
+- View 3 (RNAseq): gaussian
+- View 4 (miRNA): gaussian
+
+
+
+GPU mode is activated
+
+
+
+######################################
+## Training the model with seed 123 ##
+######################################
+
+
+ELBO before training: -250202675.87 
+
+Iteration 1: time=2.23, ELBO=-113234995.05, deltaELBO=136967680.826 (54.74269224%), Factors=2
+Iteration 2: time=1.32, Factors=2
+Iteration 3: time=1.32, Factors=2
+Iteration 4: time=1.32, Factors=2
+Iteration 5: time=1.31, Factors=2
+Iteration 6: time=1.41, ELBO=-111825295.28, deltaELBO=1409699.764 (0.56342314%), Factors=2
+Iteration 7: time=1.31, Factors=2
+Iteration 8: time=1.31, Factors=2
+Iteration 9: time=1.32, Factors=2
+Iteration 10: time=1.31, Factors=2
+Iteration 11: time=1.40, ELBO=-111823402.08, deltaELBO=1893.207 (0.00075667%), Factors=2
+Iteration 12: time=1.32, Factors=2
+Iteration 13: time=1.31, Factors=2
+Iteration 14: time=1.31, Factors=2
+Iteration 15: time=1.32, Factors=2
+Iteration 16: time=1.40, ELBO=-111822803.21, deltaELBO=598.866 (0.00023935%), Factors=2
+Iteration 17: time=1.32, Factors=2
+Iteration 18: time=1.32, Factors=2
+Iteration 19: time=1.32, Factors=2
+Iteration 20: time=1.31, Factors=2
+Iteration 21: time=1.41, ELBO=-111822517.62, deltaELBO=285.592 (0.00011414%), Factors=2
+Iteration 22: time=1.31, Factors=2
+Iteration 23: time=1.31, Factors=2
+Iteration 24: time=1.32, Factors=2
+Iteration 25: time=1.32, Factors=2
+Iteration 26: time=1.40, ELBO=-111822343.06, deltaELBO=174.553 (0.00006976%), Factors=2
+Iteration 27: time=1.33, Factors=2
+Iteration 28: time=1.32, Factors=2
+Iteration 29: time=1.32, Factors=2
+Iteration 30: time=1.32, Factors=2
+Iteration 31: time=1.41, ELBO=-111822220.93, deltaELBO=122.136 (0.00004882%), Factors=2
+Iteration 32: time=1.32, Factors=2
+Iteration 33: time=1.33, Factors=2
+Iteration 34: time=1.32, Factors=2
+Iteration 35: time=1.32, Factors=2
+Iteration 36: time=1.41, ELBO=-111822128.90, deltaELBO=92.027 (0.00003678%), Factors=2
+Iteration 37: time=1.32, Factors=2
+Iteration 38: time=1.32, Factors=2
+Iteration 39: time=1.33, Factors=2
+Iteration 40: time=1.32, Factors=2
+Iteration 41: time=1.40, ELBO=-111822056.30, deltaELBO=72.606 (0.00002902%), Factors=2
+Iteration 42: time=1.32, Factors=2
+Iteration 43: time=1.32, Factors=2
+Iteration 44: time=1.32, Factors=2
+Iteration 45: time=1.32, Factors=2
+Iteration 46: time=1.41, ELBO=-111821997.10, deltaELBO=59.195 (0.00002366%), Factors=2
+Iteration 47: time=1.32, Factors=2
+Iteration 48: time=1.32, Factors=2
+Iteration 49: time=1.32, Factors=2
+Iteration 50: time=1.31, Factors=2
+Iteration 51: time=1.41, ELBO=-111821947.58, deltaELBO=49.520 (0.00001979%), Factors=2
+Iteration 52: time=1.32, Factors=2
+Iteration 53: time=1.32, Factors=2
+Iteration 54: time=1.32, Factors=2
+Iteration 55: time=1.32, Factors=2
+Iteration 56: time=1.40, ELBO=-111821905.26, deltaELBO=42.321 (0.00001691%), Factors=2
+Iteration 57: time=1.32, Factors=2
+Iteration 58: time=1.31, Factors=2
+Iteration 59: time=1.32, Factors=2
+Iteration 60: time=1.32, Factors=2
+Iteration 61: time=1.41, ELBO=-111821868.42, deltaELBO=36.838 (0.00001472%), Factors=2
+Iteration 62: time=1.32, Factors=2
+Iteration 63: time=1.32, Factors=2
+Iteration 64: time=1.32, Factors=2
+Iteration 65: time=1.31, Factors=2
+Iteration 66: time=1.41, ELBO=-111821835.84, deltaELBO=32.581 (0.00001302%), Factors=2
+Iteration 67: time=1.32, Factors=2
+Iteration 68: time=1.31, Factors=2
+Iteration 69: time=1.33, Factors=2
+Iteration 70: time=1.31, Factors=2
+Iteration 71: time=1.41, ELBO=-111821806.62, deltaELBO=29.223 (0.00001168%), Factors=2
+Iteration 72: time=1.32, Factors=2
+Iteration 73: time=1.32, Factors=2
+Iteration 74: time=1.31, Factors=2
+Iteration 75: time=1.33, Factors=2
+Iteration 76: time=1.41, ELBO=-111821780.08, deltaELBO=26.536 (0.00001061%), Factors=2
+Iteration 77: time=1.32, Factors=2
+Iteration 78: time=1.32, Factors=2
+Iteration 79: time=1.31, Factors=2
+Iteration 80: time=1.32, Factors=2
+Iteration 81: time=1.41, ELBO=-111821755.72, deltaELBO=24.360 (0.00000974%), Factors=2
+Iteration 82: time=1.32, Factors=2
+Iteration 83: time=1.32, Factors=2
+Iteration 84: time=1.32, Factors=2
+Iteration 85: time=1.32, Factors=2
+Iteration 86: time=1.41, ELBO=-111821733.15, deltaELBO=22.576 (0.00000902%), Factors=2
+Iteration 87: time=1.32, Factors=2
+Iteration 88: time=1.31, Factors=2
+Iteration 89: time=1.32, Factors=2
+Iteration 90: time=1.32, Factors=2
+Iteration 91: time=1.41, ELBO=-111821712.05, deltaELBO=21.098 (0.00000843%), Factors=2
+Iteration 92: time=1.32, Factors=2
+Iteration 93: time=1.32, Factors=2
+Iteration 94: time=1.31, Factors=2
+Iteration 95: time=1.32, Factors=2
+Iteration 96: time=1.41, ELBO=-111821692.19, deltaELBO=19.861 (0.00000794%), Factors=2
+Iteration 97: time=1.32, Factors=2
+Iteration 98: time=1.31, Factors=2
+Iteration 99: time=1.32, Factors=2
+Iteration 100: time=1.32, Factors=2
+Iteration 101: time=1.41, ELBO=-111821673.37, deltaELBO=18.814 (0.00000752%), Factors=2
+Iteration 102: time=1.33, Factors=2
+Iteration 103: time=1.32, Factors=2
+Iteration 104: time=1.32, Factors=2
+Iteration 105: time=1.32, Factors=2
+Iteration 106: time=1.41, ELBO=-111821655.45, deltaELBO=17.921 (0.00000716%), Factors=2
+Iteration 107: time=1.32, Factors=2
+Iteration 108: time=1.32, Factors=2
+Iteration 109: time=1.32, Factors=2
+Iteration 110: time=1.32, Factors=2
+Iteration 111: time=1.41, ELBO=-111821638.30, deltaELBO=17.151 (0.00000686%), Factors=2
+Iteration 112: time=1.32, Factors=2
+Iteration 113: time=1.32, Factors=2
+Iteration 114: time=1.32, Factors=2
+Iteration 115: time=1.31, Factors=2
+Iteration 116: time=1.40, ELBO=-111821621.82, deltaELBO=16.483 (0.00000659%), Factors=2
+Iteration 117: time=1.32, Factors=2
+Iteration 118: time=1.32, Factors=2
+Iteration 119: time=1.32, Factors=2
+Iteration 120: time=1.32, Factors=2
+Iteration 121: time=1.41, ELBO=-111821605.92, deltaELBO=15.897 (0.00000635%), Factors=2
+Iteration 122: time=1.32, Factors=2
+Iteration 123: time=1.32, Factors=2
+Iteration 124: time=1.32, Factors=2
+Iteration 125: time=1.31, Factors=2
+Iteration 126: time=1.41, ELBO=-111821590.54, deltaELBO=15.380 (0.00000615%), Factors=2
+Iteration 127: time=1.32, Factors=2
+Iteration 128: time=1.31, Factors=2
+Iteration 129: time=1.33, Factors=2
+Iteration 130: time=1.32, Factors=2
+Iteration 131: time=1.41, ELBO=-111821575.62, deltaELBO=14.920 (0.00000596%), Factors=2
+Iteration 132: time=1.32, Factors=2
+Iteration 133: time=1.32, Factors=2
+Iteration 134: time=1.32, Factors=2
+Iteration 135: time=1.32, Factors=2
+Iteration 136: time=1.41, ELBO=-111821561.11, deltaELBO=14.507 (0.00000580%), Factors=2
+Iteration 137: time=1.32, Factors=2
+Iteration 138: time=1.32, Factors=2
+Iteration 139: time=1.32, Factors=2
+Iteration 140: time=1.31, Factors=2
+Iteration 141: time=1.41, ELBO=-111821546.98, deltaELBO=14.135 (0.00000565%), Factors=2
+Iteration 142: time=1.32, Factors=2
+Iteration 143: time=1.32, Factors=2
+Iteration 144: time=1.32, Factors=2
+Iteration 145: time=1.32, Factors=2
+Iteration 146: time=1.40, ELBO=-111821533.18, deltaELBO=13.798 (0.00000551%), Factors=2
+Iteration 147: time=1.33, Factors=2
+Iteration 148: time=1.32, Factors=2
+Iteration 149: time=1.32, Factors=2
+Iteration 150: time=1.32, Factors=2
+Iteration 151: time=1.41, ELBO=-111821519.69, deltaELBO=13.490 (0.00000539%), Factors=2
+Iteration 152: time=1.31, Factors=2
+Iteration 153: time=1.33, Factors=2
+Iteration 154: time=1.32, Factors=2
+Iteration 155: time=1.31, Factors=2
+Iteration 156: time=1.41, ELBO=-111821506.48, deltaELBO=13.207 (0.00000528%), Factors=2
+Iteration 157: time=1.32, Factors=2
+Iteration 158: time=1.31, Factors=2
+Iteration 159: time=1.32, Factors=2
+Iteration 160: time=1.31, Factors=2
+Iteration 161: time=1.41, ELBO=-111821493.54, deltaELBO=12.946 (0.00000517%), Factors=2
+Iteration 162: time=1.32, Factors=2
+Iteration 163: time=1.32, Factors=2
+Iteration 164: time=1.31, Factors=2
+Iteration 165: time=1.32, Factors=2
+Iteration 166: time=1.41, ELBO=-111821480.83, deltaELBO=12.704 (0.00000508%), Factors=2
+Iteration 167: time=1.31, Factors=2
+Iteration 168: time=1.32, Factors=2
+Iteration 169: time=1.32, Factors=2
+Iteration 170: time=1.32, Factors=2
+Iteration 171: time=1.41, ELBO=-111821468.35, deltaELBO=12.479 (0.00000499%), Factors=2
+Iteration 172: time=1.31, Factors=2
+Iteration 173: time=1.32, Factors=2
+Iteration 174: time=1.32, Factors=2
+Iteration 175: time=1.31, Factors=2
+Iteration 176: time=1.40, ELBO=-111821456.09, deltaELBO=12.269 (0.00000490%), Factors=2
+
+Converged!
+
+
+
+#######################
+## Training finished ##
+#######################
+
+
+Saving model in MOFA_output_factors2_iter20000_R2_-1.hdf5...
+MOFA training complete. Results saved to "MOFA_output_factors2_iter20000_R2_-1.hdf5"
