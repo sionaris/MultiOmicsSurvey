@@ -32,7 +32,7 @@ mfa = MFA(mfa_input,
           graph = FALSE,
           axes = c(1,2))
 dt = Sys.time() - t1
-print(dt)
+MFA[["dt"]] = dt
 
 # Export
 saveRDS(mfa, paste0("MFA_ncp_", ncp, "_results.rds"))

@@ -39,4 +39,6 @@
 /Scripts/inspect_mut_data.R
 /Scripts/single_algorithm/MOFA_local.R
 /Results/single_algorithm/RGCCA/*
-/Results/single_algoroithm/SGCCA/*
+/Results/single_algorithm/SGCCA/*
+/Results/single_algorithm/MOFA/MOFA_fast_console_log_first_run_ever
+/Results/single_algorithm/MOFA/MOFA_slow_console_log

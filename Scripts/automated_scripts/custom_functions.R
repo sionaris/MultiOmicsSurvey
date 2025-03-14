@@ -3172,3 +3172,316 @@ CIMLR.weight_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 0, weight,
   results[["LF"]] = LF
   return(results)
 }
+
+plot_MOFA_var_exp <- function(object, 
+                              x = "view", 
+                              y = "factor", 
+                              split_by = NA, 
+                              plot_total = FALSE,
+                              factors = "all", 
+                              min_r2 = 0, 
+                              max_r2 = NULL, 
+                              legend = TRUE,
+                              use_cache = TRUE,
+                              color_palette = c("gray97", "darkblue"),
+                              plot_title = "",
+                              ...) 
+{
+  library(ggplot2)#
+  library(reshape2)
+  # 1) Check that x, y, split_by are distinct
+  if (length(unique(c(x, y, split_by))) != 3) {
+    stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
+                "  Possible values are `view`, `group`, and `factor`."))
+  }
+  
+  # 2) If split_by is not provided, set it to the remaining dimension
+  if (is.na(split_by)) {
+    split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
+  }
+  
+  # 3) Retrieve or calculate variance explained
+  if (use_cache && .hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    r2_list <- object@cache$variance_explained
+  } else {
+    r2_list <- calculate_variance_explained(object, factors = factors, ...)
+  }
+  
+  # 4) Melt the r2_per_factor
+  r2_mk <- r2_list$r2_per_factor
+  r2_mk_df <- melt(lapply(r2_mk, function(x) melt(as.matrix(x),
+                                                  varnames = c("factor", "view"))),
+                   id.vars = c("factor", "view", "value"))
+  colnames(r2_mk_df)[ncol(r2_mk_df)] <- "group"
+  
+  # 5) Subset to desired factors
+  if ((length(factors) == 1) && (factors[1] == "all")) {
+    factors <- factors_names(object)
+  } else {
+    if (is.numeric(factors)) {
+      factors <- factors_names(object)[factors]
+    } else {
+      stopifnot(all(factors %in% factors_names(object)))
+    }
+    r2_mk_df <- r2_mk_df[r2_mk_df$factor %in% factors, ]
+  }
+  
+  # 6) Convert factor names to factor type with custom levels
+  r2_mk_df$factor <- factor(r2_mk_df$factor, levels = factors)
+  r2_mk_df$group <- factor(r2_mk_df$group, levels = groups_names(object))
+  r2_mk_df$view <- factor(r2_mk_df$view, levels = views_names(object))
+  
+  # 7) If needed, set small values to min_r2 and large values to max_r2
+  if (!is.null(min_r2)) {
+    r2_mk_df$value[r2_mk_df$value < min_r2] <- 0.001
+  }
+  min_r2 <- 0
+  if (!is.null(max_r2)) {
+    r2_mk_df$value[r2_mk_df$value > max_r2] <- max_r2
+  } else {
+    max_r2 <- max(r2_mk_df$value)
+  }
+  
+  # 8) Create the main heatmap plot
+  p1 <- ggplot(r2_mk_df, aes(x = .data[[x]], y = .data[[y]])) +
+    geom_tile(aes(fill = .data$value), color = "black") +
+    facet_wrap(as.formula(sprintf("~%s", split_by)), nrow = 1) +
+    labs(x = "", y = "", title = plot_title) + 
+    scale_fill_gradientn(colors = color_palette, 
+                         guide = "colorbar", 
+                         limits = c(min_r2, max_r2)) +
+    # Make the legend title bold
+    guides(fill = guide_colorbar(title = "Var. (%)", 
+                                 title.theme = element_text(face = "bold"))) +
+    theme(
+      axis.text.x      = element_text(color = "black", face = "bold", size = rel(0.6)),
+      axis.text.y      = element_text(color = "black", size = rel(0.6)),
+      axis.line        = element_blank(),
+      plot.title = element_text(size = rel(0.7), face = "bold"),
+      axis.ticks       = element_blank(),
+      panel.background = element_blank(),
+      strip.background = element_blank(),
+      strip.text       = element_text(size = rel(1)),
+      legend.background = element_rect(fill = "white", linetype = "solid"),
+      #legend.position = c(0.90, 0.86),
+      legend.key.size = unit(rel(0.6), "lines"),
+      legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+      legend.title = ggplot2::element_text(size = rel(0.6), face = "bold"), 
+      legend.text = ggplot2::element_text(size = rel(0.5))
+    )
+  
+  # 9) Show or hide the legend
+  if (isFALSE(legend)) {
+    p1 <- p1 + theme(legend.position = "none")
+  }
+  
+  # If there's only 1 level in split_by, remove the facet label
+  if (length(unique(r2_mk_df[, split_by])) == 1) {
+    p1 <- p1 + theme(strip.text = element_blank())
+  }
+  
+  # 10) Optionally add the bar plot of total variance explained
+  if (plot_total) {
+    r2_m_df <- melt(
+      lapply(r2_list$r2_total, function(x) lapply(x, function(z) z)),
+      varnames = c("view", "group"),
+      value.name = "R2"
+    )
+    colnames(r2_m_df)[(ncol(r2_m_df) - 1):ncol(r2_m_df)] <- c("view", "group")
+    r2_m_df$group <- factor(r2_m_df$group, levels = MOFA2::groups_names(object))
+    r2_m_df$view <- factor(r2_m_df$view, levels = views_names(object))
+    min_lim_bplt <- min(0, r2_m_df$R2)
+    max_lim_bplt <- max(r2_m_df$R2)
+    
+    p2 <- ggplot(r2_m_df, aes(x = .data[[x]], y = .data$R2)) +
+      geom_bar(stat = "identity", fill = "deepskyblue4",
+               color = "black", width = 0.9) +
+      facet_wrap(as.formula(sprintf("~%s", split_by)), nrow = 1) +
+      xlab("") + ylab("Variance explained (%)") +
+      scale_y_continuous(limits = c(min_lim_bplt, max_lim_bplt),
+                         expand = c(0.005, 0.005)) +
+      theme(
+        axis.ticks.x       = element_blank(),
+        axis.text.x        = element_text(color = "black", face = "bold", size = rel(0.6)),
+        axis.text.y        = element_text(color = "black", size = rel(0.6)),
+        axis.title.y       = element_text(color = "black"),
+        axis.line          = element_line(color = "black"),,
+        plot.title = element_text(size = rel(0.7), face = "bold"),
+        panel.background   = element_blank(),
+        strip.background   = element_blank(),
+        strip.text         = element_text(),
+        legend.background = element_rect(fill = "white", linetype = "solid"),
+        #legend.position = c(0.90, 0.86),
+        legend.key.size = unit(rel(0.6), "lines"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.title = ggplot2::element_text(size = rel(0.6), face = "bold"), 
+        legend.text = ggplot2::element_text(size = rel(0.5))
+      )
+    
+    if (length(unique(r2_m_df[, split_by])) == 1) {
+      p2 <- p2 + theme(strip.text = element_blank())
+    }
+    return(list(p1, p2))
+    
+  } else {
+    return(p1)
+  }
+}
+
+plot_MOFA_cumul_var_exp <- function(object, 
+                                  x = "view", 
+                                  y = "factor", 
+                                  split_by = NA, 
+                                  plot_total = FALSE,
+                                  factors = "all", 
+                                  min_r2 = 0, 
+                                  max_r2 = NULL, 
+                                  legend = TRUE,
+                                  use_cache = TRUE,
+                                  color_palette = c("gray97", "darkblue"),
+                                  plot_title = "",
+                                  ...) 
+{
+  library(ggplot2)
+  library(reshape2)
+  
+  # 1) Check that x, y, split_by are distinct
+  if (length(unique(c(x, y, split_by))) != 3) {
+    stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
+                "  Possible values are `view`, `group`, and `factor`."))
+  }
+  
+  # 2) If split_by is not provided, set it to the remaining dimension
+  if (is.na(split_by)) {
+    split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
+  }
+  
+  # 3) Retrieve or calculate variance explained
+  if (use_cache && .hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    r2_list <- object@cache$variance_explained
+  } else {
+    r2_list <- calculate_variance_explained(object, factors = factors, ...)
+  }
+  
+  # 4) Compute the cumulative variance explained and melt the matrix
+  #    For each element in r2_list$r2_per_factor, compute cumulative sums by column.
+  r2_mk <- r2_list$r2_per_factor
+  r2_mk_cum <- lapply(r2_mk, function(x) {
+    # Ensure x is a matrix and compute cumulative sum for each column (i.e., per view)
+    cs <- apply(as.matrix(x), 2, cumsum)
+    melt(cs, varnames = c("factor", "view"))
+  })
+  r2_mk_df <- melt(r2_mk_cum, id.vars = c("factor", "view", "value"))
+  colnames(r2_mk_df)[ncol(r2_mk_df)] <- "group"
+  
+  # 5) Subset to desired factors
+  if ((length(factors) == 1) && (factors[1] == "all")) {
+    factors <- factors_names(object)
+  } else {
+    if (is.numeric(factors)) {
+      factors <- factors_names(object)[factors]
+    } else {
+      stopifnot(all(factors %in% factors_names(object)))
+    }
+    r2_mk_df <- r2_mk_df[r2_mk_df$factor %in% factors, ]
+  }
+  
+  # 6) Convert factor names to factor type with custom levels
+  r2_mk_df$factor <- factor(r2_mk_df$factor, levels = factors)
+  r2_mk_df$group <- factor(r2_mk_df$group, levels = groups_names(object))
+  r2_mk_df$view <- factor(r2_mk_df$view, levels = views_names(object))
+  
+  # 7) If needed, set small values to min_r2 and large values to max_r2
+  if (!is.null(min_r2)) {
+    r2_mk_df$value[r2_mk_df$value < min_r2] <- 0.001
+  }
+  min_r2 <- 0
+  if (!is.null(max_r2)) {
+    r2_mk_df$value[r2_mk_df$value > max_r2] <- max_r2
+  } else {
+    max_r2 <- max(r2_mk_df$value)
+  }
+  
+  # 8) Create the main cumulative heatmap plot
+  p1 <- ggplot(r2_mk_df, aes(x = .data[[x]], y = .data[[y]])) +
+    geom_tile(aes(fill = .data$value), color = "black") +
+    facet_wrap(as.formula(sprintf("~%s", split_by)), nrow = 1) +
+    labs(x = "", y = "", title = plot_title) + 
+    scale_fill_gradientn(colors = color_palette, 
+                         guide = "colorbar", 
+                         limits = c(min_r2, max_r2)) +
+    guides(fill = guide_colorbar(title = "Cumulative Var. (%)", 
+                                 title.theme = element_text(face = "bold"))) +
+    theme(
+      axis.text.x      = element_text(color = "black", face = "bold", size = rel(0.6)),
+      axis.text.y      = element_text(color = "black", size = rel(0.6)),
+      axis.line        = element_blank(),
+      plot.title       = element_text(size = rel(0.7), face = "bold"),
+      axis.ticks       = element_blank(),
+      panel.background = element_blank(),
+      strip.background = element_blank(),
+      strip.text       = element_text(size = rel(1)),
+      legend.background = element_rect(fill = "white", linetype = "solid"),
+      legend.key.size   = unit(rel(0.6), "lines"),
+      legend.margin     = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+      legend.title      = ggplot2::element_text(size = rel(0.6), face = "bold"), 
+      legend.text       = ggplot2::element_text(size = rel(0.5))
+    )
+  
+  # 9) Show or hide the legend
+  if (isFALSE(legend)) {
+    p1 <- p1 + theme(legend.position = "none")
+  }
+  
+  # Remove facet labels if there is only one level in split_by
+  if (length(unique(r2_mk_df[, split_by])) == 1) {
+    p1 <- p1 + theme(strip.text = element_blank())
+  }
+  
+  # 10) Optionally add the bar plot of total variance explained (unchanged)
+  if (plot_total) {
+    r2_m_df <- melt(
+      lapply(r2_list$r2_total, function(x) lapply(x, function(z) z)),
+      varnames = c("view", "group"),
+      value.name = "R2"
+    )
+    colnames(r2_m_df)[(ncol(r2_m_df) - 1):ncol(r2_m_df)] <- c("view", "group")
+    r2_m_df$group <- factor(r2_m_df$group, levels = MOFA2::groups_names(object))
+    r2_m_df$view <- factor(r2_m_df$view, levels = views_names(object))
+    min_lim_bplt <- min(0, r2_m_df$R2)
+    max_lim_bplt <- max(r2_m_df$R2)
+    
+    p2 <- ggplot(r2_m_df, aes(x = .data[[x]], y = .data$R2)) +
+      geom_bar(stat = "identity", fill = "deepskyblue4",
+               color = "black", width = 0.9) +
+      facet_wrap(as.formula(sprintf("~%s", split_by)), nrow = 1) +
+      xlab("") + ylab("Variance explained (%)") +
+      scale_y_continuous(limits = c(min_lim_bplt, max_lim_bplt),
+                         expand = c(0.005, 0.005)) +
+      theme(
+        axis.ticks.x       = element_blank(),
+        axis.text.x        = element_text(color = "black", face = "bold", size = rel(0.6)),
+        axis.text.y        = element_text(color = "black", size = rel(0.6)),
+        axis.title.y       = element_text(color = "black"),
+        axis.line          = element_line(color = "black"),
+        plot.title         = element_text(size = rel(0.7), face = "bold"),
+        panel.background   = element_blank(),
+        strip.background   = element_blank(),
+        strip.text         = element_text(),
+        legend.background  = element_rect(fill = "white", linetype = "solid"),
+        legend.key.size    = unit(rel(0.6), "lines"),
+        legend.margin      = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.title       = ggplot2::element_text(size = rel(0.6), face = "bold"), 
+        legend.text        = ggplot2::element_text(size = rel(0.5))
+      )
+    
+    if (length(unique(r2_m_df[, split_by])) == 1) {
+      p2 <- p2 + theme(strip.text = element_blank())
+    }
+    return(list(p1, p2))
+    
+  } else {
+    return(p1)
+  }
+}
+
