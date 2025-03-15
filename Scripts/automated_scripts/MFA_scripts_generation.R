@@ -32,10 +32,11 @@ mfa = MFA(mfa_input,
           graph = FALSE,
           axes = c(1,2))
 dt = Sys.time() - t1
-MFA[["dt"]] = dt
+results = list(MFA = mfa, dt = dt)
+rm(mfa); gc()
 
 # Export
-saveRDS(mfa, paste0("MFA_ncp_", ncp, "_results.rds"))
+saveRDS(results, paste0("MFA_ncp_", ncp, "_results.rds"))
 writeLines(capture.output(sessionInfo()), paste0("MFA_ncp_", ncp, "_sessionInfo.txt"))
 '
 
