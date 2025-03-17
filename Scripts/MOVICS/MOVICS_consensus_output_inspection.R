@@ -471,7 +471,7 @@ comp_gsva.res = comp_gsva.res[setdiff(names(comp_gsva.res), "COCA")]
 
 # Jaccard heatmap for pathways (see if the clusterings uncover similar biology)
 
-# Up-regulated patwhays in CS1
+# Up-regulated pathways in CS1
 cs1_upreg_path = as.data.frame(matrix(data = NA, nrow = 0, ncol = 3))
 colnames(cs1_upreg_path) = c("ID", "NES", "Algorithm")
 for (i in 1:length(comp_gsea.up)) {

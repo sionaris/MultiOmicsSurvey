@@ -725,7 +725,6 @@ subtype_agreement <- compAgree_single_algorithm(algorithm_name = algorithm,
 dev.off()
 
 # DGEA ###
-# DGEA ###
 dgea = runDEA_mod(dea.method = "limma", # we use normalized data as input
                   expr = plotdata$RNAseq,
                   moic.res = plot_object,
@@ -1143,7 +1142,7 @@ hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[gre
 # Fraction Genome Altered ###
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
 
-fga.SNF <- compFGA_optimized(moic.res     = plot_object,
+fga.CIMLR <- compFGA_optimized(moic.res     = plot_object,
                              segment      = fga_df,
                              iscopynumber = TRUE, 
                              test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -1155,7 +1154,7 @@ fga.SNF <- compFGA_optimized(moic.res     = plot_object,
                              clust.col = cluster_colors,
                              title = paste0(algorithm, " FGA plot: simple criteria"))
 
-fga.SNF.COSMIC <- compFGA_optimized(moic.res     = plot_object,
+fga.CIMLR.COSMIC <- compFGA_optimized(moic.res     = plot_object,
                                     segment      = fga_df,
                                     iscopynumber = TRUE, 
                                     test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
