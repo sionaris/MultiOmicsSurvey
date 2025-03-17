@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=icelake-himem
 #SBATCH --nodes=1
-#SBATCH --job-name=MFA_ncp_10
-#SBATCH --output=logs/MFA_ncp_10.out
-#SBATCH --error=logs/MFA_ncp_10.err
+#SBATCH --job-name=MFA_ncp_200
+#SBATCH --output=logs/MFA_ncp_200.out
+#SBATCH --error=logs/MFA_ncp_200.err
 #SBATCH --time=11:59:59
 #SBATCH --cpus-per-task=20
 #SBATCH --mem=300G
@@ -29,5 +29,5 @@ Rscript -e "print(.libPaths())"
 Rscript -e "packages <- c('FactoMineR'); to_install <- setdiff(packages, installed.packages()[,'Package']); if(length(to_install)>0) install.packages(to_install, repos='https://cloud.r-project.org')"
 
 # Run R script
-Rscript MFA_ncp_10.R
+Rscript MFA_ncp_200.R
 

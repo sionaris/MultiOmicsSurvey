@@ -9,9 +9,9 @@ set.seed(123)
 mfa_input = readRDS("MFA_input.rds")
 
 # Define number of components
-ncp = 20
+ncp = 200
 
-# Run for ncp = 20
+# Run for ncp = 200
 snp_cols = sum(grepl("SNPs_", colnames(mfa_input)))
 rna_cols = sum(grepl("RNAseq_", colnames(mfa_input)))
 cnv_cols = sum(grepl("CNV_", colnames(mfa_input)))
