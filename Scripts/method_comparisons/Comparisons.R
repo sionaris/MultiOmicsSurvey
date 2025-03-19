@@ -569,16 +569,11 @@ rm(n, algos)
 color_palette_pathway <- carto_pal(n = 100, name = "BluYl")
 
 # Mask the upper triangle of the ARI_pathway_matrix (keeping NA values)
-ARI_pathway_matrix = cbind(ARI_pathway_matrix, rep(.Machine$double.eps, 17))
-colnames(ARI_pathway_matrix)[18] = "MFA"
-ARI_pathway_matrix = rbind(ARI_pathway_matrix, rep(.Machine$double.eps, 18)); 
-rownames(ARI_pathway_matrix)[18] = "MFA"
 ARI_pathway_matrix = ARI_pathway_matrix[rownames(ari_matrix_masked),
                                         rownames(ari_matrix_masked)]
 diag(ARI_pathway_matrix) = 1
 ARI_pathway_matrix_masked = ARI_pathway_matrix
 ARI_pathway_matrix_masked[upper.tri(ARI_pathway_matrix_masked)] <- NA
-
 
 # Create a bottom (column) annotation for the heatmap using the correct order
 COLannotation_pathway <- HeatmapAnnotation(
