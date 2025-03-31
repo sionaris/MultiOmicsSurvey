@@ -673,9 +673,15 @@ col_fun_pathway <- colorRamp2(breaks = seq(min_pathway, 1, length.out = 100),
 
 # Custom cell function:
 cell_fun <- function(j, i, x, y, width, height, fill) {
+  # For diagonal cells, draw white tiles and no text
+  if (i == j) {
+    grid.rect(x = x, y = y, width = width, height = height,
+              gp = gpar(fill = "white", col = NA))
+    return()
+  }
+  
   val <- M[i, j]
   if (is.na(val)) {
-    # If cell is NA, fill white (this covers any masked cells)
     grid.rect(x = x, y = y, width = width, height = height,
               gp = gpar(fill = "white", col = NA))
   } else if (val == .Machine$double.eps) {
@@ -683,7 +689,6 @@ cell_fun <- function(j, i, x, y, width, height, fill) {
               gp = gpar(fill = "white", col = NA))
     grid.text("NA", x, y, gp = gpar(col = "black", fontsize = 6))
   } else {
-    # Pick appropriate color mapping based on cell type
     cell_color <- if (type_mat[i, j] == "cluster") {
       col_fun_cluster(val)
     } else {
@@ -708,6 +713,8 @@ ht_combined <- Heatmap(M,
                        show_row_names = TRUE,
                        row_names_side = "left",
                        show_column_names = TRUE,
+                       column_title = "ARI heatmap",
+                       column_title_gp = gpar(fontsize = 11, fontface = "bold"),
                        left_annotation = ROWannotation,
                        bottom_annotation = COLannotation_pathway, 
                        row_names_gp = gpar(fontsize = 7, fontface = "bold"),
@@ -718,7 +725,7 @@ lgd_cluster <- Legend(
   col_fun = col_fun_cluster,
   title = "ARI Clustering", 
   at = seq(min_cluster, max_cluster, length.out = 5),
-  title_gp = gpar(fontsize = 6, fontface = "bold"),
+  title_gp = gpar(fontsize = 7, fontface = "bold"),
   title_position = "leftcenter-rot",
   labels_gp = gpar(fontsize = 6),
   legend_height = unit(2.7, "cm"),
@@ -729,7 +736,7 @@ lgd_pathway <- Legend(
   col_fun = col_fun_pathway,
   title = "ARI Pathway", 
   at = seq(min_pathway, max_pathway, length.out = 5),
-  title_gp = gpar(fontsize = 6, fontface = "bold"),
+  title_gp = gpar(fontsize = 7, fontface = "bold"),
   title_position = "leftcenter-rot",
   labels_gp = gpar(fontsize = 6),
   legend_height = unit(2.7, "cm"),
@@ -1066,6 +1073,57 @@ ggsave(filename = "ARI_kernelPCA.pdf",
 dev.off()
 
 # Runtimes #####
+
+# Import runtime data
+runtimes = read.xlsx("Resources/Runtimes.xlsx")
+
+# Create bar chart
+runtimes <- runtimes[order(runtimes$`Runtime.per.job.(min/job)`), ]
+runtimes$Algorithm <- factor(runtimes$Algorithm,
+                             levels = rev(unique(runtimes$Algorithm)))
+
+p_runtime <- ggplot(runtimes, aes(x = `Runtime.per.job.(min/job)`, y = Algorithm)) +
+  geom_bar(stat = "identity", aes(fill = `Runtime.per.job.(min/job)`), 
+           width = 0.8, color = NA) +
+  scale_fill_carto_c(palette = "Sunset", 
+                     guide = guide_colorbar(title = "Runtime per job (min)")) +
+  labs(
+    title = "Runtime per Job Across Algorithms",
+    x = "Runtime per job (min)",
+    y = "Algorithm"
+  ) +
+  coord_cartesian(xlim = c(0, max(runtimes$`Runtime.per.job.(min/job)`) * 1.05)) +
+  theme_bw() +
+  theme(
+    panel.grid = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    axis.line.y = element_blank(),
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.y = element_text(size = 8),
+    axis.text.x = element_text(size = 7),
+    axis.title = element_text(face = "bold", size = 10),
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold")
+  )
+
+ggsave(
+  filename = paste0(home, "/Results/Comparisons/Runtime_barchart.png"),
+  plot = p_runtime,
+  dpi = 700,
+  width = 2 * 1920,
+  height = 2 * 1920,
+  units = "px",
+  device = "png"
+)
+ggsave(
+  filename = paste0(home, "/Results/Comparisons/Runtime_barchart.pdf"),
+  plot = p_runtime,
+  dpi = 700,
+  width = 2 * 1920,
+  height = 2 * 1920,
+  units = "px",
+  device = "pdf"
+)
 
 # Save environment
 save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
