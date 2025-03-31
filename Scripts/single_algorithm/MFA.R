@@ -142,7 +142,6 @@ rm(i, snps_no, snp_mat, mutation_counts, non_drivers, ordered_non_drivers,
 NCOMP = 200
 
 # The results are in the Resources/HPC output/MFA_HPC/ directory (gitignored, 5GB)
-library(FactoMineR)
 library(factoextra)
 mfa200 = readRDS(paste0("Resources/HPC output/MFA_HPC/MFA_ncp_", NCOMP, "_results.rds"))
 
@@ -1176,7 +1175,7 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
-timestamp() # 4 min
+timestamp() # 12 min
 
 # down-regulated
 RNGversion("4.2.2")
@@ -1194,7 +1193,7 @@ transNEO_ntp_expr_down = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_down_heatmap_transNEO")
-timestamp() # 2.5 min
+timestamp() # 12 min
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -1372,3 +1371,367 @@ afh_colnames = colnames(annCol)
 MFA_clust_res = MFA_clusters %>% dplyr::rename(samID = Sample.ID, 
                                                MFA = Cluster) %>%
   dplyr::mutate(MFA = gsub(algorithm, "", MFA))
+
+# PCA ###
+# RNA
+pca_from_original_matrix(mydata = plotdata$RNAseq, 
+                         algorithm = algorithm, 
+                         clust_res = MFA_clust_res,
+                         cluster_colors = cluster_colors_heatmap, 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "RNAseq")
+
+# miRNA
+pca_from_original_matrix(mydata = plotdata$miRNA, 
+                         algorithm = algorithm, 
+                         clust_res = MFA_clust_res,
+                         cluster_colors = cluster_colors_heatmap, 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "miRNA")
+
+# CNV
+pca_from_original_matrix(mydata = plotdata$CNV, 
+                         algorithm = algorithm, 
+                         clust_res = MFA_clust_res,
+                         cluster_colors = cluster_colors_heatmap, 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "CNV")
+
+# Use multidimensional scaling for SNPs
+# Features must be in rows
+mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
+                         algorithm = algorithm, 
+                         clust_res = MFA_clust_res,
+                         cluster_colors = cluster_colors_heatmap, 
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "SNPs")
+
+# Methylation
+pca_from_original_matrix(mydata = plotdata$Methylation, 
+                         algorithm = algorithm, 
+                         clust_res = MFA_clust_res,
+                         cluster_colors = cluster_colors_heatmap,
+                         output_path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+                         title_add = "Methylation")
+
+# Draw a heatmap of the final S matrix ###
+write.xlsx(cluster_DF, paste0(home, "/Results/single_algorithm/", algorithm, "/",
+                              algorithm, "_embeddings.xlsx"))
+dist_embeddings = as.matrix(Rfast::Dist(cluster_DF[, grep("MFA_Dim", colnames(cluster_DF))],
+                                        method = "euclidean"))
+dimnames(dist_embeddings) = list(cluster_DF$Sample.ID, cluster_DF$Sample.ID)
+create_MO_heatmap(matrix = dist_embeddings, algorithm = algorithm, 
+                  need.diag.zero = FALSE, # already zero
+                  clust_annot_pheno = clust_annot_pheno ,
+                  afh_colnames = afh_colnames, 
+                  colors = colors_heatmap,
+                  annColors = annColors,
+                  heatmap_title = "MFA embeddings distance matrix",
+                  cluster_colors = cluster_colors_heatmap,
+                  cluster_rows_flag = FALSE,
+                  cluster_cols_flag = FALSE,
+                  splits_flag = TRUE,
+                  legend_title = "Distance",
+                  output_file_name = paste0(home, "/Results/single_algorithm/", algorithm, 
+                                            "/Supplement/MFA_embeddings_distance_matrix_heatmap.png"))
+
+# Setup for barcharts ###
+# Stage
+scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
+                                                `Stage II` = "#099CF5", 
+                                                `Stage III` = "#097BF5", 
+                                                `Stage IV` = "#0B5684", 
+                                                `Unknown` = "grey40"))
+
+# Lymph node status
+scale_fill_lymph_node_status = scale_fill_manual(values = c(No = "grey75", 
+                                                            Yes = "#4A0558", 
+                                                            Unknown = "grey40"))
+
+# ER status
+scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
+                                                    Positive = "#0F1682", 
+                                                    Unknown = "grey40"))
+
+# PR status
+scale_fill_PR_status = scale_fill_manual(values = c(Indeterminate = "aliceblue", 
+                                                    Positive = "dodgerblue4", 
+                                                    Negative = "#F0C6C3", 
+                                                    Unknown = "grey40"))
+
+# HER2 status
+scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
+                                                      Positive = "#560DA7", 
+                                                      Indeterminate = "mistyrose1", 
+                                                      Equivocal = "hotpink4", 
+                                                      Unknown = "grey40"))
+
+# Vital status
+scale_fill_vital_status = scale_fill_manual(values = c(Alive = "lightpink1", 
+                                                       Dead = "black", 
+                                                       Unknown = "grey40"))
+
+# Ethnicity
+scale_fill_ethnicity = scale_fill_manual(values = c(`Hispanic or latino` = "#E58606", 
+                                                    `Not hispanic or latino` = "#24796C", 
+                                                    Unknown = "grey40"))
+
+# Race
+scale_fill_race = scale_fill_manual(values = c(`American indian or alaska native` = "#E73F74", 
+                                               Asian = "#3969AC", 
+                                               `Black or african american` = "#666666", 
+                                               White = "beige", 
+                                               Unknown = "grey40"))
+
+# Metastasis
+scale_fill_metastasis = scale_fill_manual(values = c(Yes = "deeppink4", 
+                                                     No = "cadetblue2", 
+                                                     Unknown = "grey40"))
+
+# Histology
+scale_fill_histology = scale_fill_manual(values = c(`Infiltrating Carcinoma NOS` = "#88CCEE", 
+                                                    `Infiltrating Ductal Carcinoma` = "#CC6677", 
+                                                    `Infiltrating Lobular Carcinoma` = "#DDCC77", 
+                                                    `Medullary Carcinoma` = "#117733", 
+                                                    `Metaplastic Carcinoma` = "#332288", 
+                                                    Mixed = "#AA4499", 
+                                                    `Mucinous Carcinoma` = "#44AA99", 
+                                                    Other = "#999933", 
+                                                    Unknown = "grey40"))
+
+# Menopausal status
+scale_fill_menopausal_status = scale_fill_manual(values = c(Indeterminate = "mistyrose2", 
+                                                            `Pre-menopausal` = "#FAA476", 
+                                                            Perimenopausal = "#DC3977", 
+                                                            `Post-menopausal` = "#7C1D6F", 
+                                                            Unknown = "grey40"))
+
+# Combine all scales into a list
+barchart_scales = list(scale_fill_stage, scale_fill_lymph_node_status, scale_fill_ER_status, 
+                       scale_fill_PR_status, scale_fill_HER2_status, scale_fill_vital_status, 
+                       scale_fill_ethnicity, scale_fill_race, scale_fill_metastasis, 
+                       scale_fill_histology, scale_fill_menopausal_status)
+
+# Name the scales accordingly
+names(barchart_scales) = c("Stage", "Lymph node status", "ER status", "PR status", "HER2 status", 
+                           "Vital status", "Ethnicity", "Race", "Metastasis", "Histology", 
+                           "Menopausal status")
+
+# Chi-square tests ###
+# Bias-corrected Cramer's V calculation using package rcompanion:
+unbiased.cv.test = function(x, string, digits = 3) {
+  CV = rcompanion::cramerV(x, bias.correct = TRUE)
+  return(list(text = paste0("Bias-corrected Cramer's V / Phi for ", 
+                            string, ": ", round(as.numeric(CV), digits)),
+              value = round(as.numeric(CV), digits)))
+}
+
+clust_annot_pheno_nonas = clust_annot_pheno
+for(i in 1:ncol(clust_annot_pheno_nonas)) {
+  clust_annot_pheno_nonas[, i] = as.character(clust_annot_pheno_nonas[, i])
+  nas = which(clust_annot_pheno_nonas[, i] == "Unknown")
+  clust_annot_pheno_nonas[nas, i] = NA
+  clust_annot_pheno_nonas[, i] = factor(clust_annot_pheno_nonas[, i])
+}
+rm(nas); gc()
+
+voi = colnames(clust_annot_pheno_nonas)[1:11]
+output = as.data.frame(matrix(NA, nrow = 0, ncol = 4))
+for (v in 1:length(voi)){
+  keepers = which(!is.na(clust_annot_pheno_nonas[, voi[v]]))
+  test = suppressWarnings(chisq.test(table(clust_annot_pheno_nonas[keepers, algorithm], 
+                                           clust_annot_pheno_nonas[keepers, voi[v]])))
+  chifit_p = test$p.value
+  chifit_xsq = test$statistic
+  chifit_cv = suppressWarnings(unbiased.cv.test(table(clust_annot_pheno_nonas[keepers, algorithm], 
+                                                      clust_annot_pheno_nonas[keepers, voi[v]]),
+                                                string = voi[v],
+                                                digits = 3)$value)
+  comparison = paste0(voi[v], " vs ", algorithm, " cluster")
+  output = rbind(output, c(comparison, chifit_p, chifit_xsq, chifit_cv))
+  rm(test, comparison, chifit_p, chifit_xsq, chifit_cv, keepers)
+}
+colnames(output) = c("Comparison", "p-value", "Statistic", "Cramer's V")
+
+rm(v); gc()
+openxlsx::write.xlsx(output, 
+                     paste0(home, 
+                            "/Results/single_algorithm/", algorithm, "/Supplement/Chisq_tests.xlsx"),
+                     overwrite = TRUE)
+
+# Bar chart generation
+MFA_barcharts = list()
+plotdata_bar = clust_annot_pheno_nonas
+plotdata_bar[[algorithm]] = factor(plotdata_bar[[algorithm]])
+for (i in 1:length(voi)) {
+  chifit = output
+  loc = which(grepl(voi[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  MFA_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
+                                              chifit = chifit,
+                                              na.action = "na.omit",
+                                              algorithm = algorithm,
+                                              barchart_ylim = 450,
+                                              text_y = 400, rect_ymin = 320,
+                                              rect_ymax = 420, x_annot = 2,
+                                              v_gap = 25, rect_xmin = 1.5,
+                                              rect_xmax = 2.5, 
+                                              annot_text_size = 2.25,
+                                              legend.text.size = 5,
+                                              x.axis.text.size = 5) +
+    barchart_scales[[voi[i]]]
+  print(MFA_barcharts[[i]])
+  ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
+         path = paste0(home, 
+                       "/Results/single_algorithm/", algorithm, "/Supplement"), 
+         width = 2620, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(MFA_barcharts) = voi
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+library(ggpubr)
+ggarrange(MFA_barcharts[[1]], MFA_barcharts[[2]], MFA_barcharts[[3]],
+          MFA_barcharts[[4]], MFA_barcharts[[5]], MFA_barcharts[[6]],
+          MFA_barcharts[[7]], MFA_barcharts[[8]], MFA_barcharts[[9]],
+          MFA_barcharts[[10]], MFA_barcharts[[11]],
+          ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
+                                         "I", "J", "K"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 9000, height = 8000, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Just significant ones now
+MFA_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(MFA, Race, Histology, 
+                                                             `ER status`, `PR status`, 
+                                                             `HER2 status`, `Menopausal status`)
+plotdata_bar_sig$MFA = factor(plotdata_bar_sig$MFA)
+voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
+for (i in 1:length(voi_sig)) {
+  chifit = output
+  loc = which(grepl(voi_sig[i], chifit$Comparison))
+  chifit = chifit[loc, ]
+  MFA_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+                                                  chifit = chifit,
+                                                  na.action = "na.omit",
+                                                  algorithm = algorithm,
+                                                  barchart_ylim = 450,
+                                                  text_y = 400, rect_ymin = 320,
+                                                  rect_ymax = 420, x_annot = 2,
+                                                  v_gap = 25, rect_xmin = 1.5,
+                                                  rect_xmax = 2.5, 
+                                                  annot_text_size = 2.25,
+                                                  legend.text.size = 5,
+                                                  x.axis.text.size = 5) +
+    barchart_scales[[voi_sig[i]]]
+  print(MFA_barcharts_sig[[i]])
+  ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
+         path = paste0(home, 
+                       "/Results/single_algorithm/", algorithm, "/Supplement"), 
+         width = 2620, height = 2320, device = 'png', units = "px",
+         dpi = 700)
+  dev.off()
+}
+names(MFA_barcharts_sig) = voi_sig
+rm(loc, chifit)
+
+# Multiplot (PNG) - bar charts
+ggarrange(MFA_barcharts_sig[[1]], MFA_barcharts_sig[[2]], MFA_barcharts_sig[[3]],
+          MFA_barcharts_sig[[4]], MFA_barcharts_sig[[5]], MFA_barcharts_sig[[6]],
+          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
+          font.label = list(size = 8, face = "bold", color ="black"))
+ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
+       path = paste0(home, 
+                     "/Results/single_algorithm/", algorithm, "/Supplement"), 
+       width = 5500, height = 2320*3, device = 'png', units = "px",
+       dpi = 700)
+dev.off()
+
+# Sunburst plot ###
+library(plotly)
+Pheno_sunburst_MFA = clust_annot_pheno
+Pheno_sunburst_MFA$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_MFA$`ER status`)
+Pheno_sunburst_MFA$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_MFA$`ER status`)
+Pheno_sunburst_MFA$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_MFA$`ER status`)
+Pheno_sunburst_MFA$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                         Pheno_sunburst_MFA$`HER2 status`)
+Pheno_sunburst_MFA$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_MFA$`HER2 status`)
+Pheno_sunburst_MFA$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_MFA$`HER2 status`)
+Pheno_sunburst_MFA = Pheno_sunburst_MFA %>%
+  dplyr::select(MFA, `ER status`, `HER2 status`) %>%
+  group_by(MFA, `ER status`, `HER2 status`) %>%
+  summarise(Counts = n()) %>%
+  as.data.frame()
+
+sunburst_coloring_MFA = data.frame(stringsAsFactors = FALSE,
+                                    colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C",
+                                                                       "#C11D9C", "#0F1682",  "grey40",
+                                                                       "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                       "hotpink4", "grey40"))),
+                                    labels = c("MFA1", "MFA2",
+                                               "MFA3", 
+                                               "ER-", "ER+", "Unkn ER status",
+                                               "HER2-", "HER2+", "Indeterminate",
+                                               "Equivocal", "Unkn HER2 status"))
+
+sunburstDF_MFA = as.sunburstDF(Pheno_sunburst_MFA, value_column = "Counts", add_root = FALSE) %>%
+  inner_join(sunburst_coloring_MFA, by = "labels")
+
+pie_MFA = plot_ly() %>%
+  add_trace(ids = sunburstDF_MFA$ids, labels= sunburstDF_MFA$labels, 
+            parents = sunburstDF_MFA$parents, 
+            values= sunburstDF_MFA$values, type='sunburst', branchvalues = 'total',
+            insidetextorientation='radial', maxdepth = 5,
+            marker = list(colors = sunburstDF_MFA$colors)) %>%
+  layout(
+    grid = list(columns =1, rows = 1),
+    margin = list(l = 0, r = 0, b = 0, t = 0)
+  )
+pie_MFA
+rm(Pheno_sunburst_MFA, sunburstDF_MFA, sunburst_coloring_MFA, pie_MFA); gc()
+
+# Wrap up #####
+hyperparameters = list(ncp = 200,
+                       conclusion = conclusion,
+                       optk = optk,
+                       optn.dim = optn.dim,
+                       uiks = uiks
+)
+
+# Put all parameters in a list
+params = list(algorithm = algorithm, data_source = data_source, data_types = data_types,
+              evaluation_source = evaluation_source, title = title, subtitle = subtitle,
+              description = description, in_a_nutshell = in_a_nutshell, optk_text = optk_text,
+              citation = citation, NMI_to_MOVICS = NMI_to_MOVICS, ARI_to_MOVICS = ARI_to_MOVICS,
+              hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
+              transNEO_var2comp = transNEO_var2comp,
+              sessionInfo = sessionInfo(), home = home)
+
+# Render the R Markdown document with the parameters
+rmarkdown::render(paste0(getwd(), "/Results/single_algorithm/", algorithm,
+                         "/", algorithm, "_report.Rmd"), 
+                  params = params, 
+                  output_file = paste0(home, "/Results/single_algorithm/", 
+                                       algorithm, "/", algorithm, "_report_",
+                                       data_source, "_",
+                                       data_types, "_eval_on_", evaluation_source,
+                                       ".html"))
+
+# Export session info as .txt
+writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
+                                                 algorithm, "_", data_source, "_",
+                                                 data_types, "_eval_on_", evaluation_source,
+                                                 "_sessionInfo.txt"))
+
+# Save environment
+save.image(paste0(home, "/Results/single_algorithm/", 
+                  algorithm, "/", algorithm, "_", data_source, "_",
+                  data_types, "_eval_on_", evaluation_source,
+                  "_env.RData"))
