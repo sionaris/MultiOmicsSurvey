@@ -32,6 +32,7 @@
 /Python/MONET/monet/__pycache__
 /Python/PAMOGK/*.csv
 /Python/MOFA/Omics_input
+/Python/Extract_runtimes_from_emails.ipynb
 /Resources/METABRIC/METABRIC_data_CNA.txt
 /Resources/METABRIC/METABRIC_data_Expression.txt
 /Resources/METABRIC/METABRIC_mutation_data.txt
@@ -39,6 +40,7 @@
 /Scripts/inspect_mut_data.R
 /Scripts/single_algorithm/MOFA_local.R
 /Scripts/Poster.R
+/Scripts/extract_RWRF_runtimes.R
 /Results/single_algorithm/RGCCA/*
 /Results/single_algorithm/SGCCA/*
 /Results/single_algorithm/MOFA/MOFA_fast_console_log_first_run_ever
