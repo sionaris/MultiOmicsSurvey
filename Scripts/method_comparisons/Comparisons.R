@@ -1,5 +1,7 @@
 # Libraries
 library(openxlsx)
+library(dplyr)
+library(ggplot2)
 
 # Ensure reproducibility
 RNGversion("4.2.2")
@@ -822,7 +824,6 @@ for (algorithm in ARI_df$algorithm) {
 }
 
 # Plot histograms with three facets
-library(ggplot2)
 library(patchwork)
 library(ggnewscale)
 library(cowplot)
@@ -982,7 +983,6 @@ dimnames(nonas_ari_matrix) = list(names(nonas_generic_clusterings),
 diag(nonas_ari_matrix) = 1
 
 # PCA plot
-library(dplyr)
 # MOdify the pre-defined pca_from_sim_matrix() function
 pca_from_ari_matrix = function (sim_matrix = NULL, clust_res = NULL,
                                 cluster_colors = NULL, output_path = NULL,
