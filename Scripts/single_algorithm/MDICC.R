@@ -1104,7 +1104,7 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                  pdf_tab_font_size = 9)
 
 # Run PAM ###
-RNGversion("4.2.2.")
+RNGversion("4.2.2")
 set.seed(123)
 transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
                                        train.expr = plotdata$RNAseq,
@@ -1114,7 +1114,7 @@ transNEO_pam = runPAM_single_algorithm(algorithm_name = algorithm,
 # Check consistency across methods
 
 # Get predictions for TCGA (discovery cohort)
-RNGversion("4.2.2.")
+RNGversion("4.2.2")
 set.seed(123)
 TCGA.ntp.pred = runNTP(expr = plotdata$RNAseq[, plot_object$clust.res$samID],
                        templates = dgea.marker.up_1000$templates, distance = "cosine",
