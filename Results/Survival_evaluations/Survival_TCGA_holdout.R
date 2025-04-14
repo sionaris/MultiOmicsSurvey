@@ -461,10 +461,10 @@ for (algorithm in algorithms) {
                       algorithm,
                       "_survival_plot.pdf"),
     legend = expression(bold("Legend")),
-    risk.table.height = 0.175*log2(length(unique(surv_df[, algorithm]))),
+    risk.table.height = 0.2*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, algorithm]))-1],
     color = cluster_colors[1:length(unique(surv_df[, algorithm]))],
     main_fontsize = 18,
-    height = 10,
+    height = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, algorithm]))-1],
     width = 10,
     dpi = 700
   )
