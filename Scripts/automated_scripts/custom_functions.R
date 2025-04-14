@@ -3548,7 +3548,7 @@ TCGAanalyze_survival_custom <- function (data, clusterCol = NULL, legend = "Lege
   
   if (is.null(labels)) {
     d <- survminer::surv_summary(fit, data = data)
-    order <- unname(sapply(levels(d$strata), function(x) unlist(str_split(x, "="))[2]))
+    order <- unname(sapply(levels(d$strata), function(x) unlist(stringr::str_split(x, "="))[2]))
     labels <- sapply(order, label.add.n)
   }
   
