@@ -3485,3 +3485,116 @@ plot_MOFA_cumul_var_exp <- function(object,
   }
 }
 
+# TCGA analyze survival modification #####
+TCGAanalyze_survival_custom <- function (data, clusterCol = NULL, legend = "Legend", labels = NULL, 
+                                         risk.table = TRUE, xlim = NULL, main = "Kaplan-Meier Overall Survival Curves", 
+                                         ylab = "Probability of survival", xlab = "Time since diagnosis (days)", 
+                                         filename = "survival.pdf", color = NULL, height = 8, width = 12, 
+                                         dpi = 300, pvalue = TRUE, conf.int = TRUE, risk.table.height = 0.25, ...) {
+  # Load required packages
+  library(TCGAbiolinks)
+  library(survminer)
+  library(survival)
+  library(gridExtra)
+  library(grid)
+  
+  # Checks for required columns
+  if (!all(c("vital_status", "days_to_death", "days_to_last_follow_up") %in% colnames(data))) 
+    stop("Columns vital_status, days_to_death and days_to_last_follow_up should be in data frame")
+  
+  if (is.null(color)) {
+    color <- rainbow(length(unique(data[, clusterCol])))
+  }
+  
+  if (is.null(clusterCol)) {
+    stop("Please provide the clusterCol argument")
+  } else if (length(unique(data[, clusterCol])) == 1) {
+    stop(paste0("Sorry, but I'm expecting at least two groups\n  Only this group found: ", unique(data[, clusterCol])))
+  }
+  
+  # Replace missing days_to_death with days_to_last_follow_up
+  notDead <- is.na(data$days_to_death)
+  if (any(notDead)) {
+    data[notDead, "days_to_death"] <- data[notDead, "days_to_last_follow_up"]
+  }
+  
+  if (length(data[which((data[, "days_to_death"] < 0) == TRUE), "sample"]) > 0 & "sample" %in% colnames(data)) {
+    message("Inconsistencies in the data: samples with a negative days_to_death value:")
+    message(paste(data[which((data[, "days_to_death"] < 0) == TRUE), "sample"], collapse = ", "))
+  }
+  if (any(is.na(data[, "days_to_death"])) & "sample" %in% colnames(data)) {
+    message("Inconsistencies in the data: samples with a NA days_to_death value:")
+    message(paste(data[is.na(data[, "days_to_death"]), "sample"], collapse = ", "))
+  }
+  
+  # Create event indicator: patients with vital_status containing "dead" or "deceased"
+  data$s <- grepl("dead|deceased", data$vital_status, ignore.case = TRUE)
+  # Create a factor variable for grouping
+  data$type <- as.factor(data[, clusterCol])
+  # Subset only the necessary columns
+  data <- data[, c("days_to_death", "s", "type")]
+  
+  # Build the survival model formula
+  f.m <- formula(survival::Surv(as.numeric(data$days_to_death), event = data$s) ~ data$type)
+  fit <- do.call(survival::survfit, list(formula = f.m, data = data))
+  
+  # Function to append sample counts to group labels
+  label.add.n <- function(x) {
+    na.idx <- is.na(data[, "days_to_death"])
+    negative.idx <- data[, "days_to_death"] < 0
+    idx <- !(na.idx | negative.idx)
+    return(paste0(x, " (n = ", sum(data[idx, "type"] == x), ")"))
+  }
+  
+  if (is.null(labels)) {
+    d <- survminer::surv_summary(fit, data = data)
+    order <- unname(sapply(levels(d$strata), function(x) unlist(str_split(x, "="))[2]))
+    labels <- sapply(order, label.add.n)
+  }
+  
+  if (length(xlim) == 1) {
+    xlim <- c(0, xlim)
+  }
+  
+  suppressWarnings({
+    surv <- survminer::ggsurvplot(fit,
+                                  risk.table = risk.table, 
+                                  pval = pvalue, 
+                                  conf.int = conf.int, 
+                                  xlim = xlim, 
+                                  main = main, 
+                                  xlab = xlab, 
+                                  ylab = ylab,
+                                  legend.title = legend, 
+                                  legend.labs = labels, 
+                                  palette = color,
+                                  risk.table.height = risk.table.height,
+                                  ...)
+  })
+  
+  # Save the output plot
+  if (!is.null(filename)) {
+    if (risk.table) {
+      # Combine the survival plot and risk table using arrangeGrob,
+      # and add the main title using the top argument
+      combined <- gridExtra::arrangeGrob(
+        surv$plot, surv$table, 
+        heights = c(1 - risk.table.height, risk.table.height),
+        top = textGrob(main, gp = gpar(fontface = "bold", fontsize = 14))
+      )
+      ggsave(combined, filename = filename, width = width, height = height, dpi = dpi)
+    } else {
+      ggsave(surv$plot, filename = filename, width = width, height = height, dpi = dpi)
+    }
+    message(paste0("File saved as: ", filename))
+  }
+  
+  # Compute the log-rank test p-value using survdiff
+  logrank_test <- survdiff(f.m, data = data)
+  p_val_calc <- 1 - pchisq(logrank_test$chisq, length(logrank_test$n) - 1)
+  signif_status <- ifelse(p_val_calc < 0.05, "Significant", "Not Significant")
+  
+  # Return a list containing the p-value and significance status
+  result <- list(pvalue = p_val_calc, significance = signif_status)
+  return(result)
+}

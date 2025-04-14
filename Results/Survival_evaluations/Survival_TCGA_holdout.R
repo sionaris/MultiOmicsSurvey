@@ -6,6 +6,7 @@ library(matrixStats)
 library(crayon)
 library(survminer)
 library(survival)
+library(openxlsx)
 
 # Ensure reproducibility
 RNGversion("4.2.2")
@@ -350,6 +351,12 @@ for (algorithm in algorithms) {
                                                               dirct         = "up" # direction of dysregulation in expression
   )
   
+  # If the directory of the algorithm does not exist, create it
+  newdir = paste0(home, "/Results/Survival_evaluations/", algorithm)
+  if (!dir.exists(newdir)) {
+    dir.create(newdir)
+  }
+  
   # If NTP worked for the algorithm in the initial runs, use NTP;
   # otherwise use PAM
   if (TRUE %in% grepl("ntp_expr_up", 
@@ -368,7 +375,7 @@ for (algorithm in algorithms) {
       doPlot = TRUE,
       height = 8,
       width = 12,
-      fig.path = paste0(home, "/Results/Survival_evaluations"),
+      fig.path = paste0(home, "/Results/Survival_evaluations/", algorithm),
       fig.name = paste0(algorithm, "_ntp_expr_up_heatmap_TCGA"))
     
     df = as.data.frame(TCGA_ntp_expr_up$clust.res) %>%
@@ -402,66 +409,77 @@ save.image(paste0(home, "/Results/Survival_evaluations/Surv.RData"))
 gc()
 
 # Export
-openxlsx::write.xlsx(holdout_clinical_data, "Resources/TCGA/Surv_clinical_data.xlsx",
+write.xlsx(holdout_clinical_data, "Resources/TCGA/Surv_clinical_data.xlsx",
                      overwrite = TRUE)
 
 # Survival analysis #####
+# Load custom helper functions
+source("Scripts/automated_scripts/custom_functions.R")
+source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Import coloring schemes etc
 scheme = readRDS("Resources/scheme.rds")
-annCol = scheme$annCol
-annColors = scheme$annColors
+# annCol = scheme$annCol
+# annColors = scheme$annColors
 cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                    "#FFA5AB", "#011627", "#023E8A", "#9D4EDD")
-col.list = scheme$col.list
+# col.list = scheme$col.list
 
 # Set up survival analysis
 surv = list()
-survplots = list()
 
+# Import survival data from cBioBortal
+cBioPortal = read.xlsx("Resources/cBioPortal_surv.xlsx")
 for (algorithm in algorithms) {
-  surv_df = label_maps[[algorithm]]
-  surv_df = surv_df[!is.na(surv_df[, algorithm]), ] %>%
-    dplyr::filter(!is.na(vital_status) & !is.na(days_to_last_followup))
   
-  # Additional columns for survival
-  surv_df$deceased = ifelse(surv_df$vital_status == "Alive", FALSE, TRUE)
-  surv_df$overall_survival <- ifelse(surv_df$vital_status == "Alive",
-                                               surv_df$days_to_last_followup,
-                                               surv_df$days_to_death)
+  # Get the corresponding label-mapping data on the holdout TCGA data
+  surv_df = label_maps[[algorithm]] %>%
+    mutate(Source = "Holdout") %>%
+    dplyr::select(Sample.ID, !!sym(algorithm), Patient.ID) %>%
+    inner_join(cBioPortal, by = "Patient.ID")
   
-  # Cox model fit/logrank
-  surv[[algorithm]][["survfit"]] <- survfit(Surv(overall_survival, deceased) ~ algorithm, 
-                               data = surv_df)
+  surv_df = surv_df[!is.na(surv_df[, algorithm]), ]
+  surv_df$OS_MONTHS = as.numeric(surv_df$OS_MONTHS)
+  surv_df$OS_DAYS = as.numeric(surv_df$OS_DAYS)
   
-  # KM curve
-  survplots[[algorithm]] = ggsurvplot(surv[[algorithm]],
-                        data = surv_df,
-                        pval = T,
-                        risk.table = T)
+  # Create a format expected by TCGAanalyze_survival()
+  surv_df$days_to_death = ifelse(surv_df$vital_status == "Dead", surv_df$OS_DAYS,
+                                 NA)
+  surv_df$days_to_last_follow_up = surv_df$OS_DAYS
   
-  # Surv. diff stats
-  surv[[algorithm]][["survdiff"]] <- survdiff(Surv(overall_survival, deceased) ~ algorithm, 
-                   data = surv_df)
+  # Convert grouping variable to factor
+  surv_df[, algorithm] = as.factor(surv_df[, algorithm])
   
-  # If the directory of the algorithm does not exist, create it
-  newdir = paste0(home, "/Results/Survival_evaluations/", algorithm)
-  if (!dir.exists(newdir)) {
-    dir.create(newdir)
-  }
+  # Run TCGAanalyze_survival
+  surv[[algorithm]] = TCGAanalyze_survival_custom(
+    data = surv_df,
+    clusterCol = algorithm,
+    main = paste(algorithm, "on TCGA-BRCA holdout set: survival analysis"),
+    ylab = expression(bold("Survival probability")),
+    xlab = expression(bold("Time since diagnosis (days)")),
+    filename = paste0(home, "/Results/Survival_evaluations/", algorithm, "/",
+                      algorithm,
+                      "_survival_plot.pdf"),
+    legend = expression(bold("Legend")),
+    risk.table.height = 0.175*log2(length(unique(surv_df[, algorithm]))),
+    color = cluster_colors[1:length(unique(surv_df[, algorithm]))],
+    main_fontsize = 18,
+    height = 10,
+    width = 10,
+    dpi = 700
+  )
   
   # Exporting
   write.xlsx(surv_df,
-             paste0(newdir, "/", algorithm, "_clinical_data.xlsx"),
+             paste0(home, "/Results/Survival_evaluations/", algorithm, "/",
+                    algorithm, "_surv_data.xlsx"),
              overwrite = TRUE)
-  ggsave(survplots[[algorithm]],
-         filename = paste0(algorithm, "_KM_curves.png"),
-         path = newdir,
-         width = 1920, height = 1920, dpi = 700,
-         device = "png", units = "px")
+  
+  # Save in R
+  surv[[algorithm]][["df"]] = surv_df
 }
 
-rm(newdir, algorithm); gc()
+rm(algorithm, surv_df); gc()
 
 # Clinical comparisons #####
 

@@ -9,6 +9,7 @@
 .Ruserdata
 /GDCdata/
 /Surv/
+/Full_BRCA_clin/
 /Resources/TCGA/*.rds
 /Resources/TCGA/*.RData
 /Resources/Archived/
