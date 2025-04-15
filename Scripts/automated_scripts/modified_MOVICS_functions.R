@@ -1761,7 +1761,8 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
                                          pdf_count_col_width = "10em",  
                                          pdf_pval_col_width = "8em",  
                                          pdf_test_col_width = "8em",  
-                                         pdf_tab_font_size = 8 
+                                         pdf_tab_font_size = 8,
+                                         omit_warnings = FALSE
 ) {
   library(knitr)
   library(kableExtra)
@@ -1811,7 +1812,22 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
     warn <<- append(warn, conditionMessage(w))
   })
   
-  if (length(warn) > 0 && grepl("NA", warn, fixed = TRUE)) {
+  if(!omit_warnings) {
+    if (length(warn) > 0 && grepl("NA", warn, fixed = TRUE)) {
+      set.seed(19991018)
+      stabl <- jstable::CreateTableOne2(
+        vars = setdiff(colnames(dat), strata),
+        strata = strata,
+        data = dat,
+        factorVars = factorVars,
+        nonnormal = nonnormalVars,
+        exact = exactVars,
+        includeNA = includeNA,
+        showAllLevels = TRUE,
+        argsExact = list(simulate.p.value = TRUE)
+      )
+    }
+  } else {
     set.seed(19991018)
     stabl <- jstable::CreateTableOne2(
       vars = setdiff(colnames(dat), strata),

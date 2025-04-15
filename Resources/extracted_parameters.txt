@@ -1,0 +1,19 @@
+Algorithm	pdf_level_col_width	pdf_count_col_width	pdf_pval_col_width	pdf_test_col_width	pdf_tab_font_size
+ab-SNF	c("7em", "10em")	"10em"	"3em"	"8em"	9
+ANF	c("7em", "10em")	"10em"	"3em"	"8em"	9
+CIMLR	c("7em", "10em")	"10em"	"3em"	"8em"	9
+COCA	c("7em", "10em")	"5em"	"3em"	"5em"	9
+iClusterBayes	c("7em", "10em")	"10em"	"3em"	"8em"	9
+KLIC	c("7em", "10em")	"10em"	"3em"	"8em"	9
+LRAcluster	c("7em", "10em")	"5em"	"3em"	"5em"	9
+MDICC	c("7em", "10em")	"10em"	"3em"	"8em"	9
+MFA	c("7em", "10em")	"10em"	"3em"	"8em"	9
+MOFA	c("7em", "10em")	"5em"	"3em"	"5em"	9
+MONET	c("5em", "5em")	"5em"	"3em"	"3em"	10
+MSNE	c("5em", "5em")	"5em"	"3em"	"3em"	10
+NEMO	c("7em", "10em")	"10em"	"3em"	"8em"	9
+RWR-F	c("7em", "10em")	"10em"	"3em"	"8em"	9
+RWR-NF	c("7em", "10em")	"10em"	"3em"	"8em"	9
+SNF	c("7em", "10em")	"10em"	"3em"	"8em"	9
+Spectrum	c("7em", "10em")	"10em"	"3em"	"8em"	9
+wMKL	c("3em", "3em")	"5em"	"3em"	"3em"	7

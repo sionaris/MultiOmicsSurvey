@@ -331,7 +331,6 @@ rm(input, log2_normalized_counts, normalized_counts, res, transcr_pre,
 
 # Label mapping loop ###
 label_maps = list()
-t_start = Sys.time()
 for (algorithm in algorithms) {
   
   # Load custom helper functions
@@ -402,7 +401,6 @@ for (algorithm in algorithms) {
   cat(blue("Done with", algorithm, "\n"))
   invisible(gc())
 }
-dt = Sys.time() - t_start
 
 # Clean cache
 save.image(paste0(home, "/Results/Survival_evaluations/Surv.RData"))
@@ -417,13 +415,9 @@ write.xlsx(holdout_clinical_data, "Resources/TCGA/Surv_clinical_data.xlsx",
 source("Scripts/automated_scripts/custom_functions.R")
 source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
-# Import coloring schemes etc
-scheme = readRDS("Resources/scheme.rds")
-# annCol = scheme$annCol
-# annColors = scheme$annColors
+# Coloring schemes
 cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                    "#FFA5AB", "#011627", "#023E8A", "#9D4EDD")
-# col.list = scheme$col.list
 
 # Set up survival analysis
 surv = list()
@@ -479,11 +473,136 @@ for (algorithm in algorithms) {
   surv[[algorithm]][["df"]] = surv_df
 }
 
-rm(algorithm, surv_df); gc()
+rm(algorithm, surv_df, i, newdir); gc()
 
 # Clinical comparisons #####
+# The following parameters were extracted using the 
+# Scripts/Survival analysis/Extract_pdf_parameters_for_clincomp.py script
+pdf_parameters = read.table("Resources/extracted_parameters.txt", header = TRUE,
+                            sep = "\t", quote = "")
+# Convert the string representations to R objects:
+pdf_parameters$pdf_level_col_width <- sapply(pdf_parameters$pdf_level_col_width, 
+                                             function(x) eval(parse(text = x)), 
+                                             simplify = FALSE)
+
+pdf_parameters$pdf_count_col_width <- sapply(pdf_parameters$pdf_count_col_width,
+                                             function(x) eval(parse(text = x)))
+
+pdf_parameters$pdf_pval_col_width <- sapply(pdf_parameters$pdf_pval_col_width,
+                                            function(x) eval(parse(text = x)))
+
+pdf_parameters$pdf_test_col_width <- sapply(pdf_parameters$pdf_test_col_width,
+                                            function(x) eval(parse(text = x)))
+
+# Import styles and helpful objects
+scheme = readRDS("Resources/scheme.rds")
+cols_of_interest = colnames(scheme$var2comp)[2:ncol(scheme$var2comp)]
+
+clincomps = list()
+# Loop for clinical comparisons
+for (algorithm in algorithms) {
+  var2comp = holdout_clinical_data[, c("Sample.ID", cols_of_interest)] %>%
+    inner_join(surv[[algorithm]]$df[, c("Sample.ID", algorithm)], by = "Sample.ID") %>%
+    tibble::column_to_rownames(var = "Sample.ID")
+  
+  cols_to_numeric <- c("days_to_birth", "days_to_death",
+                       "days_to_last_known_alive", 
+                       "days_to_last_followup",
+                       "age_at_initial_pathologic_diagnosis",
+                       "er_level_cell_percentage_category",
+                       "progesterone_receptor_level_cell_percent_category",
+                       "number_of_lymphnodes_positive_by_ihc",
+                       "number_of_lymphnodes_positive_by_he")
+  
+  # Convert the specified columns to numeric
+  var2comp[, cols_to_numeric] <- lapply(var2comp[, cols_to_numeric, drop = FALSE],
+                                        function(x) as.numeric(x))
+  
+  # Remove unknown levels for statistical tests
+  var2comp_nonas = var2comp
+  for (i in 1:ncol(var2comp)) {
+    nas = which(var2comp[, i] == "Unknown")
+    var2comp_nonas[nas, i] = NA
+    empties = which(var2comp[, i] == "")
+    var2comp_nonas[empties, i] = NA
+  }
+  rm(nas, empties); gc()
+  
+  moic.res = list()
+  moic.res$clust.res = label_maps[[algorithm]][, c("Sample.ID", algorithm)]
+  colnames(moic.res$clust.res) = c("samID", "clust")
+  rownames(moic.res$clust.res) = moic.res$clust.res$samID
+  
+  # The function below expects clusters to not have the algorithm label, but just
+  # numeric labels
+  moic.res$clust.res$clust = gsub(algorithm, "", moic.res$clust.res$clust)
+  
+  # Statistical comparisons
+  clin_comp = compClinvar_single_algorithm(algorithm_name = algorithm,
+                                           moic.res = moic.res,
+                                           var2comp = var2comp_nonas,
+                                           strata = algorithm,
+                                           factorVars = c("vital_status", "race_list", "ethnicity",
+                                                          "history_of_neoadjuvant_treatment",
+                                                          "primary_lymph_node_presentation_assessment",
+                                                          "histological_type", "menopause_status",
+                                                          "breast_carcinoma_progesterone_receptor_status",
+                                                          "breast_carcinoma_estrogen_receptor_status",
+                                                          "lab_proc_her2_neu_immunohistochemistry_receptor_status",
+                                                          "distant_metastasis_present_ind2",
+                                                          "stage_event_pathologic_stage"),
+                                           nonnormalVars = c("days_to_birth", "days_to_death",
+                                                             "days_to_last_known_alive", 
+                                                             "days_to_last_followup",
+                                                             "age_at_initial_pathologic_diagnosis",
+                                                             "er_level_cell_percentage_category",
+                                                             "progesterone_receptor_level_cell_percent_category",
+                                                             "number_of_lymphnodes_positive_by_ihc",
+                                                             "number_of_lymphnodes_positive_by_he"),
+                                           includeNA = FALSE,
+                                           doWord = TRUE,
+                                           tab.name = "Summary_of_clinical_variables",
+                                           res.path = paste0(home, "/Results/Survival_evaluations/", algorithm),
+                                           output_pdf = TRUE,
+                                           pdf_level_col_width = pdf_parameters$pdf_level_col_width[pdf_parameters$Algorithm == algorithm][[1]],
+                                           pdf_count_col_width = pdf_parameters$pdf_count_col_width[pdf_parameters$Algorithm == algorithm],
+                                           pdf_pval_col_width = pdf_parameters$pdf_pval_col_width[pdf_parameters$Algorithm == algorithm],
+                                           pdf_test_col_width = pdf_parameters$pdf_test_col_width[pdf_parameters$Algorithm == algorithm],
+                                           pdf_tab_font_size = pdf_parameters$pdf_tab_font_size[pdf_parameters$Algorithm == algorithm])
+  
+  clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algorithm,
+                                                           moic.res = moic.res,
+                                                           var2comp = var2comp_nonas[, c("number_of_lymphnodes_positive_by_ihc",
+                                                                           "number_of_lymphnodes_positive_by_he",
+                                                                           algorithm)],
+                                                           strata = algorithm,
+                                                           ordinalVars = c("number_of_lymphnodes_positive_by_ihc",
+                                                                           "number_of_lymphnodes_positive_by_he"),
+                                                           includeNA = FALSE,
+                                                           tab.name = "Summary of ordinal clinical variables",
+                                                           res.path = paste0(home, "/Results/Survival_evaluations/", algorithm),
+                                                           output_pdf = TRUE,
+                                                           pdf_template_loc = paste0(home, "/Scripts/automated_scripts/clincomp_template.Rmd"),
+                                                           pdf_level_col_width = pdf_parameters$pdf_level_col_width[pdf_parameters$Algorithm == algorithm][[1]],
+                                                           pdf_count_col_width = pdf_parameters$pdf_count_col_width[pdf_parameters$Algorithm == algorithm],
+                                                           pdf_pval_col_width = pdf_parameters$pdf_pval_col_width[pdf_parameters$Algorithm == algorithm],
+                                                           pdf_test_col_width = pdf_parameters$pdf_test_col_width[pdf_parameters$Algorithm == algorithm],
+                                                           pdf_tab_font_size = pdf_parameters$pdf_tab_font_size[pdf_parameters$Algorithm == algorithm])
+  
+  # Save
+  clincomps[[algorithm]] = list(var2comp = var2comp,
+                                var2comp_nonas = var2comp_nonas,
+                                clincomp = clin_comp,
+                                ordinal = clin_ordinal_comp)
+}
+
+rm(algorithm, moic.res); gc()
+
+# annCol = scheme$annCol
+# annColors = scheme$annColors
 
 # Bar charts with variables of interest #####
+
 
 
 # Save environment
