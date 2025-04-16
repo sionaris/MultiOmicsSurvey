@@ -974,6 +974,167 @@ ggsave(
   device = "pdf"
 )
 
+z_transcr = readRDS("Resources/TCGA/Surv_standardized_transcr.rds")
+
+# ARI with holdout ground truth(s) #####
+# Pick a TCGA .rds file produced through the download and preprocessing script
+holdout_tcga = readRDS("Resources/TCGA/Surv_RNA_full.rds")
+
+# Convert tcga object columns to the sample identifiers we have in this work
+new_colnames = unlist(lapply(strsplit(colnames(holdout_tcga), split = "-"), function(x) {
+  paste(x[1:4], collapse = "-")
+}))
+colnames(holdout_tcga) = new_colnames; rm(new_colnames); gc()
+
+# Filter for samples of this work
+# PARADIGM
+holdout_PARADIGM_clusters = holdout_tcga@colData@listData[["paper_PARADIGM Clusters"]]
+holdout_PARADIGM_clusters = as.data.frame(list(Sample.ID = colnames(holdout_tcga),
+                                               Cluster = holdout_PARADIGM_clusters))
+holdout_PARADIGM_clusters$Cluster = gsub("C", "", holdout_PARADIGM_clusters$Cluster)
+# PARADIGM_clusters= na.omit(PARADIGM_clusters)
+holdout_PARADIGM_clusters$Cluster = as.numeric(holdout_PARADIGM_clusters$Cluster)
+
+# PanGyn
+holdout_PanGyn_clusters = holdout_tcga@colData@listData[["paper_Pan-Gyn Clusters"]]
+holdout_PanGyn_clusters = as.data.frame(list(Sample.ID = colnames(holdout_tcga),
+                                             Cluster = holdout_PanGyn_clusters))
+holdout_PanGyn_clusters$Cluster = gsub("C", "", holdout_PanGyn_clusters$Cluster)
+# PanGyn_clusters = na.omit(PanGyn_clusters)
+holdout_PanGyn_clusters$Cluster = as.numeric(holdout_PanGyn_clusters$Cluster)
+
+# Loop of ARI calculations
+holdout_ARI_df = data.frame(matrix(NA, ncol = 4, nrow = length(clusterings)))
+colnames(holdout_ARI_df) = c("algorithm", "Category", "ARI_to_PARADIGM", "ARI_to_PanGyn")
+holdout_ARI_df$algorithm = names(clusterings)
+holdout_ARI_df$Category = primary_annotation_rag[holdout_ARI_df$algorithm]
+holdout_ARI_df = holdout_ARI_df %>% dplyr::arrange(Category)
+rownames(holdout_ARI_df) = holdout_ARI_df$algorithm
+
+for (algorithm in holdout_ARI_df$algorithm) {
+  holdout_cluster_df = read.xlsx(paste0(home, "/Results/Survival_evaluations/",
+                                        algorithm, "/", algorithm,
+                                        "_surv_data.xlsx"))[, c("Sample.ID", algorithm)]
+  colnames(holdout_cluster_df)[2] = "Cluster"
+  holdout_ARI_df[algorithm, "ARI_to_PARADIGM"] = calculate_ari_index(cluster_df1 = holdout_PARADIGM_clusters,
+                                                                     cluster_df2 = holdout_cluster_df,
+                                                                     sample_col = "Sample.ID",
+                                                                     clust_col = "Cluster",
+                                                                     suffixes = c("_PARADIGM_C",
+                                                                                  paste0("_", algorithm)))
+  holdout_ARI_df[algorithm, "ARI_to_PanGyn"] = calculate_ari_index(cluster_df1 = holdout_PanGyn_clusters,
+                                                                   cluster_df2 = holdout_cluster_df,
+                                                                   sample_col = "Sample.ID",
+                                                                   clust_col = "Cluster",
+                                                                   suffixes = c("_Pan-Gyn_C",
+                                                                                paste0("_", algorithm)))
+}
+
+# Create a new column for annotation x-position
+holdout_ARI_df$annot_x <- -0.035
+holdout_ARI_df <- holdout_ARI_df[order(holdout_ARI_df$Category, holdout_ARI_df$algorithm), ]
+holdout_ARI_df$algorithm <- factor(holdout_ARI_df$algorithm, levels = unique(holdout_ARI_df$algorithm))
+
+# p2: PARADIGM plot
+holdout_p2 <- ggplot(holdout_ARI_df, aes(y = reorder(algorithm, Category))) +
+  geom_tile(aes(x = annot_x, fill = Category), 
+            color = "grey50", linewidth = 0.01,
+            width = 0.015, height = 0.8) +
+  scale_fill_manual(values = category_colors, guide = FALSE) +
+  new_scale_fill() +
+  geom_bar(aes(x = ARI_to_PARADIGM, fill = ARI_to_PARADIGM), 
+           stat = "identity", color = NA) +
+  scale_fill_carto_c(palette = "Teal", guide = guide_colorbar(title = "ARI")) +
+  coord_cartesian(xlim = c(-0.04, 1)) +
+  labs(
+    title = "ARI bar chart: PARADIGM (holdout TCGA)",
+    x = "Adjusted Rand Index (ARI)",
+    y = "Algorithm"
+  ) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.2)) +
+  theme_bw() +
+  theme(
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    axis.line.y = element_blank(),
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title.y = element_blank(),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.text.y = element_text(size = 8),
+    axis.text.x = element_text(size = 7),
+    legend.title = element_text(face = "bold")
+  )
+
+# p3: Pan-Gyn plot
+holdout_p3 <- ggplot(holdout_ARI_df, aes(y = reorder(algorithm, Category))) +
+  geom_tile(aes(x = annot_x, fill = Category), 
+            color = "grey50", linewidth = 0.01,
+            width = 0.015, height = 0.8) +
+  scale_fill_manual(values = category_colors, guide = FALSE) +
+  new_scale_fill() +
+  geom_bar(aes(x = ARI_to_PanGyn, fill = ARI_to_PanGyn), 
+           stat = "identity", color = NA) +
+  scale_fill_carto_c(palette = "Peach", guide = guide_colorbar(title = "ARI")) +
+  coord_cartesian(xlim = c(-0.04, 1)) +
+  labs(
+    title = "ARI bar chart: Pan-Gyn (holdout TCGA)",
+    x = "Adjusted Rand Index (ARI)",
+    y = "Algorithm"
+  ) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.2)) +
+  theme_bw() +
+  theme(
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    axis.line.y = element_blank(),
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title.y = element_blank(),
+    axis.text.y = element_text(size = 8),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.text.x = element_text(size = 7),
+    legend.title = element_text(face = "bold")
+  )
+
+# Combine the three plots into one patchwork layout
+holdout_combined_plots <- holdout_p2 + holdout_p3 + plot_layout(ncol = 2)
+
+# Create a dummy plot solely for the Category legend
+holdout_legend_plot <- ggplot(holdout_ARI_df, 
+                              aes(x = annot_x, y = reorder(algorithm, Category), fill = Category)) +
+  geom_tile(width = 0.015, height = 0.8) +
+  scale_fill_manual(values = category_colors, guide = guide_legend(title = "Category")) +
+  theme_void() + 
+  theme(legend.position = "bottom")
+
+# Extract the legend using cowplot
+holdout_legend_category <- get_legend(holdout_legend_plot)
+
+# Combine the patchwork with the extracted legend and add vertical spacer for padding
+holdout_final_plot <- holdout_combined_plots / plot_spacer() / as_ggplot(holdout_legend_category) +
+  plot_layout(heights = c(10, 0.5, 1))  # Adjust the middle value for extra padding
+
+# Save the final plot
+ggsave(
+  filename = paste0(home, "/Results/Comparisons/holdout_Ground_truth_ARI_barchart.png"),
+  plot = holdout_final_plot,
+  dpi = 700,
+  width = 4 * 1920,
+  height = 2.5 * 1920,
+  units = "px",
+  device = "png"
+)
+ggsave(
+  filename = paste0(home, "/Results/Comparisons/holdout_Ground_truth_ARI_barchart.pdf"),
+  plot = holdout_final_plot,
+  dpi = 700,
+  width = 4 * 1920,
+  height = 2.5 * 1920,
+  units = "px",
+  device = "pdf"
+)
+
 # Kernel PCA for the ARI matrix #####
 # Calculate ARI for each pair of cluster results
 nonas_generic_clusterings = generic_clusterings[which(unlist(lapply(generic_clusterings, is.list)))]
@@ -1126,6 +1287,363 @@ ggsave(
   units = "px",
   device = "pdf"
 )
+
+# Clincomp heatmaps #####
+library(docxtractr)
+clinvar_TCGA_train = list()
+clinvar_TCGA_holdout = list()
+clinvar_transNEO = list()
+for (algorithm in algorithms) {
+  alg_res_dir = paste0(home, "/Results/single_algorithm/", algorithm)
+  alg_res_holdout_dir = paste0(home, "/Results/Survival_evaluations/", algorithm)
+  clinvar_file_TCGA_train = file.path(alg_res_dir, "Summary_of_clinical_variables.docx")
+  clinvar_file_TCGA_holdout = file.path(alg_res_holdout_dir, "Summary_of_clinical_variables.docx")
+  clinvar_file_transNEO = file.path(alg_res_dir, "transNEO_Summary_of_clinical_variables.docx")
+  doc1 = read_docx(clinvar_file_TCGA_train)
+  doc2 = read_docx(clinvar_file_transNEO)
+  doc3 = read_docx(clinvar_file_TCGA_holdout)
+  clinvar_TCGA_train[[algorithm]] = docx_extract_all_tbls(doc1)[[1]]
+  clinvar_transNEO[[algorithm]] = docx_extract_all_tbls(doc2)[[1]]
+  clinvar_TCGA_holdout[[algorithm]] = docx_extract_all_tbls(doc3)[[1]]
+}
+rm(alg_res_dir, clinvar_file_TCGA_train, clinvar_file_transNEO, doc1, doc2,
+   clinvar_file_TCGA_holdout, doc3); gc()
+
+# Create objects for a heatmap plot and a bar chart plot
+# TCGA_train
+clinbar_df_TCGA_train = do.call(rbind, lapply(seq_along(clinvar_TCGA_train), function(i) {
+  as.data.frame(clinvar_TCGA_train[[i]]) %>%
+    dplyr::filter(X != "") %>%
+    dplyr::select(Variable = X, pval = p, test) %>%
+    dplyr::filter(Variable != "n") %>%
+    dplyr::mutate(Algorithm = names(clinvar_TCGA_train)[i],
+                  Sig.status = ifelse(pval == "<0.001", "Significant",
+                                      ifelse(as.numeric(pval) < 0.05, "Significant", "N.S.")),
+                  type = ifelse(test == "exact", "categorical", "continuous"))
+}))
+clinbar_df_TCGA_train$Variable = gsub(" (%)", "", clinbar_df_TCGA_train$Variable, fixed = TRUE)
+clinbar_df_TCGA_train$Variable = gsub("vital status", "Vital status", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("race list", "Race", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("history of neoadjuvant treatment", 
+                                      "NAT history", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("age at initial pathologic diagnosis (median [IQR])", 
+                                      "Age", clinbar_df_TCGA_train$Variable, fixed = TRUE)
+clinbar_df_TCGA_train$Variable = gsub("ethnicity", "Ethnicity", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("primary lymph node presentation assesment",
+                                      "Lymph node status", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("race list", "Race", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("histological type", "Histological type", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("menopause status", "Menopausal status", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("breast carcinoma estrogen receptor status", 
+                                      "ER status", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("breast carcinoma progesterone receptor status", 
+                                      "PR status", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("lab proc her2 neu immunohistochemistry receptor status", 
+                                      "HER2 status", clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("distant metastasis present ind2", "Distant metastasis",
+                                      clinbar_df_TCGA_train$Variable)
+clinbar_df_TCGA_train$Variable = gsub("stage event pathologic stage", "Stage", clinbar_df_TCGA_train$Variable)
+
+clinbar_df_TCGA_train = clinbar_df_TCGA_train %>%
+  dplyr::filter(Variable %in% c("Vital Status", "Race", "NAT history",
+                                "Age", "Ethnicity", "Lymph node status",
+                                "Race", "Menopausal status", "Histological type",
+                                "ER status", "PR status", "HER2 status",
+                                "Distant metastasis", "Stage"))
+counts_clinbar_TCGA_train = clinbar_df_TCGA_train %>%
+  dplyr::select(-Algorithm) %>%
+  dplyr::group_by(Variable, Sig.status) %>%
+  dplyr::summarise(n()) %>%
+  dplyr::filter(Sig.status == "Significant") %>%
+  dplyr::rename(Counts = `n()`)
+
+# TCGA_holdout
+clinbar_df_TCGA_holdout = do.call(rbind, lapply(seq_along(clinvar_TCGA_holdout), function(i) {
+  as.data.frame(clinvar_TCGA_holdout[[i]]) %>%
+    dplyr::filter(X != "") %>%
+    dplyr::select(Variable = X, pval = p, test) %>%
+    dplyr::filter(Variable != "n") %>%
+    dplyr::mutate(Algorithm = names(clinvar_TCGA_holdout)[i],
+                  Sig.status = ifelse(pval == "<0.001", "Significant",
+                                      ifelse(as.numeric(pval) < 0.05, "Significant", "N.S.")),
+                  type = ifelse(test == "exact", "categorical", "continuous"))
+}))
+clinbar_df_TCGA_holdout$Variable = gsub(" (%)", "", clinbar_df_TCGA_holdout$Variable, fixed = TRUE)
+clinbar_df_TCGA_holdout$Variable = gsub("vital status", "Vital status (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("race list", "Race (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("history of neoadjuvant treatment", 
+                                        "NAT history (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("age at initial pathologic diagnosis (median [IQR])", 
+                                        "Age (h)", clinbar_df_TCGA_holdout$Variable, fixed = TRUE)
+clinbar_df_TCGA_holdout$Variable = gsub("ethnicity", "Ethnicity (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("primary lymph node presentation assesment",
+                                        "Lymph node status (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("race list", "Race (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("histological type", "Histological type (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("menopause status", "Menopausal status (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("breast carcinoma estrogen receptor status", 
+                                        "ER status (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("breast carcinoma progesterone receptor status", 
+                                        "PR status (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("lab proc her2 neu immunohistochemistry receptor status", 
+                                        "HER2 status (h)", clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("distant metastasis present ind2", "Distant metastasis (h)",
+                                        clinbar_df_TCGA_holdout$Variable)
+clinbar_df_TCGA_holdout$Variable = gsub("stage event pathologic stage", "Stage (h)", clinbar_df_TCGA_holdout$Variable)
+
+clinbar_df_TCGA_holdout = clinbar_df_TCGA_holdout %>%
+  dplyr::filter(Variable %in% c("Vital Status (h)", "Race (h)", "NAT history (h)",
+                                "Age (h)", "Ethnicity (h)", "Lymph node status (h)",
+                                "Race (h)", "Menopausal status (h)", "Histological type (h)",
+                                "ER status (h)", "PR status (h)", "HER2 status (h)",
+                                "Distant metastasis (h)", "Stage (h)"))
+counts_clinbar_TCGA_holdout = clinbar_df_TCGA_holdout %>%
+  dplyr::select(-Algorithm) %>%
+  dplyr::group_by(Variable, Sig.status) %>%
+  dplyr::summarise(n()) %>%
+  dplyr::filter(Sig.status == "Significant") %>%
+  dplyr::rename(Counts = `n()`)
+
+# transNEO prep
+clinbar_df_transNEO = do.call(rbind, lapply(seq_along(clinvar_transNEO), function(i) {
+  as.data.frame(clinvar_transNEO[[i]]) %>%
+    dplyr::filter(X != "") %>%
+    dplyr::select(Variable = X, pval = p, test) %>%
+    dplyr::filter(Variable != "n") %>%
+    dplyr::mutate(Algorithm = names(clinvar_transNEO)[i],
+                  Sig.status = ifelse(pval == "<0.001", "Significant",
+                                      ifelse(as.numeric(pval) < 0.05, "Significant", "N.S.")),
+                  type = ifelse(test == "exact", "categorical", "continuous"))
+}))
+
+clinbar_df_transNEO$Variable = gsub(" (%)", "", clinbar_df_transNEO$Variable, fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("pCR.RD", "pCR", clinbar_df_transNEO$Variable)
+clinbar_df_transNEO$Variable = gsub("NAT.regimen", 
+                                    "NAT regimen", clinbar_df_transNEO$Variable,
+                                    fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("Age (median [IQR])", 
+                                    "Age (v)", clinbar_df_transNEO$Variable, fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("LN.status.at.diagnosis",
+                                    "Lymph node status (v)", clinbar_df_transNEO$Variable,
+                                    fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("ER.status", 
+                                    "ER status (v)", clinbar_df_transNEO$Variable, fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("HER2.status", 
+                                    "HER2 status (v)", clinbar_df_transNEO$Variable,
+                                    fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("T.stage", "Stage (v)", clinbar_df_transNEO$Variable)
+clinbar_df_transNEO$Variable = gsub("RCB.score (median [IQR])", 
+                                    "RCB score", clinbar_df_transNEO$Variable, fixed = TRUE)
+clinbar_df_transNEO$Variable = gsub("HRD.sum (median [IQR])", 
+                                    "HRD sum", clinbar_df_transNEO$Variable, fixed = TRUE)
+
+clinbar_df_transNEO = clinbar_df_transNEO %>%
+  dplyr::filter(Variable %in% c("pCR", "NAT regimen",
+                                "Age (v)", "Lymph node status (v)",
+                                "ER status (v)", "HER2 status (v)",
+                                "iC10", "Stage (v)", "RCB score", "HRD sum"))
+counts_clinbar_transNEO = clinbar_df_transNEO %>%
+  dplyr::select(-Algorithm) %>%
+  dplyr::group_by(Variable, Sig.status) %>%
+  dplyr::summarise(n()) %>%
+  dplyr::filter(Sig.status == "Significant") %>%
+  dplyr::rename(Counts = `n()`)
+
+# Heatmap
+library(dplyr)
+library(tidyr)
+library(ComplexHeatmap)
+library(grid)
+
+# Define the order of variables for each dataset
+tcga_train_vars <- sort(unique(clinbar_df_TCGA_train$Variable))
+tcga_holdout_vars <- sort(unique(clinbar_df_TCGA_holdout$Variable))
+transneo_vars <- sort(unique(clinbar_df_transNEO$Variable))
+
+# For TCGA_train: create binary indicator (1 = Significant, 0 = N.S.)
+bin_TCGA_train <- clinbar_df_TCGA_train %>%
+  mutate(Binary = ifelse(Sig.status == "Significant", 1, 0)) %>%
+  select(Algorithm, Variable, Binary) %>%
+  pivot_wider(names_from = Algorithm, values_from = Binary) %>%
+  filter(Variable %in% tcga_train_vars) %>%
+  arrange(Variable)
+mat_TCGA_train <- as.matrix(bin_TCGA_train[,-1])
+rownames(mat_TCGA_train) <- bin_TCGA_train$Variable  # rownames = variable names
+
+# For TCGA_holdout: create binary indicator (1 = Significant, 0 = N.S.)
+bin_TCGA_holdout <- clinbar_df_TCGA_holdout %>%
+  mutate(Binary = ifelse(Sig.status == "Significant", 1, 0)) %>%
+  select(Algorithm, Variable, Binary) %>%
+  pivot_wider(names_from = Algorithm, values_from = Binary) %>%
+  filter(Variable %in% tcga_holdout_vars) %>%
+  arrange(Variable)
+mat_TCGA_holdout <- as.matrix(bin_TCGA_holdout[,-1])
+rownames(mat_TCGA_holdout) <- bin_TCGA_holdout$Variable  # rownames = variable names
+
+# For transNEO
+bin_transNEO <- clinbar_df_transNEO %>%
+  mutate(Binary = ifelse(Sig.status == "Significant", 1, 0)) %>%
+  select(Algorithm, Variable, Binary) %>%
+  pivot_wider(names_from = Algorithm, values_from = Binary) %>%
+  filter(Variable %in% transneo_vars) %>%
+  arrange(Variable)
+mat_transNEO <- as.matrix(bin_transNEO[,-1])
+rownames(mat_transNEO) <- bin_transNEO$Variable
+
+# Combine the matrices
+binary_mat <- rbind(mat_TCGA_train, mat_TCGA_holdout, mat_transNEO)
+
+# Create grouping vector for row annotation (used to insert a break)
+group <- factor(
+  c(rep("TCGA (train)", nrow(mat_TCGA_train)),
+    rep("TCGA (holdout)", nrow(mat_TCGA_holdout)),
+    rep("transNEO", nrow(mat_transNEO))),
+  levels = c("TCGA (train)", "TCGA (holdout)", "transNEO")
+)
+names(group) <- rownames(binary_mat)
+
+### Prepare algorithm (column) annotations
+
+# Use previous col annotation
+col_anno =  HeatmapAnnotation(
+  Category = primary_annotation_rag,
+  Software = anno_image(logo_paths, border = FALSE, height = unit(12, "mm")),
+  col = list(Category = category_colors),
+  gp = gpar(col = "white"),
+  show_annotation_name = FALSE,
+  simple_anno_size = unit(3.5, "mm"),
+  show_legend = FALSE
+)
+
+### Prepare legends for significance, software, and method categories
+
+# Discrete legend for significance (no title)
+lgd_significance <- Legend(
+  labels = c("Not significant", "Significant"),
+  legend_gp = gpar(fill = c("grey80", "#68ABB8"), col = "black"),
+  title = "Significance",
+  direction = "vertical",
+  ncol = 1,
+  labels_gp = gpar(fontsize = 9),
+  title_gp = gpar(fontface = "bold", fontsize = 11),
+  title_position = 'topleft',
+  row_gap = unit(0.1, "cm"),
+  column_gap = unit(0.5, "cm"),
+  title_gap = unit(0.15, "cm")
+)
+
+# Create legend for method categories
+lgd_methods_v <- Legend(
+  labels = names(category_colors),
+  legend_gp = gpar(fill = category_colors, col = NA),
+  title = "Category",
+  labels_gp = gpar(fontsize = 9),
+  title_gp = gpar(fontsize = 11, fontface = "bold"),
+  ncol = 1,
+  title_position = 'topleft',
+  row_gap = unit(0.1, "cm"),
+  column_gap = unit(0.5, "cm"),
+  title_gap = unit(0.15, "cm")
+)
+
+# Software legend
+lgd_software_v <- Legend(
+  # Labels shown in the legend
+  labels = c("R", "Python", "R & Python"),
+  at = c("R", "Python", "R & Python"),
+  
+  # Title of the legend
+  title = "Software",
+  title_position = "topleft",
+  
+  direction = "vertical",
+  ncol = 1,
+  
+  column_gap = unit(0.5, "cm"),
+  row_gap = unit(0.1, "cm"),
+  title_gap = unit(0.15, "cm"),
+  
+  # Control the label/title font sizes
+  labels_gp = gpar(fontsize = 9),
+  title_gp = gpar(fontsize = 11, fontface = "bold"),
+  
+  # These settings remove any drawn borders around the symbol boxes
+  legend_gp = gpar(col = NA),
+  background = "white",
+  
+  # Size of each symbol box in the legend
+  grid_width  = unit(4, "mm"),
+  grid_height = unit(4, "mm"),
+  
+  graphics = list(
+    # 1. R logo
+    function(x, y, w, h) {
+      grid.raster(r_array, x = x, y = y, width = w, height = h)
+    },
+    # 2. Python logo
+    function(x, y, w, h) {
+      grid.raster(py_array, x = x, y = y, width = w, height = h)
+    },
+    # 3. Mashup logo
+    function(x, y, w, h) {
+      grid.raster(res_array, x = x, y = y, width = w, height = h)
+    }
+  )
+)
+
+### Create row annotation for the group labels
+right_annotation = rowAnnotation(foo = anno_block(labels = c("TCGA (train)", "TCGA (holdout)", "transNEO"), 
+                                                  labels_rot = 270,
+                                                  labels_gp = gpar(col = "black", fontsize = 12,
+                                                                   fontface = "bold")))
+
+### Build and draw the heatmap
+ht <- Heatmap(binary_mat,
+              name = NULL,  # disable default heatmap legend (colorbar)
+              cluster_rows = FALSE,
+              cluster_columns = FALSE,
+              right_annotation = right_annotation,
+              row_split = group,            # split rows by group
+              row_gap = unit(5, "mm"),
+              row_title = NULL,
+              # row_title_side = "right",     # display group titles on the right
+              # row_title_gp = gpar(fontface = "bold", fontsize = 15),
+              row_names_side = "left",      # variable names on the left,
+              row_names_gp = gpar(fontsize = 10),
+              column_names_side = "bottom", # algorithm names at the bottom
+              column_names_gp = gpar(fontface = "bold", fontsize = 10),  # bold algorithm names
+              column_title = "Algorithms and clinical significance",
+              column_title_gp = gpar(fontface = "bold", fontsize = 13),
+              bottom_annotation = col_anno,  # attach algorithm annotation at the bottom
+              show_heatmap_legend = FALSE,   # disable generic colorbar legend
+              # Customize cell drawing: "#38B2A3" for significant, "grey" for non-significant
+              cell_fun = function(j, i, x, y, width, height, fill) {
+                val <- binary_mat[i, j]
+                col_fill <- if (val == 1) "#68ABB8" else "grey80"
+                grid.rect(x = x, y = y, width = width, height = height,
+                          gp = gpar(fill = col_fill, col = "black"))
+              }
+)
+# Draw the heatmap with your existing legends (software and method) plus the two new legends:
+png(paste0(home, "/Results/Comparisons/Significance_heatmap.png"),
+    width = 5800, height = 5800, res = 700, units = "px")
+draw(ht,
+     annotation_legend_list = packLegend(lgd_significance, lgd_software_v, lgd_methods_v,
+                                         gap = unit(2.5, "cm")),
+     heatmap_legend_side = "right",
+     annotation_legend_side = "right",
+     align_annotation_legend = "heatmap_center")
+dev.off()
+
+pdf(paste0(home, "/Results/Comparisons/Significance_heatmap.pdf"),
+    width = 9, height = 9)
+draw(ht,
+     annotation_legend_list = packLegend(lgd_significance, lgd_software_v, lgd_methods_v,
+                                         gap = unit(2.5, "cm")),
+     heatmap_legend_side = "right",
+     annotation_legend_side = "right",
+     align_annotation_legend = "heatmap_center")
+dev.off()
 
 # Save environment
 save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
