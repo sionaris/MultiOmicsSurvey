@@ -424,13 +424,27 @@ surv = list()
 
 # Import survival data from cBioBortal
 cBioPortal = read.xlsx("Resources/cBioPortal_surv.xlsx")
+
+# If we use XENA USC data
+
+# xena <- read.table("C:/Users/as3582/OneDrive - University of Cambridge/Desktop/Xena_USC_survival_BRCA.txt",
+#                    header = TRUE, sep = "\t") %>%
+#   rename(Patient.ID = X_PATIENT, OS_DAYS = OS.time, OS_STATUS = OS) %>%
+#   filter(Redaction != "Redacted") %>%
+#   arrange(Patient.ID, desc(OS_DAYS)) %>%
+#   distinct(Patient.ID, .keep_all = TRUE) %>%
+#   mutate(vital_status = ifelse(OS_STATUS == 0, "Alive", "Dead"),
+#          OS_MONTHS = OS_DAYS/30)
+
+survival_data = cBioPortal
+
 for (algorithm in algorithms) {
   
   # Get the corresponding label-mapping data on the holdout TCGA data
   surv_df = label_maps[[algorithm]] %>%
     mutate(Source = "Holdout") %>%
     dplyr::select(Sample.ID, !!sym(algorithm), Patient.ID) %>%
-    inner_join(cBioPortal, by = "Patient.ID")
+    inner_join(survival_data, by = "Patient.ID")
   
   surv_df = surv_df[!is.na(surv_df[, algorithm]), ]
   surv_df$OS_MONTHS = as.numeric(surv_df$OS_MONTHS)
