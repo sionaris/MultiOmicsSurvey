@@ -32,19 +32,50 @@ surv = list()
 
 # Import survival data from cBioBortal
 cBioPortal = read.xlsx("Resources/cBioPortal_surv.xlsx")
+# If we use XENA USC data
+
+# xena <- read.table("Resources/Xena_USC_survival_BRCA.txt",
+#                    header = TRUE, sep = "\t") %>%
+#   rename(Patient.ID = X_PATIENT, OS_DAYS = OS.time, OS_STATUS = OS) %>%
+#   filter(Redaction != "Redacted") %>%
+#   arrange(Patient.ID, desc(OS_DAYS)) %>%
+#   distinct(Patient.ID, .keep_all = TRUE) %>%
+#   mutate(vital_status = ifelse(OS_STATUS == 0, "Alive", "Dead"),
+#          OS_MONTHS = OS_DAYS/30)
+
+survival_data = cBioPortal
+
+# Set correct_survival to NULL, "BH", or "Bonferroni" before the loop
+correct_survival <- "BH"  # Or NULL or "Bonferroni"
+
+# Initialize a list to store warnings for each algorithm
+algorithm_warnings <- list()
 for (algorithm in algorithms) {
+  algorithm_warnings[[algorithm]] <- character(0)
+}
+
+for (algorithm in algorithms) {
+  
   alg_clusterings_train = read.xlsx(paste0("Results/single_algorithm/",
                                            algorithm, "/", algorithm,
                                            "_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx"))
   
+  # Get the corresponding label-mapping data on the holdout TCGA data
   surv_df = train_clinical_data %>%
-                    dplyr::select(Sample.ID, Patient.ID, vital_status,
-                                  days_to_death, days_to_last_followup) %>%
-                    inner_join(alg_clusterings_train, by = "Sample.ID") %>%
-                    mutate(Source = "Train") %>%
-                    dplyr::select(Sample.ID, !!sym(algorithm) := Cluster, Patient.ID, 
-                                  Source) %>%
-    inner_join(cBioPortal, by = "Patient.ID")
+    dplyr::select(Sample.ID, Patient.ID, vital_status,
+                  days_to_death, days_to_last_followup, everything()) %>%
+    inner_join(alg_clusterings_train, by = "Sample.ID") %>%
+    mutate(Source = "Train") %>%
+    dplyr::select(Sample.ID, !!sym(algorithm) := Cluster, Patient.ID,
+                  everything()) %>%
+    dplyr::select(-vital_status) %>%
+    inner_join(survival_data, by = "Patient.ID") %>%
+    dplyr::rename(LN_status = primary_lymph_node_presentation_assessment,
+                  ER_status = breast_carcinoma_estrogen_receptor_status,
+                  HER2_status = lab_proc_her2_neu_immunohistochemistry_receptor_status,
+                  # stage = stage_event_pathologic_stage,
+                  dist_metastasis = distant_metastasis_present_ind2) %>%
+    mutate(age = days_to_birth/365)
   
   surv_df = surv_df[!is.na(surv_df[, algorithm]), ]
   surv_df$OS_MONTHS = as.numeric(surv_df$OS_MONTHS)
@@ -58,24 +89,78 @@ for (algorithm in algorithms) {
   # Convert grouping variable to factor
   surv_df[, algorithm] = as.factor(surv_df[, algorithm])
   
-  # Run TCGAanalyze_survival
-  surv[[algorithm]] = TCGAanalyze_survival_custom(
-    data = surv_df,
-    clusterCol = algorithm,
-    main = paste(algorithm, "on TCGA-BRCA training set: survival analysis"),
-    ylab = expression(bold("Survival probability")),
-    xlab = expression(bold("Time since diagnosis (days)")),
-    filename = paste0(home, "/Results/Survival_evaluations/", algorithm, "/",
-                      algorithm,
-                      "_survival_plot_training_data.pdf"),
-    legend = expression(bold("Legend")),
-    risk.table.height = 0.2*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, algorithm]))-1],
-    color = cluster_colors[1:length(unique(surv_df[, algorithm]))],
-    main_fontsize = 18,
-    height = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, algorithm]))-1],
-    width = 10,
-    dpi = 700
-  )
+  # Capture warnings, Run TCGAanalyze_survival
+  withCallingHandlers({
+    surv[[algorithm]] <- tryCatch({
+      TCGAanalyze_survival_custom3(
+        data         = surv_df,
+        clusterCol   = algorithm,
+        adjustVars   = c("age", "histological_type", "LN_status", "menopause_status",
+                         "ER_status", "HER2_status", "dist_metastasis"),
+        main         = paste(algorithm, "on TCGA-BRCA training set: survival analysis"),
+        title.size   = 18,
+        xlab         = expression(bold("Time since diagnosis (days)")),
+        ylab         = expression(bold("Survival probability")),
+        color        = cluster_colors[1:length(unique(surv_df[, algorithm]))],
+        legend       = expression(bold("Legend")),
+        save.filename= paste0(home, "/Results/Survival_evaluations/", algorithm, "/",
+                              algorithm,
+                              "_survival_plot_training_data.pdf"),
+        save.width   = 10,
+        save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, algorithm]))-1],
+        save.dpi     = 700,
+        ph_threshold = 0.05, # Set Proportional Hazard threshold
+        vif_cutoff = 5 # Set VIF threshold
+      )
+    }, error = function(e) {
+      # If an error occurs, return a list with error information
+      list(error = e$message, pvalue = NA) # important to add pvalue = NA so code does not crash
+    })
+  }, warning = function(w) {
+    # Capture warnings here
+    algorithm_warnings[[algorithm]] <<- append(algorithm_warnings[[algorithm]],
+                                               conditionMessage(w))
+    invokeRestart("muffleWarning")
+  })
+  
+  # Store convergence info from warnings
+  if (is.list(surv[[algorithm]]) && !is.null(surv[[algorithm]]$convergence)) {
+    surv[[algorithm]][["convergence"]] <- list(
+      singular = any(grepl("computationally singular", algorithm_warnings[[algorithm]])),
+      loglik_failed = any(grepl("Loglik converged before", algorithm_warnings[[algorithm]]))
+    )
+  } else {
+    surv[[algorithm]][["convergence"]] <- list(
+      singular = NA,
+      loglik_failed = NA
+    )
+  }
+  
+  # Skip if results for TCGAanalyze_survival_custom3 where not calculated
+  if (is.null(surv[[algorithm]]$pvalue)) {
+    # Exporting
+    write.xlsx(surv_df,
+               paste0(home, "/Results/Survival_evaluations/", algorithm, "/",
+                      algorithm, "_surv_TRAINING_data.xlsx"),
+               overwrite = TRUE)
+    
+    # Save in R
+    surv[[algorithm]][["df"]] = surv_df
+    next
+  }
+  
+  # Perform p-value correction if requested
+  if (!is.null(correct_survival) && !is.na(surv[[algorithm]]$pvalue)) {
+    if (correct_survival == "BH") {
+      surv[[algorithm]]$pvalue_adjusted <- p.adjust(surv[[algorithm]]$pvalue,
+                                                    method = "BH",
+                                                    n = length(algorithms))
+    } else if (correct_survival == "Bonferroni") {
+      surv[[algorithm]]$pvalue_adjusted <- p.adjust(surv[[algorithm]]$pvalue,
+                                                    method = "bonferroni",
+                                                    n = length(algorithms))
+    }
+  }
   
   # Exporting
   write.xlsx(surv_df,
