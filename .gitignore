@@ -43,6 +43,7 @@
 /Scripts/single_algorithm/MOFA_local.R
 /Scripts/Poster.R
 /Scripts/extract_RWRF_runtimes.R
+/Scripts/Archived/
 /Results/single_algorithm/RGCCA/*
 /Results/single_algorithm/SGCCA/*
 /Results/single_algorithm/MOFA/MOFA_fast_console_log_first_run_ever
