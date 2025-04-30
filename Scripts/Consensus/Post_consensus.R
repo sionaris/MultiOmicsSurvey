@@ -111,13 +111,82 @@ rm(res_dir, res_dir_files, R_algorithm, Python_algorithm); gc()
 
 
 # ARI agreement #####
+pathway_files = list()
+for (algorithm in algorithms) {
+  pathway_files[[algorithm]] = list()
+  alg_res_dir = file.path("Results/single_algorithm", algorithm)
+  up_pattern = ".*\\.(.+?)_unique_upexpr_pathway\\.txt$"
+  down_pattern = ".*\\.(.+?)_unique_downexpr_pathway\\.txt$"
+  up_pathway_filenames = grep(up_pattern, list.files(alg_res_dir), value = TRUE)
+  down_pathway_filenames = grep(down_pattern, list.files(alg_res_dir), value = TRUE)
+  for (file in up_pathway_filenames) {
+    cluster = sub(up_pattern, "\\1", file)
+    pathway_files[[algorithm]][[paste0(cluster, "_up")]] = data.table::fread(file = file.path(alg_res_dir, file))
+  }
+  for (file in down_pathway_filenames) {
+    cluster = sub(down_pattern, "\\1", file)
+    pathway_files[[algorithm]][[paste0(cluster, "_down")]] = data.table::fread(file = file.path(alg_res_dir, file))
+  }
+}
+rm(alg_res_dir, up_pattern, down_pattern, up_pathway_filenames, 
+   down_pathway_filenames, cluster, file); gc()
+
+# 1. Aggregate pathway IDs by algorithm
+# For each algorithm, combine pathway IDs across clusters (separately for up and down)
+aggregated_up <- list()
+aggregated_down <- list()
+aggregated_all <- list()
+
+for (alg in algorithms) {
+  alg_list <- pathway_files[[alg]]
+  up_keys <- grep("_up$", names(alg_list), value = TRUE)
+  up_ids <- unique(unlist(lapply(alg_list[up_keys], function(dt) dt$V1)))
+  aggregated_up[[alg]] <- up_ids
+  
+  down_keys <- grep("_down$", names(alg_list), value = TRUE)
+  down_ids <- unique(unlist(lapply(alg_list[down_keys], function(dt) dt$V1)))
+  aggregated_down[[alg]] <- down_ids
+  
+  # union of both up and down pathways
+  aggregated_all[[alg]] <- unique(c(up_ids, down_ids))
+}
+
+rm(alg_list, up_keys, up_ids, down_keys, down_ids); gc()
+
 library(mclust)
+cons_dir     <- "Results/Consensus/CC"
+up_pat       <- ".*\\.(CC[0-9]+)_unique_upexpr_pathway\\.txt$"
+down_pat     <- ".*\\.(CC[0-9]+)_unique_downexpr_pathway\\.txt$"
+
+cons_paths <- list.files(cons_dir, full.names = TRUE)
+
+cons_up_ids   <- unique(unlist(lapply(grep(up_pat,   cons_paths, value = TRUE),
+                                      \(f) data.table::fread(f)$V1)))
+cons_down_ids <- unique(unlist(lapply(grep(down_pat, cons_paths, value = TRUE),
+                                      \(f) data.table::fread(f)$V1)))
+
+aggregated_consensus <- unique(c(cons_up_ids, cons_down_ids))
+
+calc_ari <- function(set1, set2, universe) {
+  v1 <- as.integer(universe %in% set1)
+  v2 <- as.integer(universe %in% set2)
+  adjustedRandIndex(v1, v2)
+}
+
+universe_paths <- unique(c(unlist(aggregated_all), aggregated_consensus))
+
+ari_pathway_vec <- setNames(
+  vapply(algorithms, \(alg) {
+    calc_ari(aggregated_all[[alg]], aggregated_consensus, universe_paths)
+  }, FUN.VALUE = numeric(1)),
+  algorithms
+)
 
 # Initialize a matrix to store ARI values
 ari_vector <- setNames(rep(NA, length(algorithms)), algorithms)
 
 # Import the consensus clustering
-consensus = read.xlsx("Results/Consensus/CC/CC_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx") %>%
+consensus = read.xlsx(paste0(cons_dir, "/CC_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")) %>%
   dplyr::mutate(Cluster = gsub("CC", "", Cluster))
 
 # Populate the ari_vector
@@ -130,14 +199,21 @@ for (algorithm in algorithms) {
 print(ari_vector)
 
 # Create data frame
-ARI_df = as.data.frame(list(algorithm = names(ari_vector),
-                            ARI = ari_vector)) %>%
-  inner_join(as.data.frame(list(algorithm = names(primary_annotation_rag),
-                                Category = primary_annotation_rag)),
-             by = "algorithm") %>%
-  arrange(Category, algorithm) %>%
-  mutate(algorithm = factor(algorithm, levels = unique(algorithm)),
-         annot_x = -0.035)
+library(tidyr)
+ARI_long <- tibble::tibble(
+  algorithm = names(ari_vector),
+  Category  = primary_annotation_rag[names(ari_vector)],
+  Clusters  = unname(ari_vector),
+  Pathways  = unname(ari_pathway_vec)
+) |>
+  pivot_longer(c(Clusters, Pathways),
+               names_to = "Metric", values_to = "ARI") |>
+  arrange(Category, algorithm) |>
+  mutate(
+    algorithm = factor(algorithm, levels = unique(algorithm)),
+    Metric    = factor(Metric, levels = c("Clusters", "Pathways")),
+    annot_x   = -0.06                      # offset for the category tile
+  )
 
 # Bar chart for ARI
 library(ggnewscale)
@@ -153,38 +229,46 @@ category_colors <- c(
   # "Low-rank Projection" = carto_pal("Bold", n = 12)[10]
 )
 
-p <- ggplot(ARI_df, aes(y = algorithm)) +
-  # Category annotation tile with legend
-  geom_tile(aes(x = annot_x, fill = Category), width = 0.015, 
-            height = 0.8, color = "grey50", linewidth = 0.2) +
+p <- ggplot(ARI_long, aes(y = algorithm)) +
+  ## category tile (unchanged)
+  geom_tile(aes(x = annot_x, fill = Category),
+            width = 0.018, height = 0.8,
+            colour = "grey50", linewidth = 0.2) +
   scale_fill_manual(values = category_colors, name = "Category") +
   new_scale_fill() +
-  # ARI bars with colorbar legend
-  geom_col(aes(x = ARI, fill = ARI), color = NA) +
-  scale_fill_carto_c(palette = "Teal", name = "ARI") +
-  coord_cartesian(xlim = c(-0.05, 1)) +
-  scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
-  labs(
-    title = "ARI between consensus and individual methods",
-    x = "ARI",
-    y = NULL
-  ) +
+  
+  ## cluster-ARI bars  (palette = RedOr, shifted downwards)
+  geom_col(data = subset(ARI_long, Metric == "Clusters"),
+           aes(x = ARI, fill = ARI),
+           width = 0.35, position = position_nudge(y = -0.18)) +
+  scale_fill_carto_c(palette = "RedOr", name = "ARI (Clusters)") +
+  new_scale_fill() +
+  
+  ## pathway-ARI bars  (palette = BluYl, shifted upwards)
+  geom_col(data = subset(ARI_long, Metric == "Pathways"),
+           aes(x = ARI, fill = ARI),
+           width = 0.35, position = position_nudge(y =  0.18)) +
+  scale_fill_carto_c(palette = "BluYl", name = "ARI (Pathways)") +
+  
+  coord_cartesian(xlim = c(-0.07, 1)) +
+  scale_x_continuous(breaks = seq(0, 1, 0.1)) +
+  labs(title = "Consensus Agreement: Cluster Labels & Aggregated Pathways",
+       x = "Adjusted Rand Index (ARI)", y = NULL) +
   theme_bw() +
-  theme(
-    panel.grid = element_blank(),
-    panel.border = element_blank(),
-    axis.line.x = element_line(color = "black"),
-    axis.line.y = element_blank(),
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    axis.text.y = element_text(size = 8),
-    axis.text.x = element_text(size = 7),
-    axis.title.x = element_text(face = "bold"),
-    legend.title = element_text(face = "bold")
-  )
+  theme(panel.grid       = element_blank(),
+        panel.border     = element_blank(),
+        axis.line.x      = element_line(colour = "black"),
+        axis.line.y      = element_blank(),
+        axis.text.y      = element_text(size = 8),
+        axis.text.x      = element_text(size = 7),
+        axis.title.x     = element_text(face = "bold"),
+        plot.title       = element_text(face = "bold", hjust = 0.5),
+        legend.title     = element_text(face = "bold"))
 
-# Save plot
-ggsave(file.path(home, "Results/Consensus/Post/ARI_to_conensus_bar_chart.png"), p, dpi = 700, width = 8, height = 6)
-ggsave(file.path(home, "Results/Consensus/Post/ARI_to_conensus_bar_chart.pdf"), p, dpi = 700, width = 8, height = 6)
+ggsave(file.path(home, "Results/Consensus/Post/ARI_vs_consensus_bars.png"),
+       p, dpi = 700, width = 9, height = 6)
+ggsave(file.path(home, "Results/Consensus/Post/ARI_vs_consensus_bars.pdf"),
+       p, dpi = 700, width = 9, height = 6)
 
 # NTP #####
 dgea.marker.up_1000 <- runMarker_single_algorithm_no_export(algorithm_name = "CC",
