@@ -1503,13 +1503,45 @@ group <- factor(
 names(group) <- rownames(binary_mat)
 
 ### Prepare algorithm (column) annotations
+category_map <- c(
+  setNames(rep("Similarity Network",                 length(similarity_network_methods)),          similarity_network_methods),
+  setNames(rep("Multiple Kernel Learning",           length(multiple_kernel_learning)),            multiple_kernel_learning),
+  setNames(rep("Matrix Factorization/Latent Variables", length(matrix_factorization_latent_variables)), matrix_factorization_latent_variables),
+  setNames(rep("Graph-based Methods",                length(graph_methods)),                       graph_methods),
+  setNames(rep("Bayesian",                           length(bayesian)),                            bayesian),
+  setNames(rep("Consensus/Ensemble Clustering",      length(cc_ensemble)),                         cc_ensemble)
+)
 
-# Use previous col annotation
-col_anno =  HeatmapAnnotation(
-  Category = primary_annotation_rag,
-  Software = anno_image(logo_paths, border = FALSE, height = unit(12, "mm")),
-  col = list(Category = category_colors),
-  gp = gpar(col = "white"),
+## 1.  Desired left-to-right order of algorithms
+desired_order <- c(similarity_network_methods,
+                   multiple_kernel_learning,
+                   matrix_factorization_latent_variables,
+                   graph_methods,
+                   bayesian,
+                   cc_ensemble)
+
+## 2.  Keep only the algorithms that are actually in the matrix
+alg_order <- desired_order[desired_order %in% colnames(binary_mat)]
+
+## 3.  Re-order the matrix columns
+binary_mat <- binary_mat[, alg_order]
+
+## 4.  Build perfectly aligned vectors / colours
+cat_vec_chr    <- category_map[alg_order]
+present_levels <- unique(cat_vec_chr)
+
+category_vec   <- factor(cat_vec_chr, levels = present_levels)
+cat_cols_used  <- category_colors[present_levels]
+
+logo_paths_ord <- logo_paths[alg_order]
+
+## 5.  Column annotation
+col_anno <- HeatmapAnnotation(
+  Category = category_vec,
+  Software = anno_image(logo_paths_ord, border = FALSE,
+                        height = unit(12, "mm")),
+  col = list(Category = cat_cols_used),
+  gp  = gpar(col = "white"),
   show_annotation_name = FALSE,
   simple_anno_size = unit(3.5, "mm"),
   show_legend = FALSE
