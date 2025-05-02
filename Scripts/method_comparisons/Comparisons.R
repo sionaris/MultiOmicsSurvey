@@ -60,7 +60,7 @@ names(clusterings) = algorithms
 # Set up method categories
 similarity_network_methods = c("ab-SNF", "ANF", "MDICC", "MSNE", "NEMO", "RWR-F", "RWR-NF", "SNF", "Spectrum")
 multiple_kernel_learning = c("CIMLR", "KLIC", "wMKL") # "mixKernel"
-matrix_factorization_latent_variables = c("MFA", "MOFA", "LRAcluster")
+matrix_factorization = c("MFA", "MOFA", "LRAcluster")
 graph_methods = c("MONET") #, "PAMOGK")
 bayesian = c("iClusterBayes")
 # cca_methods = c("RGCCA", "SGCCA")
@@ -70,7 +70,7 @@ cc_ensemble = c("COCA")
 # Primary annotation
 primary_annotation_rag = c(rep("Similarity Network", length(similarity_network_methods)),
                            rep("Multiple Kernel Learning", length(multiple_kernel_learning)),
-                           rep("Matrix Factorization/Latent Variables", length(matrix_factorization_latent_variables)),
+                           rep("Matrix Factorization", length(matrix_factorization)),
                            rep("Graph-based Methods", length(graph_methods)),
                            rep("Bayesian", length(bayesian)),
                            rep("Consensus/Ensemble Clustering", length(cc_ensemble)))
@@ -78,7 +78,7 @@ primary_annotation_rag = c(rep("Similarity Network", length(similarity_network_m
                            # rep("Low-rank Projection", length(low_rank_methods)),
                            # rep("Miscellaneous", length(misc)))
 names(primary_annotation_rag) = c(similarity_network_methods, multiple_kernel_learning,
-                                  matrix_factorization_latent_variables, graph_methods, bayesian,
+                                  matrix_factorization, graph_methods, bayesian,
                                   cc_ensemble)
                                   # cca_methods, low_rank_methods, 
                                   # misc)
@@ -91,7 +91,7 @@ algorithm_languages = algorithm_languages[names(primary_annotation_rag)]
 #                              rep("Low-rank Projection", 7),
 #                              rep("Miscellaneous", 7))
 # names(secondary_annotation_rag) = c(similarity_network_methods, "Spectrum",
-#                                     cca_methods, bayesian, matrix_factorization_latent_variables,
+#                                     cca_methods, bayesian, matrix_factorization,
 #                                     multiple_kernel_learning, graph_methods,
 #                                     low_rank_methods, "COCA")
 
@@ -146,7 +146,7 @@ library(rcartocolor)
 category_colors <- c(
   "Similarity Network" = carto_pal("Bold", n = 12)[1],
   "Multiple Kernel Learning" = carto_pal("Bold", n = 12)[2],
-  "Matrix Factorization/Latent Variables" = carto_pal("Antique", n = 12)[5],
+  "Matrix Factorization" = carto_pal("Antique", n = 12)[5],
   "Graph-based Methods" = carto_pal("Bold", n = 12)[4],
   "Bayesian" = carto_pal("Bold", n = 12)[11],
   "Consensus/Ensemble Clustering" = carto_pal("Bold", n = 12)[9]
@@ -1506,7 +1506,7 @@ names(group) <- rownames(binary_mat)
 category_map <- c(
   setNames(rep("Similarity Network",                 length(similarity_network_methods)),          similarity_network_methods),
   setNames(rep("Multiple Kernel Learning",           length(multiple_kernel_learning)),            multiple_kernel_learning),
-  setNames(rep("Matrix Factorization/Latent Variables", length(matrix_factorization_latent_variables)), matrix_factorization_latent_variables),
+  setNames(rep("Matrix Factorization", length(matrix_factorization)), matrix_factorization),
   setNames(rep("Graph-based Methods",                length(graph_methods)),                       graph_methods),
   setNames(rep("Bayesian",                           length(bayesian)),                            bayesian),
   setNames(rep("Consensus/Ensemble Clustering",      length(cc_ensemble)),                         cc_ensemble)
@@ -1515,7 +1515,7 @@ category_map <- c(
 ## 1.  Desired left-to-right order of algorithms
 desired_order <- c(similarity_network_methods,
                    multiple_kernel_learning,
-                   matrix_factorization_latent_variables,
+                   matrix_factorization,
                    graph_methods,
                    bayesian,
                    cc_ensemble)
