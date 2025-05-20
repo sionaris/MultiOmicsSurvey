@@ -2057,9 +2057,11 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
                                      p.adj.cutoff = 0.05, clust.col = c("#2EC4B6", "#E71D36", 
                                                                         "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", "#023E8A", 
                                                                         "#9D4EDD", "#f09c6c", "#09f3b3"), width = 8, height = 4,
-                                     simulate.p.value = FALSE) 
+                                     simulate.p.value = FALSE, return.binary = FALSE) 
 {
   library(MOVICS)
+  library(grid)
+  library(ComplexHeatmap)
   if (!is.element(test.method, c("fisher", "chisq"))) {
     stop("test.method for independency can be one of fisher or chisq.\n")
   }
@@ -2261,7 +2263,13 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
       draw(p)
     } 
     }
-  return(out)
+  if (return.binary) {
+    binarymut$Sample.ID <- rownames(binarymut)   # keeps the IDs in a column
+    binarymut <- binarymut[, c("Sample.ID", setdiff(names(binarymut), "Sample.ID"))]
+    return(list(summary = out, sample_binary = binarymut))
+  } else {
+    return(out)
+  }
 }
 
 # compDrugsen single algorithm #####
