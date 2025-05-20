@@ -512,6 +512,7 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                       annColors    = annColors, # same annotation color for heatmap
                                       width        = 12, 
                                       height       = 6,
+                                      return.binary = TRUE,
                                       fig.name     = paste0(algorithm, "_", data_source, "_",
                                                             data_types, "_eval_on_", evaluation_source,
                                                             "_oncoprint"),
@@ -520,6 +521,36 @@ oncoprint <- compMut_single_algorithm(algorithm_name = algorithm,
                                       res.path     = paste0(home, "/Results/single_algorithm/", algorithm),
                                       test.method = "chisq" # large number of groups
                                       )
+
+# Inspect clusters of interest
+# wMKL6 and wMKL7 mutations vs HER2 status
+HER2_onco = oncoprint$sample_binary %>% inner_join(clinical_data %>%
+                                                     dplyr::select(Sample.ID, HER2_status = lab_proc_her2_neu_immunohistochemistry_receptor_status), by = "Sample.ID") %>%
+  inner_join(wMKL_clusters, by = "Sample.ID")
+HER2_onco_wMKL6 = HER2_onco %>%
+  dplyr::filter(Cluster == "6") %>%
+  dplyr::select(-Cluster)
+HER2_onco_wMKL7 = HER2_onco %>%
+  dplyr::filter(Cluster == "7") %>%
+  dplyr::select(-Cluster)
+
+# Proportion tables
+
+# TP53
+prop.table(table(HER2_onco_wMKL6$HER2_status, HER2_onco_wMKL6$TP53), margin = 1)
+prop.table(table(HER2_onco_wMKL7$HER2_status, HER2_onco_wMKL7$TP53), margin = 1)
+
+# PIK3CA
+prop.table(table(HER2_onco_wMKL6$HER2_status, HER2_onco_wMKL6$PIK3CA), margin = 1)
+prop.table(table(HER2_onco_wMKL7$HER2_status, HER2_onco_wMKL7$PIK3CA), margin = 1)
+
+# CDH1
+prop.table(table(HER2_onco_wMKL6$HER2_status, HER2_onco_wMKL6$CDH1), margin = 1)
+prop.table(table(HER2_onco_wMKL7$HER2_status, HER2_onco_wMKL7$CDH1), margin = 1)
+
+# SYNE1
+prop.table(table(HER2_onco_wMKL6$HER2_status, HER2_onco_wMKL6$SYNE1), margin = 1)
+prop.table(table(HER2_onco_wMKL7$HER2_status, HER2_onco_wMKL7$SYNE1), margin = 1)
 
 # Drug sensitivity comparison ###
 drug_sensitivity <- compDrugsen_single_algorithm(algorithm_name = algorithm,
