@@ -646,7 +646,7 @@ optSigma = as.numeric(substr(strsplit(names(best_sil), ", ")[[1]][2], 9, 11))
 optk = as.numeric(substr(strsplit(names(best_sil), ", ")[[1]][3], 5, 
                          nchar(strsplit(names(best_sil), ", ")[[1]][1])))
 
-best_clustering = clusterings[[paste0("NN = ", optNN, ", sigma = ", optSigma)]][[paste0("k = ", optk)]]
+best_clustering = clusterings[[paste0("NN = ", optN, ", sigma = ", optSigma)]][[paste0("k = ", optk)]]
 
 RWRNF_clusters = as.data.frame(list(Cluster = best_clustering$cluster, 
                                    Sample.ID = colnames(Fusions_filt[[paste0("NN = ", optNN, ", sigma = ", optSigma)]])))
