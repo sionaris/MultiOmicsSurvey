@@ -9,6 +9,8 @@
 .Ruserdata
 /GDCdata/
 /Surv/
+Scripts/Stability analysis
+Results/Stability analysis
 /Full_BRCA_clin/
 /Resources/TCGA/*.rds
 /Resources/TCGA/*.RData
