@@ -202,7 +202,7 @@ sil_scores <- sapply(2:10, function(k) {
 
 # best K is where silhouette is maximized
 optk <- which.max(sil_scores) + 1
-final_labels <- cutree(hc, k = best_k)
+final_labels <- cutree(hc, k = optk)
 
 CC_clusters = as.data.frame(list(Sample.ID = names(final_labels),
                                  Cluster = final_labels))
