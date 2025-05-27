@@ -93,7 +93,8 @@ if (alg_feature_pref == "rows") {
 rm(rogue_indices, index); gc()
 
 # Import clinical data for the TCGA samples of interest
-clinical_data = openxlsx::read.xlsx("Resources/TCGA/clinical_data.xlsx")
+library(openxlsx)
+clinical_data = read.xlsx("Resources/TCGA/clinical_data.xlsx")
 
 # Import clusterings
 R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "KLIC",
