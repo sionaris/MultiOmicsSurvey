@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.metrics import silhouette_score
 
 def main():
-    # Llook for "output_*.csv" files in the current directory.
+    # Look for "output_*.csv" files in the current directory.
     # Each job produces:
     #   output_<job_name>_embeddings.csv
     #   output_<job_name>_clusters.csv
