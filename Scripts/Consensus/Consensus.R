@@ -1463,54 +1463,66 @@ library(igraph)
 list_aff_S = list(consensus_mat)
 names(list_aff_S) = "Final Consensus"
 
-for (i in 1:length(list_aff_S)) {
+quantile_thresh = 0.75
+for (i in seq_along(list_aff_S)) {
+  g <- graph_from_adjacency_matrix(
+    list_aff_S[[i]],
+    mode     = "max",
+    weighted = TRUE,
+    diag     = FALSE)
   
-  # Prepare the graph object
-  g <- graph_from_adjacency_matrix(list_aff_S[[i]],  weighted = TRUE, diag = FALSE,
-                                   mode = "max")
-  g <- delete_edges(g, E(g)[weight == 0])
-  E(g)$width <- sqrt(E(g)$weight) * 5  # Example transformation for visibility
+  # Edge threshold for drawing
+  thresh      <- quantile(E(g)$weight, quantile_thresh)          # 4th quartile
+  keep_edge   <- E(g)$weight >= thresh               # logical mask
+  
+  ## edge-specific plotting attributes
+  E(g)$plot_width  <- ifelse(keep_edge,
+                             sqrt(E(g)$weight),      # visible edges
+                             0)                      # invisible edges
+  E(g)$plot_color  <- ifelse(keep_edge,
+                             "gray85",               # visible color
+                             NA)                     # NA 
+  
   nodes_data <- data.frame(name = V(g)$name) %>%
-    inner_join(clust_annot_pheno %>% dplyr::select(samID, CC),
+    inner_join(clust_annot_pheno %>% select(samID, CC),
                by = c("name" = "samID"))
   
-  # Set CC as a factor for coloring
   nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-  V(g)$CC <- nodes_data[[algorithm]] # modify `$CC` manually
+  V(g)$CC <- nodes_data[[algorithm]]
   
-  # Set color based on CC
-  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
+  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6",
+                        fifelse(V(g)$CC == paste0(algorithm, "2"), "#E71D36",
+                                fifelse(V(g)$CC == paste0(algorithm, "3"), "#FF9F1C",
+                                        "#BDD5EA")))
   
-  png(paste0(home, 
+  png(paste0(home,
              "/Results/Consensus/", algorithm, "/Supplement/",
              names(list_aff_S)[i], ".png"),
       width = 6000, height = 6000, res = 700)
   
-  par(mar = c(2, 2, 2, 5))  # Adjust right margin to accommodate legend
+  par(mar = c(2, 2, 2, 5))
   
-  # Plot the graph with a layout that spreads nodes well
-  plot(g, vertex.color = V(g)$color,
-       edge.width = E(g)$width,
-       vertex.size = 4, 
-       vertex.label = NA, 
-       edge.color = "gray85",
-       layout = layout_with_fr(g),  # Use Fruchterman-Reingold layout
-       main = "")
+  plot(g,
+       layout       = layout_with_fr(g),
+       vertex.color = V(g)$color,
+       vertex.size  = 4,
+       vertex.label = NA,
+       edge.width   = E(g)$plot_width,
+       edge.color   = E(g)$plot_color,
+       main         = "")
   
-  # Add title with reduced size using title() function
   title(main = names(list_aff_S)[i], cex.main = 1.7)
   
-  # Add a legend to the right of the plot
-  legend("bottomright", 
-         title="Node Color Legend",    
-         legend=c(paste0(algorithm, "1"),
-                  paste0(algorithm, "2")), 
-         fill=cluster_colors_heatmap,  
-         cex=0.7,      
-         box.lwd=1)  
+  legend("bottomright",
+         title  = "Node Color Legend",
+         legend = paste0(algorithm, 1:4),
+         fill   = cluster_colors_heatmap,
+         cex    = 0.7,
+         box.lwd = 1)
   
-  dev.off() 
+  dev.off()
 }
+
 rm(g, nodes_data)
 
 # Wrap up #####
