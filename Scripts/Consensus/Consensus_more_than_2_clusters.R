@@ -1115,7 +1115,7 @@ if (!dir.exists(paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Sup
 
 # Setup for heatmaps
 colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
-cluster_colors_heatmap = c("#2EC4B6", "#E71D36")
+cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
   dplyr::rename(CC = Cluster, samID = "Sample.ID")
@@ -1148,7 +1148,7 @@ CC_clust_res = CC_clusters %>% dplyr::rename(samID = Sample.ID,
 pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = algorithm, 
                          clust_res = CC_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "RNAseq")
 
@@ -1156,7 +1156,7 @@ pca_from_original_matrix(mydata = plotdata$RNAseq,
 pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = algorithm, 
                          clust_res = CC_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "miRNA")
 
@@ -1164,7 +1164,7 @@ pca_from_original_matrix(mydata = plotdata$miRNA,
 pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = algorithm, 
                          clust_res = CC_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "CNV")
 
@@ -1173,7 +1173,7 @@ pca_from_original_matrix(mydata = plotdata$CNV,
 mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = algorithm, 
                          clust_res = CC_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "SNPs")
 
@@ -1181,7 +1181,7 @@ mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
 pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = algorithm, 
                          clust_res = CC_clust_res,
-                         cluster_colors = c("#2EC4B6", "#E71D36"), 
+                         cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "Methylation")
 
@@ -1321,11 +1321,11 @@ for (i in 1:length(voi)) {
                                             chifit = chifit,
                                             na.action = "na.omit",
                                             algorithm = algorithm,
-                                            barchart_ylim = 650,
-                                            text_y = 600, rect_ymin = 500,
-                                            rect_ymax = 620, x_annot = 1.5,
-                                            v_gap = 35, rect_xmin = 1,
-                                            rect_xmax = 2, 
+                                            barchart_ylim = 600,
+                                            text_y = 550, rect_ymin = 450,
+                                            rect_ymax = 570, x_annot = 2.5,
+                                            v_gap = 35, rect_xmin = 2,
+                                            rect_xmax = 3, 
                                             annot_text_size = 2.25,
                                             legend.text.size = 5,
                                             x.axis.text.size = 5) +
@@ -1334,7 +1334,7 @@ for (i in 1:length(voi)) {
   ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/Consensus_more_than_2/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 4320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1353,15 +1353,15 @@ ggarrange(CC_barcharts[[1]], CC_barcharts[[2]], CC_barcharts[[3]],
 ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/Consensus_more_than_2/", algorithm, "/Supplement"), 
-       width = 7000, height = 8000, device = 'png', units = "px",
+       width = 10000, height = 8000, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
 # Just significant ones now
 CC_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(CC, Race, Histology, 
-                                                             `ER status`, `PR status`, `Menopausal status`,
-                                                             Stage)
+                                                             `ER status`, `PR status`, `HER2 status`,
+                                                             `Menopausal status`, Stage, Metastasis)
 plotdata_bar_sig$CC = factor(plotdata_bar_sig$CC)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1372,11 +1372,11 @@ for (i in 1:length(voi_sig)) {
                                                 chifit = chifit,
                                                 na.action = "na.omit",
                                                 algorithm = algorithm,
-                                                barchart_ylim = 650,
-                                                text_y = 600, rect_ymin = 500,
-                                                rect_ymax = 620, x_annot = 1.5,
-                                                v_gap = 35, rect_xmin = 1,
-                                                rect_xmax = 2, 
+                                                barchart_ylim = 600,
+                                                text_y = 550, rect_ymin = 450,
+                                                rect_ymax = 570, x_annot = 2.5,
+                                                v_gap = 35, rect_xmin = 2,
+                                                rect_xmax = 3, 
                                                 annot_text_size = 2.25,
                                                 legend.text.size = 5,
                                                 x.axis.text.size = 5) +
@@ -1385,7 +1385,7 @@ for (i in 1:length(voi_sig)) {
   ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/Consensus_more_than_2/", algorithm, "/Supplement"), 
-         width = 2320, height = 2320, device = 'png', units = "px",
+         width = 4320, height = 2320, device = 'png', units = "px",
          dpi = 700)
   dev.off()
 }
@@ -1395,12 +1395,13 @@ rm(loc, chifit)
 # Multiplot (PNG) - bar charts
 ggarrange(CC_barcharts_sig[[1]], CC_barcharts_sig[[2]], CC_barcharts_sig[[3]],
           CC_barcharts_sig[[4]], CC_barcharts_sig[[5]], CC_barcharts_sig[[6]],
-          ncol = 2, nrow = 3, labels = c("A", "B", "C", "D", "E", "F"),
+          CC_barcharts_sig[[7]],
+          ncol = 3, nrow = 3, labels = c("A", "B", "C", "D", "E", "F", "G"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
        path = paste0(home, 
                      "/Results/Consensus_more_than_2/", algorithm, "/Supplement"), 
-       width = 5500, height = 8500, device = 'png', units = "px",
+       width = 10000, height = 8500, device = 'png', units = "px",
        dpi = 700)
 dev.off()
 
@@ -1410,30 +1411,32 @@ Pheno_sunburst_CC = clust_annot_pheno
 Pheno_sunburst_CC$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_CC$`ER status`)
 Pheno_sunburst_CC$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_CC$`ER status`)
 Pheno_sunburst_CC$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_CC$`ER status`)
-Pheno_sunburst_CC$`Menopausal status` = gsub("Indeterminate", "Indet", Pheno_sunburst_CC$`Menopausal status`)
-Pheno_sunburst_CC$`Menopausal status` = gsub("Pre-menopausal", "Pre", Pheno_sunburst_CC$`Menopausal status`)
-Pheno_sunburst_CC$`Menopausal status` = gsub("Perimenopausal", "Peri", Pheno_sunburst_CC$`Menopausal status`)
-Pheno_sunburst_CC$`Menopausal status` = gsub("Post-menopausal", "Post", Pheno_sunburst_CC$`Menopausal status`)
-Pheno_sunburst_CC$`Menopausal status` = gsub("Unknown", "Unkn Meno", Pheno_sunburst_CC$`Menopausal status`)
-Pheno_sunburst_CC$Stage = gsub("Unknown", "Unkn Stage", Pheno_sunburst_CC$Stage)
+Pheno_sunburst_CC$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                       Pheno_sunburst_CC$`HER2 status`)
+Pheno_sunburst_CC$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_CC$`HER2 status`)
+Pheno_sunburst_CC$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_CC$`HER2 status`)
+Pheno_sunburst_CC$Stage = gsub("Unkown", "Unkn stage", Pheno_sunburst_CC$Stage)
 Pheno_sunburst_CC = Pheno_sunburst_CC %>%
-  dplyr::select(CC, `ER status`, `Menopausal status`, Stage) %>%
-  group_by(CC, `ER status`, `Menopausal status`, Stage) %>%
+  dplyr::select(CC, `ER status`, `HER2 status`, Stage) %>%
+  group_by(CC, `ER status`, `HER2 status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
 sunburst_coloring_CC = data.frame(stringsAsFactors = FALSE,
-                                  colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", 
+                                  colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                                                                      "#C11D9C", "#0F1682",  "grey40",
-                                                                     "mistyrose2", "#FAA476", "#DC3977", 
-                                                                     "#7C1D6F", "grey40",
-                                                                     "#00C9FF", "#099CF5", "#097BF5", 
-                                                                     "#0B5684", "grey40"))),
+                                                                     "#0B9EF8", "#560DA7", "mistyrose1", 
+                                                                     "hotpink4", "grey40",
+                                                                     "#00C9FF", "#099CF5", 
+                                                                     "#097BF5", "#0B5684", 
+                                                                     "grey40"))),
                                   labels = c("CC1", "CC2",
+                                             "CC3", "CC4",
                                              "ER-", "ER+", "Unkn ER status",
-                                             "Indet", "Pre", "Peri", "Post", "Unkn Meno",
-                                             "Stage I", "Stage II", "Stage III", "Stage IV",
-                                             "Unkn Stage"))
+                                             "HER2-", "HER2+", "Indeterminate",
+                                             "Equivocal", "Unkn HER2 status",
+                                             "Stage I", "Stage II",
+                                             "Stage III", "Stage IV", "Unkn stage"))
 
 sunburstDF_CC = as.sunburstDF(Pheno_sunburst_CC, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_CC, by = "labels")
@@ -1473,7 +1476,9 @@ for (i in 1:length(list_aff_S)) {
   V(g)$CC <- nodes_data[[algorithm]] # modify `$CC` manually
   
   # Set color based on CC
-  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6", "#E71D36")
+  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6", 
+                        fifelse(V(g)$CC == paste0(algorithm, "2"), "#E71D36",
+                                fifelse(V(g)$CC == paste0(algorithm, "3"), "#FF9F1C", "#BDD5EA")))
   
   png(paste0(home, 
              "/Results/Consensus_more_than_2/", algorithm, "/Supplement/",
