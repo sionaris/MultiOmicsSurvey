@@ -1240,6 +1240,10 @@ dev.off()
 # Import runtime data
 runtimes = read.xlsx("Resources/Runtimes.xlsx")
 
+# Add asterisks for MOFA and MFA
+runtimes$Algorithm <- gsub("MOFA", "MOFA*", runtimes$Algorithm)
+runtimes$Algorithm <- gsub("MFA", "MFA**", runtimes$Algorithm)
+
 # Create bar chart
 runtimes <- runtimes[order(runtimes$`Runtime.per.job.(min/job)`), ]
 runtimes$Algorithm <- factor(runtimes$Algorithm,
