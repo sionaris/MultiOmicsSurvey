@@ -3485,123 +3485,9 @@ plot_MOFA_cumul_var_exp <- function(object,
   }
 }
 
-# TCGA analyze survival modification #####
-TCGAanalyze_survival_custom <- function (data, clusterCol = NULL, legend = "Legend", labels = NULL, 
-                                         risk.table = TRUE, xlim = NULL, main = "Kaplan-Meier Overall Survival Curves", 
-                                         ylab = "Probability of survival", xlab = "Time since diagnosis (days)", 
-                                         filename = "survival.pdf", color = NULL, height = 8, width = 12, 
-                                         dpi = 300, pvalue = TRUE, conf.int = TRUE, risk.table.height = 0.25, ...) {
-  # Load required packages
-  library(TCGAbiolinks)
-  library(survminer)
-  library(survival)
-  library(gridExtra)
-  library(grid)
-  
-  # Checks for required columns
-  if (!all(c("vital_status", "days_to_death", "days_to_last_follow_up") %in% colnames(data))) 
-    stop("Columns vital_status, days_to_death and days_to_last_follow_up should be in data frame")
-  
-  if (is.null(color)) {
-    color <- rainbow(length(unique(data[, clusterCol])))
-  }
-  
-  if (is.null(clusterCol)) {
-    stop("Please provide the clusterCol argument")
-  } else if (length(unique(data[, clusterCol])) == 1) {
-    stop(paste0("Sorry, but I'm expecting at least two groups\n  Only this group found: ", unique(data[, clusterCol])))
-  }
-  
-  # Replace missing days_to_death with days_to_last_follow_up
-  notDead <- is.na(data$days_to_death)
-  if (any(notDead)) {
-    data[notDead, "days_to_death"] <- data[notDead, "days_to_last_follow_up"]
-  }
-  
-  if (length(data[which((data[, "days_to_death"] < 0) == TRUE), "sample"]) > 0 & "sample" %in% colnames(data)) {
-    message("Inconsistencies in the data: samples with a negative days_to_death value:")
-    message(paste(data[which((data[, "days_to_death"] < 0) == TRUE), "sample"], collapse = ", "))
-  }
-  if (any(is.na(data[, "days_to_death"])) & "sample" %in% colnames(data)) {
-    message("Inconsistencies in the data: samples with a NA days_to_death value:")
-    message(paste(data[is.na(data[, "days_to_death"]), "sample"], collapse = ", "))
-  }
-  
-  # Create event indicator: patients with vital_status containing "dead" or "deceased"
-  data$s <- grepl("dead|deceased", data$vital_status, ignore.case = TRUE)
-  # Create a factor variable for grouping
-  data$type <- as.factor(data[, clusterCol])
-  # Subset only the necessary columns
-  data <- data[, c("days_to_death", "s", "type")]
-  
-  # Build the survival model formula
-  f.m <- formula(survival::Surv(as.numeric(data$days_to_death), event = data$s) ~ data$type)
-  fit <- do.call(survival::survfit, list(formula = f.m, data = data))
-  
-  # Function to append sample counts to group labels
-  label.add.n <- function(x) {
-    na.idx <- is.na(data[, "days_to_death"])
-    negative.idx <- data[, "days_to_death"] < 0
-    idx <- !(na.idx | negative.idx)
-    return(paste0(x, " (n = ", sum(data[idx, "type"] == x), ")"))
-  }
-  
-  if (is.null(labels)) {
-    d <- survminer::surv_summary(fit, data = data)
-    order <- unname(sapply(levels(d$strata), function(x) unlist(stringr::str_split(x, "="))[2]))
-    labels <- sapply(order, label.add.n)
-  }
-  
-  if (length(xlim) == 1) {
-    xlim <- c(0, xlim)
-  }
-  
-  suppressWarnings({
-    surv <- survminer::ggsurvplot(fit,
-                                  risk.table = risk.table, 
-                                  pval = pvalue, 
-                                  conf.int = conf.int, 
-                                  xlim = xlim, 
-                                  main = main, 
-                                  xlab = xlab, 
-                                  ylab = ylab,
-                                  legend.title = legend, 
-                                  legend.labs = labels, 
-                                  palette = color,
-                                  risk.table.height = risk.table.height,
-                                  ...)
-  })
-  
-  # Save the output plot
-  if (!is.null(filename)) {
-    if (risk.table) {
-      # Combine the survival plot and risk table using arrangeGrob,
-      # and add the main title using the top argument
-      combined <- gridExtra::arrangeGrob(
-        surv$plot, surv$table, 
-        heights = c(1 - risk.table.height, risk.table.height),
-        top = textGrob(main, gp = gpar(fontface = "bold", fontsize = 14))
-      )
-      ggsave(combined, filename = filename, width = width, height = height, dpi = dpi)
-    } else {
-      ggsave(surv$plot, filename = filename, width = width, height = height, dpi = dpi)
-    }
-    message(paste0("File saved as: ", filename))
-  }
-  
-  # Compute the log-rank test p-value using survdiff
-  logrank_test <- survdiff(f.m, data = data)
-  p_val_calc <- 1 - pchisq(logrank_test$chisq, length(logrank_test$n) - 1)
-  signif_status <- ifelse(p_val_calc < 0.05, "Significant", "Not Significant")
-  
-  # Return a list containing the p-value and significance status
-  result <- list(pvalue = p_val_calc, significance = signif_status)
-  return(result)
-}
-
+# TCGAanalyze_survival modification #####
 TCGAanalyze_survival_custom3 <- function(
-    data,
-    clusterCol,
+    data, clusterCol,
     adjustVars         = NULL,
     legend             = "Legend",
     labels             = NULL,
@@ -3622,198 +3508,162 @@ TCGAanalyze_survival_custom3 <- function(
     save.width         = 12,
     save.height        = 8,
     save.dpi           = 300,
-    ph_threshold       = 0.05,  # Proportional Hazards Threshold
-    vif_cutoff         = 5      # VIF Cutoff
+    ph_threshold       = 0.05,
+    vif_cutoff         = 5,
+    linearity_alpha    = 0.05,
+    summary.filename   = NULL
 ) {
-  # ─── 1. Basic checks & prep ───────────────────────────────────────────────
-  if (!clusterCol %in% names(data))
-    stop("clusterCol not found in data")
-  if (!all(c("vital_status","days_to_death","days_to_last_follow_up") %in% names(data)))
-    stop("Missing one of: vital_status, days_to_death, days_to_last_follow_up")
+  
+  ## 1  housekeeping --------------------------------------------------------
+  stopifnot(clusterCol %in% names(data))
+  needed <- c("vital_status","days_to_death","days_to_last_followup")
+  if (!all(needed %in% names(data)))
+    stop("Missing columns: ", paste(setdiff(needed, names(data)), collapse = ", "))
   if (!is.null(adjustVars) && !all(adjustVars %in% names(data)))
     stop("Some adjustVars not found in data")
   
-  # fill missing death times
-  nas <- is.na(data$days_to_death)
-  data$days_to_death[nas] <- data$days_to_last_follow_up[nas]
-  data$s <- grepl("dead|deceased", data$vital_status, ignore.case=TRUE)
-  
+  data$days_to_death[is.na(data$days_to_death)] <-
+    data$days_to_last_followup[is.na(data$days_to_death)]
+  data$s    <- grepl("dead|deceased", data$vital_status, ignore.case = TRUE)
   data$type <- factor(data[[clusterCol]])
-  if (nlevels(data$type) < 2)
-    stop("Need at least two levels in ", clusterCol)
   
   if (is.null(color))
-    color <- rainbow(nlevels(data$type))
+    color <- viridisLite::viridis(nlevels(data$type))
   
-  # ─── 2A. Unadjusted KM curves ─────────────────────────────────────────────
+  miss_pct <- 100 * mean(!stats::complete.cases(data[, c(clusterCol, adjustVars)]))
+  x_ann <- if (!is.null(xlim)) min(xlim) else 0
+  y_ann <- 0.05
+  
+  
+  ## 2  Kaplan–Meier branch -------------------------------------------------
   if (is.null(adjustVars)) {
-    fml   <- survival::Surv(days_to_death, s) ~ type
-    fitKM <- survival::survfit(fml, data=data)
+    
+    fitKM <- survival::survfit(survival::Surv(days_to_death, s) ~ type, data = data)
+    lr    <- survival::survdiff(survival::Surv(days_to_death, s) ~ type, data = data)
+    p_lr  <- stats::pchisq(lr$chisq, df = length(lr$n) - 1, lower.tail = FALSE)
+    
     if (is.null(labels)) {
-      tbl    <- table(data$type)
-      labels <- paste0(names(tbl), " (n=", as.integer(tbl), ")")
+      tab <- table(data$type)
+      labels <- paste0(names(tab), " (n=", as.integer(tab), ")")
     }
+    
     survObj <- survminer::ggsurvplot(
-      fitKM, data              = data,
-      risk.table               = risk.table,
-      risk.table.height        = risk.table.height,
-      pval                      = pvalue,
-      conf.int                  = conf.int,
-      xlim                      = xlim,
-      color                    = color,
-      legend.title             = legend,
-      legend.labs              = labels
-    )
-    survObj$plot <- survObj$plot +
-      ggplot2::labs(
-        title  = main,
-        x      = xlab,
-        y      = ylab,
-        colour = legend
-      ) +
-      ggplot2::theme(
-        plot.title   = ggplot2::element_text(face=title.face, size=title.size),
-        axis.title.x = ggplot2::element_text(face=axis.title.face, size=axis.title.size),
-        axis.title.y = ggplot2::element_text(face=axis.title.face, size=axis.title.size)
-      )
-    
-    # ─── Save with directory creation ───────────────────────────────────────
-    dir <- dirname(save.filename)
-    if (!dir.exists(dir)) {
-      dir.create(dir, recursive=TRUE)
-    }
-    tryCatch(
-      {
-        if (risk.table) {
-          combined <- gridExtra::arrangeGrob(
-            survObj$plot, survObj$table,
-            heights = c(1 - risk.table.height, risk.table.height),
-            top     = grid::textGrob(main, gp=grid::gpar(fontface=title.face, fontsize=title.size))
-          )
-          ggsave(combined, filename=save.filename,
-                 width=save.width, height=save.height, dpi=save.dpi)
-        } else {
-          ggsave(survObj$plot, filename=save.filename,
-                 width=save.width, height=save.height, dpi=save.dpi)
-        }
-        message("Saved KM plot: ", save.filename)
-      },
-      error = function(e) {
-        warning("Failed to save KM plot to '", save.filename, "': ", e$message)
-      }
+      fitKM, data = data,
+      risk.table        = risk.table,
+      risk.table.height = risk.table.height,
+      conf.int          = conf.int,
+      xlim              = xlim,
+      legend.title      = legend,
+      legend.labs       = labels,
+      palette           = color,
+      pval              = FALSE
     )
     
-    # log‐rank p
-    lr   <- survival::survdiff(fml, data=data)
-    p_lr <- 1 - pchisq(lr$chisq, df=length(lr$n)-1)
-    sig  <- ifelse(p_lr < 0.05, "Significant", "Not Significant")
-    return(list(type="KM", survplot=survObj, pvalue=p_lr, significance=sig))
-  }
-  
-  # ─── 2B. Adjusted Cox + curves ────────────────────────────────────────────
-  allVars <- c("type", adjustVars)
-  fml     <- as.formula(paste("Surv(days_to_death, s) ~", paste(allVars, collapse=" + ")))
-  coxObj  <- survival::coxph(fml, data=data)
-  
-  infC <- which(!is.finite(coef(coxObj)))
-  if (length(infC)) {
-    warning("Infinite Cox coefficients in: ",
-            paste(names(coef(coxObj))[infC], collapse=", "),
-            ". Consider collapsing rare levels or penalization.")
-  }
-  
-  adjPlot <- survminer::ggadjustedcurves(
-    fit         = coxObj,
-    variable    = "type",
-    data        = data,
-    method      = "conditional",
-    pval        = pvalue,
-    conf.int    = conf.int,
-    xlim        = xlim,
-    color       = color,
-    legend.title= legend
-  ) +
-    ggplot2::labs(
-      title  = main,
-      x      = xlab,
-      y      = ylab,
-      colour = legend
-    ) +
-    ggplot2::theme(
-      plot.title   = ggplot2::element_text(face=title.face, size=title.size),
-      axis.title.x = ggplot2::element_text(face=axis.title.face, size=axis.title.size),
-      axis.title.y = ggplot2::element_text(face=axis.title.face, size=axis.title.size)
-    )
-  
-  # ─── Save adjusted plot ───────────────────────────────────────────────────
-  dir <- dirname(save.filename)
-  if (!dir.exists(dir)) {
-    dir.create(dir, recursive=TRUE)
-  }
-  tryCatch(
-    {
-      ggsave(adjPlot, filename=save.filename,
-             width=save.width, height=save.height, dpi=save.dpi)
-      message("Saved adjusted plot: ", save.filename)
-    },
-    error = function(e) {
-      warning("Failed to save adjusted plot to '", save.filename, "': ", e$message)
-    }
-  )
-  
-  # ─── Improved p-value extraction for cluster variable ─────────────────────
-  # Use likelihood ratio test (LRT) for the cluster variable
-  lrt <- drop1(coxObj, scope = ~ . - type, test = "Chisq")
-  if ("type" %in% rownames(lrt)) {
-    p_cox <- lrt["type", "Pr(>Chi)"]
+    if (pvalue)
+      survObj$plot <- survObj$plot +
+      ggplot2::annotate("text", x = x_ann, y = y_ann,
+                        hjust = 0, label = sprintf("Log-rank p = %.3g", p_lr),
+                        size = 5)
+    
+    final_plot  <- survObj$plot +
+      ggplot2::labs(title = main, x = xlab, y = ylab, colour = legend)
+    final_table <- survObj$table
+    diag_p      <- p_lr
+    
+    sep_ok <- ph_ok <- vif_ok <- lin_ok <- NA
+    
+    
+    ## 3  Cox branch ----------------------------------------------------------
   } else {
-    warning("Could not extract LRT p-value for 'type'; using Wald p-value instead.")
-    ssum <- summary(coxObj)
-    pvs  <- ssum$coefficients[grep("^type", rownames(ssum$coefficients)), "Pr(>|z|)"]
-    p_cox <- max(pvs, na.rm=TRUE)
-  }
-  sig   <- ifelse(p_cox < 0.05, "Significant", "Not Significant")
-  
-  # ─── Proportional hazards assumption check ─────────────────────────────────
-  ph_test <- tryCatch({
-    survival::cox.zph(coxObj)
-  }, error = function(e) {
-    message("Proportional hazards test failed: ", e$message)
-    NULL  # Return NULL if the test fails
-  })
-  
-  if (!is.null(ph_test)) {
-    if (any(ph_test$table[, "p"] < ph_threshold)) {
-      message("WARNING: Proportional hazards assumption violated.")
+    
+    fml    <- stats::as.formula(
+      paste("Surv(days_to_death, s) ~", paste(c("type", adjustVars), collapse = " + "))
+    )
+    coxObj <- survival::coxph(fml, data = data)
+    
+    ## 3a  diagnostics
+    sep_ok <- all(is.finite(stats::coef(coxObj)))
+    
+    zph    <- tryCatch(survival::cox.zph(coxObj), error = function(e) NULL)
+    ph_ok  <- !is.null(zph) && all(zph$table[, "p"] > ph_threshold)
+    
+    vif_ok <- NA
+    vif_vals <- tryCatch({
+      if (requireNamespace("car", quietly = TRUE))
+        suppressWarnings(car::vif(coxObj))
+    }, error = function(e) NA_real_)
+    if (!all(is.na(vif_vals)))
+      vif_ok <- all(vif_vals < vif_cutoff, na.rm = TRUE)
+    
+    ## linearity check – silence “ties” note
+    lin_ok <- TRUE
+    numeric_adj <- adjustVars[sapply(data[adjustVars], is.numeric)]
+    if (length(numeric_adj)) {
+      mf   <- model.frame(coxObj)          # rows actually used
+      mart <- residuals(coxObj, type = "martingale")
+      lin_p <- vapply(numeric_adj, function(v) {
+        z <- suppressWarnings(
+          stats::cor.test(mart, mf[[v]], method = "spearman", exact = FALSE)
+        )
+        z$p.value
+      }, numeric(1))
+      lin_ok <- all(lin_p > linearity_alpha)
     }
+    
+    ## 3b  p-value (LRT, fall back to Wald if NA)
+    lrt   <- drop1(coxObj, scope = ~ . - type, test = "Chisq")
+    p_cox <- lrt["type", "Pr(>Chi)"]
+    if (is.na(p_cox)) {
+      coefs <- summary(coxObj)$coefficients
+      waldP <- coefs[grep("^type", rownames(coefs)), "Pr(>|z|)"]
+      p_cox <- max(waldP, na.rm = TRUE)
+    }
+    
+    final_plot <- survminer::ggadjustedcurves(
+      fit = coxObj, variable = "type", data = data,
+      method = "conditional", conf.int = conf.int,
+      legend.title = legend, xlim = xlim, color = color
+    ) +
+      ggplot2::annotate("text", x = x_ann, y = y_ann,
+                        hjust = 0, label = sprintf("LRT p = %.3g", p_cox),
+                        size = 5) +
+      ggplot2::labs(title = main, x = xlab, y = ylab, colour = legend)
+    
+    final_table <- NULL
+    diag_p      <- p_cox
   }
   
-  # ─── Variance Inflation Factor diagnostic ──────────────────────────────────
-  vif_vals <- tryCatch({
-    if (requireNamespace("car", quietly = TRUE)) {
-      car_vif <- car::vif(coxObj)
-      
-      # Check for high VIF values
-      high_vif_vars <- names(car_vif[car_vif > vif_cutoff])
-      if (length(high_vif_vars) > 0) {
-        message("WARNING: High multicollinearity detected in variables: ", paste(high_vif_vars, collapse = ", "))
-      }
-      car_vif
-    } else {
-      NULL
-    }
-  }, error = function(e) {
-    message("VIF calculation failed: ", e$message)
-    NULL
-  })
   
-  return(list(
-    type         = "Adjusted",
-    coxmodel     = coxObj,
-    adjplot      = adjPlot,
-    pvalue       = p_cox,
-    significance = sig,
-    ph_test      = ph_test,
-    vif          = vif_vals
+  ## 4  save figure ---------------------------------------------------------
+  dir.create(dirname(save.filename), recursive = TRUE, showWarnings = FALSE)
+  if (risk.table && !is.null(final_table)) {
+    g <- gridExtra::arrangeGrob(final_plot, final_table,
+                                heights = c(1 - risk.table.height, risk.table.height))
+    ggsave(g, filename = save.filename, width = save.width, height = save.height, dpi = save.dpi)
+  } else {
+    ggsave(final_plot, filename = save.filename, width = save.width, height = save.height, dpi = save.dpi)
+  }
+  
+  
+  ## 5  dashboard line ------------------------------------------------------
+  if (!is.null(summary.filename)) {
+    dir.create(dirname(summary.filename), recursive = TRUE, showWarnings = FALSE)
+    cat(sprintf("%s\tp=%.3g\tPH:%s\tVIF:%s\tLin:%s\tSep:%s\tMiss:%.1f%%\n",
+                basename(save.filename), diag_p,
+                ifelse(is.na(ph_ok),  "n/a", ifelse(ph_ok,  "OK", "FAIL")),
+                ifelse(is.na(vif_ok), "n/a", ifelse(vif_ok, "OK", "FAIL")),
+                ifelse(is.na(lin_ok), "n/a", ifelse(lin_ok, "OK", "WARN")),
+                ifelse(is.na(sep_ok), "n/a", ifelse(sep_ok,"OK", "FAIL")),
+                miss_pct),
+        file = summary.filename, append = TRUE)
+  }
+  
+  invisible(list(
+    plot        = final_plot,
+    pvalue      = diag_p,
+    diagnostics = list(
+      ph_ok = ph_ok, vif_ok = vif_ok, lin_ok = lin_ok,
+      sep_ok = sep_ok, missing_pct = miss_pct
+    )
   ))
 }

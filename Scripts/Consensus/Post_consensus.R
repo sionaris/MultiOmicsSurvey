@@ -32,7 +32,6 @@ algorithm_languages = c(rep("R", length(R_algorithms)),
 names(algorithm_languages) = algorithms
 algorithm_languages["MOFA"] = "R & Python"
 algorithm_languages["MDICC"] = "R & Python"
-algorithm_languages["MixKernel"] = "R & Python"
 
 clusterings = list()
 
@@ -342,7 +341,7 @@ surv_df = holdout_df %>%
   mutate(Source = "Holdout") %>%
   #dplyr::select(Sample.ID, CC, Patient.ID) %>%
   dplyr::select(Sample.ID, CC, Patient.ID, everything()) %>%
-  dplyr::select(-vital_status) %>%
+  dplyr::select(-vital_status, -days_to_death, -days_to_last_known_alive) %>%
   inner_join(survival_data, by = "Patient.ID") %>%
   dplyr::rename(LN_status = primary_lymph_node_presentation_assessment,
                 ER_status = breast_carcinoma_estrogen_receptor_status,
@@ -356,57 +355,36 @@ surv_df$OS_MONTHS = as.numeric(surv_df$OS_MONTHS)
 surv_df$OS_DAYS = as.numeric(surv_df$OS_DAYS)
 
 # Create a format expected by TCGAanalyze_survival()
-surv_df$days_to_death = ifelse(surv_df$vital_status == "Dead", surv_df$OS_DAYS,
-                               NA)
-surv_df$days_to_last_follow_up = surv_df$OS_DAYS
+surv_df$days_to_death = ifelse(surv_df$vital_status == "Dead", 
+                               surv_df$OS_DAYS,
+                               surv_df$days_to_last_followup)
 
 # Convert grouping variable to factor
 surv_df[, "CC"] = as.factor(surv_df[, "CC"])
+dashfile <- file.path(home, "Results", "Consensus", "Post", "survival_checks.txt")
+unlink(dashfile)
 
 # Capture warnings, Run TCGAanalyze_survival
 library(survival)
-withCallingHandlers({
-  surv <- tryCatch({
-    TCGAanalyze_survival_custom3(
-      data         = surv_df,
-      clusterCol   = "CC",
-      adjustVars   = c("age", "histological_type", "LN_status", "menopause_status",
-                       "ER_status", "HER2_status", "dist_metastasis"),
-      main         = paste("CC on TCGA-BRCA holdout set"),
-      title.size   = 18,
-      xlab         = expression(bold("Time since diagnosis (days)")),
-      ylab         = expression(bold("Survival probability")),
-      color        = cluster_colors[1:length(unique(surv_df[, "CC"]))],
-      legend       = expression(bold("Legend")),
-      save.filename= paste0(home, "/Results/Consensus/Post/CC_survival_plot.pdf"),
-      save.width   = 10,
-      save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, "CC"]))-1],
-      save.dpi     = 700,
-      ph_threshold = 0.05, # Set Proportional Hazard threshold
-      vif_cutoff = 5 # Set VIF threshold
-    )
-  }, error = function(e) {
-    # If an error occurs, return a list with error information
-    list(error = e$message, pvalue = NA) # important to add pvalue = NA so code does not crash
-  })
-}, warning = function(w) {
-  # Capture warnings here
-  holdout_warnings <- conditionMessage(w)
-  invokeRestart("muffleWarning")
-})
-
-# Store convergence info from warnings
-if (is.list(surv) && !is.null(surv$convergence)) {
-  surv[["convergence"]] <- list(
-    singular = any(grepl("computationally singular", holdout_warnings)),
-    loglik_failed = any(grepl("Loglik converged before", holdout_warnings))
-  )
-} else {
-  surv[["convergence"]] <- list(
-    singular = NA,
-    loglik_failed = NA
-  )
-}
+surv <- TCGAanalyze_survival_custom3(
+  data         = surv_df,
+  clusterCol   = "CC",
+  adjustVars   = c("age"), #, "histological_type", "LN_status", "menopause_status",
+  #"ER_status", "HER2_status", "dist_metastasis"),
+  main         = expression(bold("CC on TCGA-BRCA holdout set")),
+  title.size   = 18,
+  xlab         = expression(bold("Time since diagnosis (days)")),
+  ylab         = expression(bold("Survival probability")),
+  color        = cluster_colors[1:length(unique(surv_df[, "CC"]))],
+  legend       = expression(bold("Legend")),
+  save.filename= paste0(home, "/Results/Consensus/Post/CC_survival_plot.pdf"),
+  save.width   = 10,
+  save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, "CC"]))-1],
+  save.dpi     = 700,
+  ph_threshold = 0.05, # Set Proportional Hazard threshold
+  vif_cutoff = 5, # Set VIF threshold
+  summary.filename = dashfile
+)
 
 # Exporting
 write.xlsx(surv_df,
@@ -420,11 +398,13 @@ surv[["df"]] = surv_df
 train_clinical_data = read.xlsx("Resources/TCGA/clinical_data.xlsx")
 
 # Get the corresponding label-mapping data on the training TCGA data
-surv_training_df = holdout_df %>%
-  mutate(Source = "Holdout") %>%
+surv_training_df = train_clinical_data %>%
+  mutate(Source = "Training") %>%
+  inner_join(consensus, by = "Sample.ID") %>%
+  mutate(CC = paste0("CC", Cluster)) %>%
   #dplyr::select(Sample.ID, CC, Patient.ID) %>%
   dplyr::select(Sample.ID, CC, Patient.ID, everything()) %>%
-  dplyr::select(-vital_status) %>%
+  dplyr::select(-vital_status, -days_to_death, -days_to_last_known_alive) %>%
   inner_join(survival_data, by = "Patient.ID") %>%
   dplyr::rename(LN_status = primary_lymph_node_presentation_assessment,
                 ER_status = breast_carcinoma_estrogen_receptor_status,
@@ -438,56 +418,33 @@ surv_training_df$OS_MONTHS = as.numeric(surv_training_df$OS_MONTHS)
 surv_training_df$OS_DAYS = as.numeric(surv_training_df$OS_DAYS)
 
 # Create a format expected by TCGAanalyze_survival()
-surv_training_df$days_to_death = ifelse(surv_training_df$vital_status == "Dead", surv_training_df$OS_DAYS,
-                                        NA)
-surv_training_df$days_to_last_follow_up = surv_training_df$OS_DAYS
+surv_training_df$days_to_death = ifelse(surv_training_df$vital_status == "Dead", 
+                                        surv_training_df$OS_DAYS,
+                                        surv_training_df$days_to_last_followup)
 
 # Convert grouping variable to factor
 surv_training_df[, "CC"] = as.factor(surv_training_df[, "CC"])
 
-# Capture warnings, Run TCGAanalyze_survival
-withCallingHandlers({
-  surv_training <- tryCatch({
-    TCGAanalyze_survival_custom3(
-      data         = surv_training_df,
-      clusterCol   = "CC",
-      adjustVars   = c("age", "histological_type", "LN_status", "menopause_status",
-                       "ER_status", "HER2_status", "dist_metastasis"),
-      main         = paste("CC on TCGA-BRCA holdout set"),
-      title.size   = 18,
-      xlab         = expression(bold("Time since diagnosis (days)")),
-      ylab         = expression(bold("survival probability")),
-      color        = cluster_colors[1:length(unique(surv_training_df[, "CC"]))],
-      legend       = expression(bold("Legend")),
-      save.filename= paste0(home, "/Results/Consensus/Post/CC_training_survival_plot.pdf"),
-      save.width   = 10,
-      save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_training_df[, "CC"]))-1],
-      save.dpi     = 700,
-      ph_threshold = 0.05, # Set Proportional Hazard threshold
-      vif_cutoff = 5 # Set VIF threshold
-    )
-  }, error = function(e) {
-    # If an error occurs, return a list with error information
-    list(error = e$message, pvalue = NA) # important to add pvalue = NA so code does not crash
-  })
-}, warning = function(w) {
-  # Capture warnings here
-  training_warnings <- conditionMessage(w)
-  invokeRestart("muffleWarning")
-})
-
-# Store convergence info from warnings
-if (is.list(surv_training) && !is.null(surv_training$convergence)) {
-  surv_training[["convergence"]] <- list(
-    singular = any(grepl("computationally singular", training_warnings)),
-    loglik_failed = any(grepl("Loglik converged before", training_warnings))
-  )
-} else {
-  surv_training[["convergence"]] <- list(
-    singular = NA,
-    loglik_failed = NA
-  )
-}
+# Run TCGAanalyze_survival
+surv_training = TCGAanalyze_survival_custom3(
+  data         = surv_training_df,
+  clusterCol   = "CC",
+  adjustVars   = c("age"), #, "histological_type", "LN_status", "menopause_status",
+  #"ER_status", "HER2_status", "dist_metastasis"),
+  main         = expression(bold("CC on TCGA-BRCA training set")),
+  title.size   = 18,
+  xlab         = expression(bold("Time since diagnosis (days)")),
+  ylab         = expression(bold("Survival Probability")),
+  color        = cluster_colors[1:length(unique(surv_training_df[, "CC"]))],
+  legend       = expression(bold("Legend")),
+  save.filename= paste0(home, "/Results/Consensus/Post/CC_training_survival_plot.pdf"),
+  save.width   = 10,
+  save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_training_df[, "CC"]))-1],
+  save.dpi     = 700,
+  ph_threshold = 0.05, # Set Proportional Hazard threshold
+  vif_cutoff = 5, # Set VIF threshold
+  summary.filename = dashfile
+)
 
 # Exporting
 write.xlsx(surv_training_df,

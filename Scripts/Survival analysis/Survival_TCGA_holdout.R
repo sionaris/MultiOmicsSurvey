@@ -441,11 +441,8 @@ survival_data = cBioPortal
 # Set correct_survival to NULL, "BH", or "Bonferroni" before the loop
 correct_survival <- "BH"  # Or NULL or "Bonferroni"
 
-# Initialize a list to store warnings for each algorithm
-algorithm_warnings <- list()
-for (algorithm in algorithms) {
-  algorithm_warnings[[algorithm]] <- character(0)
-}
+dashfile <- file.path(home, "Results", "Survival_evaluations", "survival_checks.txt")
+unlink(dashfile)
 
 for (algorithm in algorithms) {
   
@@ -454,7 +451,7 @@ for (algorithm in algorithms) {
     mutate(Source = "Holdout") %>%
     #dplyr::select(Sample.ID, !!sym(algorithm), Patient.ID) %>%
     dplyr::select(Sample.ID, !!sym(algorithm), Patient.ID, everything()) %>%
-    dplyr::select(-vital_status) %>%
+    dplyr::select(-vital_status, -days_to_death, -days_to_last_known_alive) %>%
     inner_join(survival_data, by = "Patient.ID") %>%
     dplyr::rename(LN_status = primary_lymph_node_presentation_assessment,
                   ER_status = breast_carcinoma_estrogen_receptor_status,
@@ -469,21 +466,17 @@ for (algorithm in algorithms) {
   
   # Create a format expected by TCGAanalyze_survival()
   surv_df$days_to_death = ifelse(surv_df$vital_status == "Dead", surv_df$OS_DAYS,
-                                 NA)
-  surv_df$days_to_last_follow_up = surv_df$OS_DAYS
+                                 surv_df$days_to_last_followup)
   
   # Convert grouping variable to factor
   surv_df[, algorithm] = as.factor(surv_df[, algorithm])
   
   # Capture warnings, Run TCGAanalyze_survival
-  withCallingHandlers({
-    surv[[algorithm]] <- tryCatch({
-      TCGAanalyze_survival_custom3(
+  surv[[algorithm]] <- TCGAanalyze_survival_custom3(
         data         = surv_df,
         clusterCol   = algorithm,
-        adjustVars   = c("age", "histological_type", "LN_status", "menopause_status",
-                         "ER_status", "HER2_status", "dist_metastasis"),
-        main         = paste(algorithm, "on TCGA-BRCA holdout set"),
+        adjustVars   = c("age"),
+        main         = bquote( bold(.(algorithm) ~ "on TCGA-BRCA holdout set") ),
         title.size   = 18,
         xlab         = expression(bold("Time since diagnosis (days)")),
         ylab         = expression(bold("Survival probability")),
@@ -495,31 +488,9 @@ for (algorithm in algorithms) {
         save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, algorithm]))-1],
         save.dpi     = 700,
         ph_threshold = 0.05, # Set Proportional Hazard threshold
-        vif_cutoff = 5 # Set VIF threshold
-      )
-    }, error = function(e) {
-      # If an error occurs, return a list with error information
-      list(error = e$message, pvalue = NA) # important to add pvalue = NA so code does not crash
-    })
-  }, warning = function(w) {
-    # Capture warnings here
-    algorithm_warnings[[algorithm]] <<- append(algorithm_warnings[[algorithm]],
-                                               conditionMessage(w))
-    invokeRestart("muffleWarning")
-  })
-  
-  # Store convergence info from warnings
-  if (is.list(surv[[algorithm]]) && !is.null(surv[[algorithm]]$convergence)) {
-    surv[[algorithm]][["convergence"]] <- list(
-      singular = any(grepl("computationally singular", algorithm_warnings[[algorithm]])),
-      loglik_failed = any(grepl("Loglik converged before", algorithm_warnings[[algorithm]]))
-    )
-  } else {
-    surv[[algorithm]][["convergence"]] <- list(
-      singular = NA,
-      loglik_failed = NA
-    )
-  }
+        vif_cutoff = 5, # Set VIF threshold
+        summary.filename = dashfile
+  )
   
   # Skip if results for TCGAanalyze_survival_custom3 where not calculated
   if (is.null(surv[[algorithm]]$pvalue)) {

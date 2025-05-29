@@ -105,7 +105,6 @@ algorithm_languages = c(rep("R", length(R_algorithms)),
 names(algorithm_languages) = algorithms
 algorithm_languages["MOFA"] = "R & Python"
 algorithm_languages["MDICC"] = "R & Python"
-algorithm_languages["MixKernel"] = "R & Python"
 
 clusterings = list()
 

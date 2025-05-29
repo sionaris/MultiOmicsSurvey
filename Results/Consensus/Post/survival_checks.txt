@@ -1,0 +1,2 @@
+CC_survival_plot.pdf	p=0.531	PH:OK	VIF:OK	Lin:OK	Sep:OK	Miss:0.9%
+CC_training_survival_plot.pdf	p=0.412	PH:FAIL	VIF:OK	Lin:WARN	Sep:OK	Miss:1.8%
