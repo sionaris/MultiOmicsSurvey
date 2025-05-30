@@ -190,6 +190,7 @@ mdicc_results_serial <- data.frame(
   k2             = numeric(),
   k3             = numeric(),
   cluster_labels = I(list()),
+  kernel_weights = I(list()),
   stringsAsFactors = FALSE
 )
 
@@ -203,8 +204,8 @@ for (cc in 2:10) {
     cat("---------------", "\n")
     cat("Starting k2 =", k2_val, "\n")
     for (k3_val in 2:10) {
-      S <- suppressMessages(MDICC(aff_input, c = cc, k = k2_val))
-      S <- as.matrix(S)
+      res <- suppressMessages(MDICC(aff_input, c = cc, k = k2_val))
+      S <- as.matrix(res$S)
       label_vec <- MDICClabel(S, k3_val)
 
       # Combine current result into a data.frame row
@@ -213,6 +214,7 @@ for (cc in 2:10) {
         k2             = k2_val,
         k3             = k3_val,
         cluster_labels = I(list(label_vec)),
+        kernel_weights = I(list(res$kernel_weights)),
         stringsAsFactors = FALSE
       )
 
