@@ -17,7 +17,7 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Preamble
 home = getwd()
-algorithm = "CC"
+algorithm = "MC"
 alg_feature_pref = "rows" # Where does the algorithm expect the features to be
 citation = fetch_citation(algorithm = algorithm)
 data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
@@ -198,30 +198,30 @@ sil_scores <- sapply(2:10, function(k) {
 optk <- which.max(sil_scores) + 1
 final_labels <- cutree(hc, k = optk)
 
-CC_clusters = as.data.frame(list(Sample.ID = names(final_labels),
+MC_clusters = as.data.frame(list(Sample.ID = names(final_labels),
                                  Cluster = final_labels))
-rownames(CC_clusters) = CC_clusters$Sample.ID
+rownames(MC_clusters) = MC_clusters$Sample.ID
 
 # Calculate ARI and NMI
 library(mclust)
 library(clue)
 
 ARI_to_MOVICS = calculate_ari_index(cluster_df1 = ground_truth_labels,
-                                    cluster_df2 = CC_clusters,
+                                    cluster_df2 = MC_clusters,
                                     sample_col = "Sample.ID",
                                     clust_col = "Cluster",
                                     suffixes = c("_MOVICS_CS",
                                                  paste0("_", algorithm)))
 
 NMI_to_MOVICS = calculate_nmi_index(cluster_df1 = ground_truth_labels,
-                                    cluster_df2 = CC_clusters,
+                                    cluster_df2 = MC_clusters,
                                     sample_col = "Sample.ID",
                                     clust_col = "Cluster",
                                     suffixes = c("_MOVICS_CS",
                                                  paste0("_", algorithm)))
 
 # Low to moderate statistics; slightly similar results; NMI might be biased due to a large
-# number of clusters in CC
+# number of clusters in MC
 
 # Import coloring scheme
 scheme = readRDS("Resources/scheme.rds")
@@ -232,10 +232,10 @@ col.list = scheme$col.list
 var2comp = scheme$var2comp %>%
   dplyr::select(-`Consensus Subtype`) %>%
   mutate(Sample.ID = rownames(.)) %>%
-  inner_join(CC_clusters, by = "Sample.ID") %>%
+  inner_join(MC_clusters, by = "Sample.ID") %>%
   tibble::column_to_rownames(var = "Sample.ID") %>%
-  mutate(CC = paste0(algorithm, Cluster)) %>%
-  dplyr::select(CC, everything()) %>%
+  mutate(MC = paste0(algorithm, Cluster)) %>%
+  dplyr::select(MC, everything()) %>%
   dplyr::select(-Cluster)
 rm(scheme); gc()
 
@@ -243,7 +243,7 @@ rm(scheme); gc()
 library(MOVICS)
 library(cluster)
 
-silhouette = silhouette(as.integer(CC_clusters$Cluster),
+silhouette = silhouette(as.integer(MC_clusters$Cluster),
                         dist = diss)
 
 getSilhouette_ggplot(sil      = silhouette,
@@ -271,7 +271,7 @@ plotdata = getStdiz(
   scaleFlag = c(F, F, F, F, F)
 )
 
-plot_object = list(clust.res = CC_clusters %>%
+plot_object = list(clust.res = MC_clusters %>%
                      dplyr::rename(samID = Sample.ID, clust = Cluster))
 
 # Export consensus clustering object
@@ -368,7 +368,7 @@ clin_ordinal_comp = compClinvar_ordinal_single_algorithm(algorithm_name = algori
                                                          var2comp = var2comp_nonas %>%
                                                            dplyr::select(number_of_lymphnodes_positive_by_ihc,
                                                                          number_of_lymphnodes_positive_by_he,
-                                                                         CC),
+                                                                         MC),
                                                          strata = algorithm,
                                                          ordinalVars = c("number_of_lymphnodes_positive_by_ihc",
                                                                          "number_of_lymphnodes_positive_by_he"),
@@ -826,7 +826,7 @@ saveWorkbook(wb, file = paste0(home, "/Results/Consensus_more_than_2/", algorith
 # Plot pathway heatmaps
 hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("up", names(hclust_output))], 
                                                 norm.expr = plotdata$RNAseq, 
-                                                present_clusters = c(paste0("CC", seq(1, optk, 1))),
+                                                present_clusters = c(paste0("MC", seq(1, optk, 1))),
                                                 representative = TRUE, moic.res = plot_object,
                                                 subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                 norm.method = "mean", dirct = "up",
@@ -837,7 +837,7 @@ hclust_pathway_plots_up = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl
 
 hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[grepl("down", names(hclust_output))], 
                                                   norm.expr = plotdata$RNAseq, 
-                                                  present_clusters = c(paste0("CC", seq(1, optk, 1))),
+                                                  present_clusters = c(paste0("MC", seq(1, optk, 1))),
                                                   representative = TRUE, moic.res = plot_object,
                                                   subtype_prefix = algorithm, n.path = 20, msigdb.path = MSIGDB.FILE,
                                                   norm.method = "mean", dirct = "down",
@@ -849,7 +849,7 @@ hclust_pathway_plots_down = plot_pathway_heatmaps(gsea.lists = hclust_output[gre
 # Fraction Genome Altered ###
 fga_df = readRDS("Resources/TCGA/fga_df.rds"); gc()
 
-fga.CC <- compFGA_optimized(moic.res     = plot_object,
+fga.MC <- compFGA_optimized(moic.res     = plot_object,
                             segment      = fga_df,
                             iscopynumber = TRUE, 
                             test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -861,7 +861,7 @@ fga.CC <- compFGA_optimized(moic.res     = plot_object,
                             clust.col = cluster_colors,
                             title = paste0(algorithm, " FGA plot: simple criteria"))
 
-fga.CC.COSMIC <- compFGA_optimized(moic.res     = plot_object,
+fga.MC.COSMIC <- compFGA_optimized(moic.res     = plot_object,
                                    segment      = fga_df,
                                    iscopynumber = TRUE, 
                                    test.method  = "nonparametric", # statistical testing method (Wilcoxon with asymptotic approximation. Consider Kruskall Wallis?)
@@ -964,7 +964,7 @@ transNEO_var2comp = transNEO_mm_inputs$`Full pheno` %>%
                 NAT.regimen, Chemo.cycles,
                 aHER2.cycles, RCB.score, STAT1.gsva,
                 GGI.gsva, ESC.gsva, TMB, HRD.sum, Donor.ID) %>%
-  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, CC = clust_up),
+  inner_join(expr_conc %>% dplyr::select(Donor.ID = samID, MC = clust_up),
              by = "Donor.ID")
 rownames(transNEO_var2comp) = transNEO_var2comp$Donor.ID
 transNEO_var2comp = transNEO_var2comp %>% dplyr::select(-Donor.ID)
@@ -1033,7 +1033,7 @@ transNEO_ordinal_clincomp = compClinvar_ordinal_single_algorithm(algorithm_name 
                                                                    dplyr::select(Grade.pre.NAT, 
                                                                                  Chemo.cycles, 
                                                                                  aHER2.cycles,
-                                                                                 CC),
+                                                                                 MC),
                                                                  strata = algorithm,
                                                                  ordinalVars = c("Grade.pre.NAT",
                                                                                  "Chemo.cycles",
@@ -1117,7 +1117,7 @@ colors_heatmap = rev(colorRampPalette(viridisLite::magma(10))(255))
 cluster_colors_heatmap = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA")
 clust_annot_pheno = annCol %>% mutate(Sample.ID = rownames(.)) %>%
   inner_join(clust, by = "Sample.ID") %>%
-  dplyr::rename(CC = Cluster, samID = "Sample.ID")
+  dplyr::rename(MC = Cluster, samID = "Sample.ID")
 rownames(clust_annot_pheno) = clust_annot_pheno$samID
 afh_colnames = colnames(annCol)
 
@@ -1139,14 +1139,14 @@ create_MO_heatmap(matrix = consensus_mat, algorithm = algorithm,
 
 # PCA from original matrices ###
 # Same data frame. Different columns. Just for easiness
-CC_clust_res = CC_clusters %>% dplyr::rename(samID = Sample.ID, 
-                                             CC = Cluster) %>%
-  dplyr::mutate(CC = gsub(algorithm, "", CC))
+MC_clust_res = MC_clusters %>% dplyr::rename(samID = Sample.ID, 
+                                             MC = Cluster) %>%
+  dplyr::mutate(MC = gsub(algorithm, "", MC))
 
 # RNA
 pca_from_original_matrix(mydata = plotdata$RNAseq, 
                          algorithm = algorithm, 
-                         clust_res = CC_clust_res,
+                         clust_res = MC_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "RNAseq")
@@ -1154,7 +1154,7 @@ pca_from_original_matrix(mydata = plotdata$RNAseq,
 # miRNA
 pca_from_original_matrix(mydata = plotdata$miRNA, 
                          algorithm = algorithm, 
-                         clust_res = CC_clust_res,
+                         clust_res = MC_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "miRNA")
@@ -1162,7 +1162,7 @@ pca_from_original_matrix(mydata = plotdata$miRNA,
 # CNV
 pca_from_original_matrix(mydata = plotdata$CNV, 
                          algorithm = algorithm, 
-                         clust_res = CC_clust_res,
+                         clust_res = MC_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "CNV")
@@ -1171,7 +1171,7 @@ pca_from_original_matrix(mydata = plotdata$CNV,
 # Features must be in rows
 mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
                          algorithm = algorithm, 
-                         clust_res = CC_clust_res,
+                         clust_res = MC_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "SNPs")
@@ -1179,7 +1179,7 @@ mds_from_original_matrix(matrix = plotdata$SNPs, dist_method = "binary",
 # Methylation
 pca_from_original_matrix(mydata = plotdata$Methylation, 
                          algorithm = algorithm, 
-                         clust_res = CC_clust_res,
+                         clust_res = MC_clust_res,
                          cluster_colors = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA"), 
                          output_path = paste0(home, "/Results/Consensus_more_than_2/", algorithm, "/Supplement"),
                          title_add = "Methylation")
@@ -1309,14 +1309,14 @@ openxlsx::write.xlsx(output,
                      overwrite = TRUE)
 
 # Bar chart generation
-CC_barcharts = list()
+MC_barcharts = list()
 plotdata_bar = clust_annot_pheno_nonas
 plotdata_bar[[algorithm]] = factor(plotdata_bar[[algorithm]])
 for (i in 1:length(voi)) {
   chifit = output
   loc = which(grepl(voi[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  CC_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
+  MC_barcharts[[i]] = create_annot_barchart(plotdata = plotdata_bar, fill = voi[i],
                                             chifit = chifit,
                                             na.action = "na.omit",
                                             algorithm = algorithm,
@@ -1329,7 +1329,7 @@ for (i in 1:length(voi)) {
                                             legend.text.size = 5,
                                             x.axis.text.size = 5) +
     barchart_scales[[voi[i]]]
-  print(CC_barcharts[[i]])
+  print(MC_barcharts[[i]])
   ggsave(filename = paste0(algorithm, "_", voi[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/Consensus_more_than_2/", algorithm, "/Supplement"), 
@@ -1337,15 +1337,15 @@ for (i in 1:length(voi)) {
          dpi = 700)
   dev.off()
 }
-names(CC_barcharts) = voi
+names(MC_barcharts) = voi
 rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
 library(ggpubr)
-ggarrange(CC_barcharts[[1]], CC_barcharts[[2]], CC_barcharts[[3]],
-          CC_barcharts[[4]], CC_barcharts[[5]], CC_barcharts[[6]],
-          CC_barcharts[[7]], CC_barcharts[[8]], CC_barcharts[[9]],
-          CC_barcharts[[10]], CC_barcharts[[11]],
+ggarrange(MC_barcharts[[1]], MC_barcharts[[2]], MC_barcharts[[3]],
+          MC_barcharts[[4]], MC_barcharts[[5]], MC_barcharts[[6]],
+          MC_barcharts[[7]], MC_barcharts[[8]], MC_barcharts[[9]],
+          MC_barcharts[[10]], MC_barcharts[[11]],
           ncol = 3, nrow = 4, labels = c("A", "B", "C", "D", "E", "F", "G", "H",
                                          "I", "J", "K"),
           font.label = list(size = 8, face = "bold", color ="black"))
@@ -1357,17 +1357,17 @@ ggsave(filename = paste0("Multiplot_", algorithm, "_barcharts.png"),
 dev.off()
 
 # Just significant ones now
-CC_barcharts_sig = list()
-plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(CC, Race, Histology, 
+MC_barcharts_sig = list()
+plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(MC, Race, Histology, 
                                                              `ER status`, `PR status`, `HER2 status`,
                                                              `Menopausal status`, Stage, Metastasis)
-plotdata_bar_sig$CC = factor(plotdata_bar_sig$CC)
+plotdata_bar_sig$MC = factor(plotdata_bar_sig$MC)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
   chifit = output
   loc = which(grepl(voi_sig[i], chifit$Comparison))
   chifit = chifit[loc, ]
-  CC_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
+  MC_barcharts_sig[[i]] = create_annot_barchart(plotdata = plotdata_bar_sig, fill = voi_sig[i],
                                                 chifit = chifit,
                                                 na.action = "na.omit",
                                                 algorithm = algorithm,
@@ -1380,7 +1380,7 @@ for (i in 1:length(voi_sig)) {
                                                 legend.text.size = 5,
                                                 x.axis.text.size = 5) +
     barchart_scales[[voi_sig[i]]]
-  print(CC_barcharts_sig[[i]])
+  print(MC_barcharts_sig[[i]])
   ggsave(filename = paste0("sig_", algorithm, "_", voi_sig[i], "_barchart.png"),
          path = paste0(home, 
                        "/Results/Consensus_more_than_2/", algorithm, "/Supplement"), 
@@ -1388,13 +1388,13 @@ for (i in 1:length(voi_sig)) {
          dpi = 700)
   dev.off()
 }
-names(CC_barcharts_sig) = voi_sig
+names(MC_barcharts_sig) = voi_sig
 rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
-ggarrange(CC_barcharts_sig[[1]], CC_barcharts_sig[[2]], CC_barcharts_sig[[3]],
-          CC_barcharts_sig[[4]], CC_barcharts_sig[[5]], CC_barcharts_sig[[6]],
-          CC_barcharts_sig[[7]],
+ggarrange(MC_barcharts_sig[[1]], MC_barcharts_sig[[2]], MC_barcharts_sig[[3]],
+          MC_barcharts_sig[[4]], MC_barcharts_sig[[5]], MC_barcharts_sig[[6]],
+          MC_barcharts_sig[[7]],
           ncol = 3, nrow = 3, labels = c("A", "B", "C", "D", "E", "F", "G"),
           font.label = list(size = 8, face = "bold", color ="black"))
 ggsave(filename = paste0("sig_Multiplot_", algorithm, "_barcharts.png"),
@@ -1406,22 +1406,22 @@ dev.off()
 
 # Sunburst plot ###
 library(plotly)
-Pheno_sunburst_CC = clust_annot_pheno
-Pheno_sunburst_CC$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_CC$`ER status`)
-Pheno_sunburst_CC$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_CC$`ER status`)
-Pheno_sunburst_CC$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_CC$`ER status`)
-Pheno_sunburst_CC$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
-                                       Pheno_sunburst_CC$`HER2 status`)
-Pheno_sunburst_CC$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_CC$`HER2 status`)
-Pheno_sunburst_CC$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_CC$`HER2 status`)
-Pheno_sunburst_CC$Stage = gsub("Unkown", "Unkn stage", Pheno_sunburst_CC$Stage)
-Pheno_sunburst_CC = Pheno_sunburst_CC %>%
-  dplyr::select(CC, `ER status`, `HER2 status`, Stage) %>%
-  group_by(CC, `ER status`, `HER2 status`, Stage) %>%
+Pheno_sunburst_MC = clust_annot_pheno
+Pheno_sunburst_MC$`ER status` = gsub("Unknown", "Unkn ER status", Pheno_sunburst_MC$`ER status`)
+Pheno_sunburst_MC$`ER status` = gsub("Positive", "ER+", Pheno_sunburst_MC$`ER status`)
+Pheno_sunburst_MC$`ER status` = gsub("Negative", "ER-", Pheno_sunburst_MC$`ER status`)
+Pheno_sunburst_MC$`HER2 status` = gsub("Unknown", "Unkn HER2 status", 
+                                       Pheno_sunburst_MC$`HER2 status`)
+Pheno_sunburst_MC$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_MC$`HER2 status`)
+Pheno_sunburst_MC$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_MC$`HER2 status`)
+Pheno_sunburst_MC$Stage = gsub("Unkown", "Unkn stage", Pheno_sunburst_MC$Stage)
+Pheno_sunburst_MC = Pheno_sunburst_MC %>%
+  dplyr::select(MC, `ER status`, `HER2 status`, Stage) %>%
+  group_by(MC, `ER status`, `HER2 status`, Stage) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 
-sunburst_coloring_CC = data.frame(stringsAsFactors = FALSE,
+sunburst_coloring_MC = data.frame(stringsAsFactors = FALSE,
                                   colors = tolower(gplots::col2hex(c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                                                                      "#C11D9C", "#0F1682",  "grey40",
                                                                      "#0B9EF8", "#560DA7", "mistyrose1", 
@@ -1429,35 +1429,35 @@ sunburst_coloring_CC = data.frame(stringsAsFactors = FALSE,
                                                                      "#00C9FF", "#099CF5", 
                                                                      "#097BF5", "#0B5684", 
                                                                      "grey40"))),
-                                  labels = c("CC1", "CC2",
-                                             "CC3", "CC4",
+                                  labels = c("MC1", "MC2",
+                                             "MC3", "MC4",
                                              "ER-", "ER+", "Unkn ER status",
                                              "HER2-", "HER2+", "Indeterminate",
                                              "Equivocal", "Unkn HER2 status",
                                              "Stage I", "Stage II",
                                              "Stage III", "Stage IV", "Unkn stage"))
 
-sunburstDF_CC = as.sunburstDF(Pheno_sunburst_CC, value_column = "Counts", add_root = FALSE) %>%
-  inner_join(sunburst_coloring_CC, by = "labels")
+sunburstDF_MC = as.sunburstDF(Pheno_sunburst_MC, value_column = "Counts", add_root = FALSE) %>%
+  inner_join(sunburst_coloring_MC, by = "labels")
 
-pie_CC = plot_ly() %>%
-  add_trace(ids = sunburstDF_CC$ids, labels= sunburstDF_CC$labels, 
-            parents = sunburstDF_CC$parents, 
-            values= sunburstDF_CC$values, type='sunburst', branchvalues = 'total',
+pie_MC = plot_ly() %>%
+  add_trace(ids = sunburstDF_MC$ids, labels= sunburstDF_MC$labels, 
+            parents = sunburstDF_MC$parents, 
+            values= sunburstDF_MC$values, type='sunburst', branchvalues = 'total',
             insidetextorientation='radial', maxdepth = 5,
-            marker = list(colors = sunburstDF_CC$colors)) %>%
+            marker = list(colors = sunburstDF_MC$colors)) %>%
   layout(
     grid = list(columns =1, rows = 1),
     margin = list(l = 0, r = 0, b = 0, t = 0)
   )
-pie_CC
-rm(Pheno_sunburst_CC, sunburstDF_CC, sunburst_coloring_CC, pie_CC); gc()
+pie_MC
+rm(Pheno_sunburst_MC, sunburstDF_MC, sunburst_coloring_MC, pie_MC); gc()
 
 # Graphs ###
 library(igraph)
 
 list_aff_S = list(consensus_mat)
-names(list_aff_S) = "Final Consensus"
+names(list_aff_S) = "Multi-Consensus Graph"
 
 quantile_thresh = 0.75
 for (i in seq_along(list_aff_S)) {
@@ -1480,15 +1480,15 @@ for (i in seq_along(list_aff_S)) {
                              NA)                     # NA 
   
   nodes_data <- data.frame(name = V(g)$name) %>%
-    inner_join(clust_annot_pheno %>% select(samID, CC),
+    inner_join(clust_annot_pheno %>% select(samID, MC),
                by = c("name" = "samID"))
   
   nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
-  V(g)$CC <- nodes_data[[algorithm]]
+  V(g)$MC <- nodes_data[[algorithm]]
   
-  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6",
-                        fifelse(V(g)$CC == paste0(algorithm, "2"), "#E71D36",
-                                fifelse(V(g)$CC == paste0(algorithm, "3"), "#FF9F1C",
+  V(g)$color <- fifelse(V(g)$MC == paste0(algorithm, "1"), "#2EC4B6",
+                        fifelse(V(g)$MC == paste0(algorithm, "2"), "#E71D36",
+                                fifelse(V(g)$MC == paste0(algorithm, "3"), "#FF9F1C",
                                         "#BDD5EA")))
   
   png(paste0(home,
@@ -1554,4 +1554,4 @@ writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
                                                  "_sessionInfo.txt"))
 
 # Save environment
-save.image(paste0(home, "/Results/Consensus_more_than_2/CC/CC_more_than_2.RData"))
+save.image(paste0(home, "/Results/Consensus_more_than_2/MC/MC_more_than_2.RData"))

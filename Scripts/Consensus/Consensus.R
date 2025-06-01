@@ -1461,7 +1461,7 @@ rm(Pheno_sunburst_CC, sunburstDF_CC, sunburst_coloring_CC, pie_CC); gc()
 library(igraph)
 
 list_aff_S = list(consensus_mat)
-names(list_aff_S) = "Final Consensus"
+names(list_aff_S) = "Full Consensus Graph"
 
 quantile_thresh = 0.75
 for (i in seq_along(list_aff_S)) {
@@ -1490,10 +1490,7 @@ for (i in seq_along(list_aff_S)) {
   nodes_data[[algorithm]] <- as.factor(nodes_data[[algorithm]])
   V(g)$CC <- nodes_data[[algorithm]]
   
-  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6",
-                        fifelse(V(g)$CC == paste0(algorithm, "2"), "#E71D36",
-                                fifelse(V(g)$CC == paste0(algorithm, "3"), "#FF9F1C",
-                                        "#BDD5EA")))
+  V(g)$color <- fifelse(V(g)$CC == paste0(algorithm, "1"), "#2EC4B6",  "#E71D36")
   
   png(paste0(home,
              "/Results/Consensus/", algorithm, "/Supplement/",
@@ -1515,7 +1512,7 @@ for (i in seq_along(list_aff_S)) {
   
   legend("bottomright",
          title  = "Node Color Legend",
-         legend = paste0(algorithm, 1:4),
+         legend = paste0(algorithm, 1:2),
          fill   = cluster_colors_heatmap,
          cex    = 0.7,
          box.lwd = 1)

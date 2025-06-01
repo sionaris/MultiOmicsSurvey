@@ -4,7 +4,7 @@ library(dplyr)
 library(ggplot2)
 
 # Import the full environment for consensus but only keep plot_object and plotdata
-load("Results/Consensus_more_than_2/CC/CC_more_than_2.RData")
+load("Results/Consensus_more_than_2/MC/MC_more_than_2.RData")
 rm(list=setdiff(ls(), c("plotdata", "plot_object"))); gc()
 
 # Ensure reproducibility
@@ -141,9 +141,9 @@ for (alg in algorithms) {
 rm(alg_list, up_keys, up_ids, down_keys, down_ids); gc()
 
 library(mclust)
-cons_dir     <- "Results/Consensus_more_than_2/CC"
-up_pat       <- ".*\\.(CC[0-9]+)_unique_upexpr_pathway\\.txt$"
-down_pat     <- ".*\\.(CC[0-9]+)_unique_downexpr_pathway\\.txt$"
+cons_dir     <- "Results/Consensus_more_than_2/MC"
+up_pat       <- ".*\\.(MC[0-9]+)_unique_upexpr_pathway\\.txt$"
+down_pat     <- ".*\\.(MC[0-9]+)_unique_downexpr_pathway\\.txt$"
 
 cons_paths <- list.files(cons_dir, full.names = TRUE)
 
@@ -173,8 +173,8 @@ ari_pathway_vec <- setNames(
 ari_vector <- setNames(rep(NA, length(algorithms)), algorithms)
 
 # Import the consensus clustering
-consensus = read.xlsx(paste0(cons_dir, "/CC_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")) %>%
-  dplyr::mutate(Cluster = gsub("CC", "", Cluster))
+consensus = read.xlsx(paste0(cons_dir, "/MC_TCGA_RNAseq-CNV-Methylation-miRNA-SNPs_eval_on_transNEO_clusterings.xlsx")) %>%
+  dplyr::mutate(Cluster = gsub("MC", "", Cluster))
 
 # Populate the ari_vector
 for (algorithm in algorithms) {
@@ -255,12 +255,12 @@ ggsave(file.path(home, "Results/Consensus_more_than_2/Post/ARI_vs_consensus_bars
        p, dpi = 700, width = 9, height = 6)
 
 # NTP #####
-dgea.marker.up_1000 <- runMarker_single_algorithm_no_export(algorithm_name = "CC",
+dgea.marker.up_1000 <- runMarker_single_algorithm_no_export(algorithm_name = "MC",
                                                             moic.res = plot_object,
                                                             n.marker = 1000,
                                                             dea.method    = "limma", # name of DEA method
                                                             prefix        = "dgea_", # MUST be the same of argument in runDEA()
-                                                            dat.path      = paste0(home, "/Results/Consensus_more_than_2/CC"), # path of DEA files
+                                                            dat.path      = paste0(home, "/Results/Consensus_more_than_2/MC"), # path of DEA files
                                                             p.cutoff      = 0.05, # p cutoff to identify significant DEGs
                                                             p.adj.cutoff  = 0.05, # padj cutoff to identify significant DEGs
                                                             norm.expr = plotdata$RNAseq,
@@ -291,11 +291,11 @@ TCGA_ntp_expr_up = runNTP(
   height = 8,
   width = 12,
   fig.path = paste0(home, "/Results/Consensus_more_than_2/Post"),
-  fig.name = paste0("CC_ntp_expr_up_heatmap_TCGA"))
+  fig.name = paste0("MC_ntp_expr_up_heatmap_TCGA"))
 
 holdout_df = as.data.frame(TCGA_ntp_expr_up$clust.res) %>%
   dplyr::select(samID, clust)
-colnames(holdout_df) = c("Sample.ID", "CC")
+colnames(holdout_df) = c("Sample.ID", "MC")
 holdout_df = holdout_df %>%
   inner_join(holdout_clinical_data, by = "Sample.ID")
 
@@ -324,8 +324,8 @@ survival_data = cBioPortal
 # Get the corresponding label-mapping data on the holdout TCGA data
 surv_df = holdout_df %>%
   mutate(Source = "Holdout") %>%
-  #dplyr::select(Sample.ID, CC, Patient.ID) %>%
-  dplyr::select(Sample.ID, CC, Patient.ID, everything()) %>%
+  #dplyr::select(Sample.ID, MC, Patient.ID) %>%
+  dplyr::select(Sample.ID, MC, Patient.ID, everything()) %>%
   dplyr::select(-vital_status, -days_to_death, -days_to_last_known_alive) %>%
   inner_join(survival_data, by = "Patient.ID") %>%
   dplyr::rename(LN_status = primary_lymph_node_presentation_assessment,
@@ -335,7 +335,7 @@ surv_df = holdout_df %>%
                 dist_metastasis = distant_metastasis_present_ind2) %>%
   mutate(age = days_to_birth/365)
 
-surv_df = surv_df[!is.na(surv_df[, "CC"]), ]
+surv_df = surv_df[!is.na(surv_df[, "MC"]), ]
 surv_df$OS_MONTHS = as.numeric(surv_df$OS_MONTHS)
 surv_df$OS_DAYS = as.numeric(surv_df$OS_DAYS)
 
@@ -345,7 +345,7 @@ surv_df$days_to_death = ifelse(surv_df$vital_status == "Dead",
                                surv_df$days_to_last_followup)
 
 # Convert grouping variable to factor
-surv_df[, "CC"] = as.factor(surv_df[, "CC"])
+surv_df[, "MC"] = as.factor(surv_df[, "MC"])
 dashfile <- file.path(home, "Results", "Consensus_more_than_2", "Post", "survival_checks.txt")
 unlink(dashfile)
 
@@ -353,18 +353,18 @@ unlink(dashfile)
 library(survival)
 surv <- TCGAanalyze_survival_custom3(
       data         = surv_df,
-      clusterCol   = "CC",
+      clusterCol   = "MC",
       adjustVars   = c("age"), #, "histological_type", "LN_status", "menopause_status",
                        #"ER_status", "HER2_status", "dist_metastasis"),
-      main         = expression(bold("CC on TCGA-BRCA holdout set")),
+      main         = expression(bold("MC on TCGA-BRCA holdout set")),
       title.size   = 18,
       xlab         = expression(bold("Time since diagnosis (days)")),
       ylab         = expression(bold("Survival probability")),
-      color        = cluster_colors[1:length(unique(surv_df[, "CC"]))],
+      color        = cluster_colors[1:length(unique(surv_df[, "MC"]))],
       legend       = expression(bold("Legend")),
-      save.filename= paste0(home, "/Results/Consensus_more_than_2/Post/CC_survival_plot.pdf"),
+      save.filename= paste0(home, "/Results/Consensus_more_than_2/Post/MC_survival_plot.pdf"),
       save.width   = 10,
-      save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, "CC"]))-1],
+      save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_df[, "MC"]))-1],
       save.dpi     = 700,
       ph_threshold = 0.05, # Set Proportional Hazard threshold
       vif_cutoff = 5, # Set VIF threshold
@@ -373,7 +373,7 @@ surv <- TCGAanalyze_survival_custom3(
 
 # Exporting
 write.xlsx(surv_df,
-           paste0(home, "/Results/Consensus_more_than_2/Post/CC_surv_data.xlsx"),
+           paste0(home, "/Results/Consensus_more_than_2/Post/MC_surv_data.xlsx"),
            overwrite = TRUE)
 
 # Save in R
@@ -386,9 +386,9 @@ train_clinical_data = read.xlsx("Resources/TCGA/clinical_data.xlsx")
 surv_training_df = train_clinical_data %>%
   mutate(Source = "Training") %>%
   inner_join(consensus, by = "Sample.ID") %>%
-  mutate(CC = paste0("CC", Cluster)) %>%
-  #dplyr::select(Sample.ID, CC, Patient.ID) %>%
-  dplyr::select(Sample.ID, CC, Patient.ID, everything()) %>%
+  mutate(MC = paste0("MC", Cluster)) %>%
+  #dplyr::select(Sample.ID, MC, Patient.ID) %>%
+  dplyr::select(Sample.ID, MC, Patient.ID, everything()) %>%
   dplyr::select(-vital_status, -days_to_death, -days_to_last_known_alive) %>%
   inner_join(survival_data, by = "Patient.ID") %>%
   dplyr::rename(LN_status = primary_lymph_node_presentation_assessment,
@@ -398,7 +398,7 @@ surv_training_df = train_clinical_data %>%
                 dist_metastasis = distant_metastasis_present_ind2) %>%
   mutate(age = days_to_birth/365)
 
-surv_training_df = surv_training_df[!is.na(surv_training_df[, "CC"]), ]
+surv_training_df = surv_training_df[!is.na(surv_training_df[, "MC"]), ]
 surv_training_df$OS_MONTHS = as.numeric(surv_training_df$OS_MONTHS)
 surv_training_df$OS_DAYS = as.numeric(surv_training_df$OS_DAYS)
 
@@ -408,23 +408,23 @@ surv_training_df$days_to_death = ifelse(surv_training_df$vital_status == "Dead",
                                         surv_training_df$days_to_last_followup)
 
 # Convert grouping variable to factor
-surv_training_df[, "CC"] = as.factor(surv_training_df[, "CC"])
+surv_training_df[, "MC"] = as.factor(surv_training_df[, "MC"])
 
 # Run TCGAanalyze_survival
 surv_training = TCGAanalyze_survival_custom3(
       data         = surv_training_df,
-      clusterCol   = "CC",
+      clusterCol   = "MC",
       adjustVars   = c("age"), #, "histological_type", "LN_status", "menopause_status",
       #"ER_status", "HER2_status", "dist_metastasis"),
-      main         = expression(bold("CC on TCGA-BRCA training set")),
+      main         = expression(bold("MC on TCGA-BRCA training set")),
       title.size   = 18,
       xlab         = expression(bold("Time since diagnosis (days)")),
       ylab         = expression(bold("Survival Probability")),
-      color        = cluster_colors[1:length(unique(surv_training_df[, "CC"]))],
+      color        = cluster_colors[1:length(unique(surv_training_df[, "MC"]))],
       legend       = expression(bold("Legend")),
-      save.filename= paste0(home, "/Results/Consensus_more_than_2/Post/CC_training_survival_plot.pdf"),
+      save.filename= paste0(home, "/Results/Consensus_more_than_2/Post/MC_training_survival_plot.pdf"),
       save.width   = 10,
-      save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_training_df[, "CC"]))-1],
+      save.height  = 10*seq(1, 1.25, length.out = 9)[length(unique(surv_training_df[, "MC"]))-1],
       save.dpi     = 700,
       ph_threshold = 0.05, # Set Proportional Hazard threshold
       vif_cutoff = 5, # Set VIF threshold
@@ -433,15 +433,15 @@ surv_training = TCGAanalyze_survival_custom3(
 
 # Exporting
 write.xlsx(surv_training_df,
-           paste0(home, "/Results/Consensus_more_than_2/Post/CC_surv_training_data.xlsx"),
+           paste0(home, "/Results/Consensus_more_than_2/Post/MC_surv_training_data.xlsx"),
            overwrite = TRUE)
 
 # Save in R
 surv_training[["df"]] = surv_training_df
 
 # Save environment
-save.image(paste0(home, "/Results/Consensus_more_than_2/Post/CC_Post.RData"))
+save.image(paste0(home, "/Results/Consensus_more_than_2/Post/MC_Post.RData"))
 
 # Export session info
 writeLines(capture.output(sessionInfo()), 
-           paste0(home, "/Results/Consensus_more_than_2/Post/CC_Post_sessionInfo_training.txt"))
+           paste0(home, "/Results/Consensus_more_than_2/Post/MC_Post_sessionInfo_training.txt"))
