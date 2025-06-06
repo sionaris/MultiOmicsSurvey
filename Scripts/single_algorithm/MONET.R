@@ -349,6 +349,142 @@ library(igraph)
 avg_adjacency = Reduce(`+`, adj_matrices) / length(adj_matrices)
 avg_graph = graph_from_adjacency_matrix(avg_adjacency, mode="undirected", weighted=TRUE)
 
+# Inspect interpretability options #####
+mods <- MONET$all_modules
+
+module_table <- lapply(names(mods), function(id) {
+  m <- mods[[id]]
+  data.frame(
+    Module_ID = id,
+    Weight    = m$get_weight(),
+    Omics     = paste(names(m$get_omics()), collapse = ",")
+  )
+})
+
+module_df <- do.call(rbind, module_table)
+print(module_df)
+
+# Plotting sample composition per module with respect to HER2 and ER
+composition_df <- data.frame(
+  Sample.ID   = names(MONET$clustering),
+  Module   = factor(unlist(MONET$clustering))
+) %>% inner_join(clinical_data %>% dplyr::select(Sample.ID, 
+                                                 ER = breast_carcinoma_estrogen_receptor_status,
+                                                 HER2 = lab_proc_her2_neu_immunohistochemistry_receptor_status))
+
+# Colors for ER and HER2
+composition_df$ER = factor(composition_df$ER, levels = c("Negative", "Positive", ""),
+                           labels = c("Negative", "Positive", "Unknown"))
+composition_df$HER2 = factor(composition_df$HER2, levels = c("Negative", 
+                                                             "Equivocal",
+                                                             "Positive",
+                                                             "",
+                                                             "Indeterminate"),
+                           labels = c("Negative", 
+                                      "Equivocal",
+                                      "Positive",
+                                      "Unknown",
+                                      "Indeterminate"))
+
+# ER status
+scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
+                                                    Positive = "#0F1682", 
+                                                    Unknown = "grey40"))
+# HER2 status
+scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
+                                                      Positive = "#560DA7", 
+                                                      Indeterminate = "mistyrose1", 
+                                                      Equivocal = "hotpink4", 
+                                                      Unknown = "grey40"))
+
+
+# bar-plot of ER composition per module (using custom fill scales)
+library(ggpubr)
+p1 = ggplot(composition_df, aes(x = Module, fill = ER)) +
+  geom_bar(position = "fill", width = 0.5) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "MONET module", y = "Proportion of Samples (%)", fill = "ER Status",
+       title = "MONET module composition by ER status") +
+  scale_fill_ER_status +
+  theme_classic() +
+  theme(axis.text.x = element_text(hjust = 0.5, size = 5),
+        axis.text.y = element_text(size = 5),
+        axis.title = element_text(size = 6, face = "bold"),
+        legend.title = element_text(face = "bold", size = 5),
+        plot.title = element_text(size = 7, face = "bold"),
+        axis.text = element_text(size = 5, hjust = 0.5, vjust = 0.5, 
+                                 color = "black"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.text = element_text(size = 4),
+        axis.ticks = element_line(linewidth = 0.1),
+        axis.line = element_line(linewidth = 0.3))
+
+p2 = ggplot(composition_df, aes(x = Module, fill = HER2)) +
+  geom_bar(position = "fill", width = 0.5) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "MONET module", y = "Proportion of Samples (%)", fill = "HER2 Status",
+       title = "MONET module composition by HER2 status") +
+  scale_fill_HER2_status +
+  theme_classic() +
+  theme(axis.text.x = element_text(hjust = 0.5, size = 5),
+        axis.text.y = element_text(size = 5),
+        axis.title = element_text(size = 6, face = "bold"),
+        legend.title = element_text(face = "bold", size = 5),
+        plot.title = element_text(size = 7, face = "bold"),
+        axis.text = element_text(size = 5, hjust = 0.5, vjust = 0.5, 
+                                 color = "black"),
+        legend.key.size = unit(0.25, "cm"),
+        legend.text = element_text(size = 4),
+        axis.ticks = element_line(linewidth = 0.1),
+        axis.line = element_line(linewidth = 0.3))
+
+FIG = ggarrange(p1, p2, ncol = 1, nrow = 2,
+          labels = c("A", "B"),
+          font.label = list(size = 10, face = "bold"))
+ggsave(plot = FIG, 
+       filename = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/",
+                         "MONET_module_composition_by_ER_and_HER2_status.png"),
+       width = 1024*2, height = 1024*3, device = 'png', units = "px", dpi = 700)
+
+# Quantifying each module's reliance on each omic
+edge_absolute_mean <- function(nx_graph) {
+  w <- vapply(iterate(nx_graph$edges(data = TRUE)),
+              function(e) abs(as.numeric(e[[3]]$weight)),
+              numeric(1))
+  mean(w)                         # just return the scalar mean
+}
+
+omics <- names(MONET$glob_var$omics)
+
+# 1) background vector  bg[omic]
+bg <- sapply(omics, function(o)
+  edge_absolute_mean(MONET$glob_var$omics[[o]]$graph))
+
+# 2) module-by-omic matrix  omic_strength[omic, module]
+get_mod_edge_absmean <- function(mod, omic_name) {
+  g   <- MONET$glob_var$omics[[omic_name]]$graph
+  pts <- unlist(mod$get_patients_names_as_list())
+  if (length(pts) < 2) return(NA)
+  
+  combs <- t(combn(pts, 2))
+  w <- apply(combs, 1, function(x)
+    if (g$has_edge(x[1], x[2]))
+      abs(as.numeric(g$get_edge_data(x[1], x[2])$weight))
+    else 0)
+  mean(w)
+}
+
+mods  <- MONET$all_modules
+omic_strength <- sapply(mods, function(m)
+  sapply(omics, get_mod_edge_absmean, mod = m))
+
+rownames(omic_strength) <- omics
+colnames(omic_strength) <- paste0("Module_", names(mods))
+
+# 3) “excess connectivity” centered by background
+omic_strength_centered <- sweep(omic_strength, 1, bg, FUN = "-")
+omic_strength_centered
+
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
 
@@ -1444,23 +1580,11 @@ scale_fill_lymph_node_status = scale_fill_manual(values = c(No = "grey75",
                                                             Yes = "#4A0558", 
                                                             Unknown = "grey40"))
 
-# ER status
-scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
-                                                    Positive = "#0F1682", 
-                                                    Unknown = "grey40"))
-
 # PR status
 scale_fill_PR_status = scale_fill_manual(values = c(Indeterminate = "aliceblue", 
                                                     Positive = "dodgerblue4", 
                                                     Negative = "#F0C6C3", 
                                                     Unknown = "grey40"))
-
-# HER2 status
-scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
-                                                      Positive = "#560DA7", 
-                                                      Indeterminate = "mistyrose1", 
-                                                      Equivocal = "hotpink4", 
-                                                      Unknown = "grey40"))
 
 # Vital status
 scale_fill_vital_status = scale_fill_manual(values = c(Alive = "lightpink1", 
@@ -1587,7 +1711,6 @@ names(MONET_barcharts) = voi
 rm(loc, chifit)
 
 # Multiplot (PNG) - bar charts
-library(ggpubr)
 ggarrange(MONET_barcharts[[1]], MONET_barcharts[[2]], MONET_barcharts[[3]],
           MONET_barcharts[[4]], MONET_barcharts[[5]], MONET_barcharts[[6]],
           MONET_barcharts[[7]], MONET_barcharts[[8]], MONET_barcharts[[9]],

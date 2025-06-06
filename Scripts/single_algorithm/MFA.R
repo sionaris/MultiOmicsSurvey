@@ -448,6 +448,340 @@ ggsave(filename = "Cluster_scatter_2D.pdf",
        dpi = 350)
 dev.off()
 
+# Explore MFA results / Interpretability #####
+# Variables in the 11 dimensions ###
+
+varplots = list()
+for (dim1 in 1:optn.dim) {
+  for (dim2 in 1:optn.dim) {
+    varplots[[paste0("Dim", dim1, "_Dim", dim2)]] = fviz_mfa_var(mfa200$MFA, "group",
+                                                                 axes = c(dim1, dim2),
+                                                                 repel = TRUE,
+                                                                 col.var = "black",
+                                                                 title = paste0("MFA dims ", dim1, " vs. ", dim2))
+    varplots[[paste0("Dim", dim1, "_Dim", dim2)]] = varplots[[paste0("Dim", dim1, "_Dim", dim2)]] +
+      theme_classic() +
+      theme(plot.title = element_text(size = 5*2, face = "bold"),
+            axis.title.x = element_text(size = 4*2, face = "bold"),
+            axis.title.y = element_text(size = 4*2, face = "bold"),
+            axis.ticks = element_line(linewidth = 0.15*2),
+            axis.text.x = element_text(size = 4*2),
+            axis.text.y = element_text(size = 4*2),
+            axis.line = element_line(linewidth = 0.2*2))
+  }
+}
+
+# Arrange in a 11x11 grid
+library(ggpubr)
+FIG_varplot = ggarrange(plotlist = varplots,
+                        ncol = optn.dim, nrow = optn.dim,
+                        common.legend = TRUE,
+                        align = "hv", labels = NULL)
+
+ggsave(plot = FIG_varplot,
+       filename = paste0("MFA_varplots_", optn.dim, "_dims.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 400, height = 10400, 
+       width = 10400, units = "px", device = "png"
+)
+
+rm(dim1, dim2); gc()
+
+# Modality contribution bar charts ###
+barplots = list()
+for (dim in 1:optn.dim) {
+    barplots[[paste0("Dim", dim)]] = fviz_contrib(mfa200$MFA, "group", axes = dim)
+    barplots[[paste0("Dim", dim)]] = barplots[[paste0("Dim", dim)]] +
+      theme_classic() +
+      theme(plot.title = element_text(size = 5*2, face = "bold"),
+            axis.title.x = element_text(size = 4*2, face = "bold"),
+            axis.title.y = element_text(size = 4*2, face = "bold"),
+            axis.ticks = element_line(linewidth = 0.15*2),
+            axis.text.x = element_text(size = 4*2),
+            axis.text.y = element_text(size = 4*2),
+            axis.line = element_line(linewidth = 0.2*2))
+}
+
+FIG_barplot = ggarrange(plotlist = barplots,
+                        ncol = 3, nrow = 4,
+                        common.legend = TRUE,
+                        align = "hv", labels = NULL)
+
+ggsave(plot = FIG_barplot,
+       filename = paste0("MFA_contrib_barplots_", optn.dim, "_dims.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 700, height = 10400, 
+       width = 10400, units = "px", device = "png"
+)
+
+rm(dim); gc()
+
+# Feature contribution plots ###
+featplots_10000 = list()
+for (dim in 1:optn.dim) {
+  featplots_10000[[paste0("Dim", dim)]] = fviz_contrib(mfa200$MFA, "quanti.var", axes = dim, top = 10000,
+                                                 palette = "jco")
+  featplots_10000[[paste0("Dim", dim)]] = featplots_10000[[paste0("Dim", dim)]] +
+    theme_classic() +
+    theme(plot.title = element_text(size = 5*2, face = "bold"),
+          axis.title.x = element_text(size = 4*2, face = "bold"),
+          axis.title.y = element_text(size = 4*2, face = "bold"),
+          axis.ticks = element_line(linewidth = 0.15*2),
+          axis.text.x = element_text(size = 1, angle = 45),
+          axis.text.y = element_text(size = 4*2),
+          axis.line = element_line(linewidth = 0.2*2))
+}
+
+FIG_featplot_top10000 = ggarrange(plotlist = featplots_10000,
+                        ncol = 3, nrow = 4,
+                        common.legend = TRUE,
+                        align = "hv", labels = NULL)
+
+ggsave(plot = FIG_featplot_top10000,
+       filename = paste0("MFA_contrib_featplots_", optn.dim, "_dims_top10000.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 700, height = 10400, 
+       width = 13400, units = "px", device = "png"
+)
+
+# top 100
+featplots_100 = list()
+for (dim in 1:optn.dim) {
+  featplots_100[[paste0("Dim", dim)]] = fviz_contrib(mfa200$MFA, "quanti.var", axes = dim, top = 100,
+                                                     palette = "jco")
+  featplots_100[[paste0("Dim", dim)]] = featplots_100[[paste0("Dim", dim)]] +
+    theme_classic() +
+    theme(plot.title = element_text(size = 5*2, face = "bold"),
+          axis.title.x = element_text(size = 4*2, face = "bold"),
+          axis.title.y = element_text(size = 4*2, face = "bold"),
+          axis.ticks = element_line(linewidth = 0.15*2),
+          axis.text.x = element_text(size = 1, angle = 45),
+          axis.text.y = element_text(size = 4*2),
+          axis.line = element_line(linewidth = 0.2*2))
+}
+
+FIG_featplot_top100 = ggarrange(plotlist = featplots_100,
+                                ncol = 3, nrow = 4,
+                                common.legend = TRUE,
+                                align = "hv", labels = NULL)
+
+ggsave(plot = FIG_featplot_top100,
+       filename = paste0("MFA_contrib_featplots_", optn.dim, "_dims_top100.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 700, height = 10400, 
+       width = 13400, units = "px", device = "png"
+)
+
+rm(dim); gc()
+
+# Plots for ER, HER2 and Stage ###
+ER_palette = c(Negative = "#C11D9C", 
+               Positive = "#0F1682", 
+               Unknown = "grey40")
+
+HER2_palette = c(Negative = "#0B9EF8", 
+                 Positive = "#560DA7", 
+                 Indeterminate = "mistyrose1", 
+                 Equivocal = "hotpink4", 
+                 Unknown = "grey40")
+
+stage_palette = c(`Stage I` = "#7cc6ad", 
+                  `Stage II` = "#0a6da5", 
+                  `Stage III` = "#9a9afc", 
+                  `Stage IV` = "#5d032d", 
+                  `Unknown` = "grey40")
+
+# ER status
+ER_plots = list()
+for (dim1 in 1:optn.dim) {
+  for (dim2 in 1:optn.dim) {
+    
+    if (dim1 != dim2) {
+      ER_plots[[paste0("Dim", dim1, "_Dim", dim2)]] = fviz_mfa_ind(mfa200$MFA, label = "none",
+                                                                   habillage = "ER_status",
+                                                                   palette = ER_palette,
+                                                                   axes = c(dim1, dim2),
+                                                                   addEllipses = TRUE, ellipse.type = "confidence", 
+                                                                   repel = TRUE # Avoid text overlapping
+      ) 
+      ER_plots[[paste0("Dim", dim1, "_Dim", dim2)]] = ER_plots[[paste0("Dim", dim1, "_Dim", dim2)]] +
+        theme_classic() +
+        ggtitle(paste0("ER status: dims ", dim1, "-", dim2)) +
+        theme(plot.title = element_text(size = 5*2, face = "bold"),
+              axis.title.x = element_text(size = 4*2, face = "bold"),
+              axis.title.y = element_text(size = 4*2, face = "bold"),
+              axis.ticks = element_line(linewidth = 0.15*2),
+              axis.text.x = element_text(size = 4*2),
+              axis.text.y = element_text(size = 4*2),
+              axis.line = element_line(linewidth = 0.2*2))
+    } else {
+      scores <- get_mfa_ind(mfa200$MFA)$coord[, dim1]
+      
+      dens_df <- data.frame(
+        Dim       = scores,
+        ER_status = mfa200$MFA$call$X$ER_status
+      )
+      
+      ER_plots[[paste0("Dim", dim1, "_Dim", dim1)]] <-
+        ggplot(dens_df, aes(x = Dim, fill = ER_status)) +
+        geom_density(alpha = 0.4, adjust = 1, color = "grey50") +
+        scale_fill_manual(values = ER_palette) +
+        theme_classic() +
+        ggtitle(sprintf("Dim %d ER densities", dim1)) +
+        xlab(sprintf("Dimension %d coordinate", dim1)) +
+        ylab("Density") +
+        theme(plot.title = element_text(size = 5*2, face = "bold"),
+              axis.title.x = element_text(size = 4*2, face = "bold"),
+              axis.title.y = element_text(size = 4*2, face = "bold"),
+              axis.ticks = element_line(linewidth = 0.15*2),
+              axis.text.x = element_text(size = 4*2),
+              axis.text.y = element_text(size = 4*2))
+    }
+  }
+}
+
+FIG_ER_plot = ggarrange(plotlist = ER_plots,
+                        ncol = optn.dim, nrow = optn.dim,
+                        common.legend = TRUE, legend = "bottom",
+                        align = "hv", labels = NULL)
+
+ggsave(plot = FIG_ER_plot,
+       filename = paste0("MFA_ER_plots_", optn.dim, "_dims.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 400, height = 10800, 
+       width = 10400, units = "px", device = "png"
+)
+
+rm(dim1, dim2); gc()
+
+# HER2 status
+mfa200$MFA$call$X$HER2_status = annCol[rownames(mfa200$MFA$call$X), "HER2 status"]
+HER2_plots = list()
+for (dim1 in 1:optn.dim) {
+  for (dim2 in 1:optn.dim) {
+    
+    if (dim1 != dim2) {
+      HER2_plots[[paste0("Dim", dim1, "_Dim", dim2)]] = fviz_mfa_ind(mfa200$MFA, label = "none",
+                                                                     habillage = "HER2_status",
+                                                                     palette = HER2_palette,
+                                                                     axes = c(dim1, dim2),
+                                                                     addEllipses = TRUE, ellipse.type = "confidence", 
+                                                                     repel = TRUE # Avoid text overlapping
+      ) 
+      HER2_plots[[paste0("Dim", dim1, "_Dim", dim2)]] = HER2_plots[[paste0("Dim", dim1, "_Dim", dim2)]] +
+        theme_classic() +
+        ggtitle(paste0("HER2 status: dims ", dim1, "-", dim2)) +
+        theme(plot.title = element_text(size = 5*2, face = "bold"),
+              axis.title.x = element_text(size = 4*2, face = "bold"),
+              axis.title.y = element_text(size = 4*2, face = "bold"),
+              axis.ticks = element_line(linewidth = 0.15*2),
+              axis.text.x = element_text(size = 4*2),
+              axis.text.y = element_text(size = 4*2),
+              axis.line = element_line(linewidth = 0.2*2))
+    } else {
+      scores <- get_mfa_ind(mfa200$MFA)$coord[, dim1]
+      
+      dens_df <- data.frame(
+        Dim       = scores,
+        HER2_status = mfa200$MFA$call$X$HER2_status
+      )
+      
+      HER2_plots[[paste0("Dim", dim1, "_Dim", dim1)]] <-
+        ggplot(dens_df, aes(x = Dim, fill = HER2_status)) +
+        geom_density(alpha = 0.4, adjust = 1, color = "grey50") +
+        scale_fill_manual(values = HER2_palette) +
+        theme_classic() +
+        ggtitle(sprintf("Dim %d HER2 densities", dim1)) +
+        xlab(sprintf("Dimension %d coordinate", dim1)) +
+        ylab("Density") +
+        theme(plot.title = element_text(size = 5*2, face = "bold"),
+              axis.title.x = element_text(size = 4*2, face = "bold"),
+              axis.title.y = element_text(size = 4*2, face = "bold"),
+              axis.ticks = element_line(linewidth = 0.15*2),
+              axis.text.x = element_text(size = 4*2),
+              axis.text.y = element_text(size = 4*2))
+    }
+  }
+}
+
+FIG_HER2_plot = ggarrange(plotlist = HER2_plots,
+                          ncol = optn.dim, nrow = optn.dim,
+                          common.legend = TRUE, legend = "bottom",
+                          align = "hv", labels = NULL)
+
+ggsave(plot = FIG_HER2_plot,
+       filename = paste0("MFA_HER2_plots_", optn.dim, "_dims.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 400, height = 10800, 
+       width = 10400, units = "px", device = "png"
+)
+
+rm(dim1, dim2); gc()
+
+# Stage
+mfa200$MFA$call$X$Stage = annCol[rownames(mfa200$MFA$call$X), "Stage"]
+Stage_plots = list()
+for (dim1 in 1:optn.dim) {
+  for (dim2 in 1:optn.dim) {
+    
+    if (dim1 != dim2) {
+      Stage_plots[[paste0("Dim", dim1, "_Dim", dim2)]] = fviz_mfa_ind(mfa200$MFA, label = "none",
+                                                                      habillage = "Stage",
+                                                                      palette = stage_palette,
+                                                                      axes = c(dim1, dim2),
+                                                                      addEllipses = TRUE, ellipse.type = "confidence", 
+                                                                      repel = TRUE # Avoid text overlapping
+      ) 
+      Stage_plots[[paste0("Dim", dim1, "_Dim", dim2)]] = Stage_plots[[paste0("Dim", dim1, "_Dim", dim2)]] +
+        theme_classic() +
+        ggtitle(paste0("Stage: dims ", dim1, "-", dim2)) +
+        theme(plot.title = element_text(size = 5*2, face = "bold"),
+              axis.title.x = element_text(size = 4*2, face = "bold"),
+              axis.title.y = element_text(size = 4*2, face = "bold"),
+              axis.ticks = element_line(linewidth = 0.15*2),
+              axis.text.x = element_text(size = 4*2),
+              axis.text.y = element_text(size = 4*2),
+              axis.line = element_line(linewidth = 0.2*2))
+    } else {
+      scores <- get_mfa_ind(mfa200$MFA)$coord[, dim1]
+      
+      dens_df <- data.frame(
+        Dim       = scores,
+        Stage = mfa200$MFA$call$X$Stage
+      )
+      
+      Stage_plots[[paste0("Dim", dim1, "_Dim", dim1)]] <-
+        ggplot(dens_df, aes(x = Dim, fill = Stage)) +
+        geom_density(alpha = 0.4, adjust = 1, color = "grey50") +
+        scale_fill_manual(values = stage_palette) +
+        theme_classic() +
+        ggtitle(sprintf("Dim %d Stage densities", dim1)) +
+        xlab(sprintf("Dimension %d coordinate", dim1)) +
+        ylab("Density") +
+        theme(plot.title = element_text(size = 5*2, face = "bold"),
+              axis.title.x = element_text(size = 4*2, face = "bold"),
+              axis.title.y = element_text(size = 4*2, face = "bold"),
+              axis.ticks = element_line(linewidth = 0.15*2),
+              axis.text.x = element_text(size = 4*2),
+              axis.text.y = element_text(size = 4*2))
+    }
+  }
+}
+
+FIG_Stage_plot = ggarrange(plotlist = Stage_plots,
+                           ncol = optn.dim, nrow = optn.dim,
+                           common.legend = TRUE, legend = "bottom",
+                           align = "hv", labels = NULL)
+
+ggsave(plot = FIG_Stage_plot,
+       filename = paste0("MFA_Stage_plots_", optn.dim, "_dims.png"),
+       path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
+       dpi = 400, height = 10800, 
+       width = 10400, units = "px", device = "png"
+)
+
+rm(dim1, dim2); gc()
+
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
@@ -1436,35 +1770,16 @@ create_MO_heatmap(matrix = dist_embeddings, algorithm = algorithm,
                                             "/Supplement/MFA_embeddings_distance_matrix_heatmap.png"))
 
 # Setup for barcharts ###
-# Stage
-scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
-                                                `Stage II` = "#099CF5", 
-                                                `Stage III` = "#097BF5", 
-                                                `Stage IV` = "#0B5684", 
-                                                `Unknown` = "grey40"))
-
 # Lymph node status
 scale_fill_lymph_node_status = scale_fill_manual(values = c(No = "grey75", 
                                                             Yes = "#4A0558", 
                                                             Unknown = "grey40"))
-
-# ER status
-scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
-                                                    Positive = "#0F1682", 
-                                                    Unknown = "grey40"))
 
 # PR status
 scale_fill_PR_status = scale_fill_manual(values = c(Indeterminate = "aliceblue", 
                                                     Positive = "dodgerblue4", 
                                                     Negative = "#F0C6C3", 
                                                     Unknown = "grey40"))
-
-# HER2 status
-scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
-                                                      Positive = "#560DA7", 
-                                                      Indeterminate = "mistyrose1", 
-                                                      Equivocal = "hotpink4", 
-                                                      Unknown = "grey40"))
 
 # Vital status
 scale_fill_vital_status = scale_fill_manual(values = c(Alive = "lightpink1", 
@@ -1505,6 +1820,25 @@ scale_fill_menopausal_status = scale_fill_manual(values = c(Indeterminate = "mis
                                                             Perimenopausal = "#DC3977", 
                                                             `Post-menopausal` = "#7C1D6F", 
                                                             Unknown = "grey40"))
+
+# ER status
+scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
+                                                    Positive = "#0F1682", 
+                                                    Unknown = "grey40"))
+
+# HER2 status
+scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
+                                                      Positive = "#560DA7", 
+                                                      Indeterminate = "mistyrose1", 
+                                                      Equivocal = "hotpink4", 
+                                                      Unknown = "grey40"))
+
+# Stage
+scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
+                                                `Stage II` = "#099CF5", 
+                                                `Stage III` = "#097BF5", 
+                                                `Stage IV` = "#0B5684", 
+                                                `Unknown` = "grey40"))
 
 # Combine all scales into a list
 barchart_scales = list(scale_fill_stage, scale_fill_lymph_node_status, scale_fill_ER_status, 

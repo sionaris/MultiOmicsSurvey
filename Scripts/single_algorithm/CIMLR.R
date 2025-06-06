@@ -491,6 +491,15 @@ ggsave(filename = "Cluster_scatter.pdf",
        dpi = 350)
 dev.off()
 
+# Modality contribution (omic-level importance)
+# Sum of kernel weights (56 kernels per modality)
+breaks = seq(0, length(similarity_object[[paste0("NN = ", optNN)]]$alphaK), 55) # 55 kernels per modality
+modality_specific_weights = list(SNPs = sum(similarity_object[[paste0("NN = ", optNN)]]$alphaK[1:breaks[2]]),
+                                 RNAseq = sum(similarity_object[[paste0("NN = ", optNN)]]$alphaK[(breaks[2]+1):(breaks[3])]),
+                                 CNV = sum(similarity_object[[paste0("NN = ", optNN)]]$alphaK[(breaks[3]+1):(breaks[4])]),
+                                 Methylation = sum(similarity_object[[paste0("NN = ", optNN)]]$alphaK[(breaks[4]+1):(breaks[5])]),
+                                 miRNA = sum(similarity_object[[paste0("NN = ", optNN)]]$alphaK[(breaks[5]+1):(breaks[6])]))
+
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)

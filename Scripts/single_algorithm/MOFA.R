@@ -296,8 +296,9 @@ rownames(embeddings) = sample_id_map$Sample.ID
 
 apply(embeddings, 2, summary) # summary looks reasonable for k-means input
 
-# M3C k-means clustering ###
-library(M3C)
+# Explore MOFA output and relationships with key variables #####
+library(ggpubr)
+library(cowplot)
 
 # Import resources
 scheme = readRDS("Resources/scheme.rds")
@@ -307,6 +308,398 @@ cluster_colors = scheme$clust.colors
 col.list = scheme$col.list
 var2comp = scheme$var2comp
 rm(scheme); gc()
+
+# Create data frame for plotting
+MOFA_expl = final_MOFA
+sample_metadata = sample_id_map %>% inner_join(clinical_data %>%
+                                                 dplyr::select(`ER status` = breast_carcinoma_estrogen_receptor_status,
+                                                               Sample.ID,
+                                                               `HER2 status` = lab_proc_her2_neu_immunohistochemistry_receptor_status)) %>%
+  inner_join(annCol %>% 
+               dplyr::select(Stage) %>%
+               tibble::rownames_to_column("Sample.ID"), by = "Sample.ID") %>%
+  tibble::column_to_rownames("MOFA.ID")
+
+# Converting to factors
+sample_metadata$Stage = factor(sample_metadata$Stage, 
+                               levels = c("Stage I", "Stage II", "Stage III", "Stage IV", "Unknown"),
+                               labels = c("Stage I", "Stage II", "Stage III", "Stage IV", "Unknown"))
+sample_metadata$`ER status` = factor(sample_metadata$`ER status`, 
+                                     levels = c("Negative", "Positive", ""),
+                                  labels = c("Negative", "Positive", "Unknown"))
+sample_metadata$`HER2 status` = factor(sample_metadata$`HER2 status`, 
+                                       levels = c("Negative", 
+                                                  "Equivocal",
+                                                  "Positive",
+                                                  "",
+                                                  "Indeterminate"),
+                             labels = c("Negative", 
+                                        "Equivocal",
+                                        "Positive",
+                                        "Unknown",
+                                        "Indeterminate"))
+sample_metadata$Stage
+sample_metadata = sample_metadata[MOFA_expl@samples_metadata$sample, ]
+
+MOFA_expl@samples_metadata$`ER status` = sample_metadata$`ER status`
+MOFA_expl@samples_metadata$`HER2 status` = sample_metadata$`HER2 status`
+MOFA_expl@samples_metadata$Stage = sample_metadata$Stage
+
+# ER status scale 
+scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
+                                                    Positive = "#0F1682", 
+                                                    Unknown = "grey40"))
+# HER2 status scale
+scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
+                                                      Positive = "#560DA7", 
+                                                      Indeterminate = "mistyrose1", 
+                                                      Equivocal = "hotpink4", 
+                                                      Unknown = "grey40"))
+
+# Stage scale (only for here)
+scale_fill_stage2 = scale_fill_manual(values = c(`Stage I` = "#7cc6ad", 
+                                                  `Stage II` = "#0a6da5", 
+                                                  `Stage III` = "#9a9afc", 
+                                                  `Stage IV` = "#5d032d", 
+                                                  `Unknown` = "grey40"))
+
+p1 <- plot_factor(MOFA_expl, 
+                 factors = c(1:optf),
+                 color_by = "ER status",
+                 dot_size = 1,        # change dot size
+                 dodge = T,           # dodge points with different colors
+                 legend = F,          # remove legend
+                 add_violin = T,      # add violin plots,
+                 violin_alpha = 0.25  # transparency of violin plots
+) +
+  labs(title = paste0("MOFA factors vs. ER status"),
+       x = "",
+       y = "Factor value") +
+  scale_fill_ER_status +
+  theme_bw() +
+  theme(panel.border = element_rect(linewidth = 0.2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 10, face = "bold"),
+        legend.title = element_text(face = "bold", size = 8),
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(0.5, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5, units = "mm"),
+        axis.title.x = element_text(size = 9, face = "bold"),
+        axis.title.y = element_text(size = 9, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 0),
+        axis.text.y = element_text(size = 0))
+
+p2 <- plot_factor(MOFA_expl, 
+                  factors = c(1:optf),
+                  color_by = "HER2 status",
+                  dot_size = 1,        # change dot size
+                  dodge = T,           # dodge points with different colors
+                  legend = F,          # remove legend
+                  add_violin = T,      # add violin plots,
+                  violin_alpha = 0.25  # transparency of violin plots
+) +
+  labs(title = paste0("MOFA factors vs. HER2 status"),
+       x = "",
+       y = "Factor value") +
+  scale_fill_HER2_status +
+  theme_bw() +
+  theme(panel.border = element_rect(linewidth = 0.2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 10, face = "bold"),
+        legend.title = element_text(face = "bold", size = 8),
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(0.5, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5, units = "mm"),
+        axis.title.x = element_text(size = 9, face = "bold"),
+        axis.title.y = element_text(size = 9, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 0),
+        axis.text.y = element_text(size = 0))
+
+p3 <- plot_factor(MOFA_expl, 
+                  factors = c(1:optf),
+                  color_by = "Stage",
+                  dot_size = 1,        # change dot size
+                  dodge = T,           # dodge points with different colors
+                  legend = F,          # remove legend
+                  add_violin = T,      # add violin plots,
+                  violin_alpha = 0.25  # transparency of violin plots
+) +
+  labs(title = paste0("MOFA factors vs. Stage"),
+       x = "",
+       y = "Factor value") +
+  scale_fill_stage2 +
+  theme_bw() +
+  theme(panel.border = element_rect(linewidth = 0.2),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 10, face = "bold"),
+        legend.title = element_text(face = "bold", size = 8),
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(0.5, "cm"),
+        legend.margin = ggplot2::margin(0, 0, 0, 0, unit = "mm"),
+        legend.spacing.y = unit(0.5, units = "mm"),
+        axis.title.x = element_text(size = 9, face = "bold"),
+        axis.title.y = element_text(size = 9, face = "bold"),
+        axis.ticks = element_line(linewidth = 0.15),
+        axis.text.x = element_text(size = 0),
+        axis.text.y = element_text(size = 0))
+
+FIG = ggarrange(p1, p2, p3, ncol = 1, nrow = 3,
+                labels = c("A", "B", "C"),
+                font.label = list(size = 12, face = "bold"))
+ggsave(plot = FIG, 
+       filename = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/",
+                         "MOFA_factors_and_clinical_variables.png"),
+       width = 1024*8, height = 1024*6, device = 'png', units = "px", dpi = 700)
+
+# Correlation scatter plots
+# ER
+cols_ER <- c(Negative = "#C11D9C",
+             Positive = "#0F1682",
+             Unknown  = "grey40")
+
+p_ER<- plot_factors(
+  MOFA_expl,
+  factors  = 1:optf,
+  color_by = "ER status",
+  dot_size = 1
+) +
+  labs(title = "MOFA factors vs. ER status") +
+  
+  # supply *both* fill and colour scales but hide their guides
+  scale_fill_manual (values = cols_ER, guide = "none") +
+  scale_colour_manual(values = cols_ER, guide = "none") +
+  
+  theme_bw() +
+  theme(
+    panel.border   = element_rect(linewidth = 0.2),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title     = element_text(size = 15, face = "bold"),
+    axis.title.x   = element_text(size = 9, face = "bold"),
+    axis.title.y   = element_text(size = 9, face = "bold"),
+    axis.ticks     = element_line(linewidth = 0.15),
+    axis.text.y    = element_text(size = 5),
+    legend.position = "none"
+  )
+
+legend_plot_ER <- ggplot(
+  data.frame(status = factor(names(cols_ER), levels = names(cols_ER)),
+             x = 1, y = 1),
+  aes(x, y, fill = status)
+) +
+  geom_point(shape = 21, size = 4, colour = "black") +
+  scale_fill_manual(
+    name   = "ER status",
+    values = cols_ER,
+    breaks = names(cols_ER),
+    drop   = FALSE
+  ) +
+  theme_void() +                    # keep only the legend
+  theme(
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text  = element_text(size = 9)
+  )
+
+legend_only_ER <- cowplot::get_legend(legend_plot_ER)   # <- turn into grob
+
+p_ER[["legend"]][["grobs"]][[1]] = legend_only_ER
+ggsave(p_ER,
+       filename = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/",
+                         "MOFA_factors_and_ER_GGally.png"),
+       width = 1024*8, height = 1024*7, device = 'png', units = "px", dpi = 700)
+
+rm(cols_ER, legend_plot_ER, legend_only_ER); gc()
+
+# HER2
+cols_HER2 = c(Negative = "#0B9EF8", 
+              Positive = "#560DA7", 
+              Indeterminate = "mistyrose1", 
+              Equivocal = "hotpink4", 
+              Unknown = "grey40")
+
+p_HER2<- plot_factors(
+  MOFA_expl,
+  factors  = 1:optf,
+  color_by = "HER2 status",
+  dot_size = 1
+) +
+  labs(title = "MOFA factors vs. HER2 status") +
+  
+  # supply *both* fill and colour scales but hide their guides
+  scale_fill_manual (values = cols_HER2, guide = "none") +
+  scale_colour_manual(values = cols_HER2, guide = "none") +
+  
+  theme_bw() +
+  theme(
+    panel.border   = element_rect(linewidth = 0.2),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title     = element_text(size = 15, face = "bold"),
+    axis.title.x   = element_text(size = 9, face = "bold"),
+    axis.title.y   = element_text(size = 9, face = "bold"),
+    axis.ticks     = element_line(linewidth = 0.15),
+    axis.text.y    = element_text(size = 5),
+    legend.position = "none"
+  )
+
+legend_plot_HER2 <- ggplot(
+  data.frame(status = factor(names(cols_HER2), levels = names(cols_HER2)),
+             x = 1, y = 1),
+  aes(x, y, fill = status)
+) +
+  geom_point(shape = 21, size = 4, colour = "black") +
+  scale_fill_manual(
+    name   = "HER2 status",
+    values = cols_HER2,
+    breaks = names(cols_HER2),
+    drop   = FALSE
+  ) +
+  theme_void() +                    # keep only the legend
+  theme(
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text  = element_text(size = 9)
+  )
+
+legend_only_HER2 <- cowplot::get_legend(legend_plot_HER2)   # <- turn into grob
+
+p_HER2[["legend"]][["grobs"]][[1]] = legend_only_HER2
+ggsave(p_HER2,
+       filename = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/",
+                         "MOFA_factors_and_HER2_GGally.png"),
+       width = 1024*8, height = 1024*7, device = 'png', units = "px", dpi = 700)
+
+rm(cols_HER2, legend_plot_HER2, legend_only_HER2); gc()
+
+# Stage
+cols_Stage = c(`Stage I` = "#7cc6ad", 
+               `Stage II` = "#0a6da5", 
+               `Stage III` = "#9a9afc", 
+               `Stage IV` = "#5d032d", 
+               `Unknown` = "grey40")
+
+p_Stage<- plot_factors(
+  MOFA_expl,
+  factors  = 1:optf,
+  color_by = "Stage",
+  dot_size = 1
+) +
+  labs(title = "MOFA factors vs. Stage") +
+  
+  # supply *both* fill and colour scales but hide their guides
+  scale_fill_manual (values = cols_Stage, guide = "none") +
+  scale_colour_manual(values = cols_Stage, guide = "none") +
+  
+  theme_bw() +
+  theme(
+    panel.border   = element_rect(linewidth = 0.2),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title     = element_text(size = 15, face = "bold"),
+    axis.title.x   = element_text(size = 9, face = "bold"),
+    axis.title.y   = element_text(size = 9, face = "bold"),
+    axis.ticks     = element_line(linewidth = 0.15),
+    axis.text.y    = element_text(size = 5),
+    legend.position = "none"
+  )
+
+legend_plot_Stage <- ggplot(
+  data.frame(status = factor(names(cols_Stage), levels = names(cols_Stage)),
+             x = 1, y = 1),
+  aes(x, y, fill = status)
+) +
+  geom_point(shape = 21, size = 4, colour = "black") +
+  scale_fill_manual(
+    name   = "Stage",
+    values = cols_Stage,
+    breaks = names(cols_Stage),
+    drop   = FALSE
+  ) +
+  theme_void() +                    # keep only the legend
+  theme(
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text  = element_text(size = 9)
+  )
+
+legend_only_Stage <- cowplot::get_legend(legend_plot_Stage)   # <- turn into grob
+
+p_Stage[["legend"]][["grobs"]][[1]] = legend_only_Stage
+ggsave(p_Stage,
+       filename = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/",
+                         "MOFA_factors_and_Stage_GGally.png"),
+       width = 1024*8, height = 1024*7, device = 'png', units = "px", dpi = 700)
+
+rm(cols_Stage, legend_plot_Stage, legend_only_Stage); gc()
+
+# Feature weights ###
+feature_frame = as.data.frame(rbind(cbind(rownames(MOFA_expl@data[["CNV"]][["group0"]]), rownames(input$CNV)),
+                                    cbind(rownames(MOFA_expl@data[["miRNA"]][["group0"]]), rownames(input$miRNA)),
+                                    cbind(rownames(MOFA_expl@data[["Methylation"]][["group0"]]), rownames(input$Methylation)),
+                                    cbind(rownames(MOFA_expl@data[["RNAseq"]][["group0"]]), rownames(input$RNAseq)),
+                                    cbind(rownames(MOFA_expl@data[["SNPs"]][["group0"]]), rownames(input$SNPs))))
+colnames(feature_frame) = c("view", "feature")
+
+MOFA_expl@expectations$W[["CNV"]] = MOFA_expl@expectations$W[["CNV"]][rownames(MOFA_expl@data[["CNV"]][["group0"]]), ]
+rownames(MOFA_expl@expectations$W[["CNV"]]) = rownames(input$CNV)
+
+MOFA_expl@expectations$W[["miRNA"]] = MOFA_expl@expectations$W[["miRNA"]][rownames(MOFA_expl@data[["miRNA"]][["group0"]]), ]
+rownames(MOFA_expl@expectations$W[["miRNA"]]) = rownames(input$miRNA)
+
+MOFA_expl@expectations$W[["Methylation"]] = MOFA_expl@expectations$W[["Methylation"]][rownames(MOFA_expl@data[["Methylation"]][["group0"]]), ]
+rownames(MOFA_expl@expectations$W[["Methylation"]]) = rownames(input$Methylation)
+
+MOFA_expl@expectations$W[["RNAseq"]] = MOFA_expl@expectations$W[["RNAseq"]][rownames(MOFA_expl@data[["RNAseq"]][["group0"]]), ]
+rownames(MOFA_expl@expectations$W[["RNAseq"]]) = rownames(input$RNAseq)
+
+MOFA_expl@expectations$W[["SNPs"]] = MOFA_expl@expectations$W[["SNPs"]][rownames(MOFA_expl@data[["SNPs"]][["group0"]]), ]
+rownames(MOFA_expl@expectations$W[["SNPs"]]) = rownames(input$SNPs)
+
+# Create a 7x5 plot of top weights for all 7 factors and all five modalities
+weight_plots = list()
+for (i in 1:length(input)) {
+  view = names(input)[i]
+  weight_plots[[view]] = plot_top_weights(MOFA_expl,
+                                          view = view,
+                                          factors = 1:optf,
+                                          nfeatures = 10
+  ) +
+    labs(title = paste0("Top ", view, " weights per factor"),
+         x = view,
+         y = "Weight") +
+    theme_bw() +
+    theme(panel.border = element_rect(linewidth = 0.2),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(size = 10, face = "bold"),
+          axis.title.x = element_text(size = 9, face = "bold"),
+          axis.title.y = element_text(size = 9, face = "bold"),
+          axis.ticks = element_line(linewidth = 0.15),
+          axis.text.x = element_text(size = 6, angle = 90, hjust = 1),
+          axis.text.y = element_text(size = 6))
+}
+
+weights_FIG = ggarrange(weight_plots$CNV, 
+                        weight_plots$miRNA, 
+                        weight_plots$Methylation, 
+                        weight_plots$RNAseq, 
+                        weight_plots$SNPs,
+                        ncol = 1, nrow = 5,
+                        labels = c("A", "B", "C", "D", "E"),
+                        font.label = list(size = 12, face = "bold"))
+
+ggsave(plot = weights_FIG,
+       filename = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement/",
+                         "MOFA_top_weights.png"),
+       width = 1024*15, height = 1024*9, device = 'png', units = "px", dpi = 700)
+
+# M3C k-means clustering ###
+library(M3C)
 
 # Here we create a class column for ER status
 m3c_des = annCol
@@ -1441,28 +1834,10 @@ create_MO_heatmap(matrix = dist_embeddings, algorithm = algorithm,
                                             "/Supplement/MOFA_embeddings_distance_matrix_heatmap.png"))
 
 # Setup for barcharts ###
-# Stage
-scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
-                                                `Stage II` = "#099CF5", 
-                                                `Stage III` = "#097BF5", 
-                                                `Stage IV` = "#0B5684", 
-                                                `Unknown` = "grey40"))
-
 # Lymph node status
 scale_fill_lymph_node_status = scale_fill_manual(values = c(No = "grey75", 
                                                             Yes = "#4A0558", 
                                                             Unknown = "grey40"))
-
-# ER status
-scale_fill_ER_status = scale_fill_manual(values = c(Negative = "#C11D9C", 
-                                                    Positive = "#0F1682", 
-                                                    Unknown = "grey40"))
-
-# PR status
-scale_fill_PR_status = scale_fill_manual(values = c(Indeterminate = "aliceblue", 
-                                                    Positive = "dodgerblue4", 
-                                                    Negative = "#F0C6C3", 
-                                                    Unknown = "grey40"))
 
 # HER2 status
 scale_fill_HER2_status = scale_fill_manual(values = c(Negative = "#0B9EF8", 
@@ -1492,6 +1867,13 @@ scale_fill_race = scale_fill_manual(values = c(`American indian or alaska native
 scale_fill_metastasis = scale_fill_manual(values = c(Yes = "deeppink4", 
                                                      No = "cadetblue2", 
                                                      Unknown = "grey40"))
+
+# Stage
+scale_fill_stage = scale_fill_manual(values = c(`Stage I` = "#00C9FF", 
+                                                `Stage II` = "#099CF5", 
+                                                `Stage III` = "#097BF5", 
+                                                `Stage IV` = "#0B5684", 
+                                                `Unknown` = "grey40"))
 
 # Histology
 scale_fill_histology = scale_fill_manual(values = c(`Infiltrating Carcinoma NOS` = "#88CCEE", 

@@ -269,6 +269,14 @@ dt = Sys.time() - t1 # ~4.5 mins
 # converge: Convergence metric across iterations.
 # LF: Final eigenvector-based embedding from the Laplacian.
 
+# Sum of kernel weights (56 kernels per modality)
+breaks = seq(0, length(cluster_results$alphaK), 55) # 55 kernels per modality
+modality_specific_weights = list(SNPs = sum(cluster_results$alphaK[1:breaks[2]]),
+                                 RNAseq = sum(cluster_results$alphaK[(breaks[2]+1):(breaks[3])]),
+                                 CNV = sum(cluster_results$alphaK[(breaks[3]+1):(breaks[4])]),
+                                 Methylation = sum(cluster_results$alphaK[(breaks[4]+1):(breaks[5])]),
+                                 miRNA = sum(cluster_results$alphaK[(breaks[5]+1):(breaks[6])]))
+
 # Our clustering assignments are the y_spectral in this case
 wMKL_clusters = as.data.frame(list(Sample.ID = colnames(input$SNPs),
                                    Cluster = cluster_results$y_spectral))

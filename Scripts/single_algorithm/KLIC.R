@@ -306,6 +306,31 @@ optk = bestGlobalK
 KLIC_clusters = as.data.frame(list(Sample.ID = rownames(input$SNPs), Cluster = bestClustering))
 rownames(KLIC_clusters) = KLIC_clusters$Sample.ID
 
+
+# Extract omic-level importance
+final_kvals = final_KLIC$bestCombo
+CMcombo_final <- array(0, dim = c(nSamples, nSamples, nDatasets))
+for (i in seq_len(nDatasets)) {
+  # If k_i = 2 => index in allCM is (2 - 2 + 1) = 1, if k_i = 3 => 2, etc.
+  idxInAllCM <- kvals[i] - 2 + 1
+  CMcombo_final[, , i] <- allCM[[idxInAllCM]][, , i]
+}
+local_params_final <- km_parameters
+local_params_final$cluster_count <- final_KLIC$bestGlobalK
+res_final <- klic::lmkkmeans(CMcombo_final, local_params_final)
+
+# Weighted kernel
+WKM_final <- matrix(0, nrow = nSamples, ncol = nSamples)
+for (j in seq_len(nDatasets)) {
+  WKM_final <- WKM_final + (res_final$Theta[, j] %*% t(res_final$Theta[, j])) * CMcombo_final[,, j]
+}
+
+omic_weights <- colMeans(res_final$Theta)
+omic_weights <- omic_weights / sum(omic_weights)
+
+# The order is the same as in the input_dists object
+cat(unlist(names(input_dists)), "\n", round(omic_weights, 3))
+
 # Main results ###
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
