@@ -3173,6 +3173,7 @@ CIMLR.weight_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 0, weight,
   return(results)
 }
 
+# Plotting function for MOFA explained variance #####
 plot_MOFA_var_exp <- function(object, 
                               x = "view", 
                               y = "factor", 

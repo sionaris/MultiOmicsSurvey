@@ -2064,6 +2064,9 @@ writeLines(capture.output(sessionInfo()), paste0("sessionInfo/",
                                                  data_types, "_eval_on_", evaluation_source,
                                                  "_sessionInfo.txt"))
 
+# Cleanup prior to saving (due to very large sizes)
+rm(cgp2016ExprRma, cl, mfa_input, featplots_10000, drugData2016, transcr, featplots_100); gc()
+
 # Save environment
 save.image(paste0(home, "/Results/single_algorithm/", 
                   algorithm, "/", algorithm, "_", data_source, "_",

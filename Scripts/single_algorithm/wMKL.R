@@ -218,10 +218,11 @@ optk = which.min(num_results$K1) + 1
 # perform the CIMLR.weight clustering algorithm
 t1 = Sys.time()
 cluster_results = CIMLR.weight_mod(X = input, c = optk,
-                             cores.ratio = 0,
+                             cores.ratio = 0, k = max(ceiling(ncol(input[[1]])/20), 
+                                                      10),
                              weight = weights,
                              methods = distance_methods)
-dt = Sys.time() - t1 # ~4.5 mins
+dt = Sys.time() - t1 # 7.04 mins
 
 # Computing the multiple Kernels.
 # Performing network diffusion.
@@ -235,29 +236,34 @@ dt = Sys.time() - t1 # ~4.5 mins
 # Iteration:  8 
 # Iteration:  9 
 # Iteration:  10 
+# Iteration:  11 
+# Iteration:  12 
+# Iteration:  13 
+# Iteration:  14 
+# Iteration:  15 
 # Performing t-SNE.
-# Epoch: Iteration # 100  error is:  0.1322815 
-# Epoch: Iteration # 200  error is:  0.1085342 
-# Epoch: Iteration # 300  error is:  0.09815787 
-# Epoch: Iteration # 400  error is:  0.09284991 
-# Epoch: Iteration # 500  error is:  0.0898325 
-# Epoch: Iteration # 600  error is:  0.08782597 
-# Epoch: Iteration # 700  error is:  0.08635315 
-# Epoch: Iteration # 800  error is:  0.08519087 
-# Epoch: Iteration # 900  error is:  0.0842451 
-# Epoch: Iteration # 1000  error is:  0.08344559 
+# Epoch: Iteration # 100  error is:  0.04591853 
+# Epoch: Iteration # 200  error is:  0.02886736 
+# Epoch: Iteration # 300  error is:  0.02380106 
+# Epoch: Iteration # 400  error is:  0.02123819 
+# Epoch: Iteration # 500  error is:  0.01960917 
+# Epoch: Iteration # 600  error is:  0.01848558 
+# Epoch: Iteration # 700  error is:  0.01763863 
+# Epoch: Iteration # 800  error is:  0.01700038 
+# Epoch: Iteration # 900  error is:  0.01645702 
+# Epoch: Iteration # 1000  error is:  0.01599298 
 # Performing Kmeans.
 # Performing t-SNE.
-# Epoch: Iteration # 100  error is:  11.36326 
-# Epoch: Iteration # 200  error is:  0.2706709 
-# Epoch: Iteration # 300  error is:  0.2124627 
-# Epoch: Iteration # 400  error is:  0.1993325 
-# Epoch: Iteration # 500  error is:  0.1940114 
-# Epoch: Iteration # 600  error is:  0.1905818 
-# Epoch: Iteration # 700  error is:  0.1881677 
-# Epoch: Iteration # 800  error is:  0.1863444 
-# Epoch: Iteration # 900  error is:  0.1849099 
-# Epoch: Iteration # 1000  error is:  0.1837464 
+# Epoch: Iteration # 100  error is:  9.885773 
+# Epoch: Iteration # 200  error is:  0.09396523 
+# Epoch: Iteration # 300  error is:  0.08232501 
+# Epoch: Iteration # 400  error is:  0.0726929 
+# Epoch: Iteration # 500  error is:  0.06987577 
+# Epoch: Iteration # 600  error is:  0.06801539 
+# Epoch: Iteration # 700  error is:  0.06667082 
+# Epoch: Iteration # 800  error is:  0.06564767 
+# Epoch: Iteration # 900  error is:  0.06484317 
+# Epoch: Iteration # 1000  error is:  0.06417717 
 
 # The function returns a list of objects
 # y / y_spectral: Two different final cluster assignments of the data. y is kmeans, y_spectral is spectral
@@ -960,7 +966,7 @@ hclust_output <- foreach(i = 1:length(hclust_input), .packages = c("pathfindR", 
   }
 }
 
-timestamp() # ~2 mins
+timestamp() # ~20 mins
 stopCluster(cl)
 gc()
 names(hclust_output) <- names(hclust_input)
@@ -1079,7 +1085,7 @@ transNEO_ntp_expr_up = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_up_heatmap_transNEO")
-timestamp() # 10 min
+timestamp() # ~30 min
 
 # down-regulated
 RNGversion("4.2.2")
@@ -1097,7 +1103,7 @@ transNEO_ntp_expr_down = runNTP(
   width = 12,
   fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
   fig.name = "ntp_expr_down_heatmap_transNEO")
-timestamp() # 11 min
+timestamp() # ~30 min
 
 # Check concordance
 expr_conc = as.data.frame(transNEO_ntp_expr_down$clust.res) %>%
@@ -1577,7 +1583,7 @@ dev.off()
 wMKL_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(wMKL, Race, Histology, 
                                                              `ER status`, `PR status`, `HER2 status`,
-                                                             `Metastasis`)
+                                                             Stage)
 plotdata_bar_sig$wMKL = factor(plotdata_bar_sig$wMKL)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1630,10 +1636,9 @@ Pheno_sunburst_wMKL$`HER2 status` = gsub("Unknown", "Unkn HER2 status",
                                          Pheno_sunburst_wMKL$`HER2 status`)
 Pheno_sunburst_wMKL$`HER2 status` = gsub("Positive", "HER2+", Pheno_sunburst_wMKL$`HER2 status`)
 Pheno_sunburst_wMKL$`HER2 status` = gsub("Negative", "HER2-", Pheno_sunburst_wMKL$`HER2 status`)
-Pheno_sunburst_wMKL$Metastasis = gsub("Unknown", "Unkn metast. status", Pheno_sunburst_wMKL$Metastasis)
 Pheno_sunburst_wMKL = Pheno_sunburst_wMKL %>%
-  dplyr::select(wMKL, `ER status`, `HER2 status`, Metastasis) %>%
-  group_by(wMKL, `ER status`, `HER2 status`, Metastasis) %>%
+  dplyr::select(wMKL, `ER status`, `HER2 status`) %>%
+  group_by(wMKL, `ER status`, `HER2 status`) %>%
   summarise(Counts = n()) %>%
   as.data.frame()
 sunburst_coloring_wMKL = data.frame(stringsAsFactors = FALSE,
@@ -1641,14 +1646,12 @@ sunburst_coloring_wMKL = data.frame(stringsAsFactors = FALSE,
                                                                        "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", 
                                                                        "#C11D9C", "#0F1682",  "grey40",
                                                                        "#0B9EF8", "#560DA7", "mistyrose1", 
-                                                                       "hotpink4", "grey40",
-                                                                       "deeppink4", "cadetblue2", "grey40"))),
+                                                                       "hotpink4", "grey40"))),
                                     labels = c("wMKL1", "wMKL2", "wMKL3", "wMKL4",
                                                "wMKL5", "wMKL6", "wMKL7", "wMKL8",
                                                "ER-", "ER+", "Unkn ER status",
                                                "HER2-", "HER2+", "Indeterminate",
-                                               "Equivocal", "Unkn HER2 status",
-                                               "Yes", "No", "Unkn metast. status"))
+                                               "Equivocal", "Unkn HER2 status"))
 
 sunburstDF_wMKL = as.sunburstDF(Pheno_sunburst_wMKL, value_column = "Counts", add_root = FALSE) %>%
   inner_join(sunburst_coloring_wMKL, by = "labels")

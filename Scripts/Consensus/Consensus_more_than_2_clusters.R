@@ -1360,7 +1360,7 @@ dev.off()
 MC_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(MC, Race, Histology, 
                                                              `ER status`, `PR status`, `HER2 status`,
-                                                             `Menopausal status`, Stage, Metastasis)
+                                                             Stage, Metastasis)
 plotdata_bar_sig$MC = factor(plotdata_bar_sig$MC)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {
@@ -1535,7 +1535,6 @@ params = list(algorithm = algorithm, data_source = data_source, data_types = dat
               hyperparameters = hyperparameters, ground_truth_k = ground_truth_k,
               transNEO_var2comp = transNEO_var2comp,
               sessionInfo = sessionInfo(), home = home)
-
 
 # Render the R Markdown document with the parameters
 rmarkdown::render(paste0(getwd(), "/Results/Consensus_more_than_2/", algorithm,

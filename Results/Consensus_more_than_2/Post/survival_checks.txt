@@ -1,2 +1,2 @@
-MC_survival_plot.pdf	p=0.638	PH:OK	VIF:OK	Lin:OK	Sep:OK	Miss:0.9%
-MC_training_survival_plot.pdf	p=0.65	PH:FAIL	VIF:OK	Lin:WARN	Sep:OK	Miss:1.8%
+MC_survival_plot.pdf	p=0.885	PH:OK	VIF:OK	Lin:OK	Sep:OK	Miss:0.9%
+MC_training_survival_plot.pdf	p=0.919	PH:FAIL	VIF:OK	Lin:WARN	Sep:OK	Miss:1.8%
