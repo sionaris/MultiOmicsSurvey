@@ -205,6 +205,18 @@ openxlsx::write.xlsx(featres, paste0("Results/single_algorithm/", algorithm,
 openxlsx::write.xlsx(featres_sig, paste0("Results/single_algorithm/", algorithm, 
                                          "/iClusterBayes_top0.25_feature_ranking.xlsx"))
 
+# Table of top 1000 features
+featres_ordered = featres %>% dplyr::arrange(desc(score)) %>%
+  dplyr::slice_head(n = 1000)
+table(featres_ordered$dataset)
+
+# Mean contribution scores
+mean(featres$score[featres$dataset == "RNAseq"])
+mean(featres$score[featres$dataset == "SNPs"])
+mean(featres$score[featres$dataset == "Methylation"])
+mean(featres$score[featres$dataset == "miRNA"])
+mean(featres$score[featres$dataset == "CNV"])
+
 # Main results #####
 # Examine cluster similarity to MOVICS by measuring NMI and ARI indices #####
 # (Jaccard may be misleading)
