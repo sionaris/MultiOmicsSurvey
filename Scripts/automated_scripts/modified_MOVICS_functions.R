@@ -2272,6 +2272,375 @@ compMut_single_algorithm  = function (algorithm_name = "CS", moic.res = NULL, mu
   }
 }
 
+# Special case for ER
+compMut_single_algorithm_sc  <- function(
+    algorithm_name = "CS",
+    moic.res      = NULL,
+    mut.matrix    = NULL,
+    freq.cutoff   = 0.05,
+    test.method   = "fisher",
+    p.adj.method  = "BH",
+    doWord        = TRUE,
+    doPlot        = TRUE,
+    innerclust    = TRUE,
+    res.path      = getwd(),
+    tab.name      = NULL,
+    fig.path      = getwd(),
+    fig.name      = NULL,
+    annCol        = NULL,
+    annColors     = NULL,
+    mut.col       = "#21498D",
+    bg.col        = "#dcddde",
+    p.cutoff      = 0.05,
+    p.adj.cutoff  = 0.05,
+    clust.col     = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB",
+                      "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"),
+    width         = 8,
+    height        = 4,
+    simulate.p.value = FALSE,
+    return.binary = FALSE
+) {
+  library(MOVICS)
+  library(grid)
+  library(ComplexHeatmap)
+  
+  if (!is.element(test.method, c("fisher", "chisq"))) {
+    stop("test.method for independency can be one of fisher or chisq.\n")
+  }
+  if (!is.element(p.adj.method, c("holm", "hochberg", "hommel",
+                                  "bonferroni", "BH", "BY", "fdr"))) {
+    stop("p.adj.method can be one of holm, hochberg, hommel, bonferroni, BH, BY, fdr.\n")
+  }
+  
+  create.anntrack <- function(samples = NULL, subtype = NULL, typesToPlot = NULL) {
+    if (is.null(samples)) stop("samples can not be NULL!")
+    if (length(samples) != length(subtype)) {
+      stop("samples and subtype do not have equal length!")
+    }
+    if (is.null(typesToPlot)) {
+      typesToPlot <- levels(factor(unique(subtype)))
+    }
+    names(subtype) <- samples
+    return(list(subtype = subtype, typesToPlot = typesToPlot))
+  }
+  
+  createMutSubtype <- function(indata = NULL, samples = NULL, genename = NULL) {
+    if (!is.element(genename, rownames(indata))) {
+      stop(paste(genename, "not found in indata!", sep = " "))
+    }
+    comsam <- intersect(colnames(indata), samples)
+    out <- rep("Not Available", times = length(samples))
+    names(out) <- samples
+    out[comsam] <- as.character(indata[genename, comsam])
+    out[is.na(out)] <- "Not Available"
+    out[out == "0"] <- "Normal"
+    out[out == "1"] <- "Mutated"
+    return(out)
+  }
+  
+  ## --- Prepare clustering / mutation data -----------------------------------
+  
+  clust.res <- moic.res$clust.res
+  clust.res <- clust.res[order(clust.res$clust, decreasing = FALSE), , drop = FALSE]
+  
+  comsam <- intersect(clust.res$samID, colnames(mut.matrix))
+  clust.res <- clust.res[comsam, , drop = FALSE]
+  mut.matrix <- mut.matrix[, comsam, drop = FALSE]
+  
+  if (length(comsam) == nrow(moic.res$clust.res)) {
+    message("--all samples matched.")
+  } else {
+    message("--", paste0(nrow(moic.res$clust.res) - length(comsam),
+                         " samples mismatched from current subtypes."))
+  }
+  
+  ## robust subtype labelling (no rep(), no assumptions about raw clust values)
+  clust_fac      <- factor(clust.res$clust)              # drop unused, sort
+  n.moic         <- nlevels(clust_fac)
+  subtype_names  <- paste0(algorithm_name, seq_len(n.moic))    # ER1, ER2, ...
+  names(subtype_names) <- levels(clust_fac)                     # map raw -> ER1/ER2
+  
+  ans <- subtype_names[as.character(clust_fac)]          # one per sample
+  names(ans) <- clust.res$samID
+  
+  ## --- Filter genes by frequency --------------------------------------------
+  
+  genelist <- rownames(mut.matrix[rowSums(mut.matrix) > freq.cutoff * nrow(clust.res), , drop = FALSE])
+  
+  if (length(genelist) == 0) {
+    warning("No genes pass freq.cutoff; nothing to test.")
+    if (return.binary) return(list(summary = NULL, sample_binary = NULL))
+    return(NULL)
+  }
+  
+  ## --- Build mutation status matrix (Normal / Mutated / Not Available) ------
+  
+  binarymut <- as.data.frame(matrix(0, nrow = nrow(clust.res),
+                                    ncol = length(genelist)))
+  rownames(binarymut) <- names(ans)  # sample IDs
+  colnames(binarymut) <- genelist
+  
+  for (k in seq_along(genelist)) {
+    res_k <- create.anntrack(
+      samples = names(ans),
+      subtype = createMutSubtype(mut.matrix, names(ans), genelist[k])
+    )
+    binarymut[, genelist[k]] <- res_k$subtype
+  }
+  
+  ## --- Test association + compute per-subtype mutation frequencies ----------
+  
+  out <- matrix(0, nrow = length(genelist), ncol = n.moic + 1)
+  colnames(out) <- c(subtype_names, "pvalue")
+  rownames(out) <- paste(genelist, "Mutated", sep = "_")
+  
+  for (k in seq_along(genelist)) {
+    genek <- genelist[k]
+    
+    x <- ans                                        # subtype label per sample
+    y <- binarymut[names(x), genek, drop = TRUE]   # mutation status per sample
+    
+    y <- as.character(y)
+    names(y) <- names(x)
+    
+    ## drop NA / "Not Available"
+    tmp <- setdiff(names(x), names(y)[y == "Not Available"])
+    x <- x[tmp]
+    y <- y[tmp]
+    
+    res <- table(y, x)   # rows: Normal/Mutated; cols: ER1, ER2, ...
+    
+    if (!all(colnames(res) == colnames(out)[1:(ncol(out) - 1)])) {
+      stop(paste("colnames mismatch for ", genek, " (index ", k, ")", sep = ""))
+    }
+    
+    ## make sure "Mutated" row exists
+    if (!("Mutated" %in% rownames(res))) {
+      mut_counts <- rep(0, ncol(res))
+      names(mut_counts) <- colnames(res)
+    } else {
+      mut_counts <- res["Mutated", ]
+    }
+    
+    denom <- colSums(res)   # total samples per subtype for this gene
+    pct   <- paste0(
+      "(",
+      format(round(mut_counts / denom * 100, 1), digits = 3),
+      "%)"
+    )
+    freqpct <- paste(mut_counts, pct, sep = " ")
+    
+    out[k, 1:(ncol(out) - 1)] <- freqpct
+    
+    if (test.method == "fisher") {
+      out[k, "pvalue"] <- as.numeric(fisher.test(x, y,
+                                                 workspace = 2e+09,
+                                                 simulate.p.value = simulate.p.value)$p.value)
+    } else {
+      out[k, "pvalue"] <- as.numeric(chisq.test(x, y)$p.value)
+    }
+  }
+  
+  ## --- Format p-values, add TMB columns ------------------------------------
+  
+  out <- as.data.frame(out, stringsAsFactors = FALSE)
+  out$pvalue <- formatC(as.numeric(as.character(out$pvalue)),
+                        format = "e", digits = 2)
+  out$padj <- formatC(p.adjust(as.numeric(out$pvalue), method = p.adj.method),
+                      format = "e", digits = 2)
+  
+  if (is.null(tab.name)) {
+    outFile <- "Independent test between subtype and mutation.txt"
+  } else {
+    outFile <- paste0(tab.name, ".txt")
+  }
+  
+  tmb <- rowSums(mut.matrix[genelist, , drop = FALSE])
+  tmb_pct <- paste0(
+    "(",
+    format(round(tmb / ncol(mut.matrix) * 100, 1), digits = 1),
+    "%)"
+  )
+  tmb_freqpct <- paste(tmb, tmb_pct, sep = " ")
+  
+  out <- cbind.data.frame(
+    data.frame(
+      `Gene (Mutated)` = gsub("_Mutated", "", rownames(out)),
+      TMB              = tmb_freqpct,
+      check.names      = FALSE
+    ),
+    out,
+    stringsAsFactors = FALSE
+  )
+  rownames(out) <- NULL
+  
+  write.table(out, file.path(res.path, outFile),
+              row.names = FALSE, col.names = TRUE,
+              sep = "\t", quote = FALSE)
+  
+  ## --- Word export ----------------------------------------------------------
+  
+  if (doWord) {
+    comtable   <- out
+    title_name <- paste0("Table *. ", gsub(".txt", "", outFile, fixed = TRUE))
+    mynote     <- "Note: ..."
+    
+    my_doc <- officer::read_docx()
+    my_doc %>%
+      officer::body_add_par(value = title_name, style = "table title") %>%
+      officer::body_add_table(value = comtable, style = "table_template") %>%
+      officer::body_add_par(value = mynote) %>%
+      print(target = file.path(
+        res.path,
+        paste0("TABLE ", gsub(".txt", "", outFile, fixed = TRUE), ".docx")
+      ))
+  }
+  
+  ## --- OncoPrint ------------------------------------------------------------
+  
+  if (doPlot) {
+    if (is.null(fig.name)) {
+      outFig <- paste0("oncoprint for mutations with frequency over than ",
+                       freq.cutoff * 100, " pct.pdf")
+    } else {
+      outFig <- paste0(fig.name, ".pdf")
+    }
+    
+    sam.order <- moic.res$clust.res[order(moic.res$clust.res$clust,
+                                          decreasing = FALSE), "samID"]
+    
+    colvec <- clust.col[1:length(unique(moic.res$clust.res$clust))]
+    names(colvec) <- paste0(algorithm_name,
+                            sort(unique(moic.res$clust.res$clust)))
+    
+    ## ensure annotation data frame has Subtype and is ordered
+    annCol <- if (!is.null(annCol)) annCol[sam.order, , drop = FALSE] else
+      data.frame(row.names = sam.order)
+    
+    annCol$Subtype <- paste0(algorithm_name, moic.res$clust.res[sam.order, "clust"])
+    
+    ## build a clean color mapping only for columns present in annCol
+    annColors_use <- list()
+    for (nm in colnames(annCol)) {
+      if (nm == "Subtype") {
+        sub_levels <- sort(unique(annCol$Subtype))
+        cols <- clust.col[seq_along(sub_levels)]
+        names(cols) <- sub_levels             # VERY IMPORTANT: names = levels
+        annColors_use[[nm]] <- cols
+      } else if (!is.null(annColors) && nm %in% names(annColors)) {
+        annColors_use[[nm]] <- annColors[[nm]]
+      }
+    }
+    
+    ## sanity check: all entries must be named vectors
+    bad <- vapply(annColors_use, function(v) is.null(names(v)), logical(1))
+    if (any(bad)) {
+      stop("These entries in annColors_use are not named vectors: ",
+           paste(names(annColors_use)[bad], collapse = ", "))
+    }
+    
+    sig.mut <- as.character(out[
+      which(as.numeric(out$pvalue) < p.cutoff &
+              as.numeric(out$padj)   < p.adj.cutoff),
+      "Gene (Mutated)"
+    ])
+    
+    if (length(sig.mut) == 0) {
+      message("No mutations pass p < ", p.cutoff,
+              " and padj < ", p.adj.cutoff,
+              " — skipping OncoPrint.")
+    } else {
+      onco_dat <- t(binarymut[rownames(annCol), sig.mut, drop = FALSE])
+      onco_dat[onco_dat == "Normal"] <- ""
+      onco_dat <- as.data.frame(onco_dat)
+      
+      alter_fun <- list(
+        background = function(x, y, w, h) {
+          grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, "mm"),
+                          gp = gpar(fill = bg.col, col = NA))
+        },
+        Mutated = function(x, y, w, h) {
+          grid::grid.rect(x, y, w - unit(0.5, "mm"), h - unit(0.5, "mm"),
+                          gp = gpar(fill = mut.col, col = NA))
+        }
+      )
+      col <- c(Mutated = mut.col)
+      
+      if (innerclust) {
+        sam.reorder <- c()
+        for (i in seq_len(n.moic)) {
+          sam <- moic.res$clust.res[which(moic.res$clust.res$clust == i), "samID"]
+          tmp_onco <- MOVICS:::quiet(
+            ComplexHeatmap::oncoPrint(
+              onco_dat[, sam, drop = FALSE],
+              get_type = function(x) x,
+              alter_fun = alter_fun,
+              col = col,
+              remove_empty_columns = FALSE,
+              show_pct = FALSE,
+              bottom_annotation = NULL,
+              top_annotation = NULL,
+              show_heatmap_legend = FALSE
+            )
+          )
+          sam.reorder <- c(sam.reorder, sam[tmp_onco@column_order])
+        }
+        my_annotation <- ComplexHeatmap::HeatmapAnnotation(
+          df  = annCol[sam.reorder, , drop = FALSE],
+          col = annColors_use
+        )
+        p <- MOVICS:::quiet(
+          ComplexHeatmap::oncoPrint(
+            onco_dat[, sam.reorder, drop = FALSE],
+            get_type = function(x) x,
+            alter_fun = alter_fun,
+            col = col,
+            remove_empty_columns = FALSE,
+            column_order = sam.reorder,
+            show_pct = TRUE,
+            bottom_annotation = my_annotation,
+            top_annotation = NULL,
+            show_heatmap_legend = FALSE
+          )
+        )
+      } else {
+        my_annotation <- ComplexHeatmap::HeatmapAnnotation(
+          df  = annCol,
+          col = annColors
+        )
+        p <- MOVICS:::quiet(
+          ComplexHeatmap::oncoPrint(
+            onco_dat,
+            get_type = function(x) x,
+            alter_fun = alter_fun,
+            col = col,
+            remove_empty_columns = FALSE,
+            column_order = colnames(onco_dat),
+            show_pct = TRUE,
+            bottom_annotation = my_annotation,
+            top_annotation = NULL,
+            show_heatmap_legend = FALSE
+          )
+        )
+      }
+      
+      pdf(file.path(fig.path, outFig), width = width, height = height)
+      draw(p)
+      invisible(dev.off())
+      draw(p)
+    }
+  }
+  
+  if (return.binary) {
+    binarymut$Sample.ID <- rownames(binarymut)
+    binarymut <- binarymut[, c("Sample.ID", setdiff(names(binarymut), "Sample.ID"))]
+    return(list(summary = out, sample_binary = binarymut))
+  } else {
+    return(out)
+  }
+}
+
+
 # compDrugsen single algorithm #####
 compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, norm.expr = NULL, drugs = c("Cisplatin", 
                                                                                       "Paclitaxel"), tissueType = "all", test.method = "nonparametric", 
@@ -2280,6 +2649,7 @@ compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL,
                                          seed = 123456, fig.path = getwd(), width = 5, height = 5, notch = TRUE) 
 {
   library(MOVICS)
+  library(ggplot2)
   if (!is.element(test.method, c("nonparametric", "parametric"))) {
     stop("test.method can be one of nonparametric or parametric.")
   }
