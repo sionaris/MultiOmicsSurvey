@@ -50,6 +50,7 @@ Results/Stability analysis
 /Results/single_algorithm/SGCCA/*
 /Results/single_algorithm/MOFA/MOFA_fast_console_log_first_run_ever
 /Results/single_algorithm/MOFA/MOFA_slow_console_log
+/Results/single_algorithm/MFA/scree_object.rds
 /Results/Survival_evaluations/env_objects.rds
 /Poster/
 rngversion_replacement.bat

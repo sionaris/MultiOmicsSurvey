@@ -1280,7 +1280,7 @@ dev.off()
 # Just significant ones now
 COCA_barcharts_sig = list()
 plotdata_bar_sig = clust_annot_pheno_nonas %>% dplyr::select(COCA,
-                                                             `ER status`)
+                                                             `HER2 status`)
 plotdata_bar_sig$COCA = factor(plotdata_bar_sig$COCA)
 voi_sig = setdiff(colnames(plotdata_bar_sig), algorithm)
 for (i in 1:length(voi_sig)) {

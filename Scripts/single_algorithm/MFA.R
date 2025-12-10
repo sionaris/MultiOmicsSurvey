@@ -178,6 +178,10 @@ ggsave(plot = scree,
        dpi = 700, height = 3400, 
        width = 5400, units = "px", device = "pdf",
 )
+
+saveRDS(scree, paste0(home, "/Results/single_algorithm/", algorithm, 
+                           "/scree_object.rds"))
+rm(scree)
 gc()
 
 # Just the top 20 ncp:
