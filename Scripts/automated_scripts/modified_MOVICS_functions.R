@@ -1,4 +1,23 @@
-# runDEA: custom output name modification #####
+#' Run Differential Expression Analysis (Modified)
+#'
+#' @description Modified wrapper function for running differential expression analysis
+#'   between subtypes using DESeq2, edgeR, or limma. Compares each subtype against
+#'   all others. Outputs custom naming based on the algorithm used.
+#'
+#' @param dea.method Character; DEA method to use, one of "deseq2", "edger", or "limma".
+#' @param expr Expression matrix with genes as rows and samples as columns. For deseq2/edger,
+#'   should be count data; for limma, normalized expression.
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param prefix Character; prefix for output file names. Default is NULL.
+#' @param overwt Logical; if TRUE, overwrite existing output files. Default is FALSE.
+#' @param sort.p Logical; if TRUE, sort results by adjusted p-value. Default is TRUE.
+#' @param verbose Logical; if TRUE, output verbose results. Default is TRUE.
+#' @param res.path Character; path to save output files. Default is getwd().
+#' @param algorithm Character; algorithm name for output file naming. Default is "CS".
+#'
+#' @return Writes DEA result files to res.path. No return value.
+#'
+#' @export
 runDEA_mod = function (dea.method = c("deseq2", "edger", "limma"), expr = NULL, 
                        moic.res = NULL, prefix = NULL, overwt = FALSE, sort.p = TRUE, 
                        verbose = TRUE, res.path = getwd(), algorithm = "CS") 
@@ -33,6 +52,23 @@ runDEA_mod = function (dea.method = c("deseq2", "edger", "limma"), expr = NULL,
   }
 }
 
+#' Two-Class DESeq2 Differential Expression (Modified)
+#'
+#' @description Internal function to run DESeq2 for two-class comparison. Compares
+#'   each subtype against all other samples. Used by runDEA_mod.
+#'
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param countsTable Count matrix with genes as rows and samples as columns.
+#' @param prefix Character; prefix for output file names. Default is NULL.
+#' @param overwt Logical; if TRUE, overwrite existing output files. Default is FALSE.
+#' @param sort.p Logical; if TRUE, sort results by adjusted p-value. Default is TRUE.
+#' @param verbose Logical; if TRUE, output verbose results. Default is TRUE.
+#' @param res.path Character; path to save output files. Default is getwd().
+#' @param algorithm Character; algorithm name for output file naming. Default is "CS".
+#'
+#' @return Writes DESeq2 result files to res.path. No return value.
+#'
+#' @keywords internal
 twoclassdeseq2_mod = function (moic.res = NULL, countsTable = NULL, prefix = NULL, 
                                overwt = FALSE, sort.p = TRUE, verbose = TRUE, res.path = getwd(),
                                algorithm = "CS") 
@@ -124,6 +160,23 @@ twoclassdeseq2_mod = function (moic.res = NULL, countsTable = NULL, prefix = NUL
   options(warn = 0)
 }
 
+#' Two-Class edgeR Differential Expression (Modified)
+#'
+#' @description Internal function to run edgeR for two-class comparison. Compares
+#'   each subtype against all other samples. Used by runDEA_mod.
+#'
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param countsTable Count matrix with genes as rows and samples as columns.
+#' @param prefix Character; prefix for output file names. Default is NULL.
+#' @param overwt Logical; if TRUE, overwrite existing output files. Default is FALSE.
+#' @param sort.p Logical; if TRUE, sort results by adjusted p-value. Default is TRUE.
+#' @param verbose Logical; if TRUE, output verbose results. Default is TRUE.
+#' @param res.path Character; path to save output files. Default is getwd().
+#' @param algorithm Character; algorithm name for output file naming. Default is "CS".
+#'
+#' @return Writes edgeR result files to res.path. No return value.
+#'
+#' @keywords internal
 twoclassedger_mod = function (moic.res = NULL, countsTable = NULL, prefix = NULL, 
                               overwt = FALSE, sort.p = TRUE, verbose = TRUE, res.path = getwd(),
                               algorithm = "CS") 
@@ -221,6 +274,23 @@ twoclassedger_mod = function (moic.res = NULL, countsTable = NULL, prefix = NULL
   options(warn = 0)
 }
 
+#' Two-Class limma Differential Expression (Modified)
+#'
+#' @description Internal function to run limma for two-class comparison on normalized
+#'   expression data. Compares each subtype against all other samples. Used by runDEA_mod.
+#'
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param norm.expr Normalized expression matrix (e.g., FPKM, TPM) with genes as rows.
+#' @param prefix Character; prefix for output file names. Default is NULL.
+#' @param overwt Logical; if TRUE, overwrite existing output files. Default is FALSE.
+#' @param sort.p Logical; if TRUE, sort results by adjusted p-value. Default is TRUE.
+#' @param verbose Logical; if TRUE, output verbose results. Default is TRUE.
+#' @param res.path Character; path to save output files. Default is getwd().
+#' @param algorithm Character; algorithm name for output file naming. Default is "CS".
+#'
+#' @return Writes limma result files to res.path. No return value.
+#'
+#' @keywords internal
 twoclasslimma_mod = function (moic.res = NULL, norm.expr = NULL, prefix = NULL, 
                               overwt = FALSE, sort.p = TRUE, verbose = TRUE, res.path = getwd(),
                               algorithm = "CS") 
@@ -323,9 +393,42 @@ twoclasslimma_mod = function (moic.res = NULL, norm.expr = NULL, prefix = NULL,
   options(warn = 0)
 }
 
-# runMarker single algorithm #####
-
-# Just changing the CS labels when focusing on a single algorithm
+#' Run Marker Identification for Single Algorithm
+#'
+#' @description Modified MOVICS marker identification function for single algorithm analysis.
+#'   Identifies marker genes for each subtype and generates heatmap visualization.
+#'   Uses custom subtype labels based on algorithm name.
+#'
+#' @param algorithm_name Character; name of the clustering algorithm. Default is "CS".
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param dea.method Character; DEA method, one of "deseq2", "edger", or "limma".
+#' @param prefix Character; prefix for DEA result files. Default is NULL.
+#' @param dat.path Character; path to DEA result files. Default is getwd().
+#' @param res.path Character; path to save output files. Default is getwd().
+#' @param p.cutoff Numeric; p-value cutoff for marker selection. Default is 0.05.
+#' @param p.adj.cutoff Numeric; adjusted p-value cutoff. Default is 0.05.
+#' @param dirct Character; direction of marker expression, "up" or "down". Default is "up".
+#' @param n.marker Integer; maximum number of markers per subtype. Default is 200.
+#' @param doplot Logical; if TRUE, generate heatmap. Default is TRUE.
+#' @param norm.expr Normalized expression matrix for heatmap. Default is NULL.
+#' @param annCol Data frame of annotation columns. Default is NULL.
+#' @param annColors List of annotation colors. Default is NULL.
+#' @param clust.col Character vector of cluster colors.
+#' @param halfwidth Numeric; half-width for color scale. Default is 3.
+#' @param centerFlag Logical; if TRUE, center expression data. Default is TRUE.
+#' @param scaleFlag Logical; if TRUE, scale expression data. Default is TRUE.
+#' @param show_rownames Logical; if TRUE, show row names on heatmap. Default is FALSE.
+#' @param show_colnames Logical; if TRUE, show column names on heatmap. Default is FALSE.
+#' @param color Character vector of heatmap colors.
+#' @param fig.path Character; path to save figure. Default is getwd().
+#' @param fig.name Character; figure file name. Default is NULL.
+#' @param width Numeric; figure width. Default is 8.
+#' @param height Numeric; figure height. Default is 8.
+#' @param ... Additional arguments passed to pheatmap.
+#'
+#' @return List containing marker genes data frame and heatmap object.
+#'
+#' @export
 runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
                                           "limma"), prefix = NULL, dat.path = getwd(), res.path = getwd(), 
           p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", n.marker = 200, 
@@ -536,6 +639,40 @@ runMarker_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, d
   }
 }
 
+#' Run Marker Identification for Single Algorithm (No Export)
+#'
+#' @description Modified MOVICS marker identification function for single algorithm analysis
+#'   without file export. Returns marker genes and optionally generates heatmap in memory.
+#'
+#' @param algorithm_name Character; name of the clustering algorithm. Default is "CS".
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param dea.method Character; DEA method, one of "deseq2", "edger", or "limma".
+#' @param prefix Character; prefix for DEA result files. Default is NULL.
+#' @param dat.path Character; path to DEA result files. Default is getwd().
+#' @param p.cutoff Numeric; p-value cutoff for marker selection. Default is 0.05.
+#' @param p.adj.cutoff Numeric; adjusted p-value cutoff. Default is 0.05.
+#' @param dirct Character; direction of marker expression, "up" or "down". Default is "up".
+#' @param n.marker Integer; maximum number of markers per subtype. Default is 200.
+#' @param doplot Logical; if TRUE, generate heatmap. Default is TRUE.
+#' @param norm.expr Normalized expression matrix for heatmap. Default is NULL.
+#' @param annCol Data frame of annotation columns. Default is NULL.
+#' @param annColors List of annotation colors. Default is NULL.
+#' @param clust.col Character vector of cluster colors.
+#' @param halfwidth Numeric; half-width for color scale. Default is 3.
+#' @param centerFlag Logical; if TRUE, center expression data. Default is TRUE.
+#' @param scaleFlag Logical; if TRUE, scale expression data. Default is TRUE.
+#' @param show_rownames Logical; if TRUE, show row names on heatmap. Default is FALSE.
+#' @param show_colnames Logical; if TRUE, show column names on heatmap. Default is FALSE.
+#' @param color Character vector of heatmap colors.
+#' @param fig.path Character; path to save figure. Default is getwd().
+#' @param fig.name Character; figure file name. Default is NULL.
+#' @param width Numeric; figure width. Default is 8.
+#' @param height Numeric; figure height. Default is 8.
+#' @param ... Additional arguments passed to pheatmap.
+#'
+#' @return List containing marker genes data frame and heatmap object (if doplot is TRUE).
+#'
+#' @export
 runMarker_single_algorithm_no_export = function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
                                                                                                         "limma"), prefix = NULL, dat.path = getwd(), 
                                                  p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", n.marker = 200, 
@@ -711,10 +848,38 @@ runMarker_single_algorithm_no_export = function (algorithm_name = "CS", moic.res
   }
 }
 
-# runGSEA #####
-
-# Modifications:
-# add a name argument for colorbars
+#' Run Gene Set Enrichment Analysis (Modified)
+#'
+#' @description Modified MOVICS GSEA function with additional name argument for colorbars.
+#'   Performs GSEA on subtype-specific differential expression results.
+#'
+#' @param moic.res List; MOVICS clustering result containing clust.res data frame.
+#' @param dea.method Character; DEA method, one of "deseq2", "edger", or "limma".
+#' @param norm.expr Normalized expression matrix for GSVA computation.
+#' @param prefix Character; prefix for DEA result files. Default is NULL.
+#' @param dat.path Character; path to DEA result files. Default is getwd().
+#' @param res.path Character; path to save output files. Default is getwd().
+#' @param dirct Character; direction of enrichment, "up" or "down". Default is "up".
+#' @param n.path Integer; number of top pathways to display. Default is 10.
+#' @param msigdb.path Character; path to MSigDB gene set file (GMT format).
+#' @param nPerm Integer; number of permutations. Default is 1000.
+#' @param minGSSize Integer; minimum gene set size. Default is 10.
+#' @param maxGSSize Integer; maximum gene set size. Default is 500.
+#' @param p.cutoff Numeric; p-value cutoff. Default is 0.05.
+#' @param p.adj.cutoff Numeric; adjusted p-value cutoff. Default is 0.05.
+#' @param gsva.method Character; GSVA method. Default is "gsva".
+#' @param norm.method Character; normalization method. Default is "mean".
+#' @param clust.col Character vector of cluster colors.
+#' @param color Character vector of heatmap colors. Default is NULL.
+#' @param fig.name Character; figure file name. Default is NULL.
+#' @param fig.path Character; path to save figure. Default is getwd().
+#' @param width Numeric; figure width. Default is 15.
+#' @param height Numeric; figure height. Default is 10.
+#' @param name Character; name for colorbar annotation. Default is NULL.
+#'
+#' @return List containing GSEA results and enrichment scores.
+#'
+#' @export
 runGSEA_mod <- function (moic.res = NULL, dea.method = c("deseq2", "edger", 
                                           "limma"), norm.expr = NULL, prefix = NULL, dat.path = getwd(), 
           res.path = getwd(), dirct = "up", n.path = 10, msigdb.path = NULL, 
@@ -939,7 +1104,38 @@ runGSEA_mod <- function (moic.res = NULL, dea.method = c("deseq2", "edger",
               grouped.es = esm, heatmap = hm))
 }
 
-# runGSEA for newer GSVA versions #####
+#' Run GSEA for Newer GSVA Versions (4.4+)
+#'
+#' @description Modified GSEA function compatible with GSVA version 4.4 and later.
+#'   Uses updated GSVA API with gsvaParam objects.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param dea.method Character; DEA method used.
+#' @param norm.expr Normalized expression matrix.
+#' @param prefix Character; prefix for DEA files.
+#' @param dat.path Character; path to DEA files.
+#' @param res.path Character; path for output.
+#' @param dirct Character; enrichment direction.
+#' @param n.path Integer; number of top pathways.
+#' @param msigdb.path Character; path to MSigDB GMT file.
+#' @param nPerm Integer; number of permutations.
+#' @param minGSSize Integer; minimum gene set size.
+#' @param maxGSSize Integer; maximum gene set size.
+#' @param p.cutoff Numeric; p-value cutoff.
+#' @param p.adj.cutoff Numeric; adjusted p-value cutoff.
+#' @param gsva.method Character; GSVA method.
+#' @param norm.method Character; normalization method.
+#' @param clust.col Character vector; cluster colors.
+#' @param color Character vector; heatmap colors.
+#' @param fig.name Character; figure name.
+#' @param fig.path Character; figure path.
+#' @param width Numeric; figure width.
+#' @param height Numeric; figure height.
+#' @param name Character; colorbar name.
+#'
+#' @return List with GSEA results and heatmap.
+#'
+#' @export
 runGSEA_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger", 
                                                              "limma"), norm.expr = NULL, prefix = NULL, dat.path = getwd(), 
                              res.path = getwd(), dirct = "up", n.path = 10, msigdb.path = NULL, 
@@ -1165,7 +1361,39 @@ runGSEA_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger",
               grouped.es = esm, heatmap = hm))
 }
 
-# runGSEA for newer GSVA versions #####
+#' Run GSEA for Single Algorithm (GSVA 4.4+)
+#'
+#' @description Modified GSEA function for single algorithm analysis, compatible with
+#'   GSVA version 4.4+. Uses custom algorithm naming for output labels.
+#'
+#' @param algorithm_name Character; algorithm name for labeling. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param dea.method Character; DEA method used.
+#' @param norm.expr Normalized expression matrix.
+#' @param prefix Character; prefix for DEA files.
+#' @param dat.path Character; path to DEA files.
+#' @param res.path Character; path for output.
+#' @param dirct Character; enrichment direction.
+#' @param n.path Integer; number of top pathways.
+#' @param msigdb.path Character; path to MSigDB GMT file.
+#' @param nPerm Integer; number of permutations.
+#' @param minGSSize Integer; minimum gene set size.
+#' @param maxGSSize Integer; maximum gene set size.
+#' @param p.cutoff Numeric; p-value cutoff.
+#' @param p.adj.cutoff Numeric; adjusted p-value cutoff.
+#' @param gsva.method Character; GSVA method.
+#' @param norm.method Character; normalization method.
+#' @param clust.col Character vector; cluster colors.
+#' @param color Character vector; heatmap colors.
+#' @param fig.name Character; figure name.
+#' @param fig.path Character; figure path.
+#' @param width Numeric; figure width.
+#' @param height Numeric; figure height.
+#' @param name Character; colorbar name.
+#'
+#' @return List with GSEA results and heatmap.
+#'
+#' @export
 runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = NULL, dea.method = c("deseq2", "edger", 
                                                              "limma"), norm.expr = NULL, prefix = NULL, dat.path = getwd(), 
                              res.path = getwd(), dirct = "up", n.path = 10, msigdb.path = NULL, 
@@ -1396,10 +1624,24 @@ runGSEA_mod_4.4_single_algorithm <- function (algorithm_name = "CS", moic.res = 
 }
 
 
-# Redefine compAgree for subtype comparisons across different classifications #####
-
-# Modification:
-# Added three library calls in the beginning of the function definition
+#' Compare Agreement Across Subtype Classifications
+#'
+#' @description Compares subtype agreement between MOVICS results and external
+#'   classifications using alluvial plots and agreement statistics.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param subt2comp Data frame with external classifications to compare.
+#' @param doPlot Logical; if TRUE, generate alluvial plot. Default is TRUE.
+#' @param clust.col Character vector; colors for subtypes.
+#' @param box.width Numeric; width of alluvial boxes. Default is 0.1.
+#' @param fig.name Character; figure file name.
+#' @param fig.path Character; path to save figure.
+#' @param width Numeric; figure width. Default is 6.
+#' @param height Numeric; figure height. Default is 5.
+#'
+#' @return Data frame with agreement statistics.
+#'
+#' @export
 compAgree2 = function (moic.res = NULL, subt2comp = NULL, doPlot = TRUE, 
                        clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
                                      "#FFA5AB", "#011627", "#023E8A", "#9D4EDD", "#f09c6c", "#09f3b3"), box.width = 0.1, 
@@ -1591,8 +1833,26 @@ compAgree2 = function (moic.res = NULL, subt2comp = NULL, doPlot = TRUE,
   return(outTab)
 }
 
-# compClinvar modification #####
-# Changed the warn variable to character(0) due to unnecessary error stops
+#' Compare Clinical Variables Across Subtypes (Modified)
+#'
+#' @description Modified MOVICS function to compare clinical variables across subtypes.
+#'   Fixes warn variable initialization issue that caused unnecessary error stops.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param var2comp Data frame with clinical variables to compare.
+#' @param strata Character; stratification variable name. Default is NULL (uses Subtype).
+#' @param factorVars Character vector; factor variable names.
+#' @param nonnormalVars Character vector; non-normal variable names.
+#' @param exactVars Character vector; variables requiring exact tests.
+#' @param includeNA Logical; if TRUE, include NA values. Default is FALSE.
+#' @param doWord Logical; if TRUE, export Word document. Default is TRUE.
+#' @param tab.name Character; output table name.
+#' @param res.path Character; path for output.
+#' @param ... Additional arguments to CreateTableOne2.
+#'
+#' @return Data frame with clinical variable comparison statistics.
+#'
+#' @export
 compClinvar2 = function (moic.res = NULL, var2comp = NULL, strata = NULL, factorVars = NULL, 
           nonnormalVars = NULL, exactVars = NULL, includeNA = FALSE, 
           doWord = TRUE, tab.name = NULL, res.path = getwd(), ...) 
@@ -1668,7 +1928,27 @@ compClinvar2 = function (moic.res = NULL, var2comp = NULL, strata = NULL, factor
   return(list(compTab = comtable))
 }
 
-# compClinvar single algorithm #####
+#' Compare Clinical Variables for Single Algorithm (Word Export Only)
+#'
+#' @description Single algorithm version of clinical variable comparison that exports
+#'   results to Word document format. Uses custom algorithm naming.
+#'
+#' @param algorithm_name Character; algorithm name for subtype labels. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param var2comp Data frame with clinical variables to compare.
+#' @param strata Character; stratification variable name.
+#' @param factorVars Character vector; factor variable names.
+#' @param nonnormalVars Character vector; non-normal variable names.
+#' @param exactVars Character vector; variables requiring exact tests.
+#' @param includeNA Logical; if TRUE, include NA values. Default is FALSE.
+#' @param doWord Logical; if TRUE, export Word document. Default is TRUE.
+#' @param tab.name Character; output table name.
+#' @param res.path Character; path for output.
+#' @param ... Additional arguments.
+#'
+#' @return List with comparison table.
+#'
+#' @export
 compClinvar_single_algorithm_wordOnly = function (algorithm_name = "CS",
                                          moic.res = NULL, var2comp = NULL, strata = NULL, factorVars = NULL, 
                          nonnormalVars = NULL, exactVars = NULL, includeNA = FALSE, 
@@ -1745,6 +2025,33 @@ compClinvar_single_algorithm_wordOnly = function (algorithm_name = "CS",
   return(list(compTab = comtable))
 }
 
+#' Compare Clinical Variables for Single Algorithm
+#'
+#' @description Single algorithm version of clinical variable comparison with enhanced
+#'   output options including PDF export via kableExtra.
+#'
+#' @param algorithm_name Character; algorithm name for subtype labels. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param var2comp Data frame with clinical variables to compare.
+#' @param strata Character; stratification variable name.
+#' @param factorVars Character vector; factor variable names.
+#' @param nonnormalVars Character vector; non-normal variable names.
+#' @param exactVars Character vector; variables requiring exact tests.
+#' @param includeNA Logical; if TRUE, include NA values. Default is FALSE.
+#' @param doWord Logical; if TRUE, export Word document. Default is TRUE.
+#' @param tab.name Character; output table name.
+#' @param res.path Character; path for output.
+#' @param output_pdf Logical; if TRUE, export PDF table. Default is FALSE.
+#' @param pdf_level_col_width Character vector; column widths for level columns.
+#' @param pdf_count_col_width Character; width for count columns.
+#' @param pdf_pval_col_width Character; width for p-value column.
+#' @param pdf_test_col_width Character; width for test column.
+#' @param pdf_tab_font_size Numeric; font size for PDF table. Default is 8.
+#' @param omit_warnings Logical; if TRUE, suppress warnings. Default is FALSE.
+#'
+#' @return List with comparison table and optional exported files.
+#'
+#' @export
 compClinvar_single_algorithm <- function(algorithm_name = "CS",
                                          moic.res = NULL,
                                          var2comp = NULL,
@@ -1915,6 +2222,30 @@ compClinvar_single_algorithm <- function(algorithm_name = "CS",
   return(list(compTab = comtable))
 }
 
+#' Compare Ordinal Clinical Variables for Single Algorithm
+#'
+#' @description Single algorithm version for comparing ordinal clinical variables
+#'   across subtypes using Jonckheere-Terpstra test for trend.
+#'
+#' @param algorithm_name Character; algorithm name for subtype labels. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param var2comp Data frame with ordinal variables to compare.
+#' @param strata Character; stratification variable name.
+#' @param ordinalVars Character vector; names of ordinal variables.
+#' @param includeNA Logical; if TRUE, include NA values. Default is FALSE.
+#' @param tab.name Character; output table name.
+#' @param res.path Character; path for output.
+#' @param output_pdf Logical; if TRUE, export PDF table. Default is TRUE.
+#' @param pdf_template_loc Character; path to PDF template.
+#' @param pdf_level_col_width Character vector; column widths for level columns.
+#' @param pdf_count_col_width Character; width for count columns.
+#' @param pdf_pval_col_width Character; width for p-value column.
+#' @param pdf_test_col_width Character; width for test column.
+#' @param pdf_tab_font_size Numeric; font size for PDF table. Default is 8.
+#'
+#' @return List with ordinal comparison table.
+#'
+#' @export
 compClinvar_ordinal_single_algorithm <- function(algorithm_name = "CS",
                                                  moic.res = NULL,
                                                  var2comp = NULL,
@@ -2641,7 +2972,28 @@ compMut_single_algorithm_sc  <- function(
 }
 
 
-# compDrugsen single algorithm #####
+#' Compare Drug Sensitivity for Single Algorithm
+#'
+#' @description Single algorithm version for comparing predicted drug sensitivity
+#'   across subtypes using pRRophetic package predictions.
+#'
+#' @param algorithm_name Character; algorithm name for subtype labels. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param norm.expr Normalized expression matrix.
+#' @param drugs Character vector; drug names to test.
+#' @param tissueType Character; tissue type for pRRophetic. Default is "all".
+#' @param test.method Character; statistical test method. Default is "nonparametric".
+#' @param clust.col Character vector; cluster colors.
+#' @param prefix Character; prefix for output files.
+#' @param seed Integer; random seed. Default is 123456.
+#' @param fig.path Character; path to save figures.
+#' @param width Numeric; figure width. Default is 5.
+#' @param height Numeric; figure height. Default is 5.
+#' @param notch Logical; if TRUE, add notches to boxplots. Default is TRUE.
+#'
+#' @return List with drug sensitivity results and statistics.
+#'
+#' @export
 compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL, norm.expr = NULL, drugs = c("Cisplatin", 
                                                                                       "Paclitaxel"), tissueType = "all", test.method = "nonparametric", 
                                          clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
@@ -2760,7 +3112,25 @@ compDrugsen_single_algorithm = function (algorithm_name = "CS", moic.res = NULL,
   return(predictedBoxdat)
 }
 
-# compAgree single algorithm #####
+#' Compare Agreement for Single Algorithm
+#'
+#' @description Single algorithm version of subtype agreement comparison using
+#'   alluvial plots and agreement indices (Rand Index, Jaccard).
+#'
+#' @param algorithm_name Character; algorithm name for subtype labels. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param subt2comp Data frame with external classifications to compare.
+#' @param doPlot Logical; if TRUE, generate alluvial plot. Default is TRUE.
+#' @param clust.col Character vector; colors for subtypes.
+#' @param box.width Numeric; width of alluvial boxes. Default is 0.1.
+#' @param fig.name Character; figure file name.
+#' @param fig.path Character; path to save figure.
+#' @param width Numeric; figure width. Default is 6.
+#' @param height Numeric; figure height. Default is 5.
+#'
+#' @return Data frame with agreement statistics.
+#'
+#' @export
 compAgree_single_algorithm = function (algorithm_name = "CS",
                                        moic.res = NULL, subt2comp = NULL, doPlot = TRUE, 
                        clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
@@ -2952,7 +3322,36 @@ compAgree_single_algorithm = function (algorithm_name = "CS",
   }
   return(outTab)
 }
-# runGSVA_mod_4.4 #####
+
+#' Run GSVA Analysis (Modified for GSVA 4.4+)
+#'
+#' @description Modified GSVA function compatible with GSVA version 4.4 and later.
+#'   Computes gene set variation analysis scores and generates heatmaps.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param norm.expr Normalized expression matrix.
+#' @param gset.gmt.path Character; path to GMT gene set file.
+#' @param gsva.method Character; GSVA method. Default is "gsva".
+#' @param centerFlag Logical; if TRUE, center data. Default is TRUE.
+#' @param scaleFlag Logical; if TRUE, scale data. Default is TRUE.
+#' @param halfwidth Numeric; half-width for color scale. Default is 1.
+#' @param annCol Data frame; annotation columns.
+#' @param annColors List; annotation colors.
+#' @param clust.col Character vector; cluster colors.
+#' @param distance Character; distance metric. Default is "euclidean".
+#' @param linkage Character; linkage method. Default is "ward.D".
+#' @param show_rownames Logical; if TRUE, show row names. Default is TRUE.
+#' @param show_colnames Logical; if TRUE, show column names. Default is FALSE.
+#' @param color Character vector; heatmap colors.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name.
+#' @param width Numeric; figure width. Default is 8.
+#' @param height Numeric; figure height. Default is 8.
+#' @param ... Additional arguments.
+#'
+#' @return List with GSVA scores and heatmap.
+#'
+#' @export
 runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = NULL, 
           gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
           halfwidth = 1, annCol = NULL, annColors = NULL, clust.col = c("#2EC4B6", 
@@ -3056,7 +3455,36 @@ runGSVA_mod_4.4 <- function (moic.res = NULL, norm.expr = NULL, gset.gmt.path = 
   return(list(gset.list = gset.list, raw.es = es.backup, scaled.es = es))
 }
 
-# runGSVA_mod_4.4 single algorithm #####
+#' Run GSVA Analysis for Single Algorithm (GSVA 4.4+)
+#'
+#' @description Single algorithm version of GSVA compatible with version 4.4+.
+#'   Uses custom algorithm naming for output labels.
+#'
+#' @param algorithm_name Character; algorithm name for labeling. Default is "CS".
+#' @param moic.res List; MOVICS clustering result.
+#' @param norm.expr Normalized expression matrix.
+#' @param gset.gmt.path Character; path to GMT gene set file.
+#' @param gsva.method Character; GSVA method. Default is "gsva".
+#' @param centerFlag Logical; if TRUE, center data. Default is TRUE.
+#' @param scaleFlag Logical; if TRUE, scale data. Default is TRUE.
+#' @param halfwidth Numeric; half-width for color scale. Default is 1.
+#' @param annCol Data frame; annotation columns.
+#' @param annColors List; annotation colors.
+#' @param clust.col Character vector; cluster colors.
+#' @param distance Character; distance metric. Default is "euclidean".
+#' @param linkage Character; linkage method. Default is "ward.D".
+#' @param show_rownames Logical; if TRUE, show row names. Default is TRUE.
+#' @param show_colnames Logical; if TRUE, show column names. Default is FALSE.
+#' @param color Character vector; heatmap colors.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name.
+#' @param width Numeric; figure width. Default is 8.
+#' @param height Numeric; figure height. Default is 8.
+#' @param ... Additional arguments.
+#'
+#' @return List with GSVA scores.
+#'
+#' @export
 runGSVA_mod_4.4_single_algorithm <- function (algorithm_name = "CS",
                              moic.res = NULL, norm.expr = NULL, gset.gmt.path = NULL, 
                              gsva.method = "gsva", centerFlag = TRUE, scaleFlag = TRUE, 
@@ -3161,7 +3589,40 @@ runGSVA_mod_4.4_single_algorithm <- function (algorithm_name = "CS",
   return(list(gset.list = gset.list, raw.es = es.backup, scaled.es = es))
 }
 
-# runMarker_mod_4.4 #####
+#' Run Marker Identification (Modified for GSVA 4.4+)
+#'
+#' @description Modified marker identification function compatible with newer GSVA.
+#'   Identifies subtype-specific marker genes and generates heatmaps.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param dea.method Character; DEA method.
+#' @param prefix Character; prefix for DEA files.
+#' @param dat.path Character; path to DEA files.
+#' @param res.path Character; path for output.
+#' @param p.cutoff Numeric; p-value cutoff. Default is 0.05.
+#' @param p.adj.cutoff Numeric; adjusted p-value cutoff. Default is 0.05.
+#' @param dirct Character; marker direction. Default is "up".
+#' @param n.marker Integer; max markers per subtype. Default is 200.
+#' @param doplot Logical; if TRUE, generate heatmap. Default is TRUE.
+#' @param norm.expr Normalized expression matrix.
+#' @param annCol Data frame; annotation columns.
+#' @param annColors List; annotation colors.
+#' @param clust.col Character vector; cluster colors.
+#' @param halfwidth Numeric; half-width for scale. Default is 3.
+#' @param centerFlag Logical; if TRUE, center data. Default is TRUE.
+#' @param scaleFlag Logical; if TRUE, scale data. Default is TRUE.
+#' @param show_rownames Logical; if TRUE, show row names. Default is FALSE.
+#' @param show_colnames Logical; if TRUE, show column names. Default is FALSE.
+#' @param color Character vector; heatmap colors.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name.
+#' @param width Numeric; figure width. Default is 8.
+#' @param height Numeric; figure height. Default is 8.
+#' @param ... Additional arguments.
+#'
+#' @return List with marker genes and heatmap.
+#'
+#' @export
 runMarker_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger", "limma"), 
                        prefix = NULL, dat.path = getwd(), res.path = getwd(), 
                        p.cutoff = 0.05, p.adj.cutoff = 0.05, dirct = "up", 
@@ -3310,7 +3771,25 @@ runMarker_mod_4.4 <- function (moic.res = NULL, dea.method = c("deseq2", "edger"
   }
 }
 
-# Modified survival function (for extend = TRUE) #####
+#' Compare Survival with Extended Estimates
+#'
+#' @description Modified survival comparison function with extend = TRUE option
+#'   for survfit to handle time points beyond observed data.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param surv.info Data frame with futime and fustat columns.
+#' @param convt.time Character; time unit conversion ("d", "m", "y").
+#' @param surv.cut Numeric; survival time cutoff.
+#' @param xyrs.est Numeric vector; time points for survival estimation (years).
+#' @param clust.col Character vector; cluster colors.
+#' @param p.adjust.method Character; p-value adjustment method. Default is "BH".
+#' @param surv.median.line Character; median survival line option.
+#' @param fig.name Character; figure name.
+#' @param fig.path Character; path to save figure.
+#'
+#' @return List with survival analysis results and Kaplan-Meier plot.
+#'
+#' @export
 compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d", 
                           surv.cut = NULL, xyrs.est = NULL, clust.col = c("#2EC4B6", 
                                                                           "#E71D36", "#FF9F1C", "#BDD5EA", "#FFA5AB", "#011627", 
@@ -3440,7 +3919,20 @@ compSurv_ext <- function (moic.res = NULL, surv.info = NULL, convt.time = "d",
   }
 }
 
-# runPAM single algorithm #####
+#' Run PAM Classification for Single Algorithm
+#'
+#' @description Single algorithm version of PAM (Prediction Analysis for Microarrays)
+#'   classifier for subtype prediction on test data.
+#'
+#' @param algorithm_name Character; algorithm name for labeling. Default is "CS".
+#' @param train.expr Training expression matrix.
+#' @param moic.res List; MOVICS clustering result.
+#' @param test.expr Test expression matrix.
+#' @param gene.subset Character vector; subset of genes to use.
+#'
+#' @return List with PAM classification results.
+#'
+#' @export
 runPAM_single_algorithm = function (algorithm_name = "CS",
                                     train.expr = NULL, moic.res = NULL, test.expr = NULL, 
                                     gene.subset = NULL) 
@@ -3499,7 +3991,24 @@ runPAM_single_algorithm = function (algorithm_name = "CS",
   return(list(IGP = IGP, clust.res = ex.moic.res, mo.method = "PAM"))
 }
 
-# runKappa single algorithm #####
+#' Run Kappa Agreement for Single Algorithm
+#'
+#' @description Single algorithm version for computing Cohen's kappa agreement
+#'   between two subtype classifications with visualization.
+#'
+#' @param algorithm_name Character; algorithm name for labeling. Default is "CS".
+#' @param subt1 Vector; first subtype classification.
+#' @param subt2 Vector; second subtype classification.
+#' @param subt1.lab Character; label for first classification.
+#' @param subt2.lab Character; label for second classification.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name. Default is "constheatmap".
+#' @param width Numeric; figure width. Default is 5.
+#' @param height Numeric; figure height. Default is 5.
+#'
+#' @return List with kappa statistics and agreement heatmap.
+#'
+#' @export
 runKappa_single_algorithm = function (algorithm_name = "CS",
                                       subt1 = NULL, subt2 = NULL, subt1.lab = NULL, subt2.lab = NULL, 
                                       fig.path = getwd(), fig.name = "constheatmap", width = 5, 
@@ -3581,7 +4090,37 @@ runKappa_single_algorithm = function (algorithm_name = "CS",
                          width = width, height = height))
 }
 
-# getMoHeatmap_single_algorithm #####
+#' Generate Multi-Omics Heatmap for Single Algorithm
+#'
+#' @description Single algorithm version for generating multi-omics heatmaps.
+#'   Displays multiple data types in a stacked heatmap with consistent sample ordering.
+#'
+#' @param algorithm_name Character; algorithm name for labeling. Default is "CS".
+#' @param data List of data matrices (one per omics type).
+#' @param is.binary Logical vector; which data types are binary.
+#' @param row.title Character vector; titles for each data type.
+#' @param legend.name Character vector; legend names for each data type.
+#' @param clust.res Clustering result for sample ordering.
+#' @param clust.dend Clustering dendrogram.
+#' @param show.col.dend Logical; show column dendrogram. Default is TRUE.
+#' @param show.colnames Logical; show column names. Default is FALSE.
+#' @param show.row.dend Logical vector; show row dendrograms.
+#' @param show.rownames Logical vector; show row names.
+#' @param clust.dist.row Character vector; row distance metrics.
+#' @param clust.method.row Character vector; row clustering methods.
+#' @param clust.col Character vector; cluster colors.
+#' @param color List of color vectors for each data type.
+#' @param annCol Data frame; column annotations.
+#' @param annColors List; annotation colors.
+#' @param annRow Row annotations.
+#' @param width Numeric; figure width. Default is 6.
+#' @param height Numeric; figure height. Default is 4.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name. Default is "moheatmap".
+#'
+#' @return ComplexHeatmap object with multi-omics visualization.
+#'
+#' @export
 getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is.binary = c(FALSE, FALSE, FALSE, FALSE, 
                                                         FALSE, FALSE), row.title = c("Data1", "Data2", "Data3", 
                                                                                      "Data4", "Data5", "Data6"), legend.name = c("Data1", "Data2", 
@@ -3759,6 +4298,39 @@ getMoHeatmap_single_algorithm = function (algorithm_name = "CS", data = NULL, is
   options(warn = defaultW)
 }
 
+#' Generate Multi-Omics Heatmap for Single Algorithm (Version 2)
+#'
+#' @description Enhanced version of getMoHeatmap_single_algorithm with more control
+#'   over clustering options for both rows and columns.
+#'
+#' @param algorithm_name Character; algorithm name for labeling. Default is "CS".
+#' @param data List of data matrices (one per omics type).
+#' @param is.binary Logical vector; which data types are binary.
+#' @param row.title Character vector; titles for each data type.
+#' @param legend.name Character vector; legend names for each data type.
+#' @param clust.res Clustering result for sample ordering.
+#' @param clust.dend Clustering dendrogram (unused, for back-compat).
+#' @param cluster_rows Logical vector; cluster rows for each data type.
+#' @param cluster_cols Logical vector; cluster columns for each data type.
+#' @param show.row.dend Logical vector; show row dendrograms.
+#' @param show.col.dend Logical vector; show column dendrograms.
+#' @param show.rownames Logical vector; show row names.
+#' @param show.colnames Logical; show column names. Default is FALSE.
+#' @param clust.dist.row Character vector; row distance metrics.
+#' @param clust.method.row Character vector; row clustering methods.
+#' @param clust.col Character vector; cluster colors.
+#' @param color List of color vectors for each data type.
+#' @param annCol Data frame; column annotations.
+#' @param annColors List; annotation colors.
+#' @param annRow Row annotations.
+#' @param width Numeric; figure width. Default is 6.
+#' @param height Numeric; figure height. Default is 4.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name. Default is "moheatmap".
+#'
+#' @return ComplexHeatmap object with multi-omics visualization.
+#'
+#' @export
 getMoHeatmap_single_algorithm2 = function(
     algorithm_name = "CS",
     data = NULL,
@@ -4053,7 +4625,23 @@ getMoHeatmap_single_algorithm2 = function(
   options(warn = defaultW)
 }
 
-# NTP modification for subscript out of bounds error #####
+#' Run Nearest Template Prediction (Modified)
+#'
+#' @description Modified NTP function with fix for subscript out of bounds error.
+#'   Performs nearest template prediction for subtype classification.
+#'
+#' @param expr Expression matrix with genes as rows and samples as columns.
+#' @param templates Template matrix or data frame with marker genes and class labels.
+#' @param scaleFlag Logical; if TRUE, scale data. Default is TRUE.
+#' @param centerFlag Logical; if TRUE, center data. Default is TRUE.
+#' @param nPerm Integer; number of permutations. Default is 1000.
+#' @param distance Character; distance metric. Default is "cosine".
+#' @param seed Integer; random seed. Default is 123456.
+#' @param verbose Logical; if TRUE, show progress. Default is TRUE.
+#'
+#' @return List with NTP classification results.
+#'
+#' @export
 runNTP_mod = function (expr = NULL, templates = NULL, scaleFlag = TRUE, centerFlag = TRUE, 
                        nPerm = 1000, distance = "cosine", seed = 123456, verbose = TRUE, 
                        doPlot = FALSE, fig.path = getwd(), fig.name = "ntpheatmap", 
@@ -4096,6 +4684,22 @@ runNTP_mod = function (expr = NULL, templates = NULL, scaleFlag = TRUE, centerFl
               mo.method = "NTP"))
 }
 
+#' NTP Core Function (Modified)
+#'
+#' @description Modified NTP core function from CMScaller with enhanced error handling.
+#'
+#' @param emat Expression matrix.
+#' @param templates Template data frame with probe and class columns.
+#' @param nPerm Integer; number of permutations. Default is 1000.
+#' @param distance Character; distance metric. Default is "cosine".
+#' @param nCores Integer; number of cores. Default is 1.
+#' @param seed Integer; random seed.
+#' @param verbose Logical; if TRUE, show progress.
+#' @param doPlot Logical; if TRUE, generate plot. Default is FALSE.
+#'
+#' @return NTP results with class predictions and statistics.
+#'
+#' @keywords internal
 ntp_mod = function (emat, templates, nPerm = 1000, distance = "cosine", 
                     nCores = 1, seed = NULL, verbose = getOption("verbose"), 
                     doPlot = FALSE) 
@@ -4302,6 +4906,23 @@ ntp_mod = function (emat, templates, nPerm = 1000, distance = "cosine",
   return(res)
 }
 
+#' Subtype Heatmap Visualization (Modified)
+#'
+#' @description Modified heatmap function with standardized row/column name handling.
+#'
+#' @param emat Expression matrix.
+#' @param res NTP results data frame.
+#' @param templates Template data frame.
+#' @param keepN Logical or indices; samples to keep.
+#' @param labRow Row labels.
+#' @param classCol Class colors.
+#' @param heatCol Heatmap color palette.
+#' @param N Number of samples.
+#' @param ... Additional arguments to heatmap function.
+#'
+#' @return Heatmap visualization.
+#'
+#' @export
 subHeatmap_mod <- function (emat, res, templates, keepN = TRUE, labRow = NULL, 
                             classCol = getOption("subClassCol"), 
                             heatCol = colorRampPalette(c("dodgerblue4", "white", "deeppink4"))(100),
@@ -4475,7 +5096,19 @@ subHeatmap_mod <- function (emat, res, templates, keepN = TRUE, labRow = NULL,
   message("Heatmap plotting complete.")
 }
 
-# Modified gain definition for FGA #####
+#' Compare Fraction of Genome Altered (Modified)
+#'
+#' @description Modified FGA comparison function with flexible gain/loss thresholds
+#'   and custom column specification for segment data.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param segment Data frame with copy number segment data.
+#' @param iscopynumber Logical; if TRUE, segment values are copy numbers. Default is FALSE.
+#' @param ga_column Character; column name for gain/alteration values.
+#'
+#' @return List with FGA statistics per subtype.
+#'
+#' @export
 compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, ga_column = NULL,
                         cnathreshold = 0.2, test.method = "nonparametric", barcolor = c("#008B8A", 
                                                                                         "#F2042C", "#21498D"), clust.col = c("#2EC4B6", "#E71D36", 
@@ -4702,6 +5335,29 @@ compFGA_mod = function (moic.res = NULL, segment = NULL, iscopynumber = FALSE, g
   }
 }
 
+#' Compare Fraction of Genome Altered (Optimized)
+#'
+#' @description Optimized version of FGA comparison with improved performance
+#'   for large segment datasets using vectorized operations.
+#'
+#' @param moic.res List; MOVICS clustering result.
+#' @param segment Data frame with copy number segment data.
+#' @param iscopynumber Logical; if TRUE, segment values are copy numbers. Default is FALSE.
+#' @param ga_column Character; column name for gain/alteration values.
+#' @param cnathreshold Numeric; threshold for CNA calling. Default is 0.2.
+#' @param test.method Character; statistical test method. Default is "nonparametric".
+#' @param barcolor Character vector; colors for FGA bars.
+#' @param clust.col Character vector; cluster colors.
+#' @param fig.path Character; path to save figure.
+#' @param fig.name Character; figure name.
+#' @param width Numeric; figure width. Default is 8.
+#' @param height Numeric; figure height. Default is 4.
+#' @param prefix Character; prefix for output.
+#' @param title Character; plot title.
+#'
+#' @return List with FGA statistics.
+#'
+#' @export
 compFGA_optimized <- function(moic.res = NULL, segment = NULL, iscopynumber = FALSE, ga_column = NULL,
                               cnathreshold = 0.2, test.method = "nonparametric", barcolor = c("#008B8A", 
                                                                                               "#F2042C", "#21498D"), 
@@ -4899,7 +5555,33 @@ compFGA_optimized <- function(moic.res = NULL, segment = NULL, iscopynumber = FA
   }
 }
 
-# Prepare GSEA output for hierarchical clustering #####
+#' Prepare GSEA Output for Hierarchical Clustering
+#'
+#' @description Processes GSEA output and corresponding DGEA results to create
+#' input data frames suitable for hierarchical clustering of pathways.
+#'
+#' @param gsea_output Output object from GSEA analysis containing gsea.list with
+#'   results for each subtype/cluster.
+#' @param dgea_output_name_style Character string specifying the naming style
+#'   used in DGEA output files. Default is "".
+#' @param dea.method Character string specifying the differential expression
+#'   analysis method used (e.g., "DESeq2", "edgeR", "limma"). Default is "".
+#' @param mo.method Character string specifying the multi-omics clustering
+#'   method name used in file naming. Default is "".
+#' @param dat.path Character string with the path to the directory containing
+#'   DGEA output files. Default is "".
+#' @param dgea_padj_cutoff Numeric value specifying the adjusted p-value cutoff
+#'   for significant genes. Default is 0.05.
+#' @param pathway_padj_cutoff Numeric value specifying the adjusted p-value
+#'   cutoff for significant pathways. Default is 0.05.
+#' @param logfc_cutoff Numeric value specifying the log fold change cutoff for
+#'   up/down regulation classification. Default is 0.
+#'
+#' @return A named list of data frames (one per cluster) containing pathway IDs,
+#'   comma-separated down-regulated genes, comma-separated up-regulated genes,
+#'   NES values, and lowest adjusted p-values.
+#'
+#' @export
 prepare_gsea_output_for_hclust = function (gsea_output, dgea_output_name_style = "", 
                                            dea.method = "", mo.method = "",
                                            dat.path = "", dgea_padj_cutoff = 0.05,
@@ -4972,6 +5654,42 @@ prepare_gsea_output_for_hclust = function (gsea_output, dgea_output_name_style =
   return(hclust_input_dfs)
 }
 
+#' Plot Pathway Heatmaps from GSEA Results
+#'
+#' @description Creates heatmaps visualizing pathway enrichment scores across
+#' multi-omics clusters using GSVA. Optionally filters to representative
+#' pathways from hierarchical clustering.
+#'
+#' @param gsea.lists List of GSEA results for each cluster direction combination.
+#' @param norm.expr Numeric matrix of normalized expression data (genes x samples).
+#' @param representative Logical indicating whether to use only representative
+#'   pathways from clustering. Default is TRUE.
+#' @param moic.res Multi-omics integration clustering result object containing
+#'   cluster assignments.
+#' @param clust.col Character vector of colors for clusters.
+#' @param present_clusters Character vector of cluster labels to include.
+#'   Default is NULL (all clusters).
+#' @param subtype_prefix Character string prefix for cluster labels.
+#'   Default is "CS".
+#' @param n.path Integer specifying maximum number of pathways to display per
+#'   cluster. Default is 10.
+#' @param msigdb.path Character string with ABSOLUTE path to MSigDB GMT file.
+#' @param norm.method Character string specifying normalization method for
+#'   grouped enrichment scores ("mean" or "median"). Default is "mean".
+#' @param dirct Character string indicating direction ("up" or "down").
+#' @param color Character vector of colors for heatmap gradient. Default is NULL
+#'   (uses blue-white-red).
+#' @param fig.name Character string for output figure base name. Default is NULL.
+#' @param fig.path Character string for output directory. Default is getwd().
+#' @param width Numeric value for figure width in inches. Default is 15.
+#' @param height Numeric value for figure height in inches. Default is 10.
+#' @param name Character string for heatmap legend name. Default is NULL.
+#' @param gsva.method Character string specifying GSVA method. Default is "gsva".
+#'
+#' @return A list containing gsea.list, raw.es (raw enrichment scores), scaled.es
+#'   (standardized scores), grouped.es (mean/median per cluster), and heatmap object.
+#'
+#' @export
 plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL, 
                                  representative = TRUE, moic.res = NULL,
                                  clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", "#BDD5EA", 
@@ -5142,7 +5860,26 @@ plot_pathway_heatmaps = function(gsea.lists, norm.expr = NULL,
               grouped.es = esm, heatmap = hm))
 }
 
-# Silhouette
+#' Modified Silhouette Plot (Base R)
+#'
+#' @description Creates a silhouette plot using base R graphics showing cluster
+#' quality assessment. The silhouette coefficient measures how similar an object
+#' is to its own cluster compared to other clusters.
+#'
+#' @param sil Silhouette object from cluster::silhouette() function.
+#' @param clust.col Character vector of colors for each cluster.
+#' @param fig.path Character string for output directory. Default is getwd().
+#' @param fig.name Character string for output figure name. Default is "silhouette".
+#' @param width Numeric value for figure width in inches. Default is 5.5.
+#' @param height Numeric value for figure height in inches. Default is 5.
+#' @param axis_label_size Numeric value for axis label size. Default is 1.
+#' @param axis_label_font Integer for axis label font style. Default is 1.
+#' @param annotation_size Numeric value for annotation text size. Default is 1.2.
+#' @param title_text_size Numeric value for title text size. Default is 1.
+#'
+#' @return Saves a PDF silhouette plot to the specified path.
+#'
+#' @export
 getSilhouette_mod = function (sil = NULL, 
                               clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", 
                                             "#BDD5EA", "#FFA5AB", "#011627", 
@@ -5180,6 +5917,29 @@ getSilhouette_mod = function (sil = NULL,
   dev.copy2pdf(file = file.path(fig.path, outFig), width = width, height = height)
 }
 
+#' Silhouette Plot Using ggplot2
+#'
+#' @description Creates a publication-ready silhouette plot using ggplot2 with
+#' faceted display by cluster. Shows individual sample silhouette widths and
+#' average values per cluster.
+#'
+#' @param sil Silhouette object from cluster::silhouette() function.
+#' @param clust.col Character vector of colors for each cluster.
+#' @param fig.path Character string for output directory. Default is getwd().
+#' @param fig.name Character string for output figure name. Default is "silhouette_ggplot".
+#' @param width Numeric value for figure width in inches. Default is 7.
+#' @param height Numeric value for figure height in inches. Default is 5.
+#' @param axis_label_size Numeric value for axis label text size. Default is 12.
+#' @param axis_label_font Character string for axis label font face. Default is "plain".
+#' @param text_size Numeric value for annotation text size. Default is 3.5.
+#' @param title_size Numeric value for plot title size. Default is 16.
+#' @param algorithm Character string for algorithm name prefix in cluster labels.
+#'   Default is "".
+#' @param save_plot Logical indicating whether to save plot as PDF. Default is TRUE.
+#'
+#' @return A ggplot2 object of the silhouette plot.
+#'
+#' @export
 getSilhouette_ggplot = function(sil = NULL, 
                                 clust.col = c("#2EC4B6", "#E71D36", "#FF9F1C", 
                                               "#BDD5EA", "#FFA5AB", "#011627", 

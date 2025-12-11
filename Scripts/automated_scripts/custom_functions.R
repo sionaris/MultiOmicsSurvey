@@ -1,28 +1,62 @@
 # A series of functions defined to modularize code and make cleaner
 
-# Fetch the "in a nutshell" text of an algorithm #####
+#' Fetch Algorithm Description
+#'
+#' Retrieves the "in a nutshell" description text for a specified algorithm.
+#'
+#' @param algorithm Character string specifying the algorithm name.
+#' @return Character string containing the algorithm description.
+#' @export
 fetch_in_a_nutshell = function (algorithm) {
   source("Resources/algorithm_descriptions/in_a_nutshell.R")
   return(desc_list[[algorithm]])
 }
 
-# Fetch the citation of an algorithm #####
+#' Fetch Algorithm Citation
+#'
+#' Retrieves the citation information for a specified algorithm.
+#'
+#' @param algorithm Character string specifying the algorithm name.
+#' @return Character string containing the algorithm citation.
+#' @export
 fetch_citation = function (algorithm) {
   source("Resources/algorithm_descriptions/citations.R")
   return(citations[[algorithm]])
 }
 
-# Function to compute Frobenius norm between two matrices #####
+#' Frobenius Norm Between Matrices
+#'
+#' Computes the Frobenius norm (Euclidean norm) between two matrices.
+#'
+#' @param mat1 First numeric matrix.
+#' @param mat2 Second numeric matrix of the same dimensions as mat1.
+#' @return Numeric value representing the Frobenius norm.
+#' @export
 frobenius_norm <- function(mat1, mat2) {
   return(sqrt(sum((mat1 - mat2)^2)))
 }
 
-# Function to compute Pearson correlation between two matrices #####
+#' Pearson Correlation Between Matrices
+#'
+#' Computes the Pearson correlation coefficient between two matrices
+#' by vectorizing and comparing element-wise.
+#'
+#' @param mat1 First numeric matrix.
+#' @param mat2 Second numeric matrix of the same dimensions as mat1.
+#' @return Numeric value representing the Pearson correlation coefficient.
+#' @export
 pearson_correlation <- function(mat1, mat2) {
   cor(as.vector(mat1), as.vector(mat2))
 }
 
-# Function to reshape Pearson similarity values for tests #####
+#' Reshape Pearson Similarities for Statistical Tests
+#'
+#' Extracts upper triangular values from Pearson similarity matrices
+#' and reshapes them into a data frame suitable for statistical tests.
+#'
+#' @param similarities Named list of similarity results, each containing a Pearson matrix.
+#' @return Data frame with columns Value (similarity values) and Factor (source name).
+#' @export
 reshape_Pearson_for_tests <- function(similarities) {
   data <- data.frame()
   for (key in names(similarities)) {
@@ -34,7 +68,14 @@ reshape_Pearson_for_tests <- function(similarities) {
   return(data)
 }
 
-# Function to calculate Jaccard index between two clusterings (MOVICS) #####
+#' MOVICS Jaccard Index
+#'
+#' Calculates the Jaccard index between two clustering results from MOVICS.
+#'
+#' @param clust1 Data frame with columns 'samID' and 'clust' for first clustering.
+#' @param clust2 Data frame with columns 'samID' and 'clust' for second clustering.
+#' @return Numeric value representing the Jaccard index (proportion of agreement).
+#' @export
 MOVICS_jaccard_index <- function(clust1, clust2) {
   clust = as.data.frame(clust1) %>% 
     dplyr::rename(clust1 = clust) %>%
@@ -46,7 +87,18 @@ MOVICS_jaccard_index <- function(clust1, clust2) {
   return(jaccard)
 }
 
-# ARI index between two clusterings #####
+#' Adjusted Rand Index Between Clusterings
+#'
+#' Calculates the Adjusted Rand Index (ARI) between two clustering results.
+#'
+#' @param cluster_df1 First clustering data frame.
+#' @param cluster_df2 Second clustering data frame.
+#' @param sample_col Character string specifying the sample ID column name.
+#' @param clust_col Character string specifying the cluster column name.
+#' @param suffixes Character vector of length 2 for column name suffixes after merge.
+#' @return Numeric value representing the ARI.
+#' @importFrom mclust adjustedRandIndex
+#' @export
 calculate_ari_index <- function(cluster_df1, cluster_df2,
                                 sample_col, clust_col, suffixes) {
   # Load the mclust package for ARI calculation
@@ -61,7 +113,18 @@ calculate_ari_index <- function(cluster_df1, cluster_df2,
   return(ari_index)
 }
 
-# NMI index between two clusterings #####
+#' Normalized Mutual Information Between Clusterings
+#'
+#' Calculates the Normalized Mutual Information (NMI) between two clustering results.
+#'
+#' @param cluster_df1 First clustering data frame.
+#' @param cluster_df2 Second clustering data frame.
+#' @param sample_col Character string specifying the sample ID column name.
+#' @param clust_col Character string specifying the cluster column name.
+#' @param suffixes Character vector of length 2 for column name suffixes after merge.
+#' @return Numeric value representing the NMI.
+#' @importFrom clue cl_agreement as.cl_partition
+#' @export
 calculate_nmi_index <- function(cluster_df1, cluster_df2,
                                 sample_col, clust_col, suffixes) {
   # Load the clue package for NMI calculation
@@ -79,7 +142,14 @@ calculate_nmi_index <- function(cluster_df1, cluster_df2,
   return(nmi_index)
 }
 
-# Normalize SNF affinity matrix #####
+#' Normalize SNF Affinity Matrix
+#'
+#' Normalizes an SNF (Similarity Network Fusion) affinity matrix by
+#' computing transition probabilities with diagonal set to 0.5.
+#'
+#' @param W Square affinity matrix from SNF.
+#' @return Normalized matrix P with row-normalized off-diagonal elements.
+#' @export
 normalize_affinity_matrix <- function(W) {
   N <- nrow(W)  # Determine the size of the matrix
   P <- matrix(0, nrow = N, ncol = N)  # Initialize P with zeros
@@ -101,7 +171,15 @@ normalize_affinity_matrix <- function(W) {
   return(P)  # Return the normalized matrix
 }
 
-# Density curve function #####
+#' Create Density Curve Plot
+#'
+#' Creates a density plot showing the distribution of values across all samples.
+#'
+#' @param matrix Numeric matrix with samples as columns.
+#' @return A ggplot2 density plot object.
+#' @importFrom ggplot2 ggplot aes geom_density labs theme_classic theme
+#' @importFrom tidyr gather
+#' @export
 create_density_curve <- function(matrix) {
   as.data.frame(matrix) %>%
     gather(.) %>%
@@ -114,7 +192,15 @@ create_density_curve <- function(matrix) {
     theme(legend.position = "none")
 }
 
-# Per column density plot #####
+#' Create Per-Sample Colored Density Plot
+#'
+#' Creates a density plot with each sample's distribution shown in a different color.
+#'
+#' @param matrix Numeric matrix with samples as columns.
+#' @return A ggplot2 density plot object with color-coded samples.
+#' @importFrom ggplot2 ggplot aes geom_density labs theme_classic theme
+#' @importFrom tidyr gather
+#' @export
 create_density_plot_color <- function(matrix) {
   as.data.frame(matrix) %>%
     gather(., key = "sample", value = "value") %>%
@@ -127,7 +213,13 @@ create_density_plot_color <- function(matrix) {
     theme(legend.position = "none")
 }
 
-# Function to standardize rows #####
+#' Standardize Matrix Rows
+#'
+#' Applies z-score standardization to each row of a matrix (subtracts mean, divides by SD).
+#'
+#' @param mat Numeric matrix with features as rows.
+#' @return Matrix with standardized rows (mean=0, sd=1 per row).
+#' @export
 standardize_rows <- function(mat) {
   # Apply standardization (subtract mean and divide by standard deviation) to each row
   t(apply(mat, 1, function(row) {
@@ -135,7 +227,37 @@ standardize_rows <- function(mat) {
   }))
 }
 
-# getMoHeatmap for prenormalized data with custom quartile limits for colors #####
+#' Multi-Omics Heatmap with Pre-normalized Data
+#'
+#' Creates a multi-omics heatmap for pre-normalized data with custom quartile-based
+#' color limits. Modified version of MOVICS getMoHeatmap function.
+#'
+#' @param data List of data matrices (up to 6 omics data types).
+#' @param is.binary Logical vector indicating which data types are binary.
+#' @param row.title Character vector of row titles for each data type.
+#' @param legend.name Character vector of legend names for each data type.
+#' @param clust.res Clustering result data frame with samID and clust columns.
+#' @param clust.dend Optional dendrogram for column clustering.
+#' @param show.col.dend Logical, whether to show column dendrogram.
+#' @param show.colnames Logical, whether to show column names.
+#' @param show.row.dend Logical vector for showing row dendrograms per data type.
+#' @param show.rownames Logical vector for showing row names per data type.
+#' @param clust.dist.row Character vector of distance methods for row clustering.
+#' @param clust.method.row Character vector of clustering methods for rows.
+#' @param clust.col Character vector of colors for clusters.
+#' @param color List of color vectors for each data type's heatmap.
+#' @param annCol Data frame of column annotations.
+#' @param annColors List of annotation colors.
+#' @param annRow List of row annotations per data type.
+#' @param width Numeric, heatmap width in cm.
+#' @param height Numeric, heatmap height in cm.
+#' @param fig.path Character, output directory path.
+#' @param fig.name Character, output file name (without extension).
+#' @param lim_col Numeric, adjustment to quartile limits for color mapping.
+#' @return Draws heatmap and saves to PDF; returns invisibly.
+#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation draw
+#' @importFrom circlize colorRamp2
+#' @export
 getMoHeatmap_prenorm_quart <- function (data = NULL, is.binary = c(FALSE, FALSE, FALSE, FALSE, 
                                                                    FALSE, FALSE), row.title = c("Data1", "Data2", "Data3", 
                                                                                                 "Data4", "Data5", "Data6"), legend.name = c("Data1", "Data2", 
@@ -321,7 +443,29 @@ getMoHeatmap_prenorm_quart <- function (data = NULL, is.binary = c(FALSE, FALSE,
   options(warn = defaultW)
 }
 
-# create_MO_heatmap #####
+#' Create Multi-Omics Heatmap
+#'
+#' Creates a heatmap visualization for multi-omics similarity/affinity matrices
+#' with cluster annotations and optional splitting by cluster.
+#'
+#' @param matrix Similarity or affinity matrix to visualize.
+#' @param algorithm Character string, name of the clustering algorithm.
+#' @param need.diag.zero Logical, whether to set diagonal to zero.
+#' @param clust_annot_pheno Data frame with sample annotations including cluster assignments.
+#' @param afh_colnames Column names for the heatmap.
+#' @param colors Character vector of colors for the heatmap gradient.
+#' @param annColors List of annotation colors.
+#' @param heatmap_title Character string for heatmap title.
+#' @param cluster_colors Named vector of colors for clusters.
+#' @param legend_title Character string for legend title.
+#' @param output_file_name Character string for output PNG file path.
+#' @param cluster_rows_flag Logical, whether to cluster rows.
+#' @param cluster_cols_flag Logical, whether to cluster columns.
+#' @param splits_flag Logical, whether to split heatmap by clusters.
+#' @return Saves heatmap to PNG file; returns invisibly.
+#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation draw
+#' @importFrom circlize colorRamp2
+#' @export
 create_MO_heatmap = function(matrix = NULL, algorithm = NULL, 
                              need.diag.zero = TRUE, 
                              clust_annot_pheno = NULL,
@@ -461,7 +605,21 @@ create_MO_heatmap = function(matrix = NULL, algorithm = NULL,
   }
 }
 
-# PCA from original matrix #####
+#' PCA from Original Matrix
+#'
+#' Performs PCA on an original data matrix and creates a scatter plot
+#' colored by cluster assignments. Uses M3C package for PCA.
+#'
+#' @param mydata Numeric matrix with features as rows, samples as columns.
+#' @param algorithm Character string, name of the clustering algorithm.
+#' @param clust_res Data frame with samID and cluster columns.
+#' @param cluster_colors Character vector of colors for clusters.
+#' @param output_path Character string for output directory path.
+#' @param title_add Character string to append to plot title.
+#' @return Saves PCA plot to PNG file; returns invisibly.
+#' @importFrom M3C pca
+#' @importFrom ggplot2 ggsave
+#' @export
 pca_from_original_matrix = function (mydata = NULL,
                                      algorithm = NULL, clust_res = NULL,
                                      cluster_colors = NULL, output_path = NULL,
@@ -546,7 +704,20 @@ pca_from_original_matrix = function (mydata = NULL,
      output_path, title_add, shapes, plot_df); gc()
 }
 
-# kernel PCA #####
+#' Kernel PCA from Similarity Matrix
+#'
+#' Performs kernel PCA on a similarity/affinity matrix and creates a
+#' scatter plot colored by cluster assignments.
+#'
+#' @param sim_matrix Square similarity matrix with samples as rows/columns.
+#' @param algorithm Character string, name of the clustering algorithm.
+#' @param clust_res Data frame with samID and cluster columns.
+#' @param cluster_colors Character vector of colors for clusters.
+#' @param output_path Character string for output directory path.
+#' @param title_add Character string to append to plot title.
+#' @return Saves kernel PCA plot to PNG file; returns invisibly.
+#' @importFrom ggplot2 ggplot aes geom_point ggsave
+#' @export
 pca_from_sim_matrix = function (sim_matrix = NULL, algorithm = NULL, clust_res = NULL,
                                 cluster_colors = NULL, output_path = NULL,
                                 title_add = NULL) {
@@ -642,8 +813,21 @@ pca_from_sim_matrix = function (sim_matrix = NULL, algorithm = NULL, clust_res =
      scores, shapes, n_clust, cluster_colors, output_path, title_add); gc()
 }
 
-# MDS from original matrix #####
-# Designed for matrices with features in rows
+#' MDS from Original Matrix
+#'
+#' Performs multidimensional scaling (MDS) on an original data matrix
+#' and creates a scatter plot colored by cluster assignments.
+#'
+#' @param matrix Numeric matrix with features as rows, samples as columns.
+#' @param dist_method Character string specifying distance method for stats::dist.
+#' @param algorithm Character string, name of the clustering algorithm.
+#' @param clust_res Data frame with samID and cluster columns.
+#' @param cluster_colors Character vector of colors for clusters.
+#' @param output_path Character string for output directory path.
+#' @param title_add Character string to append to plot title.
+#' @return Saves MDS plot to PNG file; returns invisibly.
+#' @importFrom ggplot2 ggplot aes geom_point ggsave
+#' @export
 mds_from_original_matrix = function (matrix = NULL, dist_method = NULL, algorithm = NULL, clust_res = NULL,
                                  cluster_colors = NULL, output_path = NULL,
                                  title_add = NULL) {
@@ -708,7 +892,30 @@ mds_from_original_matrix = function (matrix = NULL, dist_method = NULL, algorith
      clust_names, cluster_colors, output_path, title_add); gc()
 }
 
-# create single barchart #####
+#' Create Annotation Barchart
+#'
+#' Creates a stacked barchart showing the distribution of a categorical
+#' variable across clusters with chi-square test statistics annotated.
+#'
+#' @param plotdata Data frame containing the data to plot.
+#' @param fill Character string, column name for fill aesthetic.
+#' @param na.action Character, either "na.omit" or "keep" for NA handling.
+#' @param chifit List containing chi-square test results (Statistic, p-value, Cramer's V).
+#' @param algorithm Character string, column name for x-axis (cluster variable).
+#' @param text_y Numeric, y-coordinate for text annotations.
+#' @param rect_ymin Numeric, minimum y for annotation rectangle.
+#' @param rect_ymax Numeric, maximum y for annotation rectangle.
+#' @param x_annot Numeric, x-coordinate for annotations.
+#' @param barchart_ylim Numeric, y-axis limit.
+#' @param v_gap Numeric, vertical gap between annotation lines.
+#' @param rect_xmin Numeric, minimum x for annotation rectangle.
+#' @param rect_xmax Numeric, maximum x for annotation rectangle.
+#' @param annot_text_size Numeric, size of annotation text.
+#' @param legend.text.size Numeric, size of legend text.
+#' @param x.axis.text.size Numeric, size of x-axis text.
+#' @return A ggplot2 barchart object.
+#' @importFrom ggplot2 ggplot aes geom_bar annotate geom_rect theme
+#' @export
 create_annot_barchart = function (plotdata = NULL, fill = NULL,
                                   na.action = "na.omit",
                                   chifit = NULL, algorithm = NULL,
@@ -759,7 +966,17 @@ create_annot_barchart = function (plotdata = NULL, fill = NULL,
   return(barchart)
 }
 
-# Sunburst plot function
+#' Convert Data Frame to Sunburst Format
+#'
+#' Transforms a hierarchical data frame into a format suitable for
+#' sunburst/treemap visualizations using plotly.
+#'
+#' @param DF Data frame with hierarchical columns.
+#' @param value_column Character string, optional column name containing values.
+#' @param add_root Logical, whether to add a root node labeled "Total".
+#' @return Data.table with ids, labels, parents, and values columns.
+#' @importFrom data.table data.table setcolorder setnames rbindlist
+#' @export
 as.sunburstDF = function(DF, value_column = NULL, add_root = FALSE){
   require(data.table)
   
@@ -811,7 +1028,14 @@ as.sunburstDF = function(DF, value_column = NULL, add_root = FALSE){
   return(hierarchyDT)
 }
 
-# Calculate S matrix (neighborhoods) from final affinity matrix #####
+#' Calculate S Matrix (Neighborhood Matrix)
+#'
+#' Calculates a sparse neighborhood matrix S from a final affinity matrix W,
+#' keeping only the 30 nearest neighbors for each sample.
+#'
+#' @param W Square affinity matrix with samples as rows/columns.
+#' @return Sparse neighborhood matrix S with same dimensions as W.
+#' @export
 calculate_S <- function(W) {
   n <- nrow(W)  # Assuming W is a square matrix
   S <- matrix(0, n, n)  # Initialize S as a zero matrix of the same size as W
@@ -831,7 +1055,18 @@ calculate_S <- function(W) {
   return(S)
 }
 
-# Allow non-euclidean distances in CIMLR #####
+#' Modified Distance Function for CIMLR
+#'
+#' Computes pairwise distances between rows of a matrix, supporting multiple
+#' distance metrics. Modified version of CIMLR's dist2 function.
+#'
+#' @param x Numeric matrix (samples as rows, features as columns).
+#' @param c Optional second matrix; if NA, distances computed within x.
+#' @param name Optional name for debugging output.
+#' @param method Distance method: "sqeuclidean", "euclidean", "maximum",
+#'   "manhattan", "canberra", "binary", or "minkowski".
+#' @return Distance matrix of dimension nrow(x) x nrow(c).
+#' @export
 dist2.cimlr_mod2 = function (x, c = NA, name = NULL, method = "sqeuclidean") 
 {
   if (is.na(c)) {
@@ -866,7 +1101,19 @@ dist2.cimlr_mod2 = function (x, c = NA, name = NULL, method = "sqeuclidean")
   return(dist)
 }
 
-# Multikernel
+#' Multiple Kernel CIMLR (Modified)
+#'
+#' Generates multiple Gaussian kernels for CIMLR with support for
+#' different distance metrics. Parallelized implementation.
+#'
+#' @param x Numeric matrix (samples as rows, features as columns).
+#' @param cores.ratio Ratio of available cores to use (0-1).
+#' @param name Optional name for debugging.
+#' @param method Distance method for kernel computation.
+#' @return List of sparse kernel matrices.
+#' @importFrom parallel detectCores makeCluster stopCluster clusterEvalQ parLapply
+#' @importFrom Matrix Matrix
+#' @export
 multiple.kernel.cimlr_mod = function (x, cores.ratio = 1, name = NULL, method = "sqeuclidean") 
 {
   kernel.type = list()
@@ -933,7 +1180,23 @@ multiple.kernel.cimlr_mod = function (x, cores.ratio = 1, name = NULL, method = 
 }
 
 
-# CIMLR
+#' CIMLR Clustering (Modified)
+#'
+#' Performs Cancer Integration via Multikernel Learning (CIMLR) clustering
+#' with support for different distance metrics per data type. Modified to
+#' handle binary vs continuous data differently.
+#'
+#' @param X List of data matrices (features as rows, samples as columns).
+#' @param c Number of clusters.
+#' @param no.dim Number of dimensions for t-SNE embedding; defaults to c.
+#' @param k Number of nearest neighbors.
+#' @param cores.ratio Ratio of available cores to use.
+#' @param binary_flags Character vector indicating "Yes"/"No" for binary data.
+#' @param binary_distance Distance method for binary data types.
+#' @param nonbinary_distance Distance method for continuous data types.
+#' @return List containing clustering results, similarity matrix, embeddings, etc.
+#' @importFrom CIMLR network.diffusion dn.cimlr eig1 tsne
+#' @export
 CIMLR_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 1, binary_flags = NULL,
                       binary_distance = "binary", nonbinary_distance = "sqeuclidean") 
 {
@@ -1131,7 +1394,15 @@ CIMLR_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 1, binary_flags =
   return(results)
 }
 
-# Function to compute both Frobenius norm and Pearson correlation between matrices #####
+#' Compute Matrix Similarity Metrics
+#'
+#' Computes both Frobenius norm and Pearson correlation between all pairs
+#' of matrices in a list.
+#'
+#' @param matrices Named list of numeric matrices (all same dimensions).
+#' @return List with two components: Frobenius (distance matrix) and
+#'   Pearson (correlation matrix).
+#' @export
 compute_matrix_similarity <- function(matrices) {
   num_matrices <- length(matrices)
   similarity_frobenius <- matrix(0, nrow = num_matrices, ncol = num_matrices)
@@ -1154,55 +1425,19 @@ compute_matrix_similarity <- function(matrices) {
   return(list(Frobenius = similarity_frobenius, Pearson = similarity_pearson))
 }
 
-# Variance and IQR for matrices #####
-choose_matrix_contrasts <- function(similarity_matrices) {
-  contrast_values <- list()
-  
-  for (name in names(similarity_matrices)) {
-    similarity_values <- as.vector(similarity_matrices[[name]])
-    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
-    
-    # Calculate measures of contrast
-    variance <- var(similarity_values)
-    iqr <- IQR(similarity_values)
-    contrast_metric <- variance + iqr
-    contrast_values[[name]] <- contrast_metric
-  }
-  
-  return(contrast_values)
-}
-
-# Skewness and kurtosis for matrices #####
-choose_matrix_skewness_kurtosis <- function(similarity_matrices) {
-  skewness_kurtosis_values <- list()
-  
-  for (name in names(similarity_matrices)) {
-    similarity_values <- as.vector(similarity_matrices[[name]])
-    similarity_values <- similarity_values[similarity_values != 1] # remove self-similarities
-    
-    # Calculate skewness and kurtosis
-    skewness_value <- skewness(similarity_values)
-    kurtosis_value <- kurtosis(similarity_values)
-    
-    # Calculate a combined metric: |skewness| + kurtosis
-    combined_metric <- abs(skewness_value) + kurtosis_value
-    skewness_kurtosis_values[[name]] <- combined_metric
-  }
-  
-  return(skewness_kurtosis_values)
-}
-
-# Min-max normalization for matrices similarity inspection #####
-# Min-max normalization to [0,1]
-minmax_normalize_values <- function(values) {
-  min_value <- min(values)
-  max_value <- max(values)
-  
-  normalized_values <- (values - min_value) / (max_value - min_value)
-  return(normalized_values)
-}
-
-# NEMO modifications #####
+#' NEMO Affinity Graph (Modified)
+#'
+#' Computes an affinity graph for multi-omics integration using NEMO approach,
+#' with support for binary distance metrics.
+#'
+#' @param raw.data List of data matrices (features as rows, samples as columns).
+#' @param k Number of nearest neighbors; if NA, computed automatically.
+#' @param sigma Bandwidth parameter for affinity matrix.
+#' @param binary_flags Character vector indicating "Yes"/"No" for binary data per omics.
+#' @param binary_distance Distance method to use for binary data types.
+#' @return Integrated affinity matrix.
+#' @importFrom SNFtool affinityMatrix dist2
+#' @export
 nemo.affinity.graph_mod = function (raw.data, k = NA, sigma = 0.5,
                                       binary_flags = rep("No", length(raw.data)),
                                       binary_distance = NULL) 
@@ -1261,95 +1496,16 @@ nemo.affinity.graph_mod = function (raw.data, k = NA, sigma = 0.5,
   return(final.ret)
 }
 
-# Choose the best similarity matrix #####
-# Comprehensive function to evaluate and select the best similarity matrix
-# Function to evaluate a single similarity matrix and return a list of results
-evaluate_similarity_matrix <- function(matrix, k_isomap = 5) {
-  
-  # Load required libraries
-  library(Matrix)          # For sparse matrices
-  library(igraph)          # For graph-theoretical measures like modularity
-  library(entropy)         # For entropy calculations
-  library(RSpectra)        # For fast eigenvalue decomposition
-  library(vegan)           # For geodesic distances (Isomap)
-  library(stats)           # For dimensionality reduction (PCA)
-  
-  # Helper function: Spectral analysis
-  spectral_gap <- function(matrix) {
-    eig_vals <- eigs_sym(as.matrix(matrix), k = 10, which = "LM")$values
-    gap <- diff(eig_vals[1:2]) # Calculate the gap between the first two eigenvalues
-    return(gap)
-  }
-  
-  # Helper function: Matrix entropy
-  matrix_entropy <- function(matrix) {
-    matrix_prob <- matrix / sum(matrix)
-    ent <- entropy::entropy(matrix_prob, method = "ML") # Maximum Likelihood Entropy
-    return(ent)
-  }
-  
-  # Helper function: Manifold preservation using Isomap (geodesic distance, k-NN approach)
-  isomap_preservation <- function(matrix, k) {
-    distance_matrix <- as.dist(1 - matrix)  # Use 1 - similarity to compute distance
-    isomap_result <- vegan::isomap(dist = distance_matrix, ndim = 2, k = k)
-    geodesic_distances <- as.matrix(isomap_result$dist)
-    return(sum(geodesic_distances))  # Return sum of geodesic distances (lower is better)
-  }
-  
-  # Helper function: Graph modularity
-  graph_modularity <- function(matrix) {
-    graph <- igraph::graph.adjacency(as.matrix(matrix), mode = "undirected", weighted = TRUE)
-    clusters <- igraph::cluster_fast_greedy(graph)
-    modularity <- igraph::modularity(clusters)
-    return(modularity)
-  }
-  
-  # Helper function: Degree distribution skewness
-  degree_distribution_skew <- function(matrix) {
-    graph <- igraph::graph.adjacency(as.matrix(matrix), mode = "undirected", weighted = TRUE)
-    degree_values <- igraph::degree(graph)
-    skewness <- mean(degree_values)
-    return(skewness)
-  }
-  
-  # Perform all evaluations
-  spectral <- spectral_gap(matrix)
-  ent <- matrix_entropy(matrix)
-  iso_preserve <- isomap_preservation(matrix, k = k_isomap)
-  mod <- graph_modularity(matrix)
-  skew <- degree_distribution_skew(matrix)
-  
-  # Store the raw results in a list
-  raw_results <- list(
-    spectral_gap = spectral,
-    entropy = ent,
-    isomap_preservation = iso_preserve,
-    modularity = mod,
-    degree_skewness = skew
-  )
-  
-  # Normalize the results for ranking
-  normalized_results <- list(
-    spectral_gap = scale(spectral),
-    entropy = scale(-ent),  # Lower entropy is better, so negate it
-    isomap_preservation = scale(-iso_preserve),  # Lower is better
-    modularity = scale(mod),
-    degree_skewness = scale(-skew)  # Lower is better for skewness
-  )
-  
-  # Aggregate normalized scores: Higher total score indicates better matrix
-  total_score <- sum(unlist(normalized_results))
-  
-  # Return a list with raw metrics, normalized scores, and the total score
-  results <- list(
-    raw_metrics = raw_results,
-    normalized_scores = normalized_results,
-    total_score = total_score
-  )
-  
-  return(results)
-}
-
+#' Compute Silhouette for Similarity Matrix
+#'
+#' Computes silhouette widths for clustering results using a similarity
+#' (not distance) matrix. Handles singleton clusters gracefully.
+#'
+#' @param cluster_df Data frame with columns 'samID' and 'Cluster'.
+#' @param similarity_matrix Square similarity matrix with sample names as row/column names.
+#' @param normalize_matrix Character or FALSE: "rowSums", "minmax", or FALSE for no normalization.
+#' @return Silhouette object with cluster, neighbor, and sil_width columns.
+#' @export
 compute_silhouette <- function(cluster_df, similarity_matrix, normalize_matrix = FALSE) {
   library(MOVICS)
   
@@ -1417,7 +1573,15 @@ compute_silhouette <- function(cluster_df, similarity_matrix, normalize_matrix =
   return(sil)
 }
 
-# Helper function: Linear quantile scaling normalization
+#' Linear Quantile Scaling Normalization
+#'
+#' Applies linear quantile scaling to off-diagonal values of a similarity matrix,
+#' mapping values to [0,1] based on specified quantiles.
+#'
+#' @param matrix Square similarity matrix.
+#' @param norm_quant Numeric (0-0.5), quantile range for scaling endpoints.
+#' @return Normalized symmetric similarity matrix.
+#' @export
 linear_quantile_normalize <- function(matrix, norm_quant = 0.05) {
   # Check if norm_quant is within the acceptable range
   if (norm_quant >= 0.5 || norm_quant < 0) {
@@ -1456,7 +1620,15 @@ linear_quantile_normalize <- function(matrix, norm_quant = 0.05) {
   return(matrix)
 }
 
-# Helper function: Divide by quantile normalization
+#' Divide by Quantile Normalization
+#'
+#' Normalizes off-diagonal values of a similarity matrix by dividing
+#' by a specified quantile value.
+#'
+#' @param matrix Square similarity matrix.
+#' @param norm_quant Numeric (0-0.5), quantile to use as divisor (1-norm_quant quantile).
+#' @return Normalized symmetric similarity matrix.
+#' @export
 divide_by_quantile_normalize <- function(matrix, norm_quant = 0.05) {
   # Check if norm_quant is within the acceptable range
   if (norm_quant >= 0.5 || norm_quant < 0) {
@@ -1532,7 +1704,23 @@ transform_affinity_matrix <- function(similarity_matrix, norm_quant = 0.05, norm
   return(similarity_matrix)
 }
 
-# Rank SNF features parallely #####
+#' Rank SNF Features by NMI (Parallel)
+#'
+#' Ranks features by their Normalized Mutual Information with fused clustering,
+#' using parallel computation. Supports binary distance metrics.
+#'
+#' @param data List containing one data matrix (samples as rows, features as columns).
+#' @param W Fused similarity matrix from SNF.
+#' @param ncores Number of parallel cores to use.
+#' @param binary Logical, whether to use binary distance metric.
+#' @param nn Number of nearest neighbors for affinity matrix.
+#' @param sigma Bandwidth parameter for affinity matrix.
+#' @return List with NMI_scores, NMI_ranks, and problematic_features indices.
+#' @importFrom parallel detectCores makeCluster stopCluster
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach foreach %dopar%
+#' @importFrom SNFtool affinityMatrix spectralClustering estimateNumberOfClustersGivenGraph calNMI
+#' @export
 rankFeaturesByNMI_parallely <- function(data, W, ncores = detectCores() - 1, binary = FALSE, nn = NULL, sigma) {
   stopifnot(class(data) == "list" && length(data) == 1)  # Ensure only one data type is passed
   
@@ -1825,7 +2013,42 @@ run.clusternomics <- function(omics.list, num.clusters=NULL,
   return(list(clustering=all.rets[[best.sol.index]]$clustering, timing=wall.timing, all.rets=all.rets))
 }
 
-# Spectrum functions #####
+#' Modified Spectrum Clustering with Binary Data Support
+#'
+#' Performs spectral clustering using the Spectrum algorithm with extensions
+#' for binary data types and parallel processing capabilities.
+#'
+#' @param data List of data matrices or single matrix (features as rows).
+#' @param method Integer (1-3): Method for K selection (1=eigengap, 2=eigenvector, 3=fixed).
+#' @param silent Logical, suppress messages.
+#' @param showres Logical, show diagnostic plots.
+#' @param diffusion Logical, whether to apply diffusion on similarity graph.
+#' @param kerneltype Character, "density" or "stsc" kernel type.
+#' @param maxk Integer, maximum K to consider.
+#' @param NN Integer, number of nearest neighbors for kernel.
+#' @param NN2 Integer, secondary NN parameter for CNN kernel.
+#' @param showpca Logical, show PCA plot of results.
+#' @param frac Numeric, fraction parameter for K selection.
+#' @param thresh Numeric, threshold for K selection.
+#' @param fontsize Numeric, font size for plots.
+#' @param dotsize Numeric, point size for plots.
+#' @param tunekernel Logical, whether to tune kernel parameters.
+#' @param clusteralg Character, "GMM" or "km" for final clustering.
+#' @param FASP Logical, use FASP data compression.
+#' @param FASPk Integer, number of FASP centroids.
+#' @param fixk Integer, fixed K value for method=3.
+#' @param krangemax Integer, max K for runrange mode.
+#' @param runrange Logical, run clustering over range of K values.
+#' @param diffusion_iters Integer, number of diffusion iterations.
+#' @param KNNs_p Integer, KNN parameter for diffusion.
+#' @param missing Logical, impute missing data.
+#' @param distances Character vector, distance metric(s) per data view.
+#' @param cores Integer, number of parallel cores.
+#' @return List with assignments, K, similarity_matrix, and eigensystem.
+#' @importFrom foreach foreach %dopar%
+#' @importFrom doParallel registerDoParallel
+#' @importFrom parallel makeCluster stopCluster detectCores
+#' @export
 Spectrum_bin_and_par <- function (
     data, 
     method = 1, 
@@ -2303,6 +2526,18 @@ Spectrum_bin_and_par <- function (
 }
 
 
+#' CNN Kernel with Custom Distance (Modified)
+#'
+#' Computes a Common Nearest Neighbor (CNN) kernel matrix with support
+#' for multiple distance metrics.
+#'
+#' @param mat Numeric matrix with features as rows, samples as columns.
+#' @param NN Integer, number of nearest neighbors for sigma estimation.
+#' @param NN2 Integer, number of neighbors for CNN intersection.
+#' @param distance Character, distance metric to use.
+#' @return Square kernel/similarity matrix.
+#' @importFrom Rfast Dist
+#' @export
 CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean") 
 {
   # Validate distance parameter
@@ -2348,6 +2583,22 @@ CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
   return(out)
 }
 
+#' Find Optimal NN Parameter (Density Kernel)
+#'
+#' Finds the optimal nearest neighbor parameter for the density kernel
+#' by examining eigenvector distributions (dip test).
+#'
+#' @param data Numeric matrix with features as rows, samples as columns.
+#' @param maxk Integer, maximum K to consider.
+#' @param fontsize Numeric, font size for plots.
+#' @param silent Logical, suppress messages.
+#' @param showres Logical, show diagnostic plot.
+#' @param dotsize Numeric, point size for plot.
+#' @param distance Character, distance metric to use.
+#' @return Integer, optimal NN parameter.
+#' @importFrom diptest dip.test
+#' @importFrom ggplot2 ggplot aes geom_point geom_line theme_bw
+#' @export
 kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE, 
                                 showres = TRUE, dotsize = 2, distance = "euclidean") 
 {
@@ -2421,6 +2672,22 @@ kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   return(optimalparam)
 }
 
+#' Find Optimal NN Parameter (Local RBF Kernel)
+#'
+#' Finds the optimal nearest neighbor parameter for the local RBF kernel
+#' by examining eigenvector distributions (dip test).
+#'
+#' @param data Numeric matrix with features as rows, samples as columns.
+#' @param maxk Integer, maximum K to consider.
+#' @param fontsize Numeric, font size for plots.
+#' @param silent Logical, suppress messages.
+#' @param showres Logical, show diagnostic plot.
+#' @param dotsize Numeric, point size for plot.
+#' @param distance Character, distance metric to use.
+#' @return Integer, optimal NN parameter.
+#' @importFrom diptest dip.test
+#' @importFrom ggplot2 ggplot aes geom_point geom_line theme_bw
+#' @export
 kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE, 
                                  showres = TRUE, dotsize = 2, distance = "euclidean") 
 {
@@ -2506,6 +2773,18 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   return(optimalparam)
 }
 
+#' RBF Kernel with Local Scaling (Modified)
+#'
+#' Computes a Radial Basis Function (RBF) kernel matrix with local
+#' scaling based on k-nearest neighbors. Supports multiple distance metrics.
+#'
+#' @param mat Numeric matrix with features as rows, samples as columns.
+#' @param K Integer, number of nearest neighbors for local scaling.
+#' @param sigma Numeric, global bandwidth parameter.
+#' @param distance Character, distance metric to use.
+#' @return Square kernel/similarity matrix.
+#' @importFrom Rfast Dist
+#' @export
 rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean") 
 {
   # Validate distance parameter
@@ -2554,7 +2833,25 @@ rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
   return(out)
 }
 
-# KLIC modification of coca::consensusCluster() #####
+#' Consensus Clustering (Modified COCA)
+#'
+#' Performs consensus clustering using bootstrap resampling, modified
+#' from the coca package's consensusCluster function for KLIC.
+#'
+#' @param data Numeric data matrix (samples as rows, features as columns).
+#' @param K Integer, number of clusters.
+#' @param B Integer, number of bootstrap iterations.
+#' @param pItem Numeric (0-1), proportion of samples to resample.
+#' @param clMethod Character, clustering method: "kmeans", "hclust", "pam",
+#'   "sparse-kmeans", or "sparse-hclust".
+#' @param dist Distance metric or symmetric distance matrix.
+#' @param hclustMethod Character, linkage method for hierarchical clustering.
+#' @param sparseKmeansPenalty Numeric, penalty for sparse k-means.
+#' @param maxIterKM Integer, max iterations for k-means.
+#' @return Consensus matrix (N x N) with co-clustering frequencies.
+#' @importFrom stats kmeans hclust cutree dist
+#' @importFrom cluster pam
+#' @export
 coca_cc_mod = function (data = NULL, K = 2, B = 100, pItem = 0.8, clMethod = "hclust", 
                         dist = "euclidean", hclustMethod = "average", sparseKmeansPenalty = NULL, 
                         maxIterKM = 1000) 
@@ -2661,7 +2958,18 @@ coca_cc_mod = function (data = NULL, K = 2, B = 100, pItem = 0.8, clMethod = "hc
   return(consensusMatrix)
 }
 
-# SNF estimateNUMCfromGraph modification for iterative application #####
+#' Estimate Number of Clusters from Graph (Modified)
+#'
+#' Estimates the optimal number of clusters from an affinity matrix using
+#' both eigengap and rotation-based methods. Modified from SNFtool to
+#' return additional score information.
+#'
+#' @param W Square affinity/similarity matrix.
+#' @param NUMC Integer vector, range of cluster numbers to evaluate.
+#' @return List with K1, K12 (eigengap method), K2, K22 (rotation method),
+#'   and their corresponding scores.
+#' @importFrom SNFtool .discretisation
+#' @export
 library(SNFtool)  # for .discretisation and other SNF functions
 
 estimateNumberOfClustersGivenGraph_mod <- function(W, NUMC = 2:5) 
@@ -2781,11 +3089,22 @@ estimateNumberOfClustersGivenGraph_mod <- function(W, NUMC = 2:5)
   ))
 }
 
-# ANF custom concordance by NMI function #####
-concordanceNetworkNMI_ANF = function (Wall, C, type) 
+#' ANF Network Concordance by NMI
+#'
+#' Computes pairwise Normalized Mutual Information between clusterings
+#' derived from multiple affinity networks (ANF framework).
+#'
+#' @param Wall List of affinity matrices.
+#' @param C Integer, number of clusters.
+#' @param type Character, type of spectral clustering ("rw" or "sym").
+#' @return Matrix of pairwise NMI values.
+#' @importFrom ANF spectral_clustering
+#' @importFrom SNFtool calNMI
+#' @export
+concordanceNetworkNMI_ANF = function (Wall, C, type)
 {
   LW = length(Wall)
-  labels = lapply(Wall, function(x) ANF::spectral_clustering(x, 
+  labels = lapply(Wall, function(x) ANF::spectral_clustering(x,
                                                        C,
                                                        type = type))
   NMIs = matrix(NA, LW, LW)
@@ -2797,7 +3116,21 @@ concordanceNetworkNMI_ANF = function (Wall, C, type)
   return(NMIs)
 }
 
-# ANF feature ranking by NMI modification #####
+#' Rank ANF Features by NMI (Parallel)
+#'
+#' Ranks features by their Normalized Mutual Information with fused clustering
+#' using ANF affinity matrices. Parallel implementation.
+#'
+#' @param data List containing one data matrix.
+#' @param W Fused similarity matrix.
+#' @param ncores Number of parallel cores.
+#' @param binary Logical, use binary distance.
+#' @param type Character, spectral clustering type.
+#' @param nn Number of nearest neighbors for affinity matrix.
+#' @return List with NMI_scores, NMI_ranks, and problematic_features.
+#' @importFrom ANF affinity_matrix spectral_clustering
+#' @importFrom SNFtool calNMI estimateNumberOfClustersGivenGraph
+#' @export
 rankFeaturesByNMI_parallely_ANF <- function(data, W, ncores = detectCores() - 1, binary = FALSE,
                                             type = "rw", nn = 15) {
   stopifnot(class(data) == "list" && length(data) == 1)  # Ensure only one data type is passed
@@ -2855,10 +3188,16 @@ rankFeaturesByNMI_parallely_ANF <- function(data, W, ncores = detectCores() - 1,
   return(list(NMI_scores = data_type_scores, NMI_ranks = data_type_ranks, problematic_features = problematic_features))
 }
 
-# Custom functions for wMKL #####
-
-# dist2.cimlr.weight
-dist2.cimlr.weight_mod = function (x, weight, method = "sqeuclidean") 
+#' Weighted Distance for CIMLR
+#'
+#' Computes weighted distance matrix for CIMLR integration.
+#'
+#' @param x Numeric matrix (samples as rows).
+#' @param weight Numeric vector of feature weights.
+#' @param method Distance method.
+#' @return Distance matrix.
+#' @export
+dist2.cimlr.weight_mod = function (x, weight, method = "sqeuclidean")
 {
   library(wMKL)
   y = t(t(x) * sqrt(weight))
@@ -2866,7 +3205,16 @@ dist2.cimlr.weight_mod = function (x, weight, method = "sqeuclidean")
   return(dist)
 }
 
-# multiple.kernel.cimlr.weight
+#' Multiple Kernel CIMLR with Weights
+#'
+#' Generates multiple Gaussian kernels with feature weighting for wMKL.
+#'
+#' @param x Numeric matrix (samples as rows).
+#' @param cores.ratio Ratio of cores to use.
+#' @param weight Feature weight vector.
+#' @param method Distance method.
+#' @return List of kernel matrices.
+#' @export
 multiple.kernel.cimlr.weight_mod = function (x, cores.ratio = 0, weight, method = "sqeuclidean") 
 {
   library(wMKL)
@@ -2934,7 +3282,17 @@ multiple.kernel.cimlr.weight_mod = function (x, cores.ratio = 0, weight, method 
   return(D_Kernels)
 }
 
-# CIMLR_Estimate_Number_of_Clusters_weight
+#' Estimate Number of Clusters with Weights (CIMLR)
+#'
+#' Estimates optimal number of clusters for weighted CIMLR integration.
+#'
+#' @param all_data List of data matrices.
+#' @param NUMC Range of cluster numbers to evaluate.
+#' @param cores.ratio Ratio of cores to use.
+#' @param weight List of weight vectors per data type.
+#' @param methods Vector of distance methods per data type.
+#' @return List with K1 and K2 optimal cluster estimates.
+#' @export
 CIMLR_Estimate_Number_of_Clusters_weight_mod = function (all_data, NUMC = 2:5, cores.ratio = 0, weight,
                                                          methods = rep("sqeuclidean", length(all_data))) 
 {
@@ -2983,7 +3341,20 @@ CIMLR_Estimate_Number_of_Clusters_weight_mod = function (all_data, NUMC = 2:5, c
   return(list(K1 = K1, K2 = K2))
 }
 
-# CIMLR.weight_mod
+#' CIMLR with Feature Weights (Modified)
+#'
+#' Performs weighted CIMLR clustering with support for different
+#' distance methods per data type.
+#'
+#' @param X List of data matrices.
+#' @param c Number of clusters.
+#' @param no.dim Embedding dimensions.
+#' @param k Number of nearest neighbors.
+#' @param cores.ratio Ratio of cores to use.
+#' @param weight List of weight vectors per data type.
+#' @param methods Vector of distance methods per data type.
+#' @return List with clustering results and similarity matrix.
+#' @export
 CIMLR.weight_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 0, weight,
                              methods = rep("sqeuclidean", length(X))) 
 {
@@ -3173,7 +3544,28 @@ CIMLR.weight_mod = function (X, c, no.dim = NA, k = 10, cores.ratio = 0, weight,
   return(results)
 }
 
-# Plotting function for MOFA explained variance #####
+#' Plot MOFA Variance Explained
+#'
+#' Creates a heatmap visualization of variance explained by MOFA factors
+#' across views and groups.
+#'
+#' @param object MOFA2 model object.
+#' @param x Character, variable for x-axis ("view", "factor", or "group").
+#' @param y Character, variable for y-axis.
+#' @param split_by Character, variable for faceting.
+#' @param plot_total Logical, also plot total variance explained bar plot.
+#' @param factors Character vector or "all" for factors to include.
+#' @param min_r2 Numeric, minimum R2 value for color scale.
+#' @param max_r2 Numeric, maximum R2 value for color scale.
+#' @param legend Logical, show legend.
+#' @param use_cache Logical, use cached variance explained.
+#' @param color_palette Character vector of colors for gradient.
+#' @param plot_title Character, plot title.
+#' @param ... Additional arguments to calculate_variance_explained.
+#' @return ggplot2 object or list of plots if plot_total=TRUE.
+#' @importFrom ggplot2 ggplot aes geom_tile scale_fill_gradientn facet_wrap labs theme
+#' @importFrom reshape2 melt
+#' @export
 plot_MOFA_var_exp <- function(object, 
                               x = "view", 
                               y = "factor", 
@@ -3329,6 +3721,28 @@ plot_MOFA_var_exp <- function(object,
   }
 }
 
+#' Plot MOFA Cumulative Variance Explained
+#'
+#' Creates a heatmap visualization of cumulative variance explained by
+#' MOFA factors across views and groups.
+#'
+#' @param object MOFA2 model object.
+#' @param x Character, variable for x-axis ("view", "factor", or "group").
+#' @param y Character, variable for y-axis.
+#' @param split_by Character, variable for faceting.
+#' @param plot_total Logical, also plot total variance explained bar plot.
+#' @param factors Character vector or "all" for factors to include.
+#' @param min_r2 Numeric, minimum R2 value for color scale.
+#' @param max_r2 Numeric, maximum R2 value for color scale.
+#' @param legend Logical, show legend.
+#' @param use_cache Logical, use cached variance explained.
+#' @param color_palette Character vector of colors for gradient.
+#' @param plot_title Character, plot title.
+#' @param ... Additional arguments to calculate_variance_explained.
+#' @return ggplot2 object or list of plots if plot_total=TRUE.
+#' @importFrom ggplot2 ggplot aes geom_tile scale_fill_gradientn facet_wrap labs theme
+#' @importFrom reshape2 melt
+#' @export
 plot_MOFA_cumul_var_exp <- function(object, 
                                   x = "view", 
                                   y = "factor", 
@@ -3486,7 +3900,42 @@ plot_MOFA_cumul_var_exp <- function(object,
   }
 }
 
-# TCGAanalyze_survival modification #####
+#' Custom TCGA Survival Analysis
+#'
+#' Performs survival analysis with Kaplan-Meier or Cox regression,
+#' including diagnostic tests. Modified from TCGAbiolinks function.
+#'
+#' @param data Data frame with survival and cluster columns.
+#' @param clusterCol Character, name of cluster column.
+#' @param adjustVars Character vector of covariates for Cox model (NULL for KM).
+#' @param legend Character, legend title.
+#' @param labels Character vector of group labels.
+#' @param risk.table Logical, show risk table.
+#' @param risk.table.height Numeric, height proportion for risk table.
+#' @param xlim Numeric vector of length 2 for x-axis limits.
+#' @param main Character, main plot title.
+#' @param xlab Character, x-axis label.
+#' @param ylab Character, y-axis label.
+#' @param title.size Numeric, title font size.
+#' @param title.face Character, title font face.
+#' @param axis.title.size Numeric, axis title font size.
+#' @param axis.title.face Character, axis title font face.
+#' @param color Character vector of colors for groups.
+#' @param pvalue Logical, show p-value annotation.
+#' @param conf.int Logical, show confidence intervals.
+#' @param save.filename Character, output file path.
+#' @param save.width Numeric, figure width.
+#' @param save.height Numeric, figure height.
+#' @param save.dpi Numeric, figure resolution.
+#' @param ph_threshold Numeric, threshold for PH assumption test.
+#' @param vif_cutoff Numeric, VIF threshold for multicollinearity.
+#' @param linearity_alpha Numeric, alpha for linearity test.
+#' @param summary.filename Character, path for diagnostic summary file.
+#' @return List with plot, pvalue, and diagnostics.
+#' @importFrom survival survfit survdiff coxph Surv cox.zph
+#' @importFrom survminer ggsurvplot ggadjustedcurves
+#' @importFrom ggplot2 annotate labs ggsave
+#' @export
 TCGAanalyze_survival_custom3 <- function(
     data, clusterCol,
     adjustVars         = NULL,

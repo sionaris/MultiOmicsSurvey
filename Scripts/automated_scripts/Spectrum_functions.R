@@ -1,3 +1,45 @@
+#' Modified Spectrum Clustering with Binary Data and Parallelization Support
+#'
+#' @description Modified version of Spectrum clustering algorithm with support for
+#'   binary/categorical data via alternative distance metrics and parallel processing.
+#'   Implements spectral clustering with adaptive kernel parameter selection.
+#'
+#' @param data A list of data matrices (one per view/modality) with samples as columns
+#'   and features as rows, or a single matrix.
+#' @param method Integer; method for selecting optimal K. 1 = eigenvalue gap,
+#'   2 = eigenvector multimodality, 3 = fixed K. Default is 1.
+#' @param silent Logical; if TRUE, suppress progress messages. Default is FALSE.
+#' @param showres Logical; if TRUE, display diagnostic plots. Default is TRUE.
+#' @param diffusion Logical; if TRUE, apply diffusion process on similarity matrix.
+#'   Default is TRUE.
+#' @param kerneltype Character; kernel type, either "density" (CNN kernel) or "stsc"
+#'   (self-tuning spectral clustering). Default is "density".
+#' @param maxk Integer; maximum number of clusters to consider. Default is 10.
+#' @param NN Integer; number of nearest neighbors for kernel construction. Default is 3.
+#' @param NN2 Integer; extended neighborhood size for CNN kernel. Default is 7.
+#' @param showpca Logical; if TRUE, show PCA plot of results. Default is FALSE.
+#' @param frac Numeric; fraction parameter for method 2. Default is 2.
+#' @param thresh Numeric; threshold parameter for method 2. Default is 7.
+#' @param fontsize Numeric; font size for plots. Default is 18.
+#' @param dotsize Numeric; point size for plots. Default is 3.
+#' @param tunekernel Logical; if TRUE, automatically tune kernel parameters. Default is FALSE.
+#' @param clusteralg Character; clustering algorithm, "GMM" or "km". Default is "GMM".
+#' @param FASP Logical; if TRUE, use Fast Approximate Spectral Clustering. Default is FALSE.
+#' @param FASPk Integer; number of centroids for FASP. Required if FASP is TRUE.
+#' @param fixk Integer; fixed K value for method 3. Required if method is 3.
+#' @param krangemax Integer; maximum K for range clustering. Default is 10.
+#' @param runrange Logical; if TRUE, cluster over range of K values. Default is FALSE.
+#' @param diffusion_iters Integer; number of diffusion iterations. Default is 4.
+#' @param KNNs_p Integer; KNN parameter for diffusion. Default is 10.
+#' @param missing Logical; if TRUE, impute missing data. Default is FALSE.
+#' @param distances Character; distance metric(s) for each view. Can be a single value
+#'   or vector. Supports: "euclidean", "manhattan", "cosine", "binary", etc.
+#' @param cores Integer; number of CPU cores for parallel processing. Default is 1.
+#'
+#' @return List containing cluster assignments, eigenvector analysis, optimal K,
+#'   similarity matrix, and eigensystem decomposition.
+#'
+#' @export
 Spectrum_bin_and_par <- function (
     data,
     method = 1,
@@ -498,6 +540,22 @@ Spectrum_bin_and_par <- function (
 }
 
 
+#' Common Nearest Neighbors Kernel with Modified Distance Support
+#'
+#' @description Computes a similarity matrix using the Common Nearest Neighbors (CNN)
+#'   kernel. Extends the original Spectrum CNN kernel to support multiple distance
+#'   metrics including those suitable for binary/categorical data.
+#'
+#' @param mat Data matrix with samples as columns and features as rows.
+#' @param NN Integer; number of nearest neighbors for local sigma estimation. Default is 3.
+#' @param NN2 Integer; extended neighborhood size for CNN similarity computation. Default is 7.
+#' @param distance Character; distance metric to use. Supported values include
+#'   "euclidean", "manhattan", "cosine", "binary", "canberra", etc.
+#'
+#' @return A symmetric similarity matrix with dimensions n x n where n is the number
+#'   of samples. Values range from 0 to 1.
+#'
+#' @export
 CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
 {
   # Validate distance parameter
@@ -566,6 +624,23 @@ CNN_kernel_mod <- function(mat, NN = 3, NN2 = 7, distance = "euclidean")
   return(out)
 }
 
+#' Kernel Parameter Finder Using Eigenvector Multimodality (Modified)
+#'
+#' @description Finds the optimal nearest neighbor (NN) parameter for the CNN kernel
+#'   by examining eigenvector distributions using dip tests for multimodality.
+#'   Modified to support alternative distance metrics.
+#'
+#' @param data Data matrix with samples as columns and features as rows.
+#' @param maxk Integer; maximum number of clusters to consider. Default is 10.
+#' @param fontsize Numeric; font size for diagnostic plots. Default is 12.
+#' @param silent Logical; if TRUE, suppress progress messages. Default is FALSE.
+#' @param showres Logical; if TRUE, display diagnostic plot. Default is TRUE.
+#' @param dotsize Numeric; point size for plots. Default is 2.
+#' @param distance Character; distance metric to use. Default is "euclidean".
+#'
+#' @return Integer; optimal NN parameter value.
+#'
+#' @export
 kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
                                 showres = TRUE, dotsize = 2, distance = "euclidean")
 {
@@ -662,6 +737,23 @@ kernfinder_mine_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   return(optimalparam)
 }
 
+#' Kernel Parameter Finder for Local Scaling (Modified)
+#'
+#' @description Finds the optimal nearest neighbor (NN) parameter for the RBF kernel
+#'   with local scaling by examining eigenvector distributions using dip tests.
+#'   Modified to support alternative distance metrics for STSC kernel type.
+#'
+#' @param data Data matrix with samples as columns and features as rows.
+#' @param maxk Integer; maximum number of clusters to consider. Default is 10.
+#' @param fontsize Numeric; font size for diagnostic plots. Default is 12.
+#' @param silent Logical; if TRUE, suppress progress messages. Default is FALSE.
+#' @param showres Logical; if TRUE, display diagnostic plot. Default is TRUE.
+#' @param dotsize Numeric; point size for plots. Default is 2.
+#' @param distance Character; distance metric to use. Default is "euclidean".
+#'
+#' @return Integer; optimal NN parameter value.
+#'
+#' @export
 kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
                                  showres = TRUE, dotsize = 2, distance = "euclidean")
 {
@@ -770,6 +862,22 @@ kernfinder_local_mod <- function(data, maxk = 10, fontsize = 12, silent = FALSE,
   return(optimalparam)
 }
 
+#' RBF Kernel with Local Scaling (Modified)
+#'
+#' @description Computes a Radial Basis Function (RBF) kernel with local scaling
+#'   using K nearest neighbors. Modified to support alternative distance metrics
+#'   for use with binary or categorical data.
+#'
+#' @param mat Data matrix with samples as columns and features as rows.
+#' @param K Integer; number of nearest neighbors for local sigma estimation. Default is 3.
+#' @param sigma Numeric; scaling parameter for the kernel. Default is 1.
+#' @param distance Character; distance metric to use. Supported values include
+#'   "euclidean", "manhattan", "cosine", "binary", "canberra", etc.
+#'
+#' @return A symmetric similarity matrix with dimensions n x n where n is the number
+#'   of samples. Values range from 0 to 1.
+#'
+#' @export
 rbfkernel_b_mod <- function(mat, K = 3, sigma = 1, distance = "euclidean")
 {
   # Validate distance parameter

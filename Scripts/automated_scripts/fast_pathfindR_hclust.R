@@ -3,6 +3,23 @@
 library(pathfindR)
 library(fastcluster)
 
+#' Create Kappa Statistic Matrix for Enrichment Terms (Fast Version)
+#'
+#' @description Computes a kappa statistic matrix measuring similarity between enriched
+#'   pathway terms based on gene overlap. This is an optimized version for faster
+#'   hierarchical clustering in pathfindR workflows.
+#'
+#' @param enrichment_res Data frame of enrichment results from pathfindR, must contain
+#'   columns for term ID/description, Down_regulated, and Up_regulated genes.
+#' @param use_description Logical; if TRUE, use Term_Description for term names,
+#'   otherwise use ID column. Default is FALSE.
+#' @param use_active_snw_genes Logical; if TRUE, include non-significant subnetwork genes
+#'   in kappa calculation. Default is FALSE.
+#'
+#' @return A symmetric matrix of kappa statistics where entry [i,j] represents the
+#'   agreement between gene sets of terms i and j. Values range from -1 to 1.
+#'
+#' @export
 create_kappa_matrix_fast <- function(enrichment_res, use_description = FALSE, use_active_snw_genes = FALSE) {
   ### Argument checks
   if (!is.logical(use_description)) {
@@ -92,6 +109,27 @@ create_kappa_matrix_fast <- function(enrichment_res, use_description = FALSE, us
   return(kappa_mat)
 }
 
+#' Hierarchical Clustering of Enriched Terms (Fast Version)
+#'
+#' @description Performs hierarchical clustering on enriched pathway terms using a kappa
+#'   statistic distance matrix. Uses fastcluster for improved performance. Automatically
+#'   selects optimal number of clusters using silhouette width if not specified.
+#'
+#' @param kappa_mat Symmetric matrix of kappa statistics from create_kappa_matrix_fast.
+#' @param enrichment_res Data frame of enrichment results from pathfindR.
+#' @param num_clusters Integer; number of clusters to create. If NULL, optimal k is
+#'   determined using silhouette width. Default is NULL.
+#' @param use_description Logical; if TRUE, use Term_Description for term names.
+#'   Default is FALSE.
+#' @param clu_method Character string specifying the agglomeration method for hclust.
+#'   Default is "average".
+#' @param plot_hmap Logical; if TRUE, plot a heatmap of the kappa matrix. Default is FALSE.
+#' @param plot_dend Logical; if TRUE, plot the dendrogram with cluster rectangles.
+#'   Default is TRUE.
+#'
+#' @return Named integer vector of cluster assignments for each term.
+#'
+#' @export
 hierarchical_term_clustering_fast <- function(kappa_mat, enrichment_res, num_clusters = NULL,
                                          use_description = FALSE, clu_method = "average", plot_hmap = FALSE, plot_dend = TRUE) {
   ### Set ID/Name index
@@ -173,6 +211,22 @@ hierarchical_term_clustering_fast <- function(kappa_mat, enrichment_res, num_clu
   return(clusters)
 }
 
+#' Fuzzy Clustering of Enriched Terms (Fast Version)
+#'
+#' @description Performs fuzzy clustering on enriched pathway terms allowing terms to
+#'   belong to multiple clusters. Uses kappa threshold to determine term relationships.
+#'
+#' @param kappa_mat Symmetric matrix of kappa statistics from create_kappa_matrix_fast.
+#' @param enrichment_res Data frame of enrichment results from pathfindR.
+#' @param kappa_threshold Numeric; minimum kappa value for terms to be considered related.
+#'   Default is 0.35.
+#' @param use_description Logical; if TRUE, use Term_Description for term names.
+#'   Default is FALSE.
+#'
+#' @return A logical matrix where rows are terms and columns are clusters. TRUE indicates
+#'   membership in that cluster. Terms can belong to multiple clusters.
+#'
+#' @export
 fuzzy_term_clustering_fast <- function(kappa_mat, enrichment_res, kappa_threshold = 0.35,
                                   use_description = FALSE) {
   ### Set ID/Name index
@@ -262,6 +316,27 @@ fuzzy_term_clustering_fast <- function(kappa_mat, enrichment_res, kappa_threshol
   return(cluster_mat)
 }
 
+#' Graph Visualization of Clustered Terms (Fast Version)
+#'
+#' @description Creates an igraph visualization of clustered enrichment terms. Node
+#'   colors represent cluster membership, node sizes represent -log10(p-value), and
+#'   edge weights represent kappa statistics between terms.
+#'
+#' @param clu_obj Clustering result object; either an integer vector (hierarchical) or
+#'   a logical matrix (fuzzy) from the clustering functions.
+#' @param kappa_mat Symmetric matrix of kappa statistics from create_kappa_matrix_fast.
+#' @param enrichment_res Data frame of enrichment results from pathfindR.
+#' @param kappa_threshold Numeric; minimum kappa value for drawing edges between nodes.
+#'   Default is 0.35.
+#' @param use_description Logical; if TRUE, use Term_Description for term names.
+#'   Default is FALSE.
+#' @param vertex.label.cex Numeric; character expansion factor for vertex labels.
+#'   Default is 0.7.
+#' @param vertex.size.scaling Numeric; scaling factor for vertex sizes. Default is 2.5.
+#'
+#' @return Invisibly returns NULL. Called for its side effect of plotting the graph.
+#'
+#' @export
 cluster_graph_vis_fast <- function(clu_obj, kappa_mat, enrichment_res, kappa_threshold = 0.35,
                               use_description = FALSE, vertex.label.cex = 0.7, vertex.size.scaling = 2.5) {
   ### Set ID/Name index
@@ -379,6 +454,30 @@ cluster_graph_vis_fast <- function(clu_obj, kappa_mat, enrichment_res, kappa_thr
   }
 }
 
+#' Cluster Enriched Pathway Terms (Fast Version)
+#'
+#' @description Main wrapper function for clustering enriched pathway terms from pathfindR.
+#'   Supports both hierarchical and fuzzy clustering methods with optional graph visualization.
+#'   Uses fastcluster for improved performance on large datasets.
+#'
+#' @param enrichment_res Data frame of enrichment results from pathfindR, containing
+#'   columns for term IDs, gene lists, and p-values.
+#' @param method Character string; clustering method, either "hierarchical" or "fuzzy".
+#'   Default is "hierarchical".
+#' @param plot_clusters_graph Logical; if TRUE, plot the cluster graph visualization.
+#'   Default is TRUE.
+#' @param use_description Logical; if TRUE, use Term_Description for term names.
+#'   Default is FALSE.
+#' @param use_active_snw_genes Logical; if TRUE, include non-significant subnetwork genes.
+#'   Default is FALSE.
+#' @param ... Additional arguments passed to clustering and visualization functions.
+#'
+#' @return List containing:
+#'   \item{clustered_df}{Data frame with original enrichment results plus Cluster
+#'     assignments and Status (Representative/Member) for hierarchical method.}
+#'   Returns "hclust impossible" if clustering cannot be performed.
+#'
+#' @export
 cluster_enriched_terms_fast <- function(enrichment_res, method = "hierarchical", plot_clusters_graph = TRUE,
                                         use_description = FALSE, use_active_snw_genes = FALSE, ...) {
   ### Argument Checks
