@@ -10,20 +10,50 @@ import pickle
 from monet import monet  # Adjust the import based on your project structure
 from monet.monet import Monet
 
+
 def set_seeds(seed):
-    """
-    Set the random seeds for reproducibility.
+    """Set random seeds for reproducibility across NumPy and Python's random module.
+
+    Ensures deterministic behavior for stochastic operations in MONET clustering
+    by setting identical seeds for both NumPy's and Python's random number generators.
+
+    Args:
+        seed (int): The random seed value to set for reproducibility.
+
+    Returns:
+        None
+
+    Example:
+        >>> set_seeds(123)
+        # All subsequent random operations will be reproducible
     """
     np.random.seed(seed)
     random.seed(seed)
 
-def load_correlation_matrices(directory):
-    """
-    Load all CSV correlation matrices from the specified directory.
-    Expected exactly 5 CSV files, one per omic.
 
-    :param directory: Path to the directory containing CSV files.
-    :return: Dictionary mapping omic names to pandas DataFrames.
+def load_correlation_matrices(directory):
+    """Load pre-computed correlation matrices from CSV files for multi-omics integration.
+
+    Reads all CSV files from the specified directory, expecting exactly 5 files
+    corresponding to different omics data types (e.g., RNAseq, CNV, Methylation,
+    miRNA, SNPs). Each CSV should be a square correlation matrix with sample IDs
+    as both row and column indices.
+
+    Args:
+        directory (str): Path to the directory containing the CSV correlation
+            matrix files. Each file represents one omic view.
+
+    Returns:
+        dict: A dictionary mapping omic names (derived from filenames without
+            extension) to pandas DataFrames containing the correlation matrices.
+
+    Raises:
+        ValueError: If the directory does not contain exactly 5 CSV files.
+
+    Example:
+        >>> data = load_correlation_matrices("MO_Corrs")
+        >>> print(data.keys())
+        dict_keys(['RNAseq', 'CNV', 'Methylation', 'miRNA', 'SNPs'])
     """
     data = {}
     csv_files = glob.glob(os.path.join(directory, "*.csv"))

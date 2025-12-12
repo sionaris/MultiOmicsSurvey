@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""MSNE clustering execution script with specific hyperparameters.
+
+This script runs Multi-view Spectral Network Embedding (MSNE) clustering
+on pre-computed distance matrices from multiple omics data types.
+
+Hyperparameters for this run:
+    - k (neighbors): 20
+    - num_walks: 50
+    - embed_size: 100
+    - window_size: 5
+    - walk_length: 20
+"""
+
 import os
 import numpy as np
 import random
@@ -8,7 +21,24 @@ import pandas as pd
 # and contains embedding.py with MSNE defined inside it.
 from code.embedding import MSNE
 
+
 def set_seeds(seed):
+    """Set random seeds for reproducibility in MSNE clustering.
+
+    Ensures deterministic behavior for stochastic operations in the MSNE
+    algorithm by setting identical seeds for NumPy's and Python's random
+    number generators.
+
+    Args:
+        seed (int): The random seed value to set for reproducibility.
+
+    Returns:
+        None
+
+    Example:
+        >>> set_seeds(123)
+        # All subsequent random operations will be reproducible
+    """
     np.random.seed(seed)
     random.seed(seed)
 

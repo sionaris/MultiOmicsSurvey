@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""MSNE Hyperparameter Search Results Evaluator.
+
+This script evaluates the results of an MSNE hyperparameter grid search
+by computing silhouette scores for each clustering result and identifying
+the best-performing hyperparameter combination.
+"""
 
 import os
 import glob
@@ -6,7 +12,45 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import silhouette_score
 
+
 def main():
+    """Evaluate MSNE clustering results and identify optimal hyperparameters.
+
+    Scans the current directory for MSNE output files (embeddings and cluster
+    assignments), computes silhouette scores for each hyperparameter combination,
+    and generates a comprehensive evaluation report.
+
+    The function:
+        1. Discovers all embedding/cluster file pairs matching 'output_*_embeddings.csv'
+        2. Computes silhouette scores using sklearn.metrics.silhouette_score
+        3. Ranks all hyperparameter combinations by silhouette score
+        4. Saves detailed results to 'all_silhouette_scores.csv'
+        5. Generates 'best_clustering_report.txt' with the optimal configuration
+
+    File Naming Convention:
+        - Embeddings: output_MSNE_k_{k}_nw_{nw}_emb_{emb}_win_{win}_wl_{wl}_embeddings.csv
+        - Clusters: output_MSNE_k_{k}_nw_{nw}_emb_{emb}_win_{win}_wl_{wl}_clusters.csv
+
+    Returns:
+        None. Results are written to files in the current directory.
+
+    Side Effects:
+        - Creates 'all_silhouette_scores.csv' with columns:
+            [job_name, silhouette, n_samples, n_clusters, embeddings_file, clusters_file]
+        - Creates 'best_clustering_report.txt' with the optimal hyperparameter summary
+        - Prints summary to stdout
+
+    Notes:
+        - Skips results with fewer than 2 clusters (silhouette undefined)
+        - Silhouette score ranges from -1 (poor) to 1 (excellent)
+        - Higher silhouette indicates better-defined cluster separation
+
+    Example:
+        >>> main()
+        Best clustering job: MSNE_k_20_nw_100_emb_100_win_10_wl_30
+        Silhouette: 0.4523
+        N samples: 625 N clusters: 5
+    """
     # Look for "output_*.csv" files in the current directory.
     # Each job produces:
     #   output_<job_name>_embeddings.csv

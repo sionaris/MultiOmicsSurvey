@@ -1,0 +1,158 @@
+# MONET Python Function Documentation
+
+This document provides comprehensive documentation for custom functions used in the MONET (Multi Omic clustering by Non-Exhaustive Types) implementation for the MultiOmicsSurvey project. Functions are organized alphabetically within each source file section.
+
+---
+
+## Table of Contents
+
+- [run_MONET_no_offset.py](#run_monet_no_offsetpy)
+- [run_MONET_with_offset.py](#run_monet_with_offsetpy)
+- [Alphabetical Index](#alphabetical-index)
+
+---
+
+## run_MONET_no_offset.py
+
+MONET clustering pipeline without correlation matrix offset adjustment. Loads pre-computed correlation matrices and performs multi-omics patient stratification.
+
+### load_correlation_matrices
+
+```python
+load_correlation_matrices(directory)
+```
+
+**Description:** Load pre-computed correlation matrices from CSV files for multi-omics integration.
+
+Reads all CSV files from the specified directory, expecting exactly 5 files corresponding to different omics data types (e.g., RNAseq, CNV, Methylation, miRNA, SNPs). Each CSV should be a square correlation matrix with sample IDs as both row and column indices.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `directory` | str | Path to the directory containing the CSV correlation matrix files. Each file represents one omic view. |
+
+**Returns:** `dict` - A dictionary mapping omic names (derived from filenames without extension) to pandas DataFrames containing the correlation matrices.
+
+**Raises:**
+- `ValueError`: If the directory does not contain exactly 5 CSV files.
+
+**Example:**
+```python
+>>> data = load_correlation_matrices("MO_Corrs")
+>>> print(data.keys())
+dict_keys(['RNAseq', 'CNV', 'Methylation', 'miRNA', 'SNPs'])
+```
+
+---
+
+### set_seeds
+
+```python
+set_seeds(seed)
+```
+
+**Description:** Set random seeds for reproducibility across NumPy and Python's random module.
+
+Ensures deterministic behavior for stochastic operations in MONET clustering by setting identical seeds for both NumPy's and Python's random number generators.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `seed` | int | The random seed value to set for reproducibility. |
+
+**Returns:** `None`
+
+**Example:**
+```python
+>>> set_seeds(123)
+# All subsequent random operations will be reproducible
+```
+
+---
+
+## run_MONET_with_offset.py
+
+MONET clustering pipeline with correlation matrix offset adjustment. Identical function signatures to `run_MONET_no_offset.py` but operates on offset-adjusted correlation matrices from the `MO_Corrs_offset/` directory.
+
+### load_correlation_matrices
+
+```python
+load_correlation_matrices(directory)
+```
+
+**Description:** Load pre-computed correlation matrices from CSV files for multi-omics integration.
+
+Reads all CSV files from the specified directory, expecting exactly 5 files corresponding to different omics data types. This version is used with offset-adjusted correlation matrices.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `directory` | str | Path to the directory containing the CSV correlation matrix files (typically `MO_Corrs_offset/`). |
+
+**Returns:** `dict` - A dictionary mapping omic names to pandas DataFrames containing the offset-adjusted correlation matrices.
+
+**Raises:**
+- `ValueError`: If the directory does not contain exactly 5 CSV files.
+
+**Example:**
+```python
+>>> data = load_correlation_matrices("MO_Corrs_offset")
+>>> print(data.keys())
+dict_keys(['RNAseq', 'CNV', 'Methylation', 'miRNA', 'SNPs'])
+```
+
+---
+
+### set_seeds
+
+```python
+set_seeds(seed)
+```
+
+**Description:** Set random seeds for reproducibility across NumPy and Python's random module.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `seed` | int | The random seed value to set for reproducibility. |
+
+**Returns:** `None`
+
+---
+
+## Alphabetical Index
+
+| Function | Source File |
+|----------|-------------|
+| load_correlation_matrices | run_MONET_no_offset.py, run_MONET_with_offset.py |
+| set_seeds | run_MONET_no_offset.py, run_MONET_with_offset.py |
+
+---
+
+## Notes
+
+### MONET Algorithm Overview
+
+MONET performs patient stratification by:
+1. Loading pre-computed sample-sample correlation matrices for each omic
+2. Running iterative module optimization (10,000 iterations)
+3. Extracting patient clusters from the final module assignments
+
+### Key Parameters
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `iters` | 10000 | Number of optimization iterations |
+| `num_of_seeds` | 100 | Number of random seeds for module initialization |
+| `num_of_samples_in_seed` | 10 | Samples per seed module |
+| `min_mod_size` | 10 | Minimum module size threshold |
+| `max_pats_per_action` | 10 | Maximum patients moved per iteration |
+| `percentile_remove_edge` | 80 | Edge removal percentile threshold |
+
+### Output Files
+
+- `monet_full_output_no_offset.pkl` - Complete results without offset
+- `monet_full_output_with_offset.pkl` - Complete results with offset
+
+Each pickle file contains:
+- `glob_var`: MONET state object
+- `clustering`: Sample-to-cluster mapping
+- `all_modules`: Final module dictionary
+- `total_time`: Execution time
+- `iteration_times`: Per-iteration timing

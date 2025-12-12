@@ -1,9 +1,59 @@
 #!/usr/bin/env python3
+"""MSNE Hyperparameter Grid Search Job Generator.
+
+This script generates Python run scripts and SLURM batch submission files
+for an exhaustive hyperparameter search over MSNE (Multi-view Spectral
+Network Embedding) clustering parameters.
+"""
 
 import itertools
 import os
 
+
 def generate_msne_jobs():
+    """Generate MSNE job scripts for hyperparameter grid search on HPC clusters.
+
+    Creates Python execution scripts (.py) and SLURM batch submission scripts (.sh)
+    for all combinations of MSNE hyperparameters. This enables systematic exploration
+    of the hyperparameter space for multi-omics clustering optimization.
+
+    The function generates scripts for the following parameter grid:
+        - k (neighbors): [10, 20, 30, 40, 50]
+        - num_walks: [50, 100, 200]
+        - embed_size: [50, 100, 200]
+        - window_size: [5, 10, 15]
+        - walk_length: [20, 30, 40]
+
+    Total combinations: 5 × 3 × 3 × 3 × 3 = 405 jobs
+
+    Each generated Python script:
+        - Sets random seeds for reproducibility (seed=123)
+        - Loads distance matrices from MO_Dists/ directory
+        - Runs MSNE with the specific hyperparameter combination
+        - Saves embeddings and cluster assignments to CSV files
+
+    Each generated SLURM script:
+        - Configures for icelake-himem partition with 200GB memory
+        - Sets 10 CPU workers and ~12 hour time limit
+        - Captures stdout/stderr to logs/ directory
+        - Sends email notifications on job completion
+
+    Returns:
+        None. Files are written to the current working directory.
+
+    Side Effects:
+        - Creates 'logs/' directory if it doesn't exist
+        - Writes 405 .py files (run_MSNE_*.py)
+        - Writes 405 .sh files (MSNE_*.sh)
+        - Sets executable permissions (chmod 755) on all generated files
+
+    Example:
+        >>> generate_msne_jobs()
+        Job scripts generated successfully!
+        # Creates files like:
+        # run_MSNE_k_10_nw_50_emb_50_win_5_wl_20.py
+        # MSNE_k_10_nw_50_emb_50_win_5_wl_20.sh
+    """
     # Parameter ranges
     k_list = [10, 20, 30, 40, 50]
     num_walks_list = [50, 100, 200]
