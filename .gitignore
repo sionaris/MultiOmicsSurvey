@@ -31,6 +31,7 @@ Results/Stability analysis
 /Resources/MOFA_input.rds
 /Resources/PIntMF_input.rds
 /Resources/Python
+/Resources/Performance/mm_input.rds
 /Python/MONET/.git
 /Python/MONET/build
 /Python/MONET/monet/__pycache__

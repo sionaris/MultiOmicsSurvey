@@ -1755,94 +1755,1053 @@ Spectrum_bin_and_par(data, method = "CNN", maxk = 10, ...)
 
 ---
 
+\newpage
+
+# single_algorithm/ Helper Functions
+
+Custom helper functions defined within individual algorithm scripts in `Scripts/single_algorithm/`. These functions are documented in `Scripts/single_algorithm/single_algorithm_additional_docs.R`.
+
+## MAD-Based Weighting Functions
+
+### mad_based_weights
+
+```r
+mad_based_weights(X)
+```
+
+**Description:** Calculates Median Absolute Deviation (MAD) based weights for features in a data matrix. Used to assign higher importance to features with greater variability across samples.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `X` | matrix | Numeric matrix with features in rows and samples in columns |
+
+**Returns:** Named numeric vector of normalized weights (sum = 1).
+
+**Source:** `ab-SNF.R` (line ~108), `wMKL.R` (line ~160)
+
+---
+
+### weighted_euclidean_dist
+
+```r
+weighted_euclidean_dist(X, w)
+```
+
+**Description:** Calculates a weighted Euclidean distance matrix between samples, where each feature contribution is scaled by the square root of its weight.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `X` | matrix | Numeric matrix with features in rows and samples in columns |
+| `w` | numeric | Named vector of feature weights |
+
+**Returns:** A square distance matrix of dimension ncol(X) × ncol(X).
+
+**Source:** `ab-SNF.R` (line ~120)
+
+---
+
+### weighted_hamming_fraction
+
+```r
+weighted_hamming_fraction(binary_mat, features, drivers, driver_weight, nondriver_weight)
+```
+
+**Description:** Calculates a weighted Hamming distance matrix for binary data, assigning different weights to driver genes vs. non-driver genes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `binary_mat` | matrix | Binary (0/1) matrix with features in rows |
+| `features` | character | Vector of feature names |
+| `drivers` | character | Vector of driver gene identifiers |
+| `driver_weight` | numeric | Weight for driver gene mismatches |
+| `nondriver_weight` | numeric | Weight for non-driver gene mismatches |
+
+**Returns:** A square distance matrix.
+
+**Source:** `ab-SNF.R` (line ~133)
+
+---
+
+### weighted_mutations
+
+```r
+weighted_mutations(features, drivers, driver_weight, nondriver_weight)
+```
+
+**Description:** Assigns weights to features based on whether they are known driver genes, normalizing so the total weight sums to 1.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `features` | character | Vector of all feature names |
+| `drivers` | character | Vector of known driver gene identifiers |
+| `driver_weight` | numeric | Weight for driver genes |
+| `nondriver_weight` | numeric | Weight for non-driver genes |
+
+**Returns:** Numeric vector of normalized weights (sum = 1).
+
+**Source:** `wMKL.R` (line ~176)
+
+---
+
+## Matrix Similarity Functions
+
+### compute_matrix_similarity
+
+```r
+compute_matrix_similarity(matrices)
+```
+
+**Description:** Calculates both Frobenius norm distance and Pearson correlation between all pairs of matrices in a list. Used to assess similarity between affinity matrices computed under different hyperparameter settings.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `matrices` | list | Named list of numeric matrices of identical dimensions |
+
+**Returns:** List with two elements: `Frobenius` (distance matrix) and `Pearson` (correlation matrix).
+
+**Source:** `ab-SNF.R`, `ANF.R`, `RWR-F.R`, `RWR-NF.R`, `SNF.R`, `Spectrum.R`
+
+---
+
+## Spectral Clustering Functions
+
+### spectralClustering_eig
+
+```r
+spectralClustering_eig(affinity, K, type = 3)
+```
+
+**Description:** Performs spectral clustering on an affinity matrix and returns both cluster assignments and the eigenvector embedding. Modified version of `SNFtool::spectralClustering`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `affinity` | matrix | Square symmetric affinity matrix (n × n) |
+| `K` | integer | Number of clusters |
+| `type` | integer | Laplacian normalization: 1=unnormalized, 2=random walk, 3=symmetric (default) |
+
+**Returns:** Data frame with eigenvector columns, `Cluster` assignments, and `Sample.ID`.
+
+**Source:** `ab-SNF.R` (line ~758), `SNF.R` (line ~693), `NEMO.R` (line ~575)
+
+---
+
+### spectral_clustering_eig
+
+```r
+spectral_clustering_eig(affinity, type = "rw", optk)
+```
+
+**Description:** ANF-style spectral clustering using random-walk normalized Laplacian with eigenvector extraction.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `affinity` | matrix | Square symmetric affinity matrix |
+| `type` | character | Normalization type ("rw" for random walk) |
+| `optk` | integer | Number of clusters |
+
+**Returns:** Data frame with eigenvector columns, `Cluster`, and `Sample.ID`.
+
+**Source:** `ANF.R` (line ~315)
+
+---
+
+### extract_eigenspace
+
+```r
+extract_eigenspace(affinity, K, type = 3)
+```
+
+**Description:** Extracts the spectral embedding (eigenvectors) and cluster labels from an affinity matrix using wMKL discretization.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `affinity` | matrix | Square symmetric affinity matrix |
+| `K` | integer | Number of clusters |
+| `type` | integer | Laplacian normalization type |
+
+**Returns:** List with `labels`, `U` (eigenvector matrix), and `eigDiscrete`.
+
+**Source:** `wMKL.R` (line ~340)
+
+---
+
+## Statistical Analysis Functions
+
+### unbiased.cv.test
+
+```r
+unbiased.cv.test(x, string, digits = 3)
+```
+
+**Description:** Computes the bias-corrected Cramér's V (or Phi coefficient for 2×2 tables) as a measure of association between two categorical variables.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | table | Contingency table |
+| `string` | character | Description for output labeling |
+| `digits` | integer | Decimal places to round (default: 3) |
+
+**Returns:** List with `text` (formatted result) and `value` (numeric Cramér's V).
+
+**Source:** Found in 18 algorithm scripts including: `ab-SNF.R`, `ANF.R`, `CIMLR.R`, `COCA.R`, `iClusterBayes.R`, `KLIC.R`, `LRAcluster.R`, `MDICC.R`, `MFA.R`, `MOFA.R`, `MONET.R`, `MSNE.R`, `NEMO.R`, `RWR-F.R`, `RWR-NF.R`, `SNF.R`, `Spectrum.R`, `wMKL.R`
+
+---
+
+## Graph/Network Analysis Functions
+
+### determine_edge_support
+
+```r
+determine_edge_support(edge_weights)
+```
+
+**Description:** Identifies which data modalities primarily support a given edge in a fused affinity network, based on relative edge weights.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `edge_weights` | numeric | Vector of edge weights from each modality network |
+
+**Returns:** Integer vector of indices indicating supporting modalities.
+
+**Details:** Uses a 10% threshold to distinguish dominant modalities. Single index if one modality dominates (>10% higher), multiple indices for similar contributions, all indices if within 10% of maximum.
+
+**Source:** `ab-SNF.R`, `ANF.R`, `MDICC.R`, `RWR-F.R`, `RWR-NF.R`, `SNF.R`
+
+---
+
+## MONET-Specific Functions
+
+### offset_correlation
+
+```r
+offset_correlation(cor.matrix, offset)
+```
+
+**Description:** Transforms a correlation matrix by subtracting the global mean and an additional offset, then setting diagonal to zero.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cor.matrix` | matrix | Square correlation matrix |
+| `offset` | numeric | Offset value to subtract (e.g., 0.2) |
+
+**Returns:** Transformed correlation matrix with diagonal = 0.
+
+**Source:** `MONET.R` (line ~106)
+
+---
+
+### edge_absolute_mean
+
+```r
+edge_absolute_mean(nx_graph)
+```
+
+**Description:** Calculates the mean of absolute edge weights in a NetworkX graph object.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `nx_graph` | NetworkX | Reticulate-wrapped NetworkX graph with weighted edges |
+
+**Returns:** Numeric scalar, mean absolute weight.
+
+**Source:** `MONET.R` (line ~450)
+
+---
+
+### get_mod_edge_absmean
+
+```r
+get_mod_edge_absmean(mod, omic_name)
+```
+
+**Description:** Computes the mean absolute edge weight within a MONET module for a specific omic network.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `mod` | object | MONET module object |
+| `omic_name` | character | Name of the omic (e.g., "RNAseq") |
+
+**Returns:** Numeric scalar, mean absolute weight; NA if module has <2 members.
+
+**Source:** `MONET.R` (line ~464)
+
+---
+
+## COCA-Specific Functions
+
+### hclust_gap
+
+```r
+hclust_gap(x, k)
+```
+
+**Description:** Wrapper function for `cluster::clusGap` that returns precomputed hierarchical clustering results for a given k.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | matrix | Data matrix (gap statistic framework requirement) |
+| `k` | integer | Number of clusters to return |
+
+**Returns:** Clustering result from `list_of_k[[paste0("k = ", k)]]`.
+
+**Source:** `COCA.R` (line ~136)
+
+---
+
+## PAMOGK Preprocessing Functions
+
+### clean_rownames
+
+```r
+clean_rownames(df)
+```
+
+**Description:** Removes version number suffixes (e.g., ".1", ".2") from row names.
+
+**Source:** `PAMOGK_prep.R` (line ~15)
+
+---
+
+### remove_na_rownames
+
+```r
+remove_na_rownames(df)
+```
+
+**Description:** Filters out rows that have NA as their row name, with reporting.
+
+**Source:** `PAMOGK_prep.R` (line ~30)
+
+---
+
+### get_dimensions
+
+```r
+get_dimensions(x)
+```
+
+**Description:** Returns formatted string describing dimensions or "NULL".
+
+**Source:** `PAMOGK_prep.R` (line ~56)
+
+---
+
+### fix_uniprot_row_names
+
+```r
+fix_uniprot_row_names(df)
+```
+
+**Description:** Converts row names stored as R vector strings to semicolon-separated format.
+
+**Source:** `PAMOGK_prep.R` (line ~88)
+
+---
+
+### filter_uniprot_ids
+
+```r
+filter_uniprot_ids(up_input, PAMOGK_UP_IDs)
+```
+
+**Description:** Filters data frames to retain only rows with UniProt IDs that exist in PAMOGK's database.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `up_input` | list | List of data frames with UniProt IDs as row names |
+| `PAMOGK_UP_IDs` | character | Vector of valid UniProt IDs from PAMOGK |
+
+**Returns:** List of filtered data frames with duplicates resolved by sum (SNPs) or MAD (continuous).
+
+**Source:** `PAMOGK_prep.R` (line ~142)
+
+---
+
+## iClusterBayes Tuning Functions
+
+### prepare_global_data
+
+```r
+prepare_global_data(data_list, K_values, var_name)
+```
+
+**Description:** Prepares a tidy data frame of Z.ar values across K values for density plotting.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~28)
+
+---
+
+### prepare_modality_data
+
+```r
+prepare_modality_data(data_list, K_values, var_name)
+```
+
+**Description:** Prepares a tidy data frame of Beta/Gamma acceptance rates by modality and K.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~38)
+
+---
+
+### get_summary_statistics_text
+
+```r
+get_summary_statistics_text(fit_list, K_values)
+```
+
+**Description:** Generates formatted text output summarizing acceptance rate statistics.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~50)
+
+---
+
+### create_global_plot
+
+```r
+create_global_plot(data, title)
+```
+
+**Description:** Creates a ggplot2 density plot of Z.ar values colored by K.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~81)
+
+---
+
+### create_modality_plot
+
+```r
+create_modality_plot(data, K, title)
+```
+
+**Description:** Creates a ggplot2 density plot of Beta/Gamma acceptance rates by modality.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~93)
+
+---
+
+### compute_robust_metrics_and_score
+
+```r
+compute_robust_metrics_and_score(tune_results, K_values)
+```
+
+**Description:** Computes median acceptance rates and composite score based on distance from optimal rate (0.234).
+
+**Returns:** List with `per_K_metrics` and `final_score` (lower is better).
+
+**Reference:** Roberts et al. (1997). Weak convergence and optimal scaling of random walk Metropolis algorithms.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~110)
+
+---
+
+### penalize_acceptance
+
+```r
+penalize_acceptance(acc_rate, low_thres = 0.1, high_thres = 0.9, penalty = 0.05)
+```
+
+**Description:** Returns a penalty if acceptance rate falls outside acceptable bounds.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `acc_rate` | numeric | Acceptance rate (0-1) |
+| `low_thres` | numeric | Lower threshold (default: 0.1) |
+| `high_thres` | numeric | Upper threshold (default: 0.9) |
+| `penalty` | numeric | Penalty if out of bounds (default: 0.05) |
+
+**Returns:** 0 if within bounds, `penalty` otherwise.
+
+**Source:** `iCB_inspect_HPC_tune_results.R` (line ~424)
+
+---
+
+## HPC Folder Functions
+
+### LRAcluster_HPC Functions (full_LRAcluster_source.R)
+
+Functions implementing the LRAcluster algorithm for multi-omics integration with support for binary, gaussian, and poisson data types.
+
+#### LRAcluster (Main Function)
+
+```r
+LRAcluster(data, types, dimension = 2, names = as.character(1:length(data)))
+```
+
+**Description:** Low-Rank Approximation clustering for integrating multiple data types. Performs dimension reduction while accounting for different data distributions.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `data` | list | List of data matrices (features × samples) |
+| `types` | character | Vector of data types ("binary", "gaussian", "poisson") |
+| `dimension` | integer | Target dimension (default: 2) |
+| `names` | character | Names for each data type |
+
+**Returns:** List with `coordinate` (sample coordinates) and `potential` (explained likelihood ratio).
+
+**Source:** `LRAcluster_HPC/full_LRAcluster_source.R` (line 44)
+
+---
+
+#### nuclear_approximation
+
+```r
+nuclear_approximation(mat, dimension)
+```
+
+**Description:** Computes low-rank matrix approximation using SVD with soft-thresholding on singular values.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `mat` | matrix | Input matrix |
+| `dimension` | integer | Target rank |
+
+**Returns:** Low-rank approximation of input matrix.
+
+**Source:** `LRAcluster_HPC/full_LRAcluster_source.R` (line 580)
+
+---
+
+#### Gaussian Data Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| `check.gaussian.row` | 219 | Validate gaussian row (non-all-NA) |
+| `check.gaussian` | 230 | Clean gaussian matrix, remove invalid rows |
+| `base.gaussian.row` | 248 | Compute row mean for baseline |
+| `base.gaussian` | 254 | Compute baseline matrix (row means) |
+| `update.gaussian` | 262 | Gradient update step |
+| `stop.gaussian` | 273 | Convergence criterion |
+| `LL.gaussian` | 285 | Log-likelihood computation |
+| `LLmax.gaussian` | 294 | Maximum log-likelihood (0) |
+| `LLmin.gaussian` | 299 | Minimum (null) log-likelihood |
+| `gaussian_base` | 307 | Standalone gaussian fitting |
+
+---
+
+#### Poisson Data Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| `check.poisson.row` | 333 | Validate poisson row (non-negative) |
+| `check.poisson` | 353 | Clean poisson matrix, add +1 to counts |
+| `base.poisson.row` | 370 | Compute log-mean for baseline |
+| `base.poisson` | 378 | Compute baseline matrix (log-means) |
+| `update.poisson` | 386 | Gradient update step |
+| `stop.poisson` | 397 | Convergence criterion |
+| `LL.poisson` | 407 | Log-likelihood computation |
+| `LLmax.poisson` | 415 | Maximum log-likelihood |
+| `LLmin.poisson` | 422 | Minimum (null) log-likelihood |
+| `poisson_type_base` | 429 | Standalone poisson fitting |
+
+---
+
+#### Binary Data Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| `check.binary.row` | 454 | Validate binary row (has variation) |
+| `check.binary` | 473 | Clean binary matrix, remove constant rows |
+| `base.binary.row` | 488 | Compute log-odds for baseline |
+| `base.binary` | 496 | Compute baseline matrix (log-odds) |
+| `update.binary` | 504 | Logistic gradient update |
+| `stop.binary` | 518 | Convergence criterion |
+| `LL.binary` | 532 | Log-likelihood computation |
+| `LLmax.binary` | 543 | Maximum log-likelihood (0) |
+| `LLmin.binary` | 548 | Minimum (null) log-likelihood |
+| `binary_type_base` | 558 | Standalone binary fitting |
+
+---
+
+#### Utility Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| `check.matrix.element` | 1 | Check if element is NOT a matrix |
+| `ncol.element` | 13 | Wrapper for ncol() |
+| `nrow.element` | 18 | Wrapper for nrow() |
+| `check` | 23 | Type dispatcher for validation |
+
+---
+
+### RWR-F_HPC Functions (RWR-F_source.R)
+
+Random Walk with Restart based network fusion for multi-omics integration.
+
+#### RWR_fusion_neighbor
+
+```r
+RWR_fusion_neighbor(sim_list, iteration_max = 1000, gama = 0.7,
+                    neighbor_num = 10, alpha = 0.9, beta = 0.9)
+```
+
+**Description:** RWR-based similarity network fusion with neighbor-based transitions. Integrates multiple similarity networks into a single fused matrix.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sim_list` | list | List of similarity matrices |
+| `iteration_max` | integer | Max iterations (default: 1000) |
+| `gama` | numeric | Restart probability (default: 0.7) |
+| `neighbor_num` | integer | Number of neighbors (default: 10) |
+| `alpha` | numeric | Self-network weight (default: 0.9) |
+| `beta` | numeric | Self-transition probability (default: 0.9) |
+
+**Returns:** Fused similarity matrix (normalized, symmetric).
+
+**Note:** Requires `foreach` and `doParallel` packages for parallel execution.
+
+**Source:** `RWR-F_HPC/RWR-F_source.R` (line 1)
+
+---
+
+#### RWR_fusion
+
+```r
+RWR_fusion(sim_list, iteration_max = 1000, gama = 0.7)
+```
+
+**Description:** Standard RWR-based network fusion (simpler variant without neighbor-based transitions).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sim_list` | list | List of similarity matrices |
+| `iteration_max` | integer | Max iterations (default: 1000) |
+| `gama` | numeric | Restart probability (default: 0.7) |
+
+**Returns:** Fused similarity matrix (normalized, symmetric).
+
+**Source:** `RWR-F_HPC/RWR-F_source.R` (line 176)
+
+---
+
+# Scripts/Consensus Functions
+
+Functions for consensus clustering analysis and post-processing.
+
+## calc_ari
+
+```r
+calc_ari(set1, set2, universe)
+```
+
+**Description:** Computes Adjusted Rand Index (ARI) between two sets of pathways by converting them to binary membership vectors.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `set1` | character | Pathway IDs in first set |
+| `set2` | character | Pathway IDs in second set |
+| `universe` | character | All possible pathway IDs |
+
+**Returns:** Numeric ARI value between -1 and 1.
+
+**Source:** `Post_consensus.R` (line 169), `Post_consensus_more_than_2_clusters.R` (line 157)
+
+---
+
+# Scripts/MOVICS Functions
+
+Functions for MOVICS baseline analysis and output inspection.
+
+## check_missing_values_with_indices
+
+```r
+check_missing_values_with_indices(input)
+```
+
+**Description:** Examines each matrix in a list for missing values, returning both count and row indices.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `input` | list | List of matrices to check |
+
+**Returns:** Named list with `na_count` and `missing_indices` for each matrix.
+
+**Source:** `MOVICS_baseline.R` (line 227)
+
+---
+
+## preprocessText
+
+```r
+preprocessText(textVector, removeStopwords = FALSE)
+```
+
+**Description:** Converts text strings to term-document matrix and extracts term frequencies for wordclouds.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `textVector` | character | Text strings to process |
+| `removeStopwords` | logical | Remove English stopwords (default: FALSE) |
+
+**Returns:** Data frame with `term` and `freq` columns.
+
+**Source:** `MOVICS_consensus_output_inspection.R` (line 580), `Comparisons.R` (line 505)
+
+---
+
+## overlap_coefficient
+
+```r
+overlap_coefficient(set1, set2)
+```
+
+**Description:** Computes Szymkiewicz-Simpson overlap coefficient: intersection / min(set sizes).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `set1` | vector | First set |
+| `set2` | vector | Second set |
+
+**Returns:** Numeric value 0-1. Returns 0 if either set is empty.
+
+**Source:** `MOVICS_consensus_output_inspection.R` (line 644), `Comparisons.R` (line 383)
+
+---
+
+## calculate_similarities
+
+```r
+calculate_similarities(algorithms, pathway_column, pathway_list)
+```
+
+**Description:** Computes pairwise similarity matrix between algorithms using overlap coefficient.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `algorithms` | character | Algorithm names |
+| `pathway_column` | unquoted | Column containing pathway lists |
+| `pathway_list` | data.frame | Data frame with Algorithm and pathway columns |
+
+**Returns:** Square numeric similarity matrix.
+
+**Source:** `MOVICS_consensus_output_inspection.R` (line 649)
+
+---
+
+# Scripts/method_comparisons/Comparisons.R Functions
+
+Functions for method comparison analysis.
+
+## calculate_pathway_similarity_matrix
+
+```r
+calculate_pathway_similarity_matrix(agg_list)
+```
+
+**Description:** Computes pairwise similarity matrix from a named list of pathway sets.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agg_list` | list | Named list of pathway vectors |
+
+**Returns:** Square numeric similarity matrix.
+
+**Source:** `Comparisons.R` (line 389)
+
+---
+
+## calculate_ari_pathway
+
+```r
+calculate_ari_pathway(agg_path1, agg_path2, all_pathways)
+```
+
+**Description:** Computes ARI between two pathway sets over a common universe.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agg_path1` | character | First pathway set |
+| `agg_path2` | character | Second pathway set |
+| `all_pathways` | character | Universe of all pathways |
+
+**Returns:** Numeric ARI value (-1 to 1).
+
+**Source:** `Comparisons.R` (line 544)
+
+---
+
+## cell_fun (inline)
+
+```r
+cell_fun(j, i, x, y, width, height, fill)
+```
+
+**Description:** Custom cell drawing function for ComplexHeatmap with dual-color schemes.
+
+**Details:** Handles diagonal cells (white), NA values, and applies different color schemes for cluster vs pathway ARI values. Requires external variables: `M`, `type_mat`, `col_fun_cluster`, `col_fun_pathway`.
+
+**Source:** `Comparisons.R` (line 677)
+
+---
+
+## pca_from_ari_matrix
+
+```r
+pca_from_ari_matrix(sim_matrix = NULL, clust_res = NULL, cluster_colors = NULL,
+                    output_path = NULL, pointsize = NULL, geom_label_size = NULL)
+```
+
+**Description:** Performs kernel PCA on an ARI matrix and creates a 2D visualization with category coloring.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sim_matrix` | matrix | Square ARI similarity matrix |
+| `clust_res` | data.frame | Algorithm metadata with Category column |
+| `cluster_colors` | named vector | Colors for each category |
+| `output_path` | character | Output path (unused) |
+| `pointsize` | numeric | Point size (default: 2) |
+| `geom_label_size` | numeric | Label size (default: 2) |
+
+**Returns:** ggplot object with kernel PCA projection.
+
+**Source:** `Comparisons.R` (line 1157)
+
+---
+
+# Top-level Scripts Functions
+
+Functions found in top-level scripts within the `Scripts/` folder.
+
+---
+
+## check_duplicate_rownames
+
+```r
+check_duplicate_rownames(data_object)
+```
+
+**Description:** Checks for duplicate rownames in a list of matrices. Identifies which matrices have duplicated rownames and returns a summary.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `data_object` | list | Named list of matrices to check for duplicate rownames |
+
+**Returns:** Named character vector containing duplicated rownames for matrices that have duplicates, or "No duplicates found" messages.
+
+**Details:** Also found in `RNAseq_clean_counts.R` with parameter name `rna_object`.
+
+**Source:** `Download_TCGA_data.R` (line 497), `RNAseq_clean_counts.R` (line 14)
+
+---
+
+## filter_most_variant_rows
+
+```r
+filter_most_variant_rows(data, data_row_names)
+```
+
+**Description:** Handles duplicate rownames by keeping only the most variant rows. For genes with multiple probe mappings, retains the probe/row with highest variance.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `data` | matrix | Data matrix with numeric values |
+| `data_row_names` | character | Vector of rownames (possibly with duplicates) |
+
+**Returns:** Matrix with unique rownames, keeping only the most variant row for each duplicated gene.
+
+**Dependencies:** Requires `matrixStats::rowVars()` for variance calculation.
+
+**Source:** `Download_TCGA_data.R` (line 528), `RNAseq_clean_counts.R` (line 43)
+
+---
+
+\newpage
+
 # Alphabetical Index
 
-| Function | Source File | Page |
-|----------|-------------|------|
-| as.sunburstDF | custom_functions.R | |
-| calculate_ari_index | custom_functions.R | |
-| calculate_nmi_index | custom_functions.R | |
-| calculate_S | custom_functions.R | |
-| CIMLR_mod | custom_functions.R | |
-| CIMLR_Estimate_Number_of_Clusters_weight_mod | custom_functions.R | |
-| CIMLR.weight_mod | custom_functions.R | |
-| cluster_enriched_terms_fast | fast_pathfindR_hclust.R | |
-| cluster_graph_vis_fast | fast_pathfindR_hclust.R | |
-| CNN_kernel_mod | Spectrum_functions.R | |
-| coca_cc_mod | custom_functions.R | |
-| compAgree2 | modified_MOVICS_functions.R | |
-| compAgree_single_algorithm | modified_MOVICS_functions.R | |
-| compClinvar2 | modified_MOVICS_functions.R | |
-| compClinvar_ordinal_single_algorithm | modified_MOVICS_functions.R | |
-| compClinvar_single_algorithm | modified_MOVICS_functions.R | |
-| compDrugsen_single_algorithm | modified_MOVICS_functions.R | |
-| compFGA_mod | modified_MOVICS_functions.R | |
-| compFGA_optimized | modified_MOVICS_functions.R | |
-| compMut_single_algorithm | modified_MOVICS_functions.R | |
-| compMut_single_algorithm_sc | modified_MOVICS_functions.R | |
-| compSurv_ext | modified_MOVICS_functions.R | |
-| compute_matrix_similarity | custom_functions.R | |
-| compute_silhouette | custom_functions.R | |
-| concordanceNetworkNMI_ANF | custom_functions.R | |
-| create_annot_barchart | custom_functions.R | |
-| create_density_curve | custom_functions.R | |
-| create_density_plot_color | custom_functions.R | |
-| create_kappa_matrix_fast | fast_pathfindR_hclust.R | |
-| create_MO_heatmap | custom_functions.R | |
-| dist2.cimlr_mod2 | custom_functions.R | |
-| dist2.cimlr.weight_mod | custom_functions.R | |
-| divide_by_quantile_normalize | custom_functions.R | |
-| estimateNumberOfClustersGivenGraph_mod | custom_functions.R | |
-| fetch_citation | custom_functions.R | |
-| fetch_in_a_nutshell | custom_functions.R | |
-| frobenius_norm | custom_functions.R | |
-| fuzzy_term_clustering_fast | fast_pathfindR_hclust.R | |
-| getMoHeatmap_prenorm_quart | custom_functions.R | |
-| getMoHeatmap_single_algorithm | modified_MOVICS_functions.R | |
-| getMoHeatmap_single_algorithm2 | modified_MOVICS_functions.R | |
-| getSilhouette_ggplot | modified_MOVICS_functions.R | |
-| hierarchical_term_clustering_fast | fast_pathfindR_hclust.R | |
-| kernfinder_local_mod | Spectrum_functions.R | |
-| kernfinder_mine_mod | Spectrum_functions.R | |
-| linear_quantile_normalize | custom_functions.R | |
-| mds_from_original_matrix | custom_functions.R | |
-| MOVICS_jaccard_index | custom_functions.R | |
-| multiple.kernel.cimlr_mod | custom_functions.R | |
-| multiple.kernel.cimlr.weight_mod | custom_functions.R | |
-| nemo.affinity.graph_mod | custom_functions.R | |
-| normalize_affinity_matrix | custom_functions.R | |
-| ntp_mod | modified_MOVICS_functions.R | |
-| pca_from_original_matrix | custom_functions.R | |
-| pca_from_sim_matrix | custom_functions.R | |
-| pearson_correlation | custom_functions.R | |
-| plot_MOFA_cumul_var_exp | custom_functions.R | |
-| plot_MOFA_var_exp | custom_functions.R | |
-| plot_pathway_heatmaps | modified_MOVICS_functions.R | |
-| prepare_gsea_output_for_hclust | modified_MOVICS_functions.R | |
-| rankFeaturesByNMI_parallely | custom_functions.R | |
-| rankFeaturesByNMI_parallely_ANF | custom_functions.R | |
-| rbfkernel_b_mod | Spectrum_functions.R | |
-| reshape_Pearson_for_tests | custom_functions.R | |
-| runDEA_mod | modified_MOVICS_functions.R | |
-| runGSEA_mod | modified_MOVICS_functions.R | |
-| runGSEA_mod_4.4 | modified_MOVICS_functions.R | |
-| runGSEA_mod_4.4_single_algorithm | modified_MOVICS_functions.R | |
-| runGSVA_mod_4.4 | modified_MOVICS_functions.R | |
-| runGSVA_mod_4.4_single_algorithm | modified_MOVICS_functions.R | |
-| runKappa_single_algorithm | modified_MOVICS_functions.R | |
-| runMarker_mod_4.4 | modified_MOVICS_functions.R | |
-| runMarker_single_algorithm | modified_MOVICS_functions.R | |
-| runMarker_single_algorithm_no_export | modified_MOVICS_functions.R | |
-| runNTP_mod | modified_MOVICS_functions.R | |
-| runPAM_single_algorithm | modified_MOVICS_functions.R | |
-| Spectrum_bin_and_par | Spectrum_functions.R | |
-| standardize_rows | custom_functions.R | |
-| subHeatmap_mod | modified_MOVICS_functions.R | |
-| TCGAanalyze_survival_custom3 | custom_functions.R | |
-| twoclassdeseq2_mod | modified_MOVICS_functions.R | |
-| twoclassedger_mod | modified_MOVICS_functions.R | |
-| twoclasslimma_mod | modified_MOVICS_functions.R | |
+| Function | Source File |
+|----------|-------------|
+| as.sunburstDF | custom_functions.R |
+| base.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| base.binary.row | LRAcluster_HPC/full_LRAcluster_source.R |
+| base.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| base.gaussian.row | LRAcluster_HPC/full_LRAcluster_source.R |
+| base.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| base.poisson.row | LRAcluster_HPC/full_LRAcluster_source.R |
+| binary_type_base | LRAcluster_HPC/full_LRAcluster_source.R |
+| calc_ari | Post_consensus.R, Post_consensus_more_than_2_clusters.R |
+| calculate_ari_index | custom_functions.R |
+| calculate_ari_pathway | Comparisons.R |
+| calculate_nmi_index | custom_functions.R |
+| calculate_pathway_similarity_matrix | Comparisons.R |
+| calculate_S | custom_functions.R |
+| calculate_similarities | MOVICS_consensus_output_inspection.R |
+| cell_fun | Comparisons.R |
+| check | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.binary.row | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.gaussian.row | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.matrix.element | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| check.poisson.row | LRAcluster_HPC/full_LRAcluster_source.R |
+| check_duplicate_rownames | Download_TCGA_data.R, RNAseq_clean_counts.R |
+| check_missing_values_with_indices | MOVICS_baseline.R, Download_TCGA_data.R, RNAseq_clean_counts.R |
+| CIMLR_mod | custom_functions.R |
+| clean_rownames | PAMOGK_prep.R |
+| compute_matrix_similarity | ab-SNF.R, ANF.R, RWR-F.R, RWR-NF.R, SNF.R, Spectrum.R |
+| compute_robust_metrics_and_score | iCB_inspect_HPC_tune_results.R |
+| create_global_plot | iCB_inspect_HPC_tune_results.R |
+| create_modality_plot | iCB_inspect_HPC_tune_results.R |
+| determine_edge_support | ab-SNF.R, ANF.R, MDICC.R, RWR-F.R, RWR-NF.R, SNF.R |
+| edge_absolute_mean | MONET.R |
+| extract_eigenspace | wMKL.R |
+| fetch_citation | custom_functions.R |
+| fetch_in_a_nutshell | custom_functions.R |
+| filter_most_variant_rows | Download_TCGA_data.R, RNAseq_clean_counts.R |
+| filter_uniprot_ids | PAMOGK_prep.R |
+| fix_uniprot_row_names | PAMOGK_prep.R |
+| frobenius_norm | custom_functions.R |
+| fuzzy_term_clustering_fast | fast_pathfindR_hclust.R |
+| gaussian_base | LRAcluster_HPC/full_LRAcluster_source.R |
+| get_dimensions | PAMOGK_prep.R |
+| get_mod_edge_absmean | MONET.R |
+| get_summary_statistics_text | iCB_inspect_HPC_tune_results.R |
+| getMoHeatmap_prenorm_quart | custom_functions.R |
+| getMoHeatmap_single_algorithm | modified_MOVICS_functions.R |
+| getMoHeatmap_single_algorithm2 | modified_MOVICS_functions.R |
+| getSilhouette_ggplot | modified_MOVICS_functions.R |
+| hclust_gap | COCA.R |
+| hierarchical_term_clustering_fast | fast_pathfindR_hclust.R |
+| kernfinder_local_mod | Spectrum_functions.R |
+| kernfinder_mine_mod | Spectrum_functions.R |
+| linear_quantile_normalize | custom_functions.R |
+| LL.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| LL.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| LL.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| LLmax.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| LLmax.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| LLmax.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| LLmin.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| LLmin.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| LLmin.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| LRAcluster | LRAcluster_HPC/full_LRAcluster_source.R |
+| mad_based_weights | ab-SNF.R, wMKL.R |
+| mds_from_original_matrix | custom_functions.R |
+| MOVICS_jaccard_index | custom_functions.R |
+| multiple.kernel.cimlr_mod | custom_functions.R |
+| multiple.kernel.cimlr.weight_mod | custom_functions.R |
+| ncol.element | LRAcluster_HPC/full_LRAcluster_source.R |
+| nemo.affinity.graph_mod | custom_functions.R |
+| normalize_affinity_matrix | custom_functions.R |
+| nrow.element | LRAcluster_HPC/full_LRAcluster_source.R |
+| ntp_mod | modified_MOVICS_functions.R |
+| nuclear_approximation | LRAcluster_HPC/full_LRAcluster_source.R |
+| offset_correlation | MONET.R |
+| overlap_coefficient | MOVICS_consensus_output_inspection.R, Comparisons.R |
+| pca_from_ari_matrix | Comparisons.R |
+| pca_from_original_matrix | custom_functions.R |
+| pca_from_sim_matrix | custom_functions.R |
+| pearson_correlation | custom_functions.R |
+| penalize_acceptance | iCB_inspect_HPC_tune_results.R |
+| plot_MOFA_cumul_var_exp | custom_functions.R |
+| plot_MOFA_var_exp | custom_functions.R |
+| plot_pathway_heatmaps | modified_MOVICS_functions.R |
+| poisson_type_base | LRAcluster_HPC/full_LRAcluster_source.R |
+| prepare_global_data | iCB_inspect_HPC_tune_results.R |
+| prepare_gsea_output_for_hclust | modified_MOVICS_functions.R |
+| prepare_modality_data | iCB_inspect_HPC_tune_results.R |
+| preprocessText | MOVICS_consensus_output_inspection.R, Comparisons.R |
+| rankFeaturesByNMI_parallely | custom_functions.R |
+| rankFeaturesByNMI_parallely_ANF | custom_functions.R |
+| rbfkernel_b_mod | Spectrum_functions.R |
+| remove_na_rownames | PAMOGK_prep.R |
+| reshape_Pearson_for_tests | custom_functions.R |
+| runDEA_mod | modified_MOVICS_functions.R |
+| runGSEA_mod | modified_MOVICS_functions.R |
+| runGSEA_mod_4.4 | modified_MOVICS_functions.R |
+| runGSEA_mod_4.4_single_algorithm | modified_MOVICS_functions.R |
+| runGSVA_mod_4.4 | modified_MOVICS_functions.R |
+| runGSVA_mod_4.4_single_algorithm | modified_MOVICS_functions.R |
+| runKappa_single_algorithm | modified_MOVICS_functions.R |
+| runMarker_mod_4.4 | modified_MOVICS_functions.R |
+| runMarker_single_algorithm | modified_MOVICS_functions.R |
+| runMarker_single_algorithm_no_export | modified_MOVICS_functions.R |
+| runNTP_mod | modified_MOVICS_functions.R |
+| runPAM_single_algorithm | modified_MOVICS_functions.R |
+| RWR_fusion | RWR-F_HPC/RWR-F_source.R |
+| RWR_fusion_neighbor | RWR-F_HPC/RWR-F_source.R |
+| spectral_clustering_eig | ANF.R |
+| spectralClustering_eig | ab-SNF.R, SNF.R, NEMO.R |
+| Spectrum_bin_and_par | Spectrum_functions.R |
+| standardize_rows | custom_functions.R |
+| stop.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| stop.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| stop.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| subHeatmap_mod | modified_MOVICS_functions.R |
+| TCGAanalyze_survival_custom3 | custom_functions.R |
+| twoclassdeseq2_mod | modified_MOVICS_functions.R |
+| twoclassedger_mod | modified_MOVICS_functions.R |
+| twoclasslimma_mod | modified_MOVICS_functions.R |
+| unbiased.cv.test | 18 algorithm scripts |
+| update.binary | LRAcluster_HPC/full_LRAcluster_source.R |
+| update.gaussian | LRAcluster_HPC/full_LRAcluster_source.R |
+| update.poisson | LRAcluster_HPC/full_LRAcluster_source.R |
+| weighted_euclidean_dist | ab-SNF.R |
+| weighted_hamming_fraction | ab-SNF.R |
+| weighted_mutations | wMKL.R |
 
 ---
 
 *Documentation auto-generated for MultiOmicsSurvey project.*
+
