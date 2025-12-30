@@ -312,7 +312,7 @@ final_kvals = final_KLIC$bestCombo
 CMcombo_final <- array(0, dim = c(nSamples, nSamples, nDatasets))
 for (i in seq_len(nDatasets)) {
   # If k_i = 2 => index in allCM is (2 - 2 + 1) = 1, if k_i = 3 => 2, etc.
-  idxInAllCM <- kvals[i] - 2 + 1
+  idxInAllCM <- final_kvals[i] - 2 + 1
   CMcombo_final[, , i] <- allCM[[idxInAllCM]][, , i]
 }
 local_params_final <- km_parameters
@@ -392,14 +392,22 @@ local_params = list(iteration_count = km_parameters$iteration_count,
 final_res = klic::lmkkmeans(final_CM, local_params)
 final_WKM <- matrix(0, nrow = nSamples, ncol = nSamples)
 for (j in seq_len(nDatasets)) {
-  final_WKM <- final_WKM + (res$Theta[, j] %*% t(res$Theta[, j])) * final_CM[,, j]
+  final_WKM <- final_WKM + (final_res$Theta[, j] %*% t(final_res$Theta[, j])) * final_CM[,, j]
 }
 dimnames(final_WKM) = list(rownames(input$SNPs), rownames(input$SNPs))
+
+# final_res$clustering has exactly the reversed labels from KLIC_clusters$clusters
+# We change them to match for consistency
+ones = which(final_res$clustering == 1)
+twos = which(final_res$clustering == 2)
+final_res$clustering[ones] = 2
+final_res$clustering[twos] = 1
+rm(ones, twos)
 final_silhouette = silhouette(final_res$clustering,
                               as.dist(1 - final_WKM))
 
 # Silhouette
-getSilhouette_ggplot(sil      = sil,
+getSilhouette_ggplot(sil      = final_silhouette,
                      fig.path = paste0(home, "/Results/single_algorithm/", algorithm),
                      fig.name = "Silhouette",
                      height   = 5.5,
