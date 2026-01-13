@@ -31,6 +31,7 @@ Results/Stability analysis
 /Resources/MOFA_input.rds
 /Resources/PIntMF_input.rds
 /Resources/Python
+/Resources/Performance/MDICC
 /Resources/Performance/mm_input.rds
 /Python/MONET/.git
 /Python/MONET/build
@@ -55,3 +56,9 @@ Results/Stability analysis
 /Results/Survival_evaluations/env_objects.rds
 /Poster/
 rngversion_replacement.bat
+clust_col.rds
+hex_col.rds
+package_shiny_data.R
+shiny_app_data.zip
+Results/Performance_benchmarks/MSNE
+Results/master_dataset.csv

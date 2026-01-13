@@ -1,0 +1,6 @@
+[2025-12-29 15:06:21.747882] COCA feature subset 10%
+[2025-12-29 15:07:37.089718] COCA feature subset 20%
+[2025-12-29 15:11:15.878218] COCA feature subset 50%
+[2025-12-29 15:30:44.606904] COCA feature subset 75%
+[2025-12-29 16:02:09.27035] COCA feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/COCA/job_19960838_20251229T150613Z/out/COCA_feature_perturbations_performance.tsv

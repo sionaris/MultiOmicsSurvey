@@ -1,0 +1,6 @@
+[2026-01-08 09:48:31.461601] iClusterBayes feature subset 10%
+[2026-01-08 10:09:53.757047] iClusterBayes feature subset 20%
+[2026-01-08 10:56:52.076196] iClusterBayes feature subset 50%
+[2026-01-08 12:56:47.778302] iClusterBayes feature subset 75%
+[2026-01-08 16:07:58.814087] iClusterBayes feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/iClusterBayes/array_20298704/task_3/out/iClusterBayes_feature_perturbations_performance.tsv

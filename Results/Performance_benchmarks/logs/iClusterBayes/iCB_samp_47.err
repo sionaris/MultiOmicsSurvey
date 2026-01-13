@@ -1,0 +1,15 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+[2026-01-12 12:52:55.134397] iClusterBayes sample subset 90% rep 7
+
+ *** caught bus error ***
+address 0x147029eea7e0, cause 'non-existent physical address'
+
+Traceback:
+ 1: data.table::fwrite(as.data.table(clusters_df), clust_file, sep = "\t",     quote = FALSE, compress = "gzip")
+ 2: doTryCatch(return(expr), name, parentenv, handler)
+ 3: tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 4: tryCatchList(expr, classes, parentenv, handlers)
+ 5: tryCatch({    X_use_aligned <- align_modalities(X_use, ref_mod = "RNAseq")    sample_ids <- colnames(X_use_aligned[["RNAseq"]])    n_samples <- length(sample_ids)    icb_out <- NULL    gc()    pr <- peakRAM::peakRAM({        icb_out <<- run_icb_fixed(X_use_aligned)    })    elapsed_s <- as.numeric(pr$Elapsed_Time[1])    peak_mib <- as.numeric(pr$Peak_RAM_Used_MiB[1])    clusters_df <- data.frame(Sample.ID = gsub("\\.", "-", sample_ids),         Cluster_pred = as.integer(icb_out$clusters), stringsAsFactors = FALSE)    ari_gt <- ari_to_ground_truth(ground_truth_labels, clusters_df)    clust_file <- file.path(out_root, sprintf("%s_clusters_samples_%dpct_rep%02d.tsv.gz",         algorithm, frac, repi))    data.table::fwrite(as.data.table(clusters_df), clust_file,         sep = "\t", quote = FALSE, compress = "gzip")    list(ok = TRUE, n_samples = n_samples, ari = ari_gt, elapsed = elapsed_s,         peak = peak_mib, err = NA_character_)}, error = function(e) {    list(ok = FALSE, n_samples = NA_integer_, ari = NA_real_,         elapsed = NA_real_, peak = NA_real_, err = conditionMessage(e))})
+An irrecoverable exception occurred. R is aborting now ...
+srun: error: cpu-q-358: task 0: Bus error

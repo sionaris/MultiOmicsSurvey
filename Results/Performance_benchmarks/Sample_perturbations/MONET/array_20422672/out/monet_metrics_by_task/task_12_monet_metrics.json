@@ -1,0 +1,22 @@
+{
+  "seed": 123,
+  "params": {
+    "iters": 10000,
+    "num_of_seeds": 100,
+    "num_of_samples_in_seed": 10,
+    "min_mod_size": 10,
+    "max_pats_per_action": 10,
+    "percentile_shift": null,
+    "percentile_remove_edge": 80
+  },
+  "n_samples": 125,
+  "n_modules": 3,
+  "main_loop_elapsed_seconds": 3.9791197776794434,
+  "monet_total_time": 3.979109287261963,
+  "total_weight": 394.54061780011244,
+  "iteration_times_len": 25,
+  "outputs": {
+    "clustering_tsv": "/home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_12/out/monet_results/monet_clustering.tsv",
+    "avg_adjacency_tsv_gz": "/home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_12/out/monet_results/monet_avg_adjacency.tsv.gz"
+  }
+}

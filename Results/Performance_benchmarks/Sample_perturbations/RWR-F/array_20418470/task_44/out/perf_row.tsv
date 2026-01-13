@@ -1,0 +1,2 @@
+Algorithm	Sample_Percent	Replicate	n_samples	p_total	Affinity_K	Affinity_sigma	RWR_iteration_max	RWR_gamma	n_clusters	ARI_to_Ground_Truth	Average_Silhouette_Width	PeakRAM_MiB_Fusion	PeakRAM_Elapsed_Seconds_Fusion
+RWR-F	90	4	562	143830	50	0.5	1000	0.7	2	1	0.668634248201233	1325	10029.027

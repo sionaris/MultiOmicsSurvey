@@ -1,0 +1,9 @@
+job_id  20073247
+task_id 3
+timestamp_utc   20251231T122259Z
+method  LRAcluster
+partition       icelake-himem
+nodelist        cpu-q-395
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

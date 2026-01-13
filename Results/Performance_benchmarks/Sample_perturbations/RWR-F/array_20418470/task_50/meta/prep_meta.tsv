@@ -1,0 +1,2 @@
+Algorithm	Mode	Sample_Percent	Replicate	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs
+RWR-F	sample	90	10	562	143830	56717	35858	36761	1568	12926

@@ -1,0 +1,56 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+Detected MOSEK library via Rmosek: MOSEK 10.2.13
+[2026-01-02 14:16:15.112658] KLIC sample subset 10% rep 1
+[2026-01-02 14:16:21.119546] KLIC sample subset 10% rep 2
+[2026-01-02 14:16:25.697489] KLIC sample subset 10% rep 3
+[2026-01-02 14:16:31.05882] KLIC sample subset 10% rep 4
+[2026-01-02 14:16:34.862492] KLIC sample subset 10% rep 5
+[2026-01-02 14:16:39.338364] KLIC sample subset 10% rep 6
+[2026-01-02 14:16:44.263868] KLIC sample subset 10% rep 7
+[2026-01-02 14:16:49.615818] KLIC sample subset 10% rep 8
+[2026-01-02 14:16:54.080653] KLIC sample subset 10% rep 9
+[2026-01-02 14:16:57.847604] KLIC sample subset 10% rep 10
+[2026-01-02 14:17:02.081372] KLIC sample subset 20% rep 1
+[2026-01-02 14:17:09.80632] KLIC sample subset 20% rep 2
+[2026-01-02 14:17:18.034555] KLIC sample subset 20% rep 3
+[2026-01-02 14:17:27.71786] KLIC sample subset 20% rep 4
+[2026-01-02 14:17:34.953167] KLIC sample subset 20% rep 5
+[2026-01-02 14:17:49.02747] KLIC sample subset 20% rep 6
+[2026-01-02 14:17:56.754938] KLIC sample subset 20% rep 7
+[2026-01-02 14:18:05.195266] KLIC sample subset 20% rep 8
+[2026-01-02 14:18:15.858225] KLIC sample subset 20% rep 9
+[2026-01-02 14:18:23.041163] KLIC sample subset 20% rep 10
+[2026-01-02 14:18:35.546075] KLIC sample subset 50% rep 1
+[2026-01-02 14:19:09.290473] KLIC sample subset 50% rep 2
+[2026-01-02 14:19:56.302661] KLIC sample subset 50% rep 3
+[2026-01-02 14:20:36.904383] KLIC sample subset 50% rep 4
+[2026-01-02 14:21:07.414324] KLIC sample subset 50% rep 5
+[2026-01-02 14:21:40.385452] KLIC sample subset 50% rep 6
+[2026-01-02 14:22:12.047569] KLIC sample subset 50% rep 7
+[2026-01-02 14:22:42.854378] KLIC sample subset 50% rep 8
+[2026-01-02 14:23:18.283475] KLIC sample subset 50% rep 9
+[2026-01-02 14:23:49.009291] KLIC sample subset 50% rep 10
+[2026-01-02 14:24:19.897202] KLIC sample subset 70% rep 1
+[2026-01-02 14:25:28.210751] KLIC sample subset 70% rep 2
+[2026-01-02 14:26:32.769964] KLIC sample subset 70% rep 3
+[2026-01-02 14:27:31.198582] KLIC sample subset 70% rep 4
+[2026-01-02 14:28:30.485857] KLIC sample subset 70% rep 5
+[2026-01-02 14:29:34.462914] KLIC sample subset 70% rep 6
+[2026-01-02 14:30:32.159844] KLIC sample subset 70% rep 7
+[2026-01-02 14:31:36.376938] KLIC sample subset 70% rep 8
+[2026-01-02 14:32:32.408201] KLIC sample subset 70% rep 9
+[2026-01-02 14:33:42.264971] KLIC sample subset 70% rep 10
+[2026-01-02 14:34:45.775497] KLIC sample subset 90% rep 1
+[2026-01-02 14:36:25.421761] KLIC sample subset 90% rep 2
+[2026-01-02 14:38:06.840823] KLIC sample subset 90% rep 3
+[2026-01-02 14:40:09.515444] KLIC sample subset 90% rep 4
+[2026-01-02 14:41:46.134145] KLIC sample subset 90% rep 5
+[2026-01-02 14:43:35.746014] KLIC sample subset 90% rep 6
+[2026-01-02 14:45:39.045085] KLIC sample subset 90% rep 7
+[2026-01-02 14:47:31.176433] KLIC sample subset 90% rep 8
+[2026-01-02 14:49:22.657108] KLIC sample subset 90% rep 9
+[2026-01-02 14:51:07.667586] KLIC sample subset 90% rep 10
+Error: unexpected 'else' in "else"
+Execution halted
+srun: error: cpu-q-385: task 0: Exited with exit code 1

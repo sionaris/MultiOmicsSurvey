@@ -1,0 +1,8 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+[2026-01-09 12:48:06.134811] NEMO feature subset 10%
+[2026-01-09 12:48:10.180923] NEMO feature subset 20%
+[2026-01-09 12:48:15.7825] NEMO feature subset 50%
+[2026-01-09 12:48:40.00616] NEMO feature subset 75%
+[2026-01-09 12:49:17.517566] NEMO feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/NEMO/job_20347327_20260109T124758Z/out/NEMO_feature_perturbations_performance.tsv

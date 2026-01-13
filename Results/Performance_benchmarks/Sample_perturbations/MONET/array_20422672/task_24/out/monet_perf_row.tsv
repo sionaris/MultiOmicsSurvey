@@ -1,0 +1,2 @@
+Algorithm	Sample_Percent	Replicate	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	n_modules	ARI_to_Ground_Truth	Average_Silhouette_Width	MONET_MainLoop_Elapsed_Seconds	MONET_PeakRSS_MiB
+MONET	50	4	312	143830	56717	35858	36761	1568	12926	4	3	0.782819122590756	0.0261375420208677	28.087174654007	10.48046875

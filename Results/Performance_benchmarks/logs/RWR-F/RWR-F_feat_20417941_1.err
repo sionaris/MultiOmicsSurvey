@@ -1,0 +1,5 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+srun: Job step aborted: Waiting up to 122 seconds for job step to finish.
+slurmstepd: error: *** JOB 20417946 ON cpu-q-390 CANCELLED AT 2026-01-10T00:51:32 ***
+slurmstepd: error: *** STEP 20417946.0 ON cpu-q-390 CANCELLED AT 2026-01-10T00:51:32 ***

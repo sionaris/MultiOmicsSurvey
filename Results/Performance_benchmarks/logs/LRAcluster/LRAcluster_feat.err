@@ -1,0 +1,6 @@
+[2025-12-30 13:33:47.679824] LRAcluster feature subset 10%
+[2025-12-30 13:43:06.546353] LRAcluster feature subset 20%
+[2025-12-30 13:53:39.524511] LRAcluster feature subset 50%
+[2025-12-30 14:07:29.387231] LRAcluster feature subset 75%
+slurmstepd: error: Detected 1 oom_kill event in StepId=20025379.0. Some of the step tasks have been OOM Killed.
+srun: error: cpu-q-425: task 0: Out Of Memory

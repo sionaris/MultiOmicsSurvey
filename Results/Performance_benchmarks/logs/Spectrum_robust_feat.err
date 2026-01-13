@@ -1,0 +1,8 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+[2026-01-09 00:19:40.635418] Spectrum feature subset 10%
+[2026-01-09 00:21:57.893245] Spectrum feature subset 20%
+[2026-01-09 00:24:32.009607] Spectrum feature subset 50%
+[2026-01-09 00:28:09.03008] Spectrum feature subset 75%
+[2026-01-09 00:32:40.218713] Spectrum feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/Spectrum/job_20332411_20260109T001929Z/out/Spectrum_feature_perturbations_performance.tsv

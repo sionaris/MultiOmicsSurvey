@@ -1,0 +1,8 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+[2026-01-09 00:22:05.750396] wMKL feature subset 10%
+[2026-01-09 00:27:47.011571] wMKL feature subset 20%
+[2026-01-09 00:30:56.627159] wMKL feature subset 50%
+[2026-01-09 00:33:36.531642] wMKL feature subset 75%
+[2026-01-09 00:36:22.538415] wMKL feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/wMKL/job_20337166_20260109T002200Z/out/wMKL_feature_perturbations_performance.tsv

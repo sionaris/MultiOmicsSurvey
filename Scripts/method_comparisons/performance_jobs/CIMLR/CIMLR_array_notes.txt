@@ -1,0 +1,39 @@
+Why we used arrays for CIMLR
+- The “one big job with loops” approach caused issues (file locks / occasional OOM) and was annoying to restart.
+- Arrays let each subset run in its own clean process and write its own outputs, so nothing fights over the same files.
+
+What we did
+1) Feature perturbations (5 centiles)
+- Turned the 5 centiles (10/20/50/75/90%) into a 5-task Slurm array.
+- Each task runs exactly ONE centile (picked by SLURM_ARRAY_TASK_ID).
+- Each task writes:
+  - CIMLR_clusters_<pct>pct.tsv.gz
+  - perf_row_<pct>pct.tsv   (one-row performance summary for that centile)
+
+2) Sample perturbations (50 subsets)
+- sample_subsets.tsv.gz contains 5 fractions × 10 replicates = 50 (fraction,replicate) pairs.
+- Turned those into a 50-task Slurm array.
+- Each task runs exactly ONE (fraction,replicate) pair.
+- Each task writes:
+  - CIMLR_clusters_samples_<frac>pct_rep<rep>.tsv.gz
+  - perf_row_samples_<frac>pct_rep<rep>.tsv
+
+3) Merge step
+- After the array finishes, a small merge job concatenates all perf_row_*.tsv files into the final TSV:
+  - CIMLR_feature_perturbations_performance.tsv
+  - CIMLR_sample_perturbations_performance.tsv
+- This avoids concurrent writes and therefore avoids locks.
+
+Where outputs go
+- One run directory per array submission:
+  Results/Performance/<Feature_perturbations|Sample_perturbations>/CIMLR/array_<ARRAY_JOB_ID>/
+    task_<TASK_ID>/out/   (per-task outputs)
+    out/                  (final merged outputs written by the merge job)
+
+Submission pattern
+- Feature:
+  sbatch CIMLR_feature_array.sh
+  sbatch --dependency=afterok:<feat_array_jobid> --export=ALL,ARRAY_JOB_ID=<feat_array_jobid> CIMLR_feature_merge.sh
+- Sample:
+  sbatch CIMLR_sample_array.sh
+  sbatch --dependency=afterok:<samp_array_jobid> --export=ALL,ARRAY_JOB_ID=<samp_array_jobid> CIMLR_sample_merge.sh

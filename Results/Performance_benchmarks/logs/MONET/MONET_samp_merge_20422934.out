@@ -1,0 +1,4 @@
+[Sat Jan 10 11:41:25 GMT 2026] MONET sample merge starting for array_20422672
+RUN_DIR=/home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672
+Wrote merged perf rows: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/out/monet_perf_rows.tsv
+[Sat Jan 10 11:41:27 GMT 2026] MONET sample merge done

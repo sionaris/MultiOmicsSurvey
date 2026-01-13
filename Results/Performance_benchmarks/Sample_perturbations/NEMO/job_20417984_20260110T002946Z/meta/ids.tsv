@@ -1,0 +1,8 @@
+job_id  20417984
+timestamp_utc   20260110T002946Z
+method  NEMO
+partition       icelake-himem
+nodelist        cpu-q-306
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

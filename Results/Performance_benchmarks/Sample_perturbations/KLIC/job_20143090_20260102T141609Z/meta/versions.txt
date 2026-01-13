@@ -1,0 +1,16 @@
+/usr/local/software/spack/csd3/opt-2024-06-01/linux-rocky8-cascadelake/gcc-13.3.0/r-4.4.0-3z5n2tphp5kcx6pysubn5svc7qtzd5uv/bin/R
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under the terms of the
+GNU General Public License versions 2 or 3.
+For more information about these matters see
+https://www.gnu.org/licenses/.
+
+/usr/local/software/spack/csd3/opt-2024-06-01/linux-rocky8-cascadelake/gcc-13.3.0/r-4.4.0-3z5n2tphp5kcx6pysubn5svc7qtzd5uv/bin/Rscript
+Rscript (R) version 4.4.0 (2024-04-24)
+/home/as3582/mosek/10.2/tools/platform/linux64x86/bin/mosek
+MOSEK version 10.2.13
+Return code - 0  [MSK_RES_OK]

@@ -1,0 +1,91 @@
+Loading rhel8/cclake/base
+  Loading requirement: ucx/1.15.0 rhel8/global rhel8/slurm
+    rhel8/cclake-env/2024-06-01
+Loading r/4.4.0/gcc/3z5n2tph
+  Loading requirement: glibc/2.28/gcc/4d2cj5pu gcc-runtime/13.3.0/gcc/2sn7kkm3
+    bzip2/1.0.8/gcc/62ss4meq font-util/1.4.1/gcc/uwa7i4hx
+    zlib-ng/2.1.6/gcc/mkjcey6m libpng/1.6.39/gcc/picyifym
+    freetype/2.13.2/gcc/yzx2rbxu libiconv/1.17/gcc/rlhw7p3w
+    xz/5.4.6/gcc/ygcbendp libxml2/2.10.3/gcc/jfra75fq
+    util-linux-uuid/2.40.1/gcc/mptu6qby fontconfig/2.15.0/gcc/z6ns4nbe
+    ncurses/6.5/gcc/w4v62xxg pigz/2.8/gcc/dk5rynep zstd/1.5.6/gcc/l5c7mfsx
+    tar/1.34/gcc/zd6ps6n6 gettext/0.22.5/gcc/uqjtzsys pkgconf/2.2.0/gcc/ep62ukkp
+    elfutils/0.191/gcc/f7jb6waa libffi/3.4.6/gcc/xkhq3n5o
+    pcre2/10.43/gcc/pumkpkxl berkeley-db/18.1.40/gcc/tp7pmfbm
+    readline/8.2/gcc/hrettoaz gdbm/1.23/gcc/4ncwtrjg perl/5.38.2/gcc/64xtwvnr
+    libmd/1.0.4/gcc/ldhh5puv libbsd/0.12.2/gcc/osfhs23f expat/2.6.2/gcc/qph4h2yo
+    libxcrypt/4.4.35/gcc/mt6g34on openssl/1.1.1k/gcc/p34dheiq
+    sqlite/3.43.2/gcc/46bxlcyd tcl/8.6.12/gcc/fzzvuvcj
+    inputproto/2.3.2/gcc/nqjo7df5 kbproto/1.0.7/gcc/i3t5z4nc
+    libpthread-stubs/0.5/gcc/a7i6txec xproto/7.0.31/gcc/bqqnj4hj
+    libxau/1.0.11/gcc/7i3x4xzp libxdmcp/1.1.5/gcc/rhg5lrlh
+    libxcb/1.17.0/gcc/lioxerpn xextproto/7.3.0/gcc/q6wu2nc3
+    xtrans/1.5.0/gcc/4zszwy45 libx11/1.8.9/gcc/ixj2re24
+    renderproto/0.11.1/gcc/ibrcvxyi libxrender/0.9.11/gcc/xctfl5gj
+    libxft/2.3.8/gcc/qbcadqjy libxext/1.3.6/gcc/atpywe5v
+    scrnsaverproto/1.2.2/gcc/w5wey4qg libxscrnsaver/1.2.4/gcc/xhdsx5ir
+    tk/8.6.11/gcc/jacomkm4 python/3.11.9/gcc/nptrdpll glib/2.78.3/gcc/xprwyc7f
+    pixman/0.42.2/gcc/kszxbofo cairo/1.16.0/gcc/n2b3zqkq
+    libunistring/1.2/gcc/pxh7zjgp libidn2/2.3.7/gcc/f4hik74s
+    nghttp2/1.62.0/gcc/3prumep7 curl/8.7.1/gcc/d76pzrod
+    gobject-introspection/1.78.1/gcc/q4veztvt graphite2/1.3.14/gcc/5jukobyj
+    icu4c/74.2/gcc/gc2suo3m harfbuzz/8.5.0/gcc/vfwxaq77
+    intel-oneapi-tbb/2021.12.0/gcc/hr2g77gb
+    intel-oneapi-mkl/2024.1.0/gcc/2m6u5w57 libjpeg-turbo/3.0.0/gcc/elyegs53
+    libtiff/4.6.0/gcc/cggo4qgc krb5/1.18.2/gcc/zk73jdjd
+    libtirpc/1.3.3/gcc/6gi6ytdn libice/1.1.1/gcc/zvoc242g
+    libsm/1.2.4/gcc/yxq2yhmg libxt/1.3.0/gcc/y3noto55 libxmu/1.2.1/gcc/a2zvmfvl
+    openjdk/17.0.11_9/gcc/szfinnph fribidi/1.0.12/gcc/erdwatoy
+    json-glib/1.6.6/gcc/b3lqjm6m pango/1.52.2/gcc/i34mbe47
+    which/2.21/gcc/yqalvjjj
+[2025-12-17 10:49:23.038188] SNF sample subset 10% rep 1 (n=63)
+[2025-12-17 10:49:24.455989] SNF sample subset 10% rep 2 (n=63)
+[2025-12-17 10:49:25.090608] SNF sample subset 10% rep 3 (n=63)
+[2025-12-17 10:49:25.790926] SNF sample subset 10% rep 4 (n=63)
+[2025-12-17 10:49:26.434472] SNF sample subset 10% rep 5 (n=63)
+[2025-12-17 10:49:27.088145] SNF sample subset 10% rep 6 (n=63)
+[2025-12-17 10:49:27.729144] SNF sample subset 10% rep 7 (n=63)
+[2025-12-17 10:49:28.382275] SNF sample subset 10% rep 8 (n=63)
+[2025-12-17 10:49:29.156719] SNF sample subset 10% rep 9 (n=63)
+[2025-12-17 10:49:29.8089] SNF sample subset 10% rep 10 (n=63)
+[2025-12-17 10:49:30.499076] SNF sample subset 20% rep 1 (n=125)
+[2025-12-17 10:49:31.999145] SNF sample subset 20% rep 2 (n=125)
+[2025-12-17 10:49:33.500055] SNF sample subset 20% rep 3 (n=125)
+[2025-12-17 10:49:34.971722] SNF sample subset 20% rep 4 (n=125)
+[2025-12-17 10:49:36.441362] SNF sample subset 20% rep 5 (n=125)
+[2025-12-17 10:49:37.908985] SNF sample subset 20% rep 6 (n=125)
+[2025-12-17 10:49:39.376752] SNF sample subset 20% rep 7 (n=125)
+[2025-12-17 10:49:40.855438] SNF sample subset 20% rep 8 (n=125)
+[2025-12-17 10:49:42.323102] SNF sample subset 20% rep 9 (n=125)
+[2025-12-17 10:49:43.789533] SNF sample subset 20% rep 10 (n=125)
+[2025-12-17 10:49:45.325252] SNF sample subset 50% rep 1 (n=312)
+[2025-12-17 10:49:51.204474] SNF sample subset 50% rep 2 (n=312)
+[2025-12-17 10:49:57.80214] SNF sample subset 50% rep 3 (n=312)
+[2025-12-17 10:50:05.806134] SNF sample subset 50% rep 4 (n=312)
+[2025-12-17 10:50:12.360959] SNF sample subset 50% rep 5 (n=312)
+[2025-12-17 10:50:18.904274] SNF sample subset 50% rep 6 (n=312)
+[2025-12-17 10:50:25.348802] SNF sample subset 50% rep 7 (n=312)
+[2025-12-17 10:50:31.715366] SNF sample subset 50% rep 8 (n=312)
+[2025-12-17 10:50:38.101476] SNF sample subset 50% rep 9 (n=312)
+[2025-12-17 10:50:44.470581] SNF sample subset 50% rep 10 (n=312)
+[2025-12-17 10:50:50.89564] SNF sample subset 70% rep 1 (n=438)
+[2025-12-17 10:51:04.296783] SNF sample subset 70% rep 2 (n=438)
+[2025-12-17 10:51:17.483193] SNF sample subset 70% rep 3 (n=438)
+[2025-12-17 10:51:30.852535] SNF sample subset 70% rep 4 (n=438)
+[2025-12-17 10:51:44.105182] SNF sample subset 70% rep 5 (n=438)
+[2025-12-17 10:51:57.423026] SNF sample subset 70% rep 6 (n=438)
+[2025-12-17 10:52:10.62121] SNF sample subset 70% rep 7 (n=438)
+[2025-12-17 10:52:23.86832] SNF sample subset 70% rep 8 (n=438)
+[2025-12-17 10:52:37.049008] SNF sample subset 70% rep 9 (n=438)
+[2025-12-17 10:52:50.296671] SNF sample subset 70% rep 10 (n=438)
+[2025-12-17 10:53:03.433768] SNF sample subset 90% rep 1 (n=562)
+[2025-12-17 10:53:26.550166] SNF sample subset 90% rep 2 (n=562)
+[2025-12-17 10:53:50.077758] SNF sample subset 90% rep 3 (n=562)
+[2025-12-17 10:54:13.341197] SNF sample subset 90% rep 4 (n=562)
+[2025-12-17 10:54:36.931527] SNF sample subset 90% rep 5 (n=562)
+[2025-12-17 10:55:00.188732] SNF sample subset 90% rep 6 (n=562)
+[2025-12-17 10:55:23.733654] SNF sample subset 90% rep 7 (n=562)
+[2025-12-17 10:55:46.876998] SNF sample subset 90% rep 8 (n=562)
+[2025-12-17 10:56:10.439367] SNF sample subset 90% rep 9 (n=562)
+[2025-12-17 10:56:33.73715] SNF sample subset 90% rep 10 (n=562)
+Wrote: Results/Performance/Sample_perturbations/SNF/job_19485644_20251217T104912Z/out/SNF_sample_perturbations_performance.tsv

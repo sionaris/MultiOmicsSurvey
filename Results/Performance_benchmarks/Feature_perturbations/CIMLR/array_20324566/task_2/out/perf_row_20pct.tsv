@@ -1,0 +1,2 @@
+Algorithm	Feature_Centile	Feature_Percent	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	CIMLR_K	CIMLR_cores_ratio	M3C_NORM_P	M3C_Entropy	M3C_RCSI	ARI_to_Ground_Truth	Average_Silhouette_Width	CIMLR_Elapsed_Seconds	CIMLR_PeakRAM_MiB
+CIMLR	0.2	20	625	28769	11344	7172	7353	314	2586	2	15	0.0131578947368421	0.999970045240231	43397.1750256993	-1.09598558443592	0.00405440000000002	0.398772816174403	706.061	2285.6

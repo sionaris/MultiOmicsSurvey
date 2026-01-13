@@ -1,0 +1,2 @@
+Algorithm	Mode	Feature_Centile	Feature_Percent	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs
+RWR-F	feature	0.5	50	625	71916	28359	17929	18381	784	6463

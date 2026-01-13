@@ -1,0 +1,2 @@
+Algorithm	Sample_Fraction	Replicate	n_samples	n_clusters	MSNE_k	MSNE_num_walks	MSNE_embed_size	MSNE_window_size	MSNE_walk_length	MSNE_workers	ARI_to_Ground_Truth	Average_Silhouette_Width	MSNE_Elapsed_Seconds	MSNE_PeakRAM_MiB
+MSNE	10	7	63	5	50	200	50	5	40	1	0.145720473594412	0.054835101508772	NA	NA

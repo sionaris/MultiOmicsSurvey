@@ -1,0 +1,9 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+Detected MOSEK library via Rmosek: MOSEK 10.2.13
+[2026-01-02 14:05:43.285803] KLIC feature subset 10%
+[2026-01-02 14:07:45.582507] KLIC feature subset 20%
+[2026-01-02 14:09:56.201922] KLIC feature subset 50%
+[2026-01-02 14:11:46.427678] KLIC feature subset 75%
+[2026-01-02 14:13:34.040701] KLIC feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/KLIC/job_20143088_20260102T140533Z/out/KLIC_feature_perturbations_performance.tsv

@@ -1,0 +1,6 @@
+Algorithm	Feature_Centile	Feature_Percent	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	COCA_M	COCA_maxK	COCA_method	COCA_distances	ARI_to_Ground_Truth	Average_Silhouette_Width	COCA_Elapsed_Seconds	COCA_PeakRAM_MiB
+COCA	0.1	10	625	14385	5672	3586	3677	157	1293	2	5	10	hclust	binary,euclidean,euclidean,euclidean,euclidean	-0.0276719369277636	0.406671946026906	74.354	395.9
+COCA	0.2	20	625	28769	11344	7172	7353	314	2586	2	5	10	hclust	binary,euclidean,euclidean,euclidean,euclidean	-0.0825681121144374	0.262596751507536	217.863	509.4
+COCA	0.5	50	625	71916	28359	17929	18381	784	6463	2	5	10	hclust	binary,euclidean,euclidean,euclidean,euclidean	0.454961337056294	0.926531519021392	1167.363	878
+COCA	0.75	75	625	107874	42538	26894	27571	1176	9695	2	5	10	hclust	binary,euclidean,euclidean,euclidean,euclidean	0.696911741161477	0.962533251485557	1883.235	990
+COCA	0.9	90	625	129450	51046	32273	33085	1412	11634	2	5	10	hclust	binary,euclidean,euclidean,euclidean,euclidean	-0.0220484302784244	0.901687114676746	2330.875	1296.8

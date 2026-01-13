@@ -1,0 +1,2 @@
+Algorithm	Feature_Centile	Feature_Percent	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	LRAcluster_dim	ARI_to_Ground_Truth	Average_Silhouette_Width	LRAcluster_Elapsed_Seconds	LRAcluster_PeakRAM_MiB
+LRAcluster	0.5	50	625	71916	28359	17929	18381	784	6463	4	7	0.725814467906738	0.310143941472476	318.604	4694.3

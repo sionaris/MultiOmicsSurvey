@@ -1,0 +1,2 @@
+Algorithm	Sample_Fraction	Replicate	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	LRAcluster_dim	ARI_to_Ground_Truth	Average_Silhouette_Width	LRAcluster_Elapsed_Seconds	LRAcluster_PeakRAM_MiB
+LRAcluster	20	2	125	143830	56717	35858	36761	1568	12926	4	7	0.703737213146827	0.324393634093297	69.411	2358.2

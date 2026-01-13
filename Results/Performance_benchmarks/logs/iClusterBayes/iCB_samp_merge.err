@@ -1,0 +1,4 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+Wrote: Results/Performance/Sample_perturbations/iClusterBayes/array_20418009/out/iClusterBayes_sample_perturbations_performance.tsv
+There were 50 or more warnings (use warnings() to see the first 50)

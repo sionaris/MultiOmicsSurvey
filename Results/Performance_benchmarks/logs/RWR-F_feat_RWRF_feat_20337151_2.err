@@ -1,0 +1,8 @@
+Warning message:
+package ‘zigg’ was built under R version 4.5.1 
+Error in foreach(i = 1:nrow(result_matrix), .combine = rbind) %dopar%  : 
+  could not find function "%dopar%"
+Calls: <Anonymous> ... system.time -> eval.parent -> eval -> eval -> RWR_fusion
+Timing stopped at: 0.056 0 0.056
+Execution halted
+srun: error: cpu-q-392: task 0: Exited with exit code 1

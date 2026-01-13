@@ -1,0 +1,10 @@
+job_id  20347327
+timestamp_utc   20260109T124758Z
+method  NEMO
+property        robust_feat
+point   feat_subsets
+partition       icelake-himem
+nodelist        cpu-q-389
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

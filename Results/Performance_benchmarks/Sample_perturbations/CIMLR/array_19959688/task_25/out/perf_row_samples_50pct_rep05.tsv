@@ -1,0 +1,2 @@
+Algorithm	Sample_Fraction	Replicate	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	CIMLR_K	CIMLR_cores_ratio	M3C_NORM_P	M3C_Entropy	M3C_RCSI	ARI_to_Ground_Truth	Average_Silhouette_Width	CIMLR_Elapsed_Seconds	CIMLR_PeakRAM_MiB
+CIMLR	50	5	312	143830	56717	35858	36761	1568	12926	2	15	0.0131578947368421	0.00792075792492798	0	16.9756928580818	-0.0714602678744792	0.754949676875786	516.206	1174.1

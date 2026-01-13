@@ -1,0 +1,2 @@
+Algorithm	Mode	Sample_Percent	Replicate	n_samples	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	p_total
+MONET	sample	10	4	63	56717	35858	36761	1568	12926	143830

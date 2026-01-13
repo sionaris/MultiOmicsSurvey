@@ -1,0 +1,8 @@
+job_id  19751701
+timestamp_utc   20251223T105036Z
+method  ab-SNF
+partition       icelake-himem
+nodelist        cpu-q-368
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

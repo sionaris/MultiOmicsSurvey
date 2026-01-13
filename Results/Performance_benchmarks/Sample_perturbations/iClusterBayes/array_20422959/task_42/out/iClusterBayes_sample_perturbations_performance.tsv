@@ -1,0 +1,2 @@
+Algorithm	Sample_Fraction	Replicate	n_samples	p_total	p_SNPs	p_RNAseq	p_CNV	p_miRNA	p_Methylation	optk	K_values	sdev	beta_var_scale	thin	pp_cutoff	n_burnin	n_draw	prior_gamma	cpus	ARI_to_Ground_Truth	iClusterBayes_Elapsed_Seconds	iClusterBayes_PeakRAM_MiB	iClusterBayes_Status	iClusterBayes_Error
+iClusterBayes	90	2	562	143830	12926	56717	35858	1568	36761	5	4	0.015	0.5	3	0.5	1200	1800	0.5,0.5,0.5,0.5,0.5	1	0.890082432344102	15543.262	2930.5	OK	NA

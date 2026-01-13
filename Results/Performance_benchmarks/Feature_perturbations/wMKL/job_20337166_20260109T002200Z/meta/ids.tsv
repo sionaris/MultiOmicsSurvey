@@ -1,0 +1,10 @@
+job_id  20337166
+timestamp_utc   20260109T002200Z
+method  wMKL
+property        robust_feat
+point   feat_subsets
+partition       icelake-himem
+nodelist        cpu-q-392
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

@@ -1,0 +1,6 @@
+Algorithm	Feature_Centile	Feature_Percent	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	Spectrum_method	Spectrum_kerneltype	Spectrum_diffusion	Spectrum_maxk	Spectrum_NN	Spectrum_NN2	Spectrum_frac	Spectrum_thresh	Spectrum_tunekernel	Spectrum_clusteralg	Spectrum_diffusion_iters	Spectrum_KNNs_p	Spectrum_K_found	ARI_to_Ground_Truth	Average_Silhouette_Width	Spectrum_Elapsed_Seconds	Spectrum_PeakRAM_MiB
+Spectrum	0.1	10	625	14385	5672	3586	3677	157	1293	2	density	TRUE	10	3	7	2	7	TRUE	km	5	20	2	0.760232931585725	0.844010767231264	136.444	226.1
+Spectrum	0.2	20	625	28769	11344	7172	7353	314	2586	2	density	TRUE	10	3	7	2	7	TRUE	km	5	20	2	0.83968304201459	0.822085875473997	153.327	286.7
+Spectrum	0.5	50	625	71916	28359	17929	18381	784	6463	2	density	TRUE	10	3	7	2	7	TRUE	km	5	20	2	0.859308401243639	0.803412654487027	215.876	529.7
+Spectrum	0.75	75	625	107874	42538	26894	27571	1176	9695	2	density	TRUE	10	3	7	2	7	TRUE	km	5	20	2	0.866684280352158	0.782774768384126	269.718	731
+Spectrum	0.9	90	625	129450	51046	32273	33085	1412	11634	2	density	TRUE	10	3	7	2	7	TRUE	km	5	20	2	0.81784022017261	0.73226938290831	301.248	850.7

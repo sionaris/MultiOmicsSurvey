@@ -1,0 +1,7 @@
+UTC_TS=20260102T141011Z
+JOBID=20143126
+METHOD=MDICC
+HOSTNAME=cpu-q-346
+PWD=/home/as3582/MO_survey
+THREADS=1
+RETICULATE_PYTHON=/home/as3582/miniconda/envs/mdicc_py/bin/python

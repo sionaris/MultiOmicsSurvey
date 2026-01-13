@@ -1,0 +1,2 @@
+Algorithm	Mode	Feature_Centile	Feature_Percent	n_samples	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	p_total
+MONET	feature	0.1	10	625	5672	3586	3677	157	1293	14385

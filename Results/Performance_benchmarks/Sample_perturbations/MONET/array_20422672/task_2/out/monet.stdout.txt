@@ -1,0 +1,26 @@
+<monet.module.Module object at 0x14f1c5b17850>(9, (4.11179596616369, {<monet.patient.Patient object at 0x14f1c9719e20>: <monet.module.Module object at 0x14f1c5b17d90>, <monet.patient.Patient object at 0x14f1c96cf820>: <monet.module.Module object at 0x14f1c97068e0>, <monet.patient.Patient object at 0x14f1c9719040>: <monet.module.Module object at 0x14f1c97068e0>, <monet.patient.Patient object at 0x14f1c96cfcd0>: <monet.module.Module object at 0x14f1c97068e0>, <monet.patient.Patient object at 0x14f1c96bfcd0>: <monet.module.Module object at 0x14f1c5b17370>, <monet.patient.Patient object at 0x14f1c97194f0>: <monet.module.Module object at 0x14f1c5b17d90>, <monet.patient.Patient object at 0x14f1c9719d00>: None, <monet.patient.Patient object at 0x14f1c9719310>: None, <monet.patient.Patient object at 0x14f1c96cf7f0>: <monet.module.Module object at 0x14f1c5b17370>, <monet.patient.Patient object at 0x14f1c9706df0>: <monet.module.Module object at 0x14f1c9721910>}))
+<monet.module.Module object at 0x14f1c97068e0>(10, (6.858489216565207, (0, (<monet.module.Module object at 0x14f1c97068e0>, <monet.module.Module object at 0x14f1c5b17370>))))
+<monet.module.Module object at 0x14f1c9721910>(10, (15.76117803321911, (0, (<monet.module.Module object at 0x14f1c9721910>, <monet.module.Module object at 0x14f1c97068e0>))))
+<monet.module.Module object at 0x14f1c9721910>(0, (13.117628375273966, [<monet.patient.Patient object at 0x14f1c96cf760>, <monet.patient.Patient object at 0x14f1c96cfb20>, <monet.patient.Patient object at 0x14f1c9706bb0>, <monet.patient.Patient object at 0x14f1c96bfac0>, <monet.patient.Patient object at 0x14f1c96cf430>, <monet.patient.Patient object at 0x14f1c9719c10>, <monet.patient.Patient object at 0x14f1c96cff10>]))
+<monet.module.Module object at 0x14f1c5b17d90>(0, (11.236314299797716, [<monet.patient.Patient object at 0x14f1c9719310>, <monet.patient.Patient object at 0x14f1c96bf070>, <monet.patient.Patient object at 0x14f1c9719730>, <monet.patient.Patient object at 0x14f1c96cfaf0>, <monet.patient.Patient object at 0x14f1c96bfbb0>, <monet.patient.Patient object at 0x14f1c96cf9a0>]))
+<monet.module.Module object at 0x14f1c9721910>(4, (7.069309241123676, (<monet.module.Module object at 0x14f1c9721910>, ['TCGA-GM-A2DA-01A', 'TCGA-3C-AALK-01A', 'TCGA-BH-A201-01A', 'TCGA-BH-A0H3-01A', 'TCGA-AC-A5EH-01A', 'TCGA-D8-A1X7-01A', 'TCGA-OL-A5DA-01A', 'TCGA-AR-A5QM-01A', 'TCGA-BH-A0GZ-01A', 'TCGA-A2-A0YI-01A', 'TCGA-AR-A2LK-01A', 'TCGA-A8-A0A6-01A', 'TCGA-AN-A0XP-01A', 'TCGA-A2-A0T4-01A', 'TCGA-GM-A3NW-01A', 'TCGA-AO-A0JJ-01A', 'TCGA-E2-A1IH-01A', 'TCGA-D8-A1XC-01A', 'TCGA-D8-A27K-01A', 'TCGA-AR-A24X-01A', 'TCGA-B6-A0WT-01A', 'TCGA-A7-A5ZW-01A', 'TCGA-E2-A1BC-01A', 'TCGA-AC-A62Y-01A', 'TCGA-AR-A0TQ-01A', 'TCGA-BH-A1F5-01A', 'TCGA-AR-A2LE-01A', 'TCGA-LL-A6FQ-01A', 'TCGA-AR-A1AU-01A', 'TCGA-D8-A27G-01A', 'TCGA-EW-A1P3-01A', 'TCGA-B6-A0WZ-01A', 'TCGA-LD-A7W6-01A'])))
+<monet.module.Module object at 0x14f1c5b17d90>(8, (1.2699316871955233, [('TCGA-EW-A1J6-01A', 0.8398087307693329, <monet.module.Module object at 0x14f1c9721ac0>), ('TCGA-GM-A2DK-01A', 0.5605550528060099, <monet.module.Module object at 0x14f1c9721ac0>), ('TCGA-D8-A1XZ-01A', 0.1865926428471171, <monet.module.Module object at 0x14f1c9721ac0>)]))
+<monet.module.Module object at 0x14f1c9721910>(8, (0.38957391448289513, [('TCGA-AR-A2LK-01A', 0.3389670410283875, <monet.module.Module object at 0x14f1c9721ac0>), ('TCGA-GM-A2DK-01A', 0.18612720624821144, <monet.module.Module object at 0x14f1c5b17d90>)]))
+<monet.module.Module object at 0x14f1c9721ac0>(8, (3.555786028676337, [('TCGA-BH-A0C0-01A', 2.4709169369465753, <monet.module.Module object at 0x14f1c5b17d90>), ('TCGA-D8-A1Y3-01A', 1.275081952904319, <monet.module.Module object at 0x14f1c5b17d90>), ('TCGA-GM-A2DK-01A', 0.17949219197682964, <monet.module.Module object at 0x14f1c9721910>)]))
+<monet.module.Module object at 0x14f1c9721ac0>(0, (2.129484752158323, [<monet.patient.Patient object at 0x14f1c9719d00>]))
+iteration: 10
+num of modules: 3
+total_weight: 103.66254055529518
+actions: [3, 0, 0, 0, 1, 0, 0, 0, 3, 1, 2]
+<monet.module.Module object at 0x14f1c9721ac0>(-1, (-inf, None))
+<monet.module.Module object at 0x14f1c5b17d90>(0, (0.037132290895993236, [<monet.patient.Patient object at 0x14f1c97190a0>]))
+<monet.module.Module object at 0x14f1c9721910>(-1, (-inf, None))
+<monet.module.Module object at 0x14f1c5b17d90>(-1, (-inf, None))
+<monet.module.Module object at 0x14f1c9721ac0>(-1, (-inf, None))
+<monet.module.Module object at 0x14f1c5b17d90>(-1, (-inf, None))
+<monet.module.Module object at 0x14f1c9721910>(-1, (-inf, None))
+converged, total score: 103.69967284619037.
+[MONET] main_loop_elapsed_seconds=1.3365
+[MONET] wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_2/out/monet_results/monet_clustering.tsv
+[MONET] wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_2/out/monet_results/monet_avg_adjacency.tsv.gz
+[MONET] wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_2/out/monet_results/monet_metrics.json

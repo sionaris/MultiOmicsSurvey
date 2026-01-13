@@ -1,0 +1,8 @@
+job_id  20143088
+timestamp_utc   20260102T140533Z
+method  KLIC
+partition       icelake-himem
+nodelist        cpu-q-385
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

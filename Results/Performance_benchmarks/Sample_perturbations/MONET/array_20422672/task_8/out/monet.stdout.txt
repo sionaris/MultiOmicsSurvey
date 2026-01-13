@@ -1,0 +1,25 @@
+<monet.module.Module object at 0x14c68b82f850>(0, (8.65314421937635, [<monet.patient.Patient object at 0x14c68f42c490>, <monet.patient.Patient object at 0x14c68f42c280>, <monet.patient.Patient object at 0x14c68f42cf40>, <monet.patient.Patient object at 0x14c68f3e2820>, <monet.patient.Patient object at 0x14c68f3e23a0>, <monet.patient.Patient object at 0x14c68f42c040>, <monet.patient.Patient object at 0x14c68f419bb0>]))
+<monet.module.Module object at 0x14c68bb1ae20>(9, (9.782258556972288, {<monet.patient.Patient object at 0x14c68f3e2e50>: <monet.module.Module object at 0x14c68b82f850>, <monet.patient.Patient object at 0x14c68f3e2a90>: <monet.module.Module object at 0x14c68f4198e0>, <monet.patient.Patient object at 0x14c68f3d3ac0>: <monet.module.Module object at 0x14c68b82f820>, <monet.patient.Patient object at 0x14c68f3e2cd0>: <monet.module.Module object at 0x14c68b82f850>, <monet.patient.Patient object at 0x14c68f3e2940>: <monet.module.Module object at 0x14c68f4198e0>, <monet.patient.Patient object at 0x14c68f42c370>: <monet.module.Module object at 0x14c68b82f820>, <monet.patient.Patient object at 0x14c68f3e2f70>: None, <monet.patient.Patient object at 0x14c68f3e29a0>: <monet.module.Module object at 0x14c68b82f850>, <monet.patient.Patient object at 0x14c68f3d3bb0>: <monet.module.Module object at 0x14c68b82f850>, <monet.patient.Patient object at 0x14c68f4197f0>: <monet.module.Module object at 0x14c68f4198e0>}))
+<monet.module.Module object at 0x14c68f4198e0>(0, (13.10392307799095, [<monet.patient.Patient object at 0x14c68f3e2f70>, <monet.patient.Patient object at 0x14c68f3e2b20>, <monet.patient.Patient object at 0x14c68f3d31f0>, <monet.patient.Patient object at 0x14c68f3d3160>, <monet.patient.Patient object at 0x14c68f3e2730>]))
+<monet.module.Module object at 0x14c68f434a90>(10, (11.444814662069692, (0, (<monet.module.Module object at 0x14c68f434a90>, <monet.module.Module object at 0x14c68b82f850>))))
+<monet.module.Module object at 0x14c68f4198e0>(8, (1.533272541064818, [('TCGA-BH-A0C3-01A', 0.917896358927227, <monet.module.Module object at 0x14c68f434a90>), ('TCGA-OK-A5Q2-01A', 0.8103552878555362, <monet.module.Module object at 0x14c68b82f820>)]))
+<monet.module.Module object at 0x14c68f434a90>(8, (2.1702649881642913, [('TCGA-D8-A27L-01A', 1.649950118376225, <monet.module.Module object at 0x14c68b82f820>), ('TCGA-E9-A1RA-01A', 0.5813823206576918, <monet.module.Module object at 0x14c68b82f820>), ('TCGA-AN-A0XT-01A', 0.20361268759952522, <monet.module.Module object at 0x14c68b82f820>), ('TCGA-BH-A0AZ-01A', 0.11417842931487954, <monet.module.Module object at 0x14c68b82f820>)]))
+<monet.module.Module object at 0x14c68f4198e0>(0, (0.28456754527732997, [<monet.patient.Patient object at 0x14c68f3d3b20>]))
+<monet.module.Module object at 0x14c68f434a90>(0, (0.956688156922354, [<monet.patient.Patient object at 0x14c68f3e2430>]))
+<monet.module.Module object at 0x14c68b82f820>(8, (0.8024083307716268, [('TCGA-BH-A0AZ-01A', 0.7853652470328106, <monet.module.Module object at 0x14c68f434a90>), ('TCGA-AN-A0XT-01A', 0.017043083738796705, <monet.module.Module object at 0x14c68f434a90>)]))
+<monet.module.Module object at 0x14c68b82f820>(8, (0.0766998715195355, [('TCGA-AN-A0XT-01A', 0.0766998715195355, <monet.module.Module object at 0x14c68f4198e0>)]))
+iteration: 10
+num of modules: 3
+total_weight: 88.06736961025142
+actions: [4, 0, 0, 0, 0, 0, 0, 0, 4, 1, 1]
+<monet.module.Module object at 0x14c68b82f820>(-1, (-inf, None))
+<monet.module.Module object at 0x14c68f4198e0>(-1, (-inf, None))
+<monet.module.Module object at 0x14c68f434a90>(-1, (-inf, None))
+<monet.module.Module object at 0x14c68f434a90>(-1, (-inf, None))
+<monet.module.Module object at 0x14c68f4198e0>(-1, (-inf, None))
+<monet.module.Module object at 0x14c68b82f820>(-1, (-inf, None))
+converged, total score: 88.0673696102514.
+[MONET] main_loop_elapsed_seconds=1.2423
+[MONET] wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_8/out/monet_results/monet_clustering.tsv
+[MONET] wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_8/out/monet_results/monet_avg_adjacency.tsv.gz
+[MONET] wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MONET/array_20422672/task_8/out/monet_results/monet_metrics.json

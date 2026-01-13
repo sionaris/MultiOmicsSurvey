@@ -1,0 +1,2 @@
+/home/as3582/miniconda/envs/MSNE/bin/python
+1.26.4

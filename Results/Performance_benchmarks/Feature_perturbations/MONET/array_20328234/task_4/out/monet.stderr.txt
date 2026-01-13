@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/as3582/MO_survey/Jobs/MONET/run_MONET_mainloop.py", line 168, in <module>
+    main()
+  File "/home/as3582/MO_survey/Jobs/MONET/run_MONET_mainloop.py", line 84, in main
+    glob_var, total_time, super_g, iteration_times, total_weight = monet_instance.main_loop(
+  File "/home/as3582/MONET/monet/monet.py", line 230, in main_loop
+    glob_var = self.create_env(glob_var, data, is_input_raw, percentile_shift, percentile_remove_edge)
+  File "/home/as3582/MONET/monet/monet.py", line 54, in create_env
+    graph, means, covs, percentile = self.build_a_graph_similarity(dat)
+  File "/home/as3582/MONET/monet/monet.py", line 30, in build_a_graph_similarity
+    g = nx.from_numpy_matrix(res)
+AttributeError: module 'networkx' has no attribute 'from_numpy_matrix'
+srun: error: cpu-q-307: task 0: Exited with exit code 1

@@ -1,0 +1,2 @@
+Algorithm	Feature_Centile	Feature_Percent	n_samples	p_total	p_RNAseq	p_CNV	p_Methylation	p_miRNA	p_SNPs	n_clusters	n_modules	ARI_to_Ground_Truth	Average_Silhouette_Width	MONET_MainLoop_Elapsed_Seconds	MONET_PeakRSS_MiB
+MONET	0.2	20	625	28769	11344	7172	7353	314	2586	4	3	0.642772263319313	0.0345843311926819	181.495301246643	10.640625

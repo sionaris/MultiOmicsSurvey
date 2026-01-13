@@ -1,0 +1,8 @@
+job_id  19960842
+timestamp_utc   20251229T164109Z
+method  COCA
+partition       icelake-himem
+nodelist        cpu-q-335
+cpus_per_task   20
+mem_per_cpu     5000
+mem_per_node    

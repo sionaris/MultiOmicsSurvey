@@ -1,0 +1,32 @@
+Mosek license manager: License path: /home/as3582/MO_survey/mosek.lic
+Mosek license manager:  Checkout license feature 'PTS' from flexlm.
+Mosek license manager:  Checkout time 0.01. r: 0 status: 0
+MOSEK warning 500 (MSK_RES_WRN_LICENSE_EXPIRE): The license expires in 6 days.
+Problem
+  Name                   :                 
+  Objective sense        : minimize        
+  Type                   : LO (linear optimization problem)
+  Constraints            : 1               
+  Affine conic cons.     : 0               
+  Disjunctive cons.      : 0               
+  Cones                  : 0               
+  Scalar variables       : 5000            
+  Matrix variables       : 0               
+  Integer variables      : 0               
+
+Optimizer started.
+Presolve started.
+Eliminator started.
+Freed constraints in eliminator : 0
+Eliminator terminated.
+Eliminator - tries                  : 1                 time                   : 0.00            
+Lin. dep.  - tries                  : 0                 time                   : 0.00            
+Lin. dep.  - primal attempts        : 0                 successes              : 0               
+Lin. dep.  - dual attempts          : 0                 successes              : 0               
+Lin. dep.  - primal deps.           : 0                 dual deps.             : 0               
+Presolve terminated. Time: 0.00    
+Optimizer terminated. Time: 0.01    
+
+************************************
+A license was checked out correctly.
+************************************

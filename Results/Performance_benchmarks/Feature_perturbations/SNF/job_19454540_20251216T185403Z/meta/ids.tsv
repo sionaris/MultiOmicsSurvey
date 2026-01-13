@@ -1,0 +1,10 @@
+job_id	19454540
+timestamp_utc	20251216T185403Z
+method	SNF
+property	robust_feat
+point	feat_subsets
+partition	icelake-himem
+nodelist	cpu-q-356
+cpus_per_task	20
+mem_per_cpu	5000
+mem_per_node	

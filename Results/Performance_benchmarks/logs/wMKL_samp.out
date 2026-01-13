@@ -1,0 +1,2288 @@
+Loading rhel8/cclake/base
+  Loading requirement: ucx/1.15.0 rhel8/global rhel8/slurm
+    rhel8/cclake-env/2024-06-01
+Loading r/4.4.0/gcc/3z5n2tph
+  Loading requirement: glibc/2.28/gcc/4d2cj5pu gcc-runtime/13.3.0/gcc/2sn7kkm3
+    bzip2/1.0.8/gcc/62ss4meq font-util/1.4.1/gcc/uwa7i4hx
+    zlib-ng/2.1.6/gcc/mkjcey6m libpng/1.6.39/gcc/picyifym
+    freetype/2.13.2/gcc/yzx2rbxu libiconv/1.17/gcc/rlhw7p3w
+    xz/5.4.6/gcc/ygcbendp libxml2/2.10.3/gcc/jfra75fq
+    util-linux-uuid/2.40.1/gcc/mptu6qby fontconfig/2.15.0/gcc/z6ns4nbe
+    ncurses/6.5/gcc/w4v62xxg pigz/2.8/gcc/dk5rynep zstd/1.5.6/gcc/l5c7mfsx
+    tar/1.34/gcc/zd6ps6n6 gettext/0.22.5/gcc/uqjtzsys pkgconf/2.2.0/gcc/ep62ukkp
+    elfutils/0.191/gcc/f7jb6waa libffi/3.4.6/gcc/xkhq3n5o
+    pcre2/10.43/gcc/pumkpkxl berkeley-db/18.1.40/gcc/tp7pmfbm
+    readline/8.2/gcc/hrettoaz gdbm/1.23/gcc/4ncwtrjg perl/5.38.2/gcc/64xtwvnr
+    libmd/1.0.4/gcc/ldhh5puv libbsd/0.12.2/gcc/osfhs23f expat/2.6.2/gcc/qph4h2yo
+    libxcrypt/4.4.35/gcc/mt6g34on openssl/1.1.1k/gcc/p34dheiq
+    sqlite/3.43.2/gcc/46bxlcyd tcl/8.6.12/gcc/fzzvuvcj
+    inputproto/2.3.2/gcc/nqjo7df5 kbproto/1.0.7/gcc/i3t5z4nc
+    libpthread-stubs/0.5/gcc/a7i6txec xproto/7.0.31/gcc/bqqnj4hj
+    libxau/1.0.11/gcc/7i3x4xzp libxdmcp/1.1.5/gcc/rhg5lrlh
+    libxcb/1.17.0/gcc/lioxerpn xextproto/7.3.0/gcc/q6wu2nc3
+    xtrans/1.5.0/gcc/4zszwy45 libx11/1.8.9/gcc/ixj2re24
+    renderproto/0.11.1/gcc/ibrcvxyi libxrender/0.9.11/gcc/xctfl5gj
+    libxft/2.3.8/gcc/qbcadqjy libxext/1.3.6/gcc/atpywe5v
+    scrnsaverproto/1.2.2/gcc/w5wey4qg libxscrnsaver/1.2.4/gcc/xhdsx5ir
+    tk/8.6.11/gcc/jacomkm4 python/3.11.9/gcc/nptrdpll glib/2.78.3/gcc/xprwyc7f
+    pixman/0.42.2/gcc/kszxbofo cairo/1.16.0/gcc/n2b3zqkq
+    libunistring/1.2/gcc/pxh7zjgp libidn2/2.3.7/gcc/f4hik74s
+    nghttp2/1.62.0/gcc/3prumep7 curl/8.7.1/gcc/d76pzrod
+    gobject-introspection/1.78.1/gcc/q4veztvt graphite2/1.3.14/gcc/5jukobyj
+    icu4c/74.2/gcc/gc2suo3m harfbuzz/8.5.0/gcc/vfwxaq77
+    intel-oneapi-tbb/2021.12.0/gcc/hr2g77gb
+    intel-oneapi-mkl/2024.1.0/gcc/2m6u5w57 libjpeg-turbo/3.0.0/gcc/elyegs53
+    libtiff/4.6.0/gcc/cggo4qgc krb5/1.18.2/gcc/zk73jdjd
+    libtirpc/1.3.3/gcc/6gi6ytdn libice/1.1.1/gcc/zvoc242g
+    libsm/1.2.4/gcc/yxq2yhmg libxt/1.3.0/gcc/y3noto55 libxmu/1.2.1/gcc/a2zvmfvl
+    openjdk/17.0.11_9/gcc/szfinnph fribidi/1.0.12/gcc/erdwatoy
+    json-glib/1.6.6/gcc/b3lqjm6m pango/1.52.2/gcc/i34mbe47
+    which/2.21/gcc/yqalvjjj
+Current R library paths:
+[1] "/home/as3582/MO_survey/R/library"                                                                                                         
+[2] "/usr/local/software/spack/csd3/opt-2024-06-01/linux-rocky8-cascadelake/gcc-13.3.0/r-4.4.0-3z5n2tphp5kcx6pysubn5svc7qtzd5uv/rlib/R/library"
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05542679 
+Epoch: Iteration # 200  error is:  0.04314856 
+Epoch: Iteration # 300  error is:  0.04153909 
+Epoch: Iteration # 400  error is:  0.04120254 
+Epoch: Iteration # 500  error is:  0.04097209 
+Epoch: Iteration # 600  error is:  0.04083032 
+Epoch: Iteration # 700  error is:  0.0407796 
+Epoch: Iteration # 800  error is:  0.04075404 
+Epoch: Iteration # 900  error is:  0.04074668 
+Epoch: Iteration # 1000  error is:  0.04073735 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  18.66537 
+Epoch: Iteration # 200  error is:  0.9340254 
+Epoch: Iteration # 300  error is:  0.6295597 
+Epoch: Iteration # 400  error is:  0.5621147 
+Epoch: Iteration # 500  error is:  0.55621 
+Epoch: Iteration # 600  error is:  0.5579771 
+Epoch: Iteration # 700  error is:  0.5572504 
+Epoch: Iteration # 800  error is:  3.958713 
+Epoch: Iteration # 900  error is:  0.7581448 
+Epoch: Iteration # 1000  error is:  0.4749868 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04846621 
+Epoch: Iteration # 200  error is:  0.03258563 
+Epoch: Iteration # 300  error is:  0.040333 
+Epoch: Iteration # 400  error is:  0.03255297 
+Epoch: Iteration # 500  error is:  0.0391291 
+Epoch: Iteration # 600  error is:  0.03232419 
+Epoch: Iteration # 700  error is:  0.09609658 
+Epoch: Iteration # 800  error is:  0.03345537 
+Epoch: Iteration # 900  error is:  0.03234492 
+Epoch: Iteration # 1000  error is:  0.04523209 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  19.56118 
+Epoch: Iteration # 200  error is:  0.8388911 
+Epoch: Iteration # 300  error is:  0.559705 
+Epoch: Iteration # 400  error is:  0.564939 
+Epoch: Iteration # 500  error is:  0.4895502 
+Epoch: Iteration # 600  error is:  0.7420931 
+Epoch: Iteration # 700  error is:  0.6913553 
+Epoch: Iteration # 800  error is:  0.5113734 
+Epoch: Iteration # 900  error is:  0.5714533 
+Epoch: Iteration # 1000  error is:  0.5786131 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05259438 
+Epoch: Iteration # 200  error is:  0.03975859 
+Epoch: Iteration # 300  error is:  0.03840275 
+Epoch: Iteration # 400  error is:  0.03785108 
+Epoch: Iteration # 500  error is:  0.03753707 
+Epoch: Iteration # 600  error is:  0.03742332 
+Epoch: Iteration # 700  error is:  0.03732406 
+Epoch: Iteration # 800  error is:  0.03724225 
+Epoch: Iteration # 900  error is:  0.03719986 
+Epoch: Iteration # 1000  error is:  0.03718202 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  21.83328 
+Epoch: Iteration # 200  error is:  0.8762031 
+Epoch: Iteration # 300  error is:  0.5371524 
+Epoch: Iteration # 400  error is:  0.4792885 
+Epoch: Iteration # 500  error is:  0.4770158 
+Epoch: Iteration # 600  error is:  0.4765107 
+Epoch: Iteration # 700  error is:  0.4762979 
+Epoch: Iteration # 800  error is:  0.4758657 
+Epoch: Iteration # 900  error is:  0.4755507 
+Epoch: Iteration # 1000  error is:  0.4751923 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05655643 
+Epoch: Iteration # 200  error is:  0.04683886 
+Epoch: Iteration # 300  error is:  0.03986818 
+Epoch: Iteration # 400  error is:  0.03901111 
+Epoch: Iteration # 500  error is:  0.03854575 
+Epoch: Iteration # 600  error is:  0.03826663 
+Epoch: Iteration # 700  error is:  0.03816408 
+Epoch: Iteration # 800  error is:  0.03807228 
+Epoch: Iteration # 900  error is:  0.03803492 
+Epoch: Iteration # 1000  error is:  0.03792812 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  15.79036 
+Epoch: Iteration # 200  error is:  0.8973434 
+Epoch: Iteration # 300  error is:  0.6110755 
+Epoch: Iteration # 400  error is:  0.4524445 
+Epoch: Iteration # 500  error is:  0.4500203 
+Epoch: Iteration # 600  error is:  0.4475907 
+Epoch: Iteration # 700  error is:  0.4456825 
+Epoch: Iteration # 800  error is:  0.4453994 
+Epoch: Iteration # 900  error is:  0.4452226 
+Epoch: Iteration # 1000  error is:  0.445024 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05162518 
+Epoch: Iteration # 200  error is:  0.0422766 
+Epoch: Iteration # 300  error is:  0.03473455 
+Epoch: Iteration # 400  error is:  0.03409479 
+Epoch: Iteration # 500  error is:  0.03369955 
+Epoch: Iteration # 600  error is:  0.03341664 
+Epoch: Iteration # 700  error is:  0.03328903 
+Epoch: Iteration # 800  error is:  0.03320072 
+Epoch: Iteration # 900  error is:  0.03316896 
+Epoch: Iteration # 1000  error is:  0.03314712 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  20.11062 
+Epoch: Iteration # 200  error is:  0.7494374 
+Epoch: Iteration # 300  error is:  0.4708654 
+Epoch: Iteration # 400  error is:  0.459159 
+Epoch: Iteration # 500  error is:  0.4533447 
+Epoch: Iteration # 600  error is:  0.4519587 
+Epoch: Iteration # 700  error is:  0.4516093 
+Epoch: Iteration # 800  error is:  0.4513522 
+Epoch: Iteration # 900  error is:  0.4509927 
+Epoch: Iteration # 1000  error is:  0.4504863 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05549856 
+Epoch: Iteration # 200  error is:  0.04185614 
+Epoch: Iteration # 300  error is:  0.04039384 
+Epoch: Iteration # 400  error is:  0.03974546 
+Epoch: Iteration # 500  error is:  0.03951494 
+Epoch: Iteration # 600  error is:  0.03947771 
+Epoch: Iteration # 700  error is:  0.03940781 
+Epoch: Iteration # 800  error is:  0.03932074 
+Epoch: Iteration # 900  error is:  0.03929936 
+Epoch: Iteration # 1000  error is:  0.03929667 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  20.76515 
+Epoch: Iteration # 200  error is:  1.127181 
+Epoch: Iteration # 300  error is:  0.5101946 
+Epoch: Iteration # 400  error is:  0.4897917 
+Epoch: Iteration # 500  error is:  0.483595 
+Epoch: Iteration # 600  error is:  0.4805962 
+Epoch: Iteration # 700  error is:  0.4664178 
+Epoch: Iteration # 800  error is:  0.4660567 
+Epoch: Iteration # 900  error is:  0.4657769 
+Epoch: Iteration # 1000  error is:  0.4654194 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04974899 
+Epoch: Iteration # 200  error is:  0.03842674 
+Epoch: Iteration # 300  error is:  0.03653279 
+Epoch: Iteration # 400  error is:  0.0359124 
+Epoch: Iteration # 500  error is:  0.0355799 
+Epoch: Iteration # 600  error is:  0.03537436 
+Epoch: Iteration # 700  error is:  0.03523438 
+Epoch: Iteration # 800  error is:  0.03521356 
+Epoch: Iteration # 900  error is:  0.03519599 
+Epoch: Iteration # 1000  error is:  0.03517758 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  16.95515 
+Epoch: Iteration # 200  error is:  0.9872911 
+Epoch: Iteration # 300  error is:  0.6402116 
+Epoch: Iteration # 400  error is:  0.4536245 
+Epoch: Iteration # 500  error is:  0.4512592 
+Epoch: Iteration # 600  error is:  0.4477391 
+Epoch: Iteration # 700  error is:  0.4473446 
+Epoch: Iteration # 800  error is:  0.4469442 
+Epoch: Iteration # 900  error is:  0.4460816 
+Epoch: Iteration # 1000  error is:  0.4458418 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.0517638 
+Epoch: Iteration # 200  error is:  0.03784487 
+Epoch: Iteration # 300  error is:  0.03605007 
+Epoch: Iteration # 400  error is:  0.03558565 
+Epoch: Iteration # 500  error is:  0.03540453 
+Epoch: Iteration # 600  error is:  0.03536358 
+Epoch: Iteration # 700  error is:  0.03530572 
+Epoch: Iteration # 800  error is:  0.03528436 
+Epoch: Iteration # 900  error is:  0.03525487 
+Epoch: Iteration # 1000  error is:  0.03522342 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  22.61992 
+Epoch: Iteration # 200  error is:  0.9204468 
+Epoch: Iteration # 300  error is:  0.6460465 
+Epoch: Iteration # 400  error is:  0.6268462 
+Epoch: Iteration # 500  error is:  0.4766305 
+Epoch: Iteration # 600  error is:  0.4708938 
+Epoch: Iteration # 700  error is:  0.4647164 
+Epoch: Iteration # 800  error is:  0.46361 
+Epoch: Iteration # 900  error is:  0.462485 
+Epoch: Iteration # 1000  error is:  0.4621816 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05097794 
+Epoch: Iteration # 200  error is:  0.0399601 
+Epoch: Iteration # 300  error is:  0.03578671 
+Epoch: Iteration # 400  error is:  0.0348419 
+Epoch: Iteration # 500  error is:  0.03451 
+Epoch: Iteration # 600  error is:  0.03442247 
+Epoch: Iteration # 700  error is:  0.03435504 
+Epoch: Iteration # 800  error is:  0.03422329 
+Epoch: Iteration # 900  error is:  0.03417896 
+Epoch: Iteration # 1000  error is:  0.03417079 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  18.3907 
+Epoch: Iteration # 200  error is:  0.7097563 
+Epoch: Iteration # 300  error is:  0.4527075 
+Epoch: Iteration # 400  error is:  0.4418836 
+Epoch: Iteration # 500  error is:  0.4374799 
+Epoch: Iteration # 600  error is:  0.4332814 
+Epoch: Iteration # 700  error is:  0.4330308 
+Epoch: Iteration # 800  error is:  0.4325898 
+Epoch: Iteration # 900  error is:  0.430763 
+Epoch: Iteration # 1000  error is:  0.4294966 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.07042848 
+Epoch: Iteration # 200  error is:  0.03413626 
+Epoch: Iteration # 300  error is:  0.03339094 
+Epoch: Iteration # 400  error is:  0.03313843 
+Epoch: Iteration # 500  error is:  0.03300833 
+Epoch: Iteration # 600  error is:  0.03298488 
+Epoch: Iteration # 700  error is:  0.03297152 
+Epoch: Iteration # 800  error is:  0.03295698 
+Epoch: Iteration # 900  error is:  0.03294422 
+Epoch: Iteration # 1000  error is:  0.03293026 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  21.28616 
+Epoch: Iteration # 200  error is:  0.9967573 
+Epoch: Iteration # 300  error is:  0.5292694 
+Epoch: Iteration # 400  error is:  3.169587 
+Epoch: Iteration # 500  error is:  0.5771159 
+Epoch: Iteration # 600  error is:  0.5206904 
+Epoch: Iteration # 700  error is:  0.8719288 
+Epoch: Iteration # 800  error is:  0.5094054 
+Epoch: Iteration # 900  error is:  3.502274 
+Epoch: Iteration # 1000  error is:  1.028804 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02854063 
+Epoch: Iteration # 200  error is:  0.03215485 
+Epoch: Iteration # 300  error is:  0.03239987 
+Epoch: Iteration # 400  error is:  0.03288706 
+Epoch: Iteration # 500  error is:  0.0504688 
+Epoch: Iteration # 600  error is:  0.04846133 
+Epoch: Iteration # 700  error is:  0.04143129 
+Epoch: Iteration # 800  error is:  0.03270938 
+Epoch: Iteration # 900  error is:  0.2191668 
+Epoch: Iteration # 1000  error is:  0.02885587 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  18.98457 
+Epoch: Iteration # 200  error is:  1.581324 
+Epoch: Iteration # 300  error is:  0.938401 
+Epoch: Iteration # 400  error is:  0.920164 
+Epoch: Iteration # 500  error is:  0.7871196 
+Epoch: Iteration # 600  error is:  0.6846183 
+Epoch: Iteration # 700  error is:  0.6580937 
+Epoch: Iteration # 800  error is:  0.7501305 
+Epoch: Iteration # 900  error is:  0.5506109 
+Epoch: Iteration # 1000  error is:  0.5112699 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04785206 
+Epoch: Iteration # 200  error is:  0.0445602 
+Epoch: Iteration # 300  error is:  0.04338581 
+Epoch: Iteration # 400  error is:  0.04248903 
+Epoch: Iteration # 500  error is:  0.04116629 
+Epoch: Iteration # 600  error is:  0.03814205 
+Epoch: Iteration # 700  error is:  0.0251784 
+Epoch: Iteration # 800  error is:  0.02118587 
+Epoch: Iteration # 900  error is:  0.02118519 
+Epoch: Iteration # 1000  error is:  0.02118058 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  18.46802 
+Epoch: Iteration # 200  error is:  1.478771 
+Epoch: Iteration # 300  error is:  1.001337 
+Epoch: Iteration # 400  error is:  0.7451281 
+Epoch: Iteration # 500  error is:  0.5339518 
+Epoch: Iteration # 600  error is:  0.4560828 
+Epoch: Iteration # 700  error is:  0.4535 
+Epoch: Iteration # 800  error is:  0.4519866 
+Epoch: Iteration # 900  error is:  0.4507903 
+Epoch: Iteration # 1000  error is:  0.4493268 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04860958 
+Epoch: Iteration # 200  error is:  0.04114149 
+Epoch: Iteration # 300  error is:  0.03828673 
+Epoch: Iteration # 400  error is:  0.03648103 
+Epoch: Iteration # 500  error is:  0.03293247 
+Epoch: Iteration # 600  error is:  0.02804105 
+Epoch: Iteration # 700  error is:  0.02606509 
+Epoch: Iteration # 800  error is:  0.02378553 
+Epoch: Iteration # 900  error is:  0.02133358 
+Epoch: Iteration # 1000  error is:  0.0192642 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  20.98283 
+Epoch: Iteration # 200  error is:  1.537743 
+Epoch: Iteration # 300  error is:  0.9035455 
+Epoch: Iteration # 400  error is:  0.6483366 
+Epoch: Iteration # 500  error is:  0.524431 
+Epoch: Iteration # 600  error is:  0.4544949 
+Epoch: Iteration # 700  error is:  0.4461235 
+Epoch: Iteration # 800  error is:  0.6153631 
+Epoch: Iteration # 900  error is:  0.4581717 
+Epoch: Iteration # 1000  error is:  0.4446462 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04559179 
+Epoch: Iteration # 200  error is:  0.04168946 
+Epoch: Iteration # 300  error is:  0.04073594 
+Epoch: Iteration # 400  error is:  0.03981549 
+Epoch: Iteration # 500  error is:  0.03832564 
+Epoch: Iteration # 600  error is:  0.03445668 
+Epoch: Iteration # 700  error is:  0.02734234 
+Epoch: Iteration # 800  error is:  0.02680502 
+Epoch: Iteration # 900  error is:  0.02679159 
+Epoch: Iteration # 1000  error is:  0.0267914 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  18.44579 
+Epoch: Iteration # 200  error is:  1.352776 
+Epoch: Iteration # 300  error is:  0.5599118 
+Epoch: Iteration # 400  error is:  0.4375789 
+Epoch: Iteration # 500  error is:  0.4184097 
+Epoch: Iteration # 600  error is:  0.4124083 
+Epoch: Iteration # 700  error is:  0.395403 
+Epoch: Iteration # 800  error is:  0.09952283 
+Epoch: Iteration # 900  error is:  0.09670857 
+Epoch: Iteration # 1000  error is:  0.09574505 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.05442179 
+Epoch: Iteration # 200  error is:  0.01691002 
+Epoch: Iteration # 300  error is:  0.01608357 
+Epoch: Iteration # 400  error is:  0.01605352 
+Epoch: Iteration # 500  error is:  0.01603887 
+Epoch: Iteration # 600  error is:  0.01602322 
+Epoch: Iteration # 700  error is:  0.0160078 
+Epoch: Iteration # 800  error is:  0.01599312 
+Epoch: Iteration # 900  error is:  0.01597974 
+Epoch: Iteration # 1000  error is:  0.0159676 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  21.15214 
+Epoch: Iteration # 200  error is:  1.444526 
+Epoch: Iteration # 300  error is:  0.8128785 
+Epoch: Iteration # 400  error is:  0.9901356 
+Epoch: Iteration # 500  error is:  0.9447741 
+Epoch: Iteration # 600  error is:  0.6837007 
+Epoch: Iteration # 700  error is:  0.7537379 
+Epoch: Iteration # 800  error is:  0.4743287 
+Epoch: Iteration # 900  error is:  0.4545107 
+Epoch: Iteration # 1000  error is:  0.6430834 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.06558626 
+Epoch: Iteration # 200  error is:  0.01187789 
+Epoch: Iteration # 300  error is:  0.005210661 
+Epoch: Iteration # 400  error is:  0.005185627 
+Epoch: Iteration # 500  error is:  0.005167007 
+Epoch: Iteration # 600  error is:  0.005147782 
+Epoch: Iteration # 700  error is:  0.005129104 
+Epoch: Iteration # 800  error is:  0.005110753 
+Epoch: Iteration # 900  error is:  0.005093879 
+Epoch: Iteration # 1000  error is:  0.005078441 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  16.37719 
+Epoch: Iteration # 200  error is:  1.516019 
+Epoch: Iteration # 300  error is:  0.8624652 
+Epoch: Iteration # 400  error is:  0.6133266 
+Epoch: Iteration # 500  error is:  0.5385756 
+Epoch: Iteration # 600  error is:  0.4911505 
+Epoch: Iteration # 700  error is:  0.5636912 
+Epoch: Iteration # 800  error is:  0.5252614 
+Epoch: Iteration # 900  error is:  0.5773426 
+Epoch: Iteration # 1000  error is:  1.027709 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.09461388 
+Epoch: Iteration # 200  error is:  0.05063529 
+Epoch: Iteration # 300  error is:  0.03717136 
+Epoch: Iteration # 400  error is:  0.03379743 
+Epoch: Iteration # 500  error is:  0.02935996 
+Epoch: Iteration # 600  error is:  0.02173777 
+Epoch: Iteration # 700  error is:  0.01480057 
+Epoch: Iteration # 800  error is:  0.01477461 
+Epoch: Iteration # 900  error is:  0.01475881 
+Epoch: Iteration # 1000  error is:  0.01474455 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  18.05127 
+Epoch: Iteration # 200  error is:  1.521929 
+Epoch: Iteration # 300  error is:  1.02325 
+Epoch: Iteration # 400  error is:  2.149943 
+Epoch: Iteration # 500  error is:  0.998348 
+Epoch: Iteration # 600  error is:  0.7642649 
+Epoch: Iteration # 700  error is:  0.7985736 
+Epoch: Iteration # 800  error is:  0.5944178 
+Epoch: Iteration # 900  error is:  0.5980169 
+Epoch: Iteration # 1000  error is:  0.6535532 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04093783 
+Epoch: Iteration # 200  error is:  0.02563475 
+Epoch: Iteration # 300  error is:  0.02183397 
+Epoch: Iteration # 400  error is:  0.01418622 
+Epoch: Iteration # 500  error is:  0.01417401 
+Epoch: Iteration # 600  error is:  0.0141662 
+Epoch: Iteration # 700  error is:  0.01416063 
+Epoch: Iteration # 800  error is:  0.01415576 
+Epoch: Iteration # 900  error is:  0.01415138 
+Epoch: Iteration # 1000  error is:  0.01414742 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  17.3436 
+Epoch: Iteration # 200  error is:  1.783752 
+Epoch: Iteration # 300  error is:  1.229136 
+Epoch: Iteration # 400  error is:  0.9930691 
+Epoch: Iteration # 500  error is:  0.7770182 
+Epoch: Iteration # 600  error is:  0.5464052 
+Epoch: Iteration # 700  error is:  0.4686906 
+Epoch: Iteration # 800  error is:  0.4533393 
+Epoch: Iteration # 900  error is:  0.4414052 
+Epoch: Iteration # 1000  error is:  0.712592 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03794304 
+Epoch: Iteration # 200  error is:  0.03228991 
+Epoch: Iteration # 300  error is:  0.03427093 
+Epoch: Iteration # 400  error is:  0.06112203 
+Epoch: Iteration # 500  error is:  0.04195847 
+Epoch: Iteration # 600  error is:  0.02622502 
+Epoch: Iteration # 700  error is:  0.02087076 
+Epoch: Iteration # 800  error is:  0.0153759 
+Epoch: Iteration # 900  error is:  0.0143135 
+Epoch: Iteration # 1000  error is:  0.0137868 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  19.08222 
+Epoch: Iteration # 200  error is:  1.667919 
+Epoch: Iteration # 300  error is:  1.04972 
+Epoch: Iteration # 400  error is:  0.6162478 
+Epoch: Iteration # 500  error is:  2.28473 
+Epoch: Iteration # 600  error is:  0.7112466 
+Epoch: Iteration # 700  error is:  0.622883 
+Epoch: Iteration # 800  error is:  0.511386 
+Epoch: Iteration # 900  error is:  0.6591014 
+Epoch: Iteration # 1000  error is:  0.5466715 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.1572634 
+Epoch: Iteration # 200  error is:  0.03772122 
+Epoch: Iteration # 300  error is:  0.02725495 
+Epoch: Iteration # 400  error is:  0.03528765 
+Epoch: Iteration # 500  error is:  0.02959594 
+Epoch: Iteration # 600  error is:  0.01906772 
+Epoch: Iteration # 700  error is:  0.01857516 
+Epoch: Iteration # 800  error is:  0.0180232 
+Epoch: Iteration # 900  error is:  0.01744276 
+Epoch: Iteration # 1000  error is:  0.01678207 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  20.64848 
+Epoch: Iteration # 200  error is:  1.521457 
+Epoch: Iteration # 300  error is:  0.9591953 
+Epoch: Iteration # 400  error is:  0.6911728 
+Epoch: Iteration # 500  error is:  0.7718055 
+Epoch: Iteration # 600  error is:  0.5910987 
+Epoch: Iteration # 700  error is:  0.5474635 
+Epoch: Iteration # 800  error is:  0.5464567 
+Epoch: Iteration # 900  error is:  0.9444574 
+Epoch: Iteration # 1000  error is:  0.7119984 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.01274134 
+Epoch: Iteration # 200  error is:  0.01046075 
+Epoch: Iteration # 300  error is:  0.009698625 
+Epoch: Iteration # 400  error is:  0.009104932 
+Epoch: Iteration # 500  error is:  0.008682859 
+Epoch: Iteration # 600  error is:  0.008320721 
+Epoch: Iteration # 700  error is:  0.008017593 
+Epoch: Iteration # 800  error is:  0.007777812 
+Epoch: Iteration # 900  error is:  0.007562324 
+Epoch: Iteration # 1000  error is:  0.007369553 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.34972 
+Epoch: Iteration # 200  error is:  0.09718238 
+Epoch: Iteration # 300  error is:  0.1495045 
+Epoch: Iteration # 400  error is:  0.09586275 
+Epoch: Iteration # 500  error is:  0.0800674 
+Epoch: Iteration # 600  error is:  0.02989052 
+Epoch: Iteration # 700  error is:  0.02928352 
+Epoch: Iteration # 800  error is:  0.02880264 
+Epoch: Iteration # 900  error is:  0.02838799 
+Epoch: Iteration # 1000  error is:  0.02804388 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.01168237 
+Epoch: Iteration # 200  error is:  0.007343413 
+Epoch: Iteration # 300  error is:  0.007060622 
+Epoch: Iteration # 400  error is:  0.00682492 
+Epoch: Iteration # 500  error is:  0.006629828 
+Epoch: Iteration # 600  error is:  0.006459376 
+Epoch: Iteration # 700  error is:  0.00630755 
+Epoch: Iteration # 800  error is:  0.006176811 
+Epoch: Iteration # 900  error is:  0.006057185 
+Epoch: Iteration # 1000  error is:  0.005954128 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.96657 
+Epoch: Iteration # 200  error is:  0.1737621 
+Epoch: Iteration # 300  error is:  0.04757937 
+Epoch: Iteration # 400  error is:  0.04360083 
+Epoch: Iteration # 500  error is:  0.04258502 
+Epoch: Iteration # 600  error is:  0.04187598 
+Epoch: Iteration # 700  error is:  0.04132508 
+Epoch: Iteration # 800  error is:  0.0408815 
+Epoch: Iteration # 900  error is:  0.04051097 
+Epoch: Iteration # 1000  error is:  0.04020153 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.01577464 
+Epoch: Iteration # 200  error is:  0.01302147 
+Epoch: Iteration # 300  error is:  0.01157151 
+Epoch: Iteration # 400  error is:  0.01064002 
+Epoch: Iteration # 500  error is:  0.009990498 
+Epoch: Iteration # 600  error is:  0.009520641 
+Epoch: Iteration # 700  error is:  0.009133692 
+Epoch: Iteration # 800  error is:  0.008805957 
+Epoch: Iteration # 900  error is:  0.00853231 
+Epoch: Iteration # 1000  error is:  0.008296133 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.27293 
+Epoch: Iteration # 200  error is:  0.03225797 
+Epoch: Iteration # 300  error is:  0.02995557 
+Epoch: Iteration # 400  error is:  0.02902784 
+Epoch: Iteration # 500  error is:  0.02835129 
+Epoch: Iteration # 600  error is:  0.02781271 
+Epoch: Iteration # 700  error is:  0.02737398 
+Epoch: Iteration # 800  error is:  0.02701039 
+Epoch: Iteration # 900  error is:  0.02671244 
+Epoch: Iteration # 1000  error is:  0.02645556 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04463743 
+Epoch: Iteration # 200  error is:  0.008844165 
+Epoch: Iteration # 300  error is:  0.008166957 
+Epoch: Iteration # 400  error is:  0.007673029 
+Epoch: Iteration # 500  error is:  0.007312063 
+Epoch: Iteration # 600  error is:  0.007018894 
+Epoch: Iteration # 700  error is:  0.006764504 
+Epoch: Iteration # 800  error is:  0.006555183 
+Epoch: Iteration # 900  error is:  0.006383722 
+Epoch: Iteration # 1000  error is:  0.006229524 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.54083 
+Epoch: Iteration # 200  error is:  0.0432581 
+Epoch: Iteration # 300  error is:  0.04033042 
+Epoch: Iteration # 400  error is:  0.0390957 
+Epoch: Iteration # 500  error is:  0.038236 
+Epoch: Iteration # 600  error is:  0.03757581 
+Epoch: Iteration # 700  error is:  0.03704536 
+Epoch: Iteration # 800  error is:  0.03662654 
+Epoch: Iteration # 900  error is:  0.03626172 
+Epoch: Iteration # 1000  error is:  0.03595464 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.01669346 
+Epoch: Iteration # 200  error is:  0.01352558 
+Epoch: Iteration # 300  error is:  0.01193447 
+Epoch: Iteration # 400  error is:  0.01092177 
+Epoch: Iteration # 500  error is:  0.01017503 
+Epoch: Iteration # 600  error is:  0.009639868 
+Epoch: Iteration # 700  error is:  0.009259162 
+Epoch: Iteration # 800  error is:  0.008964632 
+Epoch: Iteration # 900  error is:  0.008724702 
+Epoch: Iteration # 1000  error is:  0.00852132 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.173304 
+Epoch: Iteration # 200  error is:  0.05983984 
+Epoch: Iteration # 300  error is:  0.02136233 
+Epoch: Iteration # 400  error is:  0.02021955 
+Epoch: Iteration # 500  error is:  0.01946045 
+Epoch: Iteration # 600  error is:  0.01893203 
+Epoch: Iteration # 700  error is:  0.01846417 
+Epoch: Iteration # 800  error is:  0.01803575 
+Epoch: Iteration # 900  error is:  0.01763362 
+Epoch: Iteration # 1000  error is:  0.01723145 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02414343 
+Epoch: Iteration # 200  error is:  0.02380377 
+Epoch: Iteration # 300  error is:  0.01577799 
+Epoch: Iteration # 400  error is:  0.01193999 
+Epoch: Iteration # 500  error is:  0.01154977 
+Epoch: Iteration # 600  error is:  0.01123538 
+Epoch: Iteration # 700  error is:  0.01096668 
+Epoch: Iteration # 800  error is:  0.01070784 
+Epoch: Iteration # 900  error is:  0.01048688 
+Epoch: Iteration # 1000  error is:  0.01027558 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  12.00739 
+Epoch: Iteration # 200  error is:  0.06299554 
+Epoch: Iteration # 300  error is:  0.05616569 
+Epoch: Iteration # 400  error is:  0.05492556 
+Epoch: Iteration # 500  error is:  0.05410216 
+Epoch: Iteration # 600  error is:  0.05349043 
+Epoch: Iteration # 700  error is:  0.05301402 
+Epoch: Iteration # 800  error is:  0.0526311 
+Epoch: Iteration # 900  error is:  0.05230201 
+Epoch: Iteration # 1000  error is:  0.05201706 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02482945 
+Epoch: Iteration # 200  error is:  0.01102676 
+Epoch: Iteration # 300  error is:  0.01022536 
+Epoch: Iteration # 400  error is:  0.009655935 
+Epoch: Iteration # 500  error is:  0.009203438 
+Epoch: Iteration # 600  error is:  0.008859358 
+Epoch: Iteration # 700  error is:  0.008564655 
+Epoch: Iteration # 800  error is:  0.008304752 
+Epoch: Iteration # 900  error is:  0.008098377 
+Epoch: Iteration # 1000  error is:  0.007905322 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.44834 
+Epoch: Iteration # 200  error is:  0.1001202 
+Epoch: Iteration # 300  error is:  0.04227993 
+Epoch: Iteration # 400  error is:  0.04068309 
+Epoch: Iteration # 500  error is:  0.0396403 
+Epoch: Iteration # 600  error is:  0.0388566 
+Epoch: Iteration # 700  error is:  0.03826503 
+Epoch: Iteration # 800  error is:  0.03778369 
+Epoch: Iteration # 900  error is:  0.03738209 
+Epoch: Iteration # 1000  error is:  0.03703201 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.01062275 
+Epoch: Iteration # 200  error is:  0.009055249 
+Epoch: Iteration # 300  error is:  0.008013319 
+Epoch: Iteration # 400  error is:  0.007310789 
+Epoch: Iteration # 500  error is:  0.006809469 
+Epoch: Iteration # 600  error is:  0.006446019 
+Epoch: Iteration # 700  error is:  0.006155421 
+Epoch: Iteration # 800  error is:  0.005919642 
+Epoch: Iteration # 900  error is:  0.005720665 
+Epoch: Iteration # 1000  error is:  0.005547993 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.28026 
+Epoch: Iteration # 200  error is:  0.03818503 
+Epoch: Iteration # 300  error is:  0.03918417 
+Epoch: Iteration # 400  error is:  0.03908003 
+Epoch: Iteration # 500  error is:  0.03524555 
+Epoch: Iteration # 600  error is:  0.03843008 
+Epoch: Iteration # 700  error is:  0.03757402 
+Epoch: Iteration # 800  error is:  0.03412834 
+Epoch: Iteration # 900  error is:  0.03747914 
+Epoch: Iteration # 1000  error is:  0.03681577 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.06503266 
+Epoch: Iteration # 200  error is:  0.02130315 
+Epoch: Iteration # 300  error is:  0.01614876 
+Epoch: Iteration # 400  error is:  0.01856098 
+Epoch: Iteration # 500  error is:  0.01762607 
+Epoch: Iteration # 600  error is:  0.01401679 
+Epoch: Iteration # 700  error is:  0.0169763 
+Epoch: Iteration # 800  error is:  0.01652987 
+Epoch: Iteration # 900  error is:  0.01318253 
+Epoch: Iteration # 1000  error is:  0.01635405 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.11208 
+Epoch: Iteration # 200  error is:  0.06723943 
+Epoch: Iteration # 300  error is:  0.05190241 
+Epoch: Iteration # 400  error is:  0.05074988 
+Epoch: Iteration # 500  error is:  0.04993078 
+Epoch: Iteration # 600  error is:  0.04930196 
+Epoch: Iteration # 700  error is:  0.04880211 
+Epoch: Iteration # 800  error is:  0.04839527 
+Epoch: Iteration # 900  error is:  0.04805687 
+Epoch: Iteration # 1000  error is:  0.04776058 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.01315234 
+Epoch: Iteration # 200  error is:  0.01174216 
+Epoch: Iteration # 300  error is:  0.01077997 
+Epoch: Iteration # 400  error is:  0.01003414 
+Epoch: Iteration # 500  error is:  0.009467012 
+Epoch: Iteration # 600  error is:  0.009022212 
+Epoch: Iteration # 700  error is:  0.008655062 
+Epoch: Iteration # 800  error is:  0.008356588 
+Epoch: Iteration # 900  error is:  0.008104384 
+Epoch: Iteration # 1000  error is:  0.007874804 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.912032 
+Epoch: Iteration # 200  error is:  0.03392876 
+Epoch: Iteration # 300  error is:  0.02693554 
+Epoch: Iteration # 400  error is:  0.02611106 
+Epoch: Iteration # 500  error is:  0.02550623 
+Epoch: Iteration # 600  error is:  0.02501572 
+Epoch: Iteration # 700  error is:  0.02461773 
+Epoch: Iteration # 800  error is:  0.02428176 
+Epoch: Iteration # 900  error is:  0.02400118 
+Epoch: Iteration # 1000  error is:  0.02375063 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02309494 
+Epoch: Iteration # 200  error is:  0.01727809 
+Epoch: Iteration # 300  error is:  0.01457324 
+Epoch: Iteration # 400  error is:  0.01303428 
+Epoch: Iteration # 500  error is:  0.0120571 
+Epoch: Iteration # 600  error is:  0.01135485 
+Epoch: Iteration # 700  error is:  0.01081301 
+Epoch: Iteration # 800  error is:  0.01039474 
+Epoch: Iteration # 900  error is:  0.01005881 
+Epoch: Iteration # 1000  error is:  0.009766019 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.6222 
+Epoch: Iteration # 200  error is:  0.1291263 
+Epoch: Iteration # 300  error is:  0.06107331 
+Epoch: Iteration # 400  error is:  0.05559875 
+Epoch: Iteration # 500  error is:  0.05380741 
+Epoch: Iteration # 600  error is:  0.05257334 
+Epoch: Iteration # 700  error is:  0.05166581 
+Epoch: Iteration # 800  error is:  0.05094484 
+Epoch: Iteration # 900  error is:  0.05036775 
+Epoch: Iteration # 1000  error is:  0.0498859 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.0191045 
+Epoch: Iteration # 200  error is:  0.0150428 
+Epoch: Iteration # 300  error is:  0.01311838 
+Epoch: Iteration # 400  error is:  0.01195834 
+Epoch: Iteration # 500  error is:  0.01114978 
+Epoch: Iteration # 600  error is:  0.01056708 
+Epoch: Iteration # 700  error is:  0.01009607 
+Epoch: Iteration # 800  error is:  0.009694486 
+Epoch: Iteration # 900  error is:  0.009362613 
+Epoch: Iteration # 1000  error is:  0.009080434 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.270587 
+Epoch: Iteration # 200  error is:  0.04804546 
+Epoch: Iteration # 300  error is:  0.03644233 
+Epoch: Iteration # 400  error is:  0.03433413 
+Epoch: Iteration # 500  error is:  0.03297178 
+Epoch: Iteration # 600  error is:  0.03199305 
+Epoch: Iteration # 700  error is:  0.03123254 
+Epoch: Iteration # 800  error is:  0.03062323 
+Epoch: Iteration # 900  error is:  0.03013469 
+Epoch: Iteration # 1000  error is:  0.02970386 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02234929 
+Epoch: Iteration # 200  error is:  0.01554252 
+Epoch: Iteration # 300  error is:  0.0130733 
+Epoch: Iteration # 400  error is:  0.01172214 
+Epoch: Iteration # 500  error is:  0.01081354 
+Epoch: Iteration # 600  error is:  0.01014927 
+Epoch: Iteration # 700  error is:  0.009630384 
+Epoch: Iteration # 800  error is:  0.009217869 
+Epoch: Iteration # 900  error is:  0.008891712 
+Epoch: Iteration # 1000  error is:  0.008607829 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.21592 
+Epoch: Iteration # 200  error is:  0.05092201 
+Epoch: Iteration # 300  error is:  0.04649889 
+Epoch: Iteration # 400  error is:  0.04415984 
+Epoch: Iteration # 500  error is:  0.04267714 
+Epoch: Iteration # 600  error is:  0.04163699 
+Epoch: Iteration # 700  error is:  0.04083782 
+Epoch: Iteration # 800  error is:  0.04020578 
+Epoch: Iteration # 900  error is:  0.03969303 
+Epoch: Iteration # 1000  error is:  0.03927208 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02288345 
+Epoch: Iteration # 200  error is:  0.01768439 
+Epoch: Iteration # 300  error is:  0.01510301 
+Epoch: Iteration # 400  error is:  0.01363009 
+Epoch: Iteration # 500  error is:  0.0126519 
+Epoch: Iteration # 600  error is:  0.01193342 
+Epoch: Iteration # 700  error is:  0.01138831 
+Epoch: Iteration # 800  error is:  0.01095262 
+Epoch: Iteration # 900  error is:  0.01060456 
+Epoch: Iteration # 1000  error is:  0.01030859 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.40258 
+Epoch: Iteration # 200  error is:  0.1157706 
+Epoch: Iteration # 300  error is:  0.06727683 
+Epoch: Iteration # 400  error is:  0.06477696 
+Epoch: Iteration # 500  error is:  0.0632278 
+Epoch: Iteration # 600  error is:  0.06210449 
+Epoch: Iteration # 700  error is:  0.06124913 
+Epoch: Iteration # 800  error is:  0.06056662 
+Epoch: Iteration # 900  error is:  0.06000766 
+Epoch: Iteration # 1000  error is:  0.05953475 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.0214634 
+Epoch: Iteration # 200  error is:  0.01646864 
+Epoch: Iteration # 300  error is:  0.01416132 
+Epoch: Iteration # 400  error is:  0.01279121 
+Epoch: Iteration # 500  error is:  0.01189159 
+Epoch: Iteration # 600  error is:  0.01120811 
+Epoch: Iteration # 700  error is:  0.01069373 
+Epoch: Iteration # 800  error is:  0.01026273 
+Epoch: Iteration # 900  error is:  0.009910735 
+Epoch: Iteration # 1000  error is:  0.009621406 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.49647 
+Epoch: Iteration # 200  error is:  0.05942761 
+Epoch: Iteration # 300  error is:  0.05319876 
+Epoch: Iteration # 400  error is:  0.05040916 
+Epoch: Iteration # 500  error is:  0.04877197 
+Epoch: Iteration # 600  error is:  0.04761775 
+Epoch: Iteration # 700  error is:  0.04674616 
+Epoch: Iteration # 800  error is:  0.04605912 
+Epoch: Iteration # 900  error is:  0.0455092 
+Epoch: Iteration # 1000  error is:  0.0450486 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02187847 
+Epoch: Iteration # 200  error is:  0.01702421 
+Epoch: Iteration # 300  error is:  0.01448233 
+Epoch: Iteration # 400  error is:  0.01310193 
+Epoch: Iteration # 500  error is:  0.01216106 
+Epoch: Iteration # 600  error is:  0.01146734 
+Epoch: Iteration # 700  error is:  0.01094216 
+Epoch: Iteration # 800  error is:  0.01054238 
+Epoch: Iteration # 900  error is:  0.01019359 
+Epoch: Iteration # 1000  error is:  0.009899358 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.29038 
+Epoch: Iteration # 200  error is:  0.1584174 
+Epoch: Iteration # 300  error is:  0.07231177 
+Epoch: Iteration # 400  error is:  0.06215896 
+Epoch: Iteration # 500  error is:  0.06042327 
+Epoch: Iteration # 600  error is:  0.05918944 
+Epoch: Iteration # 700  error is:  0.05826103 
+Epoch: Iteration # 800  error is:  0.05755658 
+Epoch: Iteration # 900  error is:  0.05697332 
+Epoch: Iteration # 1000  error is:  0.05649559 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.019208 
+Epoch: Iteration # 200  error is:  0.01607596 
+Epoch: Iteration # 300  error is:  0.01433617 
+Epoch: Iteration # 400  error is:  0.01327558 
+Epoch: Iteration # 500  error is:  0.01243714 
+Epoch: Iteration # 600  error is:  0.01180332 
+Epoch: Iteration # 700  error is:  0.0113007 
+Epoch: Iteration # 800  error is:  0.01089303 
+Epoch: Iteration # 900  error is:  0.01056397 
+Epoch: Iteration # 1000  error is:  0.01026979 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.56246 
+Epoch: Iteration # 200  error is:  0.1120187 
+Epoch: Iteration # 300  error is:  0.05660722 
+Epoch: Iteration # 400  error is:  0.05425771 
+Epoch: Iteration # 500  error is:  0.05268229 
+Epoch: Iteration # 600  error is:  0.05155716 
+Epoch: Iteration # 700  error is:  0.05071544 
+Epoch: Iteration # 800  error is:  0.05003174 
+Epoch: Iteration # 900  error is:  0.04945843 
+Epoch: Iteration # 1000  error is:  0.04897943 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.02176209 
+Epoch: Iteration # 200  error is:  0.01643258 
+Epoch: Iteration # 300  error is:  0.01393503 
+Epoch: Iteration # 400  error is:  0.01257519 
+Epoch: Iteration # 500  error is:  0.01162497 
+Epoch: Iteration # 600  error is:  0.01093322 
+Epoch: Iteration # 700  error is:  0.01039363 
+Epoch: Iteration # 800  error is:  0.009951407 
+Epoch: Iteration # 900  error is:  0.00958314 
+Epoch: Iteration # 1000  error is:  0.009278823 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.30989 
+Epoch: Iteration # 200  error is:  0.05502584 
+Epoch: Iteration # 300  error is:  0.05010977 
+Epoch: Iteration # 400  error is:  0.04761226 
+Epoch: Iteration # 500  error is:  0.04604172 
+Epoch: Iteration # 600  error is:  0.04497533 
+Epoch: Iteration # 700  error is:  0.04412489 
+Epoch: Iteration # 800  error is:  0.04346821 
+Epoch: Iteration # 900  error is:  0.04293164 
+Epoch: Iteration # 1000  error is:  0.04248886 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.1476769 
+Epoch: Iteration # 200  error is:  0.01777868 
+Epoch: Iteration # 300  error is:  0.01592476 
+Epoch: Iteration # 400  error is:  0.01474173 
+Epoch: Iteration # 500  error is:  0.01392512 
+Epoch: Iteration # 600  error is:  0.01335781 
+Epoch: Iteration # 700  error is:  0.01286024 
+Epoch: Iteration # 800  error is:  0.01251115 
+Epoch: Iteration # 900  error is:  0.01216403 
+Epoch: Iteration # 1000  error is:  0.01189592 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  12.00764 
+Epoch: Iteration # 200  error is:  0.1299806 
+Epoch: Iteration # 300  error is:  0.1203686 
+Epoch: Iteration # 400  error is:  0.1199553 
+Epoch: Iteration # 500  error is:  0.1100769 
+Epoch: Iteration # 600  error is:  0.1114945 
+Epoch: Iteration # 700  error is:  0.1141398 
+Epoch: Iteration # 800  error is:  0.1065724 
+Epoch: Iteration # 900  error is:  0.1091968 
+Epoch: Iteration # 1000  error is:  0.1114476 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.06412289 
+Epoch: Iteration # 200  error is:  0.01494504 
+Epoch: Iteration # 300  error is:  0.01399713 
+Epoch: Iteration # 400  error is:  0.01321425 
+Epoch: Iteration # 500  error is:  0.01264727 
+Epoch: Iteration # 600  error is:  0.01218923 
+Epoch: Iteration # 700  error is:  0.01180373 
+Epoch: Iteration # 800  error is:  0.01148507 
+Epoch: Iteration # 900  error is:  0.01120963 
+Epoch: Iteration # 1000  error is:  0.01097123 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.64267 
+Epoch: Iteration # 200  error is:  0.2008036 
+Epoch: Iteration # 300  error is:  0.1701038 
+Epoch: Iteration # 400  error is:  0.09777889 
+Epoch: Iteration # 500  error is:  0.08606343 
+Epoch: Iteration # 600  error is:  0.08463765 
+Epoch: Iteration # 700  error is:  0.08361878 
+Epoch: Iteration # 800  error is:  0.08283881 
+Epoch: Iteration # 900  error is:  0.08220695 
+Epoch: Iteration # 1000  error is:  0.08168761 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04786211 
+Epoch: Iteration # 200  error is:  0.03572518 
+Epoch: Iteration # 300  error is:  0.03089637 
+Epoch: Iteration # 400  error is:  0.02814541 
+Epoch: Iteration # 500  error is:  0.02635668 
+Epoch: Iteration # 600  error is:  0.02505703 
+Epoch: Iteration # 700  error is:  0.02402779 
+Epoch: Iteration # 800  error is:  0.02320899 
+Epoch: Iteration # 900  error is:  0.02255323 
+Epoch: Iteration # 1000  error is:  0.02201589 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.0857 
+Epoch: Iteration # 200  error is:  0.0912867 
+Epoch: Iteration # 300  error is:  0.08071113 
+Epoch: Iteration # 400  error is:  0.07365252 
+Epoch: Iteration # 500  error is:  0.06966041 
+Epoch: Iteration # 600  error is:  0.06822 
+Epoch: Iteration # 700  error is:  0.06714641 
+Epoch: Iteration # 800  error is:  0.06632015 
+Epoch: Iteration # 900  error is:  0.06565992 
+Epoch: Iteration # 1000  error is:  0.06513724 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.0576292 
+Epoch: Iteration # 200  error is:  0.03798245 
+Epoch: Iteration # 300  error is:  0.03130747 
+Epoch: Iteration # 400  error is:  0.02823018 
+Epoch: Iteration # 500  error is:  0.02637979 
+Epoch: Iteration # 600  error is:  0.02509613 
+Epoch: Iteration # 700  error is:  0.02416042 
+Epoch: Iteration # 800  error is:  0.02346681 
+Epoch: Iteration # 900  error is:  0.02286532 
+Epoch: Iteration # 1000  error is:  0.02237728 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.36821 
+Epoch: Iteration # 200  error is:  0.1664164 
+Epoch: Iteration # 300  error is:  0.1693935 
+Epoch: Iteration # 400  error is:  0.1539842 
+Epoch: Iteration # 500  error is:  0.1572513 
+Epoch: Iteration # 600  error is:  0.1654774 
+Epoch: Iteration # 700  error is:  0.1409853 
+Epoch: Iteration # 800  error is:  0.1383866 
+Epoch: Iteration # 900  error is:  0.1446725 
+Epoch: Iteration # 1000  error is:  0.1416336 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03385743 
+Epoch: Iteration # 200  error is:  0.02237204 
+Epoch: Iteration # 300  error is:  0.01878546 
+Epoch: Iteration # 400  error is:  0.01703672 
+Epoch: Iteration # 500  error is:  0.01591762 
+Epoch: Iteration # 600  error is:  0.01512749 
+Epoch: Iteration # 700  error is:  0.01451278 
+Epoch: Iteration # 800  error is:  0.01401828 
+Epoch: Iteration # 900  error is:  0.01361521 
+Epoch: Iteration # 1000  error is:  0.01327451 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.37931 
+Epoch: Iteration # 200  error is:  0.06453097 
+Epoch: Iteration # 300  error is:  0.05564157 
+Epoch: Iteration # 400  error is:  0.05181555 
+Epoch: Iteration # 500  error is:  0.04964027 
+Epoch: Iteration # 600  error is:  0.04820053 
+Epoch: Iteration # 700  error is:  0.04713762 
+Epoch: Iteration # 800  error is:  0.04632727 
+Epoch: Iteration # 900  error is:  0.04568494 
+Epoch: Iteration # 1000  error is:  0.04515141 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03398196 
+Epoch: Iteration # 200  error is:  0.02222103 
+Epoch: Iteration # 300  error is:  0.01861462 
+Epoch: Iteration # 400  error is:  0.016801 
+Epoch: Iteration # 500  error is:  0.01565964 
+Epoch: Iteration # 600  error is:  0.01485451 
+Epoch: Iteration # 700  error is:  0.01425134 
+Epoch: Iteration # 800  error is:  0.01377176 
+Epoch: Iteration # 900  error is:  0.01338338 
+Epoch: Iteration # 1000  error is:  0.01306019 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.25968 
+Epoch: Iteration # 200  error is:  0.07642209 
+Epoch: Iteration # 300  error is:  0.0682547 
+Epoch: Iteration # 400  error is:  0.06473226 
+Epoch: Iteration # 500  error is:  0.06266641 
+Epoch: Iteration # 600  error is:  0.06126644 
+Epoch: Iteration # 700  error is:  0.06024794 
+Epoch: Iteration # 800  error is:  0.05946367 
+Epoch: Iteration # 900  error is:  0.0588418 
+Epoch: Iteration # 1000  error is:  0.05831733 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.0343599 
+Epoch: Iteration # 200  error is:  0.02334344 
+Epoch: Iteration # 300  error is:  0.01967414 
+Epoch: Iteration # 400  error is:  0.01771381 
+Epoch: Iteration # 500  error is:  0.01642665 
+Epoch: Iteration # 600  error is:  0.01552945 
+Epoch: Iteration # 700  error is:  0.01486451 
+Epoch: Iteration # 800  error is:  0.01434413 
+Epoch: Iteration # 900  error is:  0.01392868 
+Epoch: Iteration # 1000  error is:  0.01358191 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.511643 
+Epoch: Iteration # 200  error is:  0.09426412 
+Epoch: Iteration # 300  error is:  0.05705268 
+Epoch: Iteration # 400  error is:  0.05336105 
+Epoch: Iteration # 500  error is:  0.05124253 
+Epoch: Iteration # 600  error is:  0.04985071 
+Epoch: Iteration # 700  error is:  0.04883838 
+Epoch: Iteration # 800  error is:  0.04803903 
+Epoch: Iteration # 900  error is:  0.0474051 
+Epoch: Iteration # 1000  error is:  0.04688804 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03291006 
+Epoch: Iteration # 200  error is:  0.02271852 
+Epoch: Iteration # 300  error is:  0.01916329 
+Epoch: Iteration # 400  error is:  0.01733912 
+Epoch: Iteration # 500  error is:  0.01612143 
+Epoch: Iteration # 600  error is:  0.01524781 
+Epoch: Iteration # 700  error is:  0.01457929 
+Epoch: Iteration # 800  error is:  0.01402794 
+Epoch: Iteration # 900  error is:  0.01359443 
+Epoch: Iteration # 1000  error is:  0.01322243 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.016455 
+Epoch: Iteration # 200  error is:  0.1004905 
+Epoch: Iteration # 300  error is:  0.05506685 
+Epoch: Iteration # 400  error is:  0.05107337 
+Epoch: Iteration # 500  error is:  0.04878785 
+Epoch: Iteration # 600  error is:  0.04727244 
+Epoch: Iteration # 700  error is:  0.04615705 
+Epoch: Iteration # 800  error is:  0.04529073 
+Epoch: Iteration # 900  error is:  0.04460168 
+Epoch: Iteration # 1000  error is:  0.04403241 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03435009 
+Epoch: Iteration # 200  error is:  0.02251307 
+Epoch: Iteration # 300  error is:  0.01901052 
+Epoch: Iteration # 400  error is:  0.01724004 
+Epoch: Iteration # 500  error is:  0.01611359 
+Epoch: Iteration # 600  error is:  0.01533574 
+Epoch: Iteration # 700  error is:  0.0147443 
+Epoch: Iteration # 800  error is:  0.01427573 
+Epoch: Iteration # 900  error is:  0.01389575 
+Epoch: Iteration # 1000  error is:  0.01357511 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.674314 
+Epoch: Iteration # 200  error is:  0.06927222 
+Epoch: Iteration # 300  error is:  0.05998494 
+Epoch: Iteration # 400  error is:  0.0564206 
+Epoch: Iteration # 500  error is:  0.0543449 
+Epoch: Iteration # 600  error is:  0.0529534 
+Epoch: Iteration # 700  error is:  0.05193708 
+Epoch: Iteration # 800  error is:  0.05113967 
+Epoch: Iteration # 900  error is:  0.05050027 
+Epoch: Iteration # 1000  error is:  0.04998888 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.04274102 
+Epoch: Iteration # 200  error is:  0.03111515 
+Epoch: Iteration # 300  error is:  0.0258816 
+Epoch: Iteration # 400  error is:  0.02335465 
+Epoch: Iteration # 500  error is:  0.02186795 
+Epoch: Iteration # 600  error is:  0.02084809 
+Epoch: Iteration # 700  error is:  0.0201399 
+Epoch: Iteration # 800  error is:  0.01953173 
+Epoch: Iteration # 900  error is:  0.01904619 
+Epoch: Iteration # 1000  error is:  0.01864339 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  11.07748 
+Epoch: Iteration # 200  error is:  0.1493564 
+Epoch: Iteration # 300  error is:  0.1220688 
+Epoch: Iteration # 400  error is:  0.1153799 
+Epoch: Iteration # 500  error is:  0.1122378 
+Epoch: Iteration # 600  error is:  0.1103777 
+Epoch: Iteration # 700  error is:  0.1090586 
+Epoch: Iteration # 800  error is:  0.1080755 
+Epoch: Iteration # 900  error is:  0.107264 
+Epoch: Iteration # 1000  error is:  0.1066174 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03618832 
+Epoch: Iteration # 200  error is:  0.02501073 
+Epoch: Iteration # 300  error is:  0.02081697 
+Epoch: Iteration # 400  error is:  0.01875161 
+Epoch: Iteration # 500  error is:  0.01745275 
+Epoch: Iteration # 600  error is:  0.01654417 
+Epoch: Iteration # 700  error is:  0.01584713 
+Epoch: Iteration # 800  error is:  0.01531159 
+Epoch: Iteration # 900  error is:  0.01487169 
+Epoch: Iteration # 1000  error is:  0.01449793 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  10.24689 
+Epoch: Iteration # 200  error is:  0.1108696 
+Epoch: Iteration # 300  error is:  0.08471871 
+Epoch: Iteration # 400  error is:  0.08069563 
+Epoch: Iteration # 500  error is:  0.07841614 
+Epoch: Iteration # 600  error is:  0.07687492 
+Epoch: Iteration # 700  error is:  0.07575144 
+Epoch: Iteration # 800  error is:  0.07490152 
+Epoch: Iteration # 900  error is:  0.07421705 
+Epoch: Iteration # 1000  error is:  0.07365169 
+Computing the multiple Kernels.
+Performing network diffusion.
+Iteration:  1 
+Iteration:  2 
+Iteration:  3 
+Iteration:  4 
+Iteration:  5 
+Iteration:  6 
+Iteration:  7 
+Iteration:  8 
+Iteration:  9 
+Iteration:  10 
+Iteration:  11 
+Iteration:  12 
+Iteration:  13 
+Iteration:  14 
+Iteration:  15 
+Iteration:  16 
+Iteration:  17 
+Iteration:  18 
+Iteration:  19 
+Iteration:  20 
+Iteration:  21 
+Iteration:  22 
+Iteration:  23 
+Iteration:  24 
+Iteration:  25 
+Iteration:  26 
+Iteration:  27 
+Iteration:  28 
+Iteration:  29 
+Iteration:  30 
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  0.03852088 
+Epoch: Iteration # 200  error is:  0.02546265 
+Epoch: Iteration # 300  error is:  0.02116182 
+Epoch: Iteration # 400  error is:  0.01907181 
+Epoch: Iteration # 500  error is:  0.01773366 
+Epoch: Iteration # 600  error is:  0.01684727 
+Epoch: Iteration # 700  error is:  0.01613601 
+Epoch: Iteration # 800  error is:  0.01557464 
+Epoch: Iteration # 900  error is:  0.01512356 
+Epoch: Iteration # 1000  error is:  0.01474083 
+Performing Kmeans.
+Performing t-SNE.
+Epoch: Iteration # 100  error is:  9.495337 
+Epoch: Iteration # 200  error is:  0.08547534 
+Epoch: Iteration # 300  error is:  0.070667 
+Epoch: Iteration # 400  error is:  0.06679925 
+Epoch: Iteration # 500  error is:  0.06450702 
+Epoch: Iteration # 600  error is:  0.06297374 
+Epoch: Iteration # 700  error is:  0.06184469 
+Epoch: Iteration # 800  error is:  0.06098378 
+Epoch: Iteration # 900  error is:  0.0602929 
+Epoch: Iteration # 1000  error is:  0.05972958 

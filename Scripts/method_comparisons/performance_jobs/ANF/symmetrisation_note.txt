@@ -1,0 +1,1 @@
+Added symmetrisation to the fusion to guarantee symmetric Laplacian (avoid complex value errors).

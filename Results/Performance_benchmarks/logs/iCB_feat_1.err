@@ -1,0 +1,65 @@
+also installing the dependencies ‘R.oo’, ‘R.methodsS3’
+
+trying URL 'https://cran.r-project.org/src/contrib/R.oo_1.27.1.tar.gz'
+Content type 'application/x-gzip' length 384264 bytes (375 KB)
+==================================================
+downloaded 375 KB
+
+trying URL 'https://cran.r-project.org/src/contrib/R.methodsS3_1.8.2.tar.gz'
+Content type 'application/x-gzip' length 24131 bytes (23 KB)
+==================================================
+downloaded 23 KB
+
+trying URL 'https://cran.r-project.org/src/contrib/R.utils_2.13.0.tar.gz'
+Content type 'application/x-gzip' length 367225 bytes (358 KB)
+==================================================
+downloaded 358 KB
+
+* installing *source* package ‘R.methodsS3’ ...
+** package ‘R.methodsS3’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (R.methodsS3)
+* installing *source* package ‘R.oo’ ...
+** package ‘R.oo’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (R.oo)
+* installing *source* package ‘R.utils’ ...
+** package ‘R.utils’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (R.utils)
+
+The downloaded source packages are in
+	‘/tmp/RtmpxlYFB4/downloaded_packages’
+[2026-01-07 12:13:20.309972] iClusterBayes feature subset 10%
+[2026-01-07 12:37:10.063672] iClusterBayes feature subset 20%
+[2026-01-07 13:27:46.288053] iClusterBayes feature subset 50%
+[2026-01-07 15:42:23.179407] iClusterBayes feature subset 75%
+[2026-01-07 19:29:40.977392] iClusterBayes feature subset 90%
+Wrote: Results/Performance/Feature_perturbations/iClusterBayes/array_20298704/task_1/out/iClusterBayes_feature_perturbations_performance.tsv

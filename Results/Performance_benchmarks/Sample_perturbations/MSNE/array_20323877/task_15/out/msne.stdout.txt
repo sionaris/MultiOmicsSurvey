@@ -1,0 +1,13 @@
+construct similarity networks finished
+Preprocess node alias
+Preprocess node alias
+Preprocess node alias
+Preprocess node alias
+Preprocess node alias
+sample sequences finished
+Learning embedding vectors...
+Learning embedding vectors done!
+get embedding vector and clusters
+Wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MSNE/array_20323877/task_15/out/msne_embeddings.csv
+Wrote: /home/as3582/MO_survey/Results/Performance/Sample_perturbations/MSNE/array_20323877/task_15/out/msne_clusters.csv
+MSNE call wall time (python-internal): 14.54s
