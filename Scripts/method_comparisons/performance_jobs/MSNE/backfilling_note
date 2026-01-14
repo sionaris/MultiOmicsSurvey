@@ -1,0 +1,18 @@
+NOTE (why we’re backfilling):
+- The MSNE runs already produced the needed perf metadata in meta/timev_msne.txt (Elapsed time + MaxRSS).
+- Those lines are tab/whitespace-prefixed, so the existing R parser (anchored with ^Elapsed/^Maximum) fails to match and writes NA.
+- Backfilling parses the existing timev_msne.txt correctly and updates the per-task + aggregate TSVs, avoiding an expensive HPC rerun.
+
+The backfilling script is run from the root of this project like this:
+
+# From repo root
+
+# Feature perturbations (array_20323876)
+python Scripts/method_comparisons/performance_jobs/MSNE/backfill_msne_time_mem.py \
+  Results/Performance_benchmarks/Feature_perturbations/MSNE/array_20323876 \
+  --no-bak
+
+# Sample perturbations (array_20323877)
+python Scripts/method_comparisons/performance_jobs/MSNE/backfill_msne_time_mem.py \
+  Results/Performance_benchmarks/Sample_perturbations/MSNE/array_20323877 \
+  --no-bak

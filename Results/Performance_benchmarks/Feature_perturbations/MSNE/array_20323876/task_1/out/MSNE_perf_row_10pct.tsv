@@ -1,2 +1,2 @@
 Algorithm	Feature_Centile	Feature_Percent	n_clusters	MSNE_k	MSNE_num_walks	MSNE_embed_size	MSNE_window_size	MSNE_walk_length	MSNE_workers	ARI_to_Ground_Truth	Average_Silhouette_Width	MSNE_Elapsed_Seconds	MSNE_PeakRAM_MiB
-MSNE	0.1	10	5	50	200	50	5	40	1	0.421780491513542	0.0379080142082414	NA	NA
+MSNE	0.1	10	5	50	200	50	5	40	1	0.421780491513542	0.0379080142082414	212.460000	10.542969

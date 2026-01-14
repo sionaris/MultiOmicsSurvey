@@ -395,7 +395,7 @@ save_plot_png_pdf <- function(p, title, out_dir,
 }
 
 # -----------------------------
-# Empirical scaling models (TIME)
+# Empirical scaling models (TIME) -- robust to missing absolute sizes (e.g., MSNE feature mode)
 # -----------------------------
 
 o_notation <- function(var, exponent, tol = 0.15) {
@@ -433,37 +433,58 @@ fit_powerlaw <- function(x, y) {
   )
 }
 
-# Decide whether Subset_Absolute is already the subset size, or whether we should derive it
-# from percent via (max base) * percent/100. Do this PER ALGORITHM.
-choose_effective_size <- function(base, pct) {
-  base <- suppressWarnings(as.numeric(base))
-  pct  <- suppressWarnings(as.numeric(pct))
+estimate_full_size_global <- function(dt, abs_col = "Subset_Absolute", pct_col = "Subset_Percent") {
+  abs <- suppressWarnings(as.numeric(dt[[abs_col]]))
+  pct <- suppressWarnings(as.numeric(dt[[pct_col]]))
+  keep <- is.finite(abs) & is.finite(pct) & pct > 0 & pct <= 100 & abs > 0
+  if (!any(keep)) return(NA_real_)
+  # full ~= abs / (pct/100)
+  full_est <- abs[keep] / (pct[keep] / 100)
+  stats::median(full_est[is.finite(full_est)], na.rm = TRUE)
+}
+
+build_effective_size <- function(dt_group, full_global, abs_col = "Subset_Absolute", pct_col = "Subset_Percent") {
+  abs <- suppressWarnings(as.numeric(dt_group[[abs_col]]))
+  pct <- suppressWarnings(as.numeric(dt_group[[pct_col]]))
   
-  cand1 <- base
-  full  <- suppressWarnings(max(base, na.rm = TRUE))
-  cand2 <- if (is.finite(full)) full * pct / 100 else rep(NA_real_, length(base))
+  abs_finite <- abs[is.finite(abs)]
+  # If abs varies meaningfully (>=4 distinct), treat it as effective size already
+  if (length(unique(abs_finite)) >= 4) {
+    return(list(size = abs, source = "recorded_absolute"))
+  }
   
-  # If cand1 barely varies, it's probably "full size" repeated -> use cand2
-  u1 <- unique(cand1[is.finite(cand1)])
-  if (length(u1) < 4) return(cand2)
+  # Otherwise reconstruct from percent using global full size
+  if (is.finite(full_global)) {
+    size <- full_global * (pct / 100)
+    return(list(size = size, source = "reconstructed_from_percent"))
+  }
   
-  # Otherwise pick whichever tracks percent better (Spearman)
-  c1 <- suppressWarnings(cor(cand1, pct, method = "spearman", use = "complete.obs"))
-  c2 <- suppressWarnings(cor(cand2, pct, method = "spearman", use = "complete.obs"))
-  
-  if (is.finite(c2) && (!is.finite(c1) || abs(c2) > abs(c1))) cand2 else cand1
+  # Last resort: cannot build effective size
+  list(size = rep(NA_real_, nrow(dt_group)), source = "unavailable")
 }
 
 fit_time_scaling_models <- function(root = "Results/Performance_benchmarks",
                                     method_categories_map = method_categories,
                                     min_points = 4) {
-  # Use the same processed/aggregated tables your plotting uses
   feat <- read_mode_perf("feature", root = root, method_categories_map = method_categories_map)
   samp <- read_mode_perf("sample",  root = root, method_categories_map = method_categories_map)
   
-  # Effective sizes per algorithm
-  feat[, p_eff := choose_effective_size(Subset_Absolute, Subset_Percent), by = Algorithm]
-  samp[, n_eff := choose_effective_size(Subset_Absolute, Subset_Percent), by = Algorithm]
+  # Global "full" sizes inferred from methods that have Subset_Absolute + Subset_Percent
+  p_full_global <- estimate_full_size_global(feat, abs_col = "Subset_Absolute", pct_col = "Subset_Percent")
+  n_full_global <- estimate_full_size_global(samp, abs_col = "Subset_Absolute", pct_col = "Subset_Percent")
+  
+  # Compute effective sizes per algorithm (plus record how it was derived)
+  feat[, c("p_eff", "p_size_source") := {
+    tmp <- build_effective_size(.SD, full_global = p_full_global,
+                                abs_col = "Subset_Absolute", pct_col = "Subset_Percent")
+    list(tmp$size, tmp$source)
+  }, by = Algorithm]
+  
+  samp[, c("n_eff", "n_size_source") := {
+    tmp <- build_effective_size(.SD, full_global = n_full_global,
+                                abs_col = "Subset_Absolute", pct_col = "Subset_Percent")
+    list(tmp$size, tmp$source)
+  }, by = Algorithm]
   
   res_feat <- feat[, {
     fit <- fit_powerlaw(p_eff, Time_s)
@@ -475,6 +496,7 @@ fit_time_scaling_models <- function(root = "Results/Performance_benchmarks",
         Algorithm = .BY$Algorithm,
         Category = .BY$Category,
         Predictor = "p",
+        Size_Source = p_size_source[1],
         Intercept = fit$intercept,
         Exponent = fit$slope,
         Exponent_Lo = fit$slope_lo,
@@ -496,6 +518,7 @@ fit_time_scaling_models <- function(root = "Results/Performance_benchmarks",
         Algorithm = .BY$Algorithm,
         Category = .BY$Category,
         Predictor = "n",
+        Size_Source = n_size_source[1],
         Intercept = fit$intercept,
         Exponent = fit$slope,
         Exponent_Lo = fit$slope_lo,
@@ -525,6 +548,7 @@ write_time_scaling_table <- function(root = "Results/Performance_benchmarks",
   data.table::fwrite(tab, out_path)
   invisible(tab)
 }
+
 
 # -----------------------------
 # Public API
