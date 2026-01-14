@@ -1456,7 +1456,6 @@ counts_clinbar_transNEO = clinbar_df_transNEO %>%
 # Heatmap
 library(dplyr)
 library(tidyr)
-library(ComplexHeatmap)
 library(grid)
 
 # Define the order of variables for each dataset
@@ -1508,12 +1507,12 @@ names(group) <- rownames(binary_mat)
 
 ### Prepare algorithm (column) annotations
 category_map <- c(
-  setNames(rep("Similarity Network",                 length(similarity_network_methods)),          similarity_network_methods),
-  setNames(rep("Multiple Kernel Learning",           length(multiple_kernel_learning)),            multiple_kernel_learning),
+  setNames(rep("Similarity Network", length(similarity_network_methods)),similarity_network_methods),
+  setNames(rep("Multiple Kernel Learning", length(multiple_kernel_learning)),multiple_kernel_learning),
   setNames(rep("Matrix Factorization", length(matrix_factorization)), matrix_factorization),
-  setNames(rep("Graph-based Methods",                length(graph_methods)),                       graph_methods),
-  setNames(rep("Bayesian",                           length(bayesian)),                            bayesian),
-  setNames(rep("Consensus/Ensemble Clustering",      length(cc_ensemble)),                         cc_ensemble)
+  setNames(rep("Graph-based Methods", length(graph_methods)),graph_methods),
+  setNames(rep("Bayesian",length(bayesian)),bayesian),
+  setNames(rep("Consensus/Ensemble Clustering",length(cc_ensemble)),cc_ensemble)
 )
 
 ## 1.  Desired left-to-right order of algorithms
@@ -1681,7 +1680,31 @@ draw(ht,
      align_annotation_legend = "heatmap_center")
 dev.off()
 
+# Benchmark plots #####
+source("Scripts/automated_scripts/benchmark_plotting_functions.R")
+
+make_benchmark_plots(
+  root    = "Results/Performance_benchmarks",
+  out_dir = "Results/Comparisons",
+  x_axis  = "percent",
+  save    = TRUE,
+  dpi     = 700,
+  width_px  = 1920*4, 
+  height_px = 1080*4
+)
+
+# scaling table
+write_time_scaling_table(
+  root = "Results/Performance_benchmarks",
+  out_dir = "Results/Comparisons",
+  filename = "scaling_time_models.csv",
+  min_points = 4
+)
+
 # Save environment
 save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
                   data_types, "_eval_on_", evaluation_source,
                   "_env.RData"))
+
+writeLines(capture.output(sessionInfo()),
+           "sessionInfo/Comparisons_and_benchmarking_plots.txt")

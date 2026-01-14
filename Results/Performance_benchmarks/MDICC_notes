@@ -1,0 +1,2 @@
+Sample perutrbation, sample percentage on MDICC output were saved as 100*percentage
+(e.g. 1000, 2000 etc.). This is accounted for in the plotting scripts. 

@@ -1,3 +1,0 @@
----> Checking zero-variance data...
---->	 Total number of variables:  625
---->	 WARNING: 2 variables found with zero variance

@@ -1,2 +1,0 @@
-/home/as3582/miniconda/envs/MONET/bin/python
-3.2.1
