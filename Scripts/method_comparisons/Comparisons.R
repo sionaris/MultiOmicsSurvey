@@ -1701,6 +1701,17 @@ write_time_scaling_table(
   min_points = 4
 )
 
+# stability
+res <- compute_sample_stability_90pct(
+  root = "Results/Performance_benchmarks",
+  out_dir = "Results/Comparisons",
+  pct = 90,
+  save = TRUE,
+  dpi = 700,
+  width_px = 1920*5,
+  height_px = 1080*4
+)
+
 # Save environment
 save.image(paste0(home, "/Results/Comparisons/Comparisons_", data_source, "_",
                   data_types, "_eval_on_", evaluation_source,
