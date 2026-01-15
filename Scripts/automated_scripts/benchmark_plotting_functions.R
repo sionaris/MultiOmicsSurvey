@@ -1,4 +1,10 @@
 # Scripts/automated_scripts/benchmark_plotting_functions.R
+#
+# Post-analysis plotting functions for benchmarking results.
+# These functions are used AFTER HPC performance runs to aggregate,
+# visualize, and analyze benchmark metrics (ARI, runtime, memory).
+#
+# Dependencies: data.table, dplyr, ggplot2, cowplot, ggrepel, rcartocolor, mclust
 
 suppressPackageStartupMessages({
   library(data.table)
@@ -12,9 +18,38 @@ if (!requireNamespace("rcartocolor", quietly = TRUE)) {
   stop("Package 'rcartocolor' is required (for carto_pal). Install with install.packages('rcartocolor').")
 }
 
+#' Null-coalescing operator
+#'
+#' Returns the left-hand side if it is not NULL, not empty, and has a non-empty
+
+#' first element; otherwise returns the right-hand side.
+#'
+#' @param x Left-hand side value to check.
+#' @param y Right-hand side default value.
+#' @return \code{x} if valid, otherwise \code{y}.
+#' @keywords internal
 `%||%` <- function(x, y) if (!is.null(x) && length(x) && nzchar(as.character(x[1]))) x else y
+
+#' Check if directory exists
+#'
+#' Validates that a path is a character string of length 1 and points to an existing directory.
+#'
+#' @param p Character path to check.
+#' @return Logical TRUE if directory exists, FALSE otherwise.
+#' @keywords internal
 dir_exists <- function(p) is.character(p) && length(p) == 1L && dir.exists(p)
 
+#' Custom ggplot2 theme for benchmark plots
+#'
+#' Creates a clean, publication-ready theme with minimal gridlines and bold titles.
+#' Extends \code{theme_bw()} with customizations for benchmark visualizations.
+#'
+#' @param base_size Numeric base font size (default: 10).
+#' @param legend Logical; if TRUE, legend is positioned on the right; if FALSE, legend is hidden.
+#' @return A ggplot2 theme object.
+#' @export
+#' @examples
+#' ggplot(mtcars, aes(mpg, wt)) + geom_point() + theme_benchmark()
 theme_benchmark <- function(base_size = 10, legend = FALSE) {
   theme_bw(base_size = base_size) +
     theme(
@@ -29,6 +64,14 @@ theme_benchmark <- function(base_size = 10, legend = FALSE) {
     )
 }
 
+#' Sanitize title for use as filename
+#'
+#' Converts a plot title to a safe filename by lowercasing, replacing
+#' non-alphanumeric characters with underscores, and trimming.
+#'
+#' @param title Character string to sanitize.
+#' @return Character string safe for use as a filename.
+#' @keywords internal
 sanitise_title_for_filename <- function(title) {
   x <- tolower(title)
   x <- gsub("[^a-z0-9]+", "_", x)
@@ -37,6 +80,15 @@ sanitise_title_for_filename <- function(title) {
   x
 }
 
+#' Guess benchmark directory structure
+#'
+#' Locates the feature and sample perturbation directories within a benchmark
+#' results root. Handles common typos in directory names (e.g., "Smaple_perutrbations").
+#'
+#' @param root Character path to the benchmark results root directory
+#'   (default: "Results/Performance_benchmarks").
+#' @return Named list with \code{feature_dir} and \code{sample_dir} paths.
+#' @export
 guess_benchmark_dirs <- function(root = "Results/Performance_benchmarks") {
   feature_dir <- file.path(root, "Feature_perturbations")
   
@@ -53,6 +105,13 @@ guess_benchmark_dirs <- function(root = "Results/Performance_benchmarks") {
   list(feature_dir = feature_dir, sample_dir = sample_dir)
 }
 
+#' Check if files are non-empty
+#'
+#' Checks whether each file path exists and has a size greater than zero bytes.
+#'
+#' @param paths Character vector of file paths to check.
+#' @return Logical vector indicating which files are non-empty.
+#' @keywords internal
 file_nonempty <- function(paths) {
   if (length(paths) == 0) return(logical(0))
   paths <- as.character(paths)
@@ -66,8 +125,25 @@ file_nonempty <- function(paths) {
 }
 
 # -----------------------------
-# Categories (your mapping)
+# Algorithm Category Definitions
 # -----------------------------
+
+#' @name algorithm_categories
+#' @title Algorithm Category Vectors
+#' @description Character vectors defining which algorithms belong to each methodological category.
+#'   Used for color-coding and grouping in plots.
+#' @details
+#' Categories defined:
+#' \itemize{
+#'   \item \strong{similarity_network_methods}: ab-SNF, ANF, MDICC, MSNE, NEMO, RWR-F, RWR-NF, SNF, Spectrum
+#'   \item \strong{multiple_kernel_learning}: CIMLR, KLIC, wMKL
+#'   \item \strong{matrix_factorization}: MFA, MOFA, LRAcluster
+#'   \item \strong{graph_methods}: MONET
+#'   \item \strong{bayesian_methods}: iClusterBayes
+#'   \item \strong{cc_ensemble}: COCA
+#' }
+NULL
+
 similarity_network_methods <- c("ab-SNF", "ANF", "MDICC", "MSNE", "NEMO", "RWR-F", "RWR-NF", "SNF", "Spectrum")
 multiple_kernel_learning   <- c("CIMLR", "KLIC", "wMKL") # "mixKernel"
 matrix_factorization       <- c("MFA", "MOFA", "LRAcluster")
@@ -75,6 +151,10 @@ graph_methods              <- c("MONET") #, "PAMOGK")
 bayesian_methods           <- c("iClusterBayes")
 cc_ensemble                <- c("COCA")
 
+#' Category color palette
+#'
+#' Named character vector mapping category names to hex colors from rcartocolor palettes.
+#' @export
 category_colors <- c(
   "Similarity Network" = rcartocolor::carto_pal("Bold", n = 12)[1],
   "Multiple Kernel Learning" = rcartocolor::carto_pal("Bold", n = 12)[2],
@@ -84,6 +164,10 @@ category_colors <- c(
   "Consensus/Ensemble Clustering" = rcartocolor::carto_pal("Bold", n = 12)[9]
 )
 
+#' Algorithm to category mapping
+#'
+#' Named character vector mapping algorithm names to their methodological categories.
+#' @export
 method_categories <- c(
   setNames(rep("Similarity Network", length(similarity_network_methods)), similarity_network_methods),
   setNames(rep("Multiple Kernel Learning", length(multiple_kernel_learning)), multiple_kernel_learning),
@@ -93,6 +177,15 @@ method_categories <- c(
   setNames(rep("Consensus/Ensemble Clustering", length(cc_ensemble)), cc_ensemble)
 )
 
+#' Add category column to data.table
+#'
+#' Adds a \code{Category} column to a data.table based on the \code{Algorithm} column,
+#' using the provided method-to-category mapping.
+#'
+#' @param dt A data.table with an \code{Algorithm} column.
+#' @param method_categories_map Named character vector mapping algorithm names to categories.
+#' @return The input data.table with an added/updated \code{Category} column.
+#' @keywords internal
 add_categories <- function(dt, method_categories_map = method_categories) {
   dt[, Category := unname(method_categories_map[as.character(Algorithm)])]
   dt[is.na(Category) | Category == "", Category := "Matrix Factorization"]
@@ -102,6 +195,15 @@ add_categories <- function(dt, method_categories_map = method_categories) {
 # -----------------------------
 # Robust normalisation helpers (ROW-WISE)
 # -----------------------------
+
+#' Normalize percent values
+#'
+#' Converts values to a consistent 0-100 percentage scale. Handles fractions (0-1),
+#' basis points (>100), and already-correct percentages.
+#'
+#' @param x Numeric vector of values to normalize.
+#' @return Numeric vector of percentages on 0-100 scale.
+#' @keywords internal
 normalise_percent_vec <- function(x) {
   x <- suppressWarnings(as.numeric(x))
   out <- x
@@ -117,6 +219,15 @@ normalise_percent_vec <- function(x) {
   out
 }
 
+#' Coalesce multiple numeric columns
+#'
+#' Returns the first non-NA value across multiple columns for each row,
+#' similar to SQL COALESCE. All columns are coerced to numeric.
+#'
+#' @param dt A data.table.
+#' @param cols Character vector of column names to coalesce.
+#' @return Numeric vector with first non-NA value from the specified columns.
+#' @keywords internal
 coalesce_numeric_cols <- function(dt, cols) {
   cols <- intersect(cols, names(dt))
   if (length(cols) == 0) return(rep(NA_real_, nrow(dt)))
@@ -127,6 +238,16 @@ coalesce_numeric_cols <- function(dt, cols) {
 # -----------------------------
 # Subset size standardisation (ROW-WISE)
 # -----------------------------
+
+#' Standardize subset size columns
+#'
+#' Creates standardized \code{Subset_Percent} and \code{Subset_Absolute} columns
+#' from various input column naming conventions (Feature_Percent, Sample_Fraction, etc.).
+#'
+#' @param dt A data.table with subset size columns.
+#' @param mode Character; either "feature" or "sample" to indicate perturbation type.
+#' @return The input data.table with added \code{Subset_Percent} and \code{Subset_Absolute} columns.
+#' @keywords internal
 standardise_subset_cols <- function(dt, mode = c("feature", "sample")) {
   mode <- match.arg(mode)
   
@@ -151,8 +272,17 @@ standardise_subset_cols <- function(dt, mode = c("feature", "sample")) {
 }
 
 # -----------------------------
-# Runtime + memory standardisation (covers your variants)
+# Runtime + memory standardisation
 # -----------------------------
+
+#' Standardize time and memory columns
+#'
+#' Creates standardized \code{Time_s} (seconds) and \code{Peak_MiB} (mebibytes) columns
+#' from various input column naming conventions across different HPC output formats.
+#'
+#' @param dt A data.table with time and memory columns.
+#' @return The input data.table with added \code{Time_s} and \code{Peak_MiB} columns.
+#' @keywords internal
 standardise_time_memory <- function(dt) {
   nm <- names(dt)
   
@@ -185,12 +315,27 @@ standardise_time_memory <- function(dt) {
   dt
 }
 
+#' Safe median calculation
+#'
+#' Computes median with NA handling. Returns NA if all values are NA.
+#'
+#' @param x Numeric vector.
+#' @return Numeric median value or NA.
+#' @keywords internal
 safe_median <- function(x) {
   x <- suppressWarnings(as.numeric(x))
   if (all(is.na(x))) return(NA_real_)
   stats::median(x, na.rm = TRUE)
 }
 
+#' Aggregate benchmark data by subset size
+#'
+#' Computes median values of key metrics (ARI, silhouette width, time, memory)
+#' for each algorithm at each subset size, aggregating across replicates.
+#'
+#' @param dt A data.table with standardized benchmark columns.
+#' @return Aggregated data.table with median metrics per algorithm/subset combination.
+#' @keywords internal
 aggregate_by_subset <- function(dt) {
   dt[, .(
     ARI_to_Ground_Truth = safe_median(ARI_to_Ground_Truth),
@@ -204,13 +349,31 @@ aggregate_by_subset <- function(dt) {
 # -----------------------------
 # File discovery: out/ dirs for PERFORMANCE
 # -----------------------------
+
+#' Find output directories for performance data
+#'
+#' Recursively searches for directories named "out" within a method directory,
+#' which typically contain performance TSV files from HPC runs.
+#'
+#' @param method_dir Character path to the method's benchmark directory.
+#' @return Character vector of paths to "out" directories.
+#' @keywords internal
 find_out_dirs_perf <- function(method_dir) {
   if (!dir.exists(method_dir)) return(character(0))
   dd <- list.dirs(method_dir, recursive = TRUE, full.names = TRUE)
   unique(normalizePath(dd[basename(dd) == "out"], winslash = "/", mustWork = FALSE))
 }
 
-# Returns a *vector* of perf files to read (not a single file).
+#' Select performance files to read
+#'
+#' Identifies the appropriate performance TSV file(s) to read from output directories.
+#' Handles different output formats across algorithms (per-task files vs aggregated files).
+#'
+#' @param out_dirs Character vector of "out" directory paths.
+#' @param method_name Character name of the algorithm.
+#' @param mode Character; either "feature" or "sample" perturbation mode.
+#' @return Character vector of performance file paths to read.
+#' @keywords internal
 pick_perf_file <- function(out_dirs, method_name, mode = c("feature", "sample")) {
   mode <- match.arg(mode)
   if (length(out_dirs) == 0) return(character(0))
@@ -272,8 +435,19 @@ pick_perf_file <- function(out_dirs, method_name, mode = c("feature", "sample"))
 }
 
 # -----------------------------
-# Data ingestion (reads *all* files returned by pick_perf_file)
+# Data ingestion
 # -----------------------------
+
+#' Read and standardize performance data for a perturbation mode
+#'
+#' Discovers, reads, and standardizes all performance TSV files for either
+#' feature or sample perturbation experiments across all algorithms.
+#'
+#' @param mode Character; either "feature" or "sample" perturbation mode.
+#' @param root Character path to the benchmark results root directory.
+#' @param method_categories_map Named character vector mapping algorithms to categories.
+#' @return Aggregated data.table with standardized metrics per algorithm/subset combination.
+#' @export
 read_mode_perf <- function(mode = c("feature", "sample"),
                            root = "Results/Performance_benchmarks",
                            method_categories_map = method_categories) {
@@ -319,8 +493,21 @@ read_mode_perf <- function(mode = c("feature", "sample"),
 }
 
 # -----------------------------
-# Plotting
+# Plotting Functions
 # -----------------------------
+
+#' Add algorithm labels at line endpoints
+#'
+#' Adds repelled text labels at the rightmost point of each algorithm's line
+#' in a benchmark plot, making it easy to identify each line.
+#'
+#' @param p A ggplot object.
+#' @param dt Data frame used in the plot.
+#' @param x_col Character name of the x-axis column.
+#' @param y_col Character name of the y-axis column.
+#' @param label_col Character name of the column to use for labels (default: "Algorithm").
+#' @return The ggplot object with added labels.
+#' @keywords internal
 add_end_labels <- function(p, dt, x_col, y_col, label_col = "Algorithm") {
   dt2 <- dt %>%
     as.data.frame() %>%
@@ -345,6 +532,21 @@ add_end_labels <- function(p, dt, x_col, y_col, label_col = "Algorithm") {
     coord_cartesian(clip = "off")
 }
 
+#' Create benchmark line plot
+#'
+#' Generates a publication-ready line plot showing how a metric varies with
+#' subset size (either features or samples) across algorithms.
+#'
+#' @param dt Aggregated data.table from \code{read_mode_perf}.
+#' @param mode Character; either "feature" or "sample" perturbation mode.
+#' @param metric Character; one of "ARI_to_Ground_Truth", "Peak_MiB", or "Time_s".
+#' @param x_axis Character; either "percent" (0-100%) or "absolute" (actual counts).
+#' @param title Character plot title (optional).
+#' @param ylab Character y-axis label (optional).
+#' @param category_colors_map Named character vector of category colors.
+#' @param legend Logical; whether to show the legend.
+#' @return A ggplot object.
+#' @export
 plot_metric_lines <- function(dt,
                               mode = c("feature", "sample"),
                               metric = c("ARI_to_Ground_Truth", "Peak_MiB", "Time_s"),
@@ -403,6 +605,19 @@ plot_metric_lines <- function(dt,
   add_end_labels(p, plot_dt, x_col = x_col, y_col = metric, label_col = "Algorithm")
 }
 
+#' Save plot as PNG and PDF
+#'
+#' Saves a ggplot object to both PNG and PDF formats with consistent naming
+#' and high resolution suitable for publication.
+#'
+#' @param p A ggplot object to save.
+#' @param title Character title used to generate the filename.
+#' @param out_dir Character path to the output directory.
+#' @param dpi Numeric dots per inch for raster output (default: 700).
+#' @param width_px Numeric width in pixels (default: 3840 for 4K).
+#' @param height_px Numeric height in pixels (default: 2160 for 4K).
+#' @return Invisible NULL.
+#' @export
 save_plot_png_pdf <- function(p, title, out_dir,
                               dpi = 700,
                               width_px = 3840, height_px = 2160) {
@@ -424,9 +639,19 @@ save_plot_png_pdf <- function(p, title, out_dir,
 }
 
 # -----------------------------
-# Empirical scaling models (TIME) -- robust to missing absolute sizes (e.g., MSNE feature mode)
+# Empirical scaling models (TIME)
 # -----------------------------
 
+#' Convert exponent to Big-O notation
+#'
+#' Converts a numeric exponent from power-law fitting to standard Big-O notation.
+#' Rounds to integer if within tolerance.
+#'
+#' @param var Character variable name (e.g., "n", "p").
+#' @param exponent Numeric exponent value.
+#' @param tol Numeric tolerance for rounding to integer (default: 0.15).
+#' @return Character string in Big-O notation (e.g., "O(n^2)").
+#' @keywords internal
 o_notation <- function(var, exponent, tol = 0.15) {
   if (!is.finite(exponent)) return(NA_character_)
   k <- round(exponent)
@@ -438,6 +663,16 @@ o_notation <- function(var, exponent, tol = 0.15) {
   sprintf("O(%s^%.2f)", var, exponent)
 }
 
+#' Fit power-law model to data
+#'
+#' Fits a log-log linear model to estimate the power-law relationship T ~ x^k.
+#' Returns model parameters including exponent and confidence intervals.
+#'
+#' @param x Numeric vector of predictor values (e.g., sample sizes).
+#' @param y Numeric vector of response values (e.g., runtimes).
+#' @return List with intercept, slope (exponent), R-squared, n points, and CI bounds;
+#'   or NULL if insufficient data.
+#' @keywords internal
 fit_powerlaw <- function(x, y) {
   x <- suppressWarnings(as.numeric(x))
   y <- suppressWarnings(as.numeric(y))
@@ -462,6 +697,16 @@ fit_powerlaw <- function(x, y) {
   )
 }
 
+#' Estimate full dataset size from subset data
+#'
+#' Uses the relationship full_size = absolute_size / (percent/100) to estimate
+#' the total number of features or samples from subset data.
+#'
+#' @param dt A data.table with subset size columns.
+#' @param abs_col Character name of the absolute size column.
+#' @param pct_col Character name of the percent column.
+#' @return Numeric estimated full size, or NA if cannot be determined.
+#' @keywords internal
 estimate_full_size_global <- function(dt, abs_col = "Subset_Absolute", pct_col = "Subset_Percent") {
   abs <- suppressWarnings(as.numeric(dt[[abs_col]]))
   pct <- suppressWarnings(as.numeric(dt[[pct_col]]))
@@ -472,6 +717,17 @@ estimate_full_size_global <- function(dt, abs_col = "Subset_Absolute", pct_col =
   stats::median(full_est[is.finite(full_est)], na.rm = TRUE)
 }
 
+#' Build effective size vector for scaling analysis
+#'
+#' Creates a vector of effective sizes (actual counts) for power-law fitting,
+#' either from recorded absolute values or reconstructed from percentages.
+#'
+#' @param dt_group A data.table group (subset for one algorithm).
+#' @param full_global Numeric estimated full dataset size.
+#' @param abs_col Character name of the absolute size column.
+#' @param pct_col Character name of the percent column.
+#' @return List with \code{size} vector and \code{source} indicator.
+#' @keywords internal
 build_effective_size <- function(dt_group, full_global, abs_col = "Subset_Absolute", pct_col = "Subset_Percent") {
   abs <- suppressWarnings(as.numeric(dt_group[[abs_col]]))
   pct <- suppressWarnings(as.numeric(dt_group[[pct_col]]))
@@ -492,6 +748,17 @@ build_effective_size <- function(dt_group, full_global, abs_col = "Subset_Absolu
   list(size = rep(NA_real_, nrow(dt_group)), source = "unavailable")
 }
 
+#' Fit time scaling models for all algorithms
+#'
+#' Fits power-law models (T ~ size^k) to runtime data for both feature and sample
+#' perturbation modes across all algorithms. Returns estimated complexity in Big-O notation.
+#'
+#' @param root Character path to the benchmark results root directory.
+#' @param method_categories_map Named character vector mapping algorithms to categories.
+#' @param min_points Integer minimum number of data points required for fitting (default: 4).
+#' @return Data.table with columns: Mode, Algorithm, Category, Predictor, Size_Source,
+#'   Intercept, Exponent, Exponent_Lo, Exponent_Hi, R2, N_points, O_notation.
+#' @export
 fit_time_scaling_models <- function(root = "Results/Performance_benchmarks",
                                     method_categories_map = method_categories,
                                     min_points = 4) {
@@ -562,6 +829,17 @@ fit_time_scaling_models <- function(root = "Results/Performance_benchmarks",
   data.table::rbindlist(list(res_feat, res_samp), use.names = TRUE, fill = TRUE)
 }
 
+#' Write time scaling table to CSV
+#'
+#' Fits scaling models and writes results to a CSV file for reporting.
+#'
+#' @param root Character path to the benchmark results root directory.
+#' @param out_dir Character path to the output directory.
+#' @param filename Character name of the output CSV file.
+#' @param min_points Integer minimum number of data points for model fitting.
+#' @param method_categories_map Named character vector mapping algorithms to categories.
+#' @return Invisible data.table with the scaling results.
+#' @export
 write_time_scaling_table <- function(root = "Results/Performance_benchmarks",
                                      out_dir = "Results/Comparisons",
                                      filename = "scaling_time_models.csv",
@@ -582,7 +860,7 @@ write_time_scaling_table <- function(root = "Results/Performance_benchmarks",
 # Stability at 90% sample perturbations
 # -----------------------------
 
-# ---- small utilities ----
+# ---- Conditional utility definitions (for standalone use) ----
 if (!exists("%||%")) `%||%` <- function(a, b) if (!is.null(a)) a else b
 
 if (!exists("file_nonempty")) {
@@ -609,7 +887,13 @@ if (!exists("guess_benchmark_dirs")) {
   }
 }
 
-# ---- categories (uses your vectors if present; else uses existing method_categories if already defined) ----
+#' Build method categories from global vectors
+#'
+#' Constructs a named character vector mapping algorithm names to categories
+#' by looking up the defined algorithm category vectors.
+#'
+#' @return Named character vector mapping algorithms to category names.
+#' @keywords internal
 build_method_categories <- function() {
   groups <- list(
     "Similarity Network"            = "similarity_network_methods",
@@ -633,6 +917,14 @@ build_method_categories <- function() {
   out
 }
 
+#' Get category for an algorithm
+#'
+#' Looks up the methodological category for a given algorithm name,
+#' using multiple fallback strategies.
+#'
+#' @param alg Character algorithm name.
+#' @return Character category name, or NA if not found.
+#' @keywords internal
 get_method_category <- function(alg) {
   mc <- NULL
   if (exists("method_categories", inherits = TRUE)) mc <- get("method_categories", inherits = TRUE)
@@ -655,7 +947,15 @@ get_method_category <- function(alg) {
   NA_character_
 }
 
-# ---- percent inference ----
+# ---- Percent inference utilities ----
+
+#' Normalize a single percent value
+#'
+#' Converts fractions (0-1) and basis points (>100) to 0-100 percent scale.
+#'
+#' @param x Numeric value to normalize.
+#' @return Numeric percent on 0-100 scale, or NA.
+#' @keywords internal
 normalize_percent_value <- function(x) {
   x <- suppressWarnings(as.numeric(x))
   if (!is.finite(x)) return(NA_real_)
@@ -664,6 +964,14 @@ normalize_percent_value <- function(x) {
   x
 }
 
+#' Map task ID to percent
+#'
+#' Converts SLURM task IDs to percent values based on the experimental design
+#' (tasks 1-10 = 10%, 11-20 = 20%, etc.).
+#'
+#' @param task_id Integer task ID.
+#' @return Numeric percent value, or NA.
+#' @keywords internal
 task_id_to_pct <- function(task_id) {
   task_id <- suppressWarnings(as.integer(task_id))
   if (!is.finite(task_id)) return(NA_real_)
@@ -675,6 +983,13 @@ task_id_to_pct <- function(task_id) {
   NA_real_
 }
 
+#' Infer task ID from file path
+#'
+#' Extracts task ID from paths containing "task_N" patterns.
+#'
+#' @param path Character file path.
+#' @return Integer task ID, or NA.
+#' @keywords internal
 infer_task_id_from_path <- function(path) {
   path <- as.character(path)[1]
   m <- regmatches(path, regexpr("(?i)task_([0-9]+)", path, perl = TRUE))
@@ -682,8 +997,19 @@ infer_task_id_from_path <- function(path) {
   suppressWarnings(as.integer(sub("(?i)task_", "", m, perl = TRUE)))
 }
 
+#' Infer percent from task ID in path
+#' @param path Character file path.
+#' @return Numeric percent, or NA.
+#' @keywords internal
 infer_pct_from_task <- function(path) task_id_to_pct(infer_task_id_from_path(path))
 
+#' Infer percent from filename
+#'
+#' Extracts percent value from filenames containing "NNpct" patterns.
+#'
+#' @param path Character file path.
+#' @return Numeric percent, or NA.
+#' @keywords internal
 infer_pct_from_filename <- function(path) {
   path <- as.character(path)[1]
   bn <- basename(path)
@@ -700,7 +1026,15 @@ infer_pct_from_filename <- function(path) {
   NA_real_
 }
 
-# ---- locating cluster files across layouts ----
+# ---- Cluster file discovery ----
+
+#' Find cluster TSV files in output directory
+#'
+#' Searches for cluster assignment files matching "clusters*.tsv" pattern.
+#'
+#' @param out_dir Character path to output directory.
+#' @return Character vector of matching file paths.
+#' @keywords internal
 find_cluster_files_in_out <- function(out_dir) {
   if (!dir.exists(out_dir)) return(character(0))
   list.files(
@@ -713,8 +1047,17 @@ find_cluster_files_in_out <- function(out_dir) {
 }
 
 # -----------------------------
-# File discovery: out/ dirs for PERFORMANCE
+# File discovery: out/ dirs for stability analysis
 # -----------------------------
+
+#' Find output directories for stability analysis
+#'
+#' Searches for directories containing cluster files for stability analysis,
+#' handling various HPC job directory structures.
+#'
+#' @param method_dir Character path to the method's benchmark directory.
+#' @return Character vector of paths to output directories with cluster files.
+#' @keywords internal
 find_out_dirs_stability <- function(method_dir) {
   if (!dir.exists(method_dir)) return(character(0))
   method_dir <- normalizePath(method_dir, winslash = "/", mustWork = FALSE)
@@ -798,6 +1141,15 @@ infer_outdir_percents_from_perf <- function(out_dir) {
   numeric(0)
 }
 
+#' Collect cluster files for a target percent
+#'
+#' Finds all cluster assignment files corresponding to a specific perturbation percentage.
+#'
+#' @param method_dir Character path to the method's benchmark directory.
+#' @param target_pct Numeric target percentage (default: 90).
+#' @param tol Numeric tolerance for percent matching (default: 0.5).
+#' @return Character vector of cluster file paths.
+#' @keywords internal
 collect_cluster_files_for_percent <- function(method_dir, target_pct = 90, tol = 0.5) {
   out_dirs <- find_out_dirs_stability(method_dir)
   if (length(out_dirs) == 0) return(character(0))
@@ -823,7 +1175,16 @@ collect_cluster_files_for_percent <- function(method_dir, target_pct = 90, tol =
   unique(hits)
 }
 
-# ---- reading clusters + ARI ----
+# ---- Cluster reading and ARI computation ----
+
+#' Read cluster assignments from any format
+#'
+#' Reads cluster assignment TSV files with flexible column name handling,
+#' standardizing to Sample.ID and Cluster columns.
+#'
+#' @param path Character path to the cluster file.
+#' @return Data.table with Sample.ID and Cluster columns, or NULL if unreadable.
+#' @keywords internal
 read_clusters_any <- function(path) {
   if (!is.character(path) || length(path) != 1L || !file.exists(path)) return(NULL)
   dt <- tryCatch(data.table::fread(path), error = function(e) NULL)
@@ -853,6 +1214,15 @@ read_clusters_any <- function(path) {
   )]
 }
 
+#' Compute ARI between two cluster assignments
+#'
+#' Calculates adjusted Rand index between two clustering results on common samples.
+#'
+#' @param dt_a Data.table with Sample.ID and Cluster columns.
+#' @param dt_b Data.table with Sample.ID and Cluster columns.
+#' @param min_common Integer minimum number of common samples required (default: 3).
+#' @return List with \code{ari} (numeric ARI) and \code{overlap} (integer sample count).
+#' @keywords internal
 ari_between_clusters <- function(dt_a, dt_b, min_common = 3L) {
   if (is.null(dt_a) || is.null(dt_b)) return(list(ari = NA_real_, overlap = 0L))
   common <- intersect(dt_a$Sample.ID, dt_b$Sample.ID)
@@ -869,6 +1239,14 @@ ari_between_clusters <- function(dt_a, dt_b, min_common = 3L) {
   list(ari = mclust::adjustedRandIndex(a, b), overlap = ov)
 }
 
+#' Compute pairwise ARI table for cluster list
+#'
+#' Computes ARI between all pairs of clusterings in a list.
+#'
+#' @param cluster_list List of data.tables with Sample.ID and Cluster columns.
+#' @param min_common Integer minimum common samples required.
+#' @return Data.table with columns rep_i, rep_j, ARI, Overlap.
+#' @keywords internal
 pairwise_ari_table <- function(cluster_list, min_common = 3L) {
   k <- length(cluster_list)
   if (k < 2) return(data.table::data.table())
@@ -885,7 +1263,23 @@ pairwise_ari_table <- function(cluster_list, min_common = 3L) {
   data.table::rbindlist(res, use.names = TRUE, fill = TRUE)
 }
 
-# ---- main ----
+#' Compute sample stability at 90% perturbation
+#'
+#' Analyzes replicate stability by computing pairwise ARI between clusterings
+#' at a target sample perturbation percentage (default 90%). Creates violin plots
+#' and exports summary tables.
+#'
+#' @param root Character path to the benchmark results root directory.
+#' @param out_dir Character path for output files.
+#' @param pct Numeric target perturbation percentage (default: 90).
+#' @param min_common_sample Integer minimum common samples for ARI computation (default: 20).
+#' @param save Logical; whether to save plots and tables (default: TRUE).
+#' @param dpi Numeric resolution for saved plots (default: 700).
+#' @param width_px Numeric plot width in pixels (default: 3840).
+#' @param height_px Numeric plot height in pixels (default: 2160).
+#' @return Invisible list with \code{pairs} (pairwise ARI table), \code{summary} (per-algorithm summary),
+#'   \code{skipped} (algorithms that could not be analyzed), and \code{plot} (ggplot object).
+#' @export
 compute_sample_stability_90pct <- function(root = "Results/Performance_benchmarks",
                                            out_dir = "Results/Comparisons",
                                            pct = 90,
@@ -1051,6 +1445,31 @@ compute_sample_stability_90pct <- function(root = "Results/Performance_benchmark
 # -----------------------------
 # Public API
 # -----------------------------
+
+#' Generate all benchmark plots
+#'
+#' Main entry point for benchmark visualization. Reads performance data for both
+#' feature and sample perturbation experiments, generates line plots for ARI,
+#' runtime, and memory metrics, and optionally saves to disk.
+#'
+#' @param root Character path to the benchmark results root directory
+#'   (default: "Results/Performance_benchmarks").
+#' @param out_dir Character path for output files (default: "Results/Comparisons").
+#' @param x_axis Character; either "percent" (0-100%) or "absolute" (actual counts).
+#' @param save Logical; whether to save plots as PNG and PDF (default: TRUE).
+#' @param dpi Numeric resolution for saved plots (default: 700).
+#' @param width_px Numeric plot width in pixels (default: 3840 for 4K).
+#' @param height_px Numeric plot height in pixels (default: 2160 for 4K).
+#' @param method_categories_map Named character vector mapping algorithms to categories.
+#' @param category_colors_map Named character vector of category colors.
+#' @param legend Logical; whether to show legend on plots (default: FALSE).
+#' @return Invisible list of named plot objects with titles.
+#' @export
+#' @examples
+#' \dontrun{
+#' plots <- make_benchmark_plots()
+#' plots <- make_benchmark_plots(x_axis = "absolute", legend = TRUE)
+#' }
 make_benchmark_plots <- function(
     root = "Results/Performance_benchmarks",
     out_dir = "Results/Comparisons",
