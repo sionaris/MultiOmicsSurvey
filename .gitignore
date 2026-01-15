@@ -9,8 +9,7 @@
 .Ruserdata
 /GDCdata/
 /Surv/
-Scripts/Stability analysis
-Results/Stability analysis
+Scripts/method_comparisons/performance_jobs/MOFA
 /Full_BRCA_clin/
 /Resources/TCGA/*.rds
 /Resources/TCGA/*.RData
