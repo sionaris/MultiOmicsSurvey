@@ -1702,7 +1702,7 @@ write_time_scaling_table(
 )
 
 # stability
-res <- compute_sample_stability_90pct(
+res_stability <- compute_sample_stability_90pct(
   root = "Results/Performance_benchmarks",
   out_dir = "Results/Comparisons",
   pct = 90,

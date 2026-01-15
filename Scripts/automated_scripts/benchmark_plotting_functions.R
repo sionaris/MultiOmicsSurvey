@@ -202,60 +202,77 @@ aggregate_by_subset <- function(dt) {
 }
 
 # -----------------------------
-# File discovery: out/ dirs and a perturbations TSV
+# File discovery: out/ dirs for PERFORMANCE
 # -----------------------------
-find_out_dirs <- function(method_dir) {
+find_out_dirs_perf <- function(method_dir) {
   if (!dir.exists(method_dir)) return(character(0))
   dd <- list.dirs(method_dir, recursive = TRUE, full.names = TRUE)
-  unique(dd[basename(dd) == "out"])
+  unique(normalizePath(dd[basename(dd) == "out"], winslash = "/", mustWork = FALSE))
 }
 
+# Returns a *vector* of perf files to read (not a single file).
 pick_perf_file <- function(out_dirs, method_name, mode = c("feature", "sample")) {
   mode <- match.arg(mode)
   if (length(out_dirs) == 0) return(character(0))
   
-  candidates <- character(0)
+  out_dirs <- out_dirs[dir.exists(out_dirs)]
+  if (!length(out_dirs)) return(character(0))
   
-  for (od in out_dirs) {
-    if (!dir.exists(od)) next
-    
-    # MONET special-case
-    if (toupper(method_name) == "MONET") {
-      mf <- file.path(od, "monet_perf_rows.tsv")
-      if (file.exists(mf) && file_nonempty(mf)) return(mf)
-    }
-    
-    files <- list.files(od, full.names = TRUE)
-    files <- files[grepl("\\.tsv$", files, ignore.case = TRUE)]
-    files <- files[file_nonempty(files)]
-    if (length(files) == 0) next
-    
-    pert <- files[grepl("perturbations", basename(files), ignore.case = TRUE)]
-    if (length(pert) > 0) {
-      if (mode == "feature") {
-        ms <- pert[grepl("feature", basename(pert), ignore.case = TRUE)]
-      } else {
-        ms <- pert[grepl("sample", basename(pert), ignore.case = TRUE)]
-      }
-      if (length(ms) > 0) pert <- ms
-      sz <- file.info(pert)$size
-      candidates <- c(candidates, pert[order(-sz)][1])
-      next
-    }
-    
-    pr <- files[grepl("perf_row", basename(files), ignore.case = TRUE)]
-    if (length(pr) > 0) candidates <- c(candidates, pr)
+  # MONET special-case (one file that already contains rows)
+  if (toupper(method_name) == "MONET") {
+    mf <- file.path(out_dirs, "monet_perf_rows.tsv")
+    mf <- mf[file.exists(mf) & file_nonempty(mf)]
+    if (length(mf)) return(unique(normalizePath(mf, winslash = "/", mustWork = FALSE)))
   }
   
-  candidates <- unique(candidates)
-  if (length(candidates) == 0) return(character(0))
+  files_all <- unlist(lapply(out_dirs, function(od) {
+    list.files(od, full.names = TRUE, recursive = TRUE, ignore.case = TRUE, pattern = "\\.tsv$")
+  }), use.names = FALSE)
   
-  sz <- file.info(candidates)$size
-  candidates[order(-sz, nchar(candidates))][1]
+  files_all <- unique(files_all)
+  files_all <- files_all[file.exists(files_all)]
+  files_all <- files_all[file_nonempty(files_all)]
+  if (!length(files_all)) return(character(0))
+  
+  bn <- basename(files_all)
+  
+  # 1) Prefer per-task perf_row files when present (this fixes MSNE/RWR-F/LRAcluster/CIMLR)
+  perf_row <- files_all[grepl("perf_row", bn, ignore.case = TRUE)]
+  if (length(perf_row) >= 2) {
+    # stable ordering if pct is in filename; otherwise keep lexicographic
+    pct <- suppressWarnings(as.integer(sub(".*?([0-9]+)pct.*", "\\1", basename(perf_row), perl = TRUE, ignore.case = TRUE)))
+    ord <- order(ifelse(is.na(pct), 9999L, pct), perf_row)
+    return(unique(normalizePath(perf_row[ord], winslash = "/", mustWork = FALSE)))
+  }
+  
+  # 2) Otherwise, use a single run-level performance TSV (job runs etc.)
+  perf_like <- files_all[grepl("perturbations|performance|perf_rows", bn, ignore.case = TRUE)]
+  
+  if (length(perf_like)) {
+    # bias toward mode-specific files if present
+    if (mode == "feature") {
+      mode_hits <- perf_like[grepl("feature", basename(perf_like), ignore.case = TRUE)]
+    } else {
+      mode_hits <- perf_like[grepl("sample",  basename(perf_like), ignore.case = TRUE)]
+    }
+    if (length(mode_hits)) perf_like <- mode_hits
+    
+    sz <- file.info(perf_like)$size
+    # tie-break by shorter path (usually the array/job "main" out)
+    best <- perf_like[order(-sz, nchar(perf_like))][1]
+    return(unique(normalizePath(best, winslash = "/", mustWork = FALSE)))
+  }
+  
+  # 3) If there was exactly one perf_row file, use it
+  if (length(perf_row) == 1) {
+    return(unique(normalizePath(perf_row, winslash = "/", mustWork = FALSE)))
+  }
+  
+  character(0)
 }
 
 # -----------------------------
-# Data ingestion
+# Data ingestion (reads *all* files returned by pick_perf_file)
 # -----------------------------
 read_mode_perf <- function(mode = c("feature", "sample"),
                            root = "Results/Performance_benchmarks",
@@ -266,27 +283,31 @@ read_mode_perf <- function(mode = c("feature", "sample"),
   
   method_dirs <- list.dirs(base_dir, recursive = FALSE, full.names = TRUE)
   method_dirs <- method_dirs[normalizePath(method_dirs, winslash = "/") != normalizePath(base_dir, winslash = "/")]
-  if (length(method_dirs) == 0) stop("No method subdirectories found under: ", base_dir)
+  if (!length(method_dirs)) stop("No method subdirectories found under: ", base_dir)
   
   all_rows <- list()
   
   for (mdir in method_dirs) {
     method_name <- basename(mdir)
-    out_dirs <- find_out_dirs(mdir)
-    pf <- pick_perf_file(out_dirs, method_name, mode = mode)
-    if (length(pf) == 0 || !file.exists(pf) || !file_nonempty(pf)) next
+    out_dirs <- find_out_dirs_perf(mdir)
     
-    dt <- tryCatch(data.table::fread(pf), error = function(e) NULL)
-    if (is.null(dt) || nrow(dt) == 0 || ncol(dt) == 0) next
+    pfs <- pick_perf_file(out_dirs, method_name, mode = mode)
+    pfs <- pfs[file.exists(pfs) & file_nonempty(pfs)]
+    if (!length(pfs)) next
     
-    if (!("Algorithm" %in% names(dt))) dt[, Algorithm := method_name]
-    dt[, Mode := mode]
-    dt[, Source_File := pf]
-    
-    all_rows[[length(all_rows) + 1L]] <- dt
+    for (pf in pfs) {
+      dt <- tryCatch(data.table::fread(pf), error = function(e) NULL)
+      if (is.null(dt) || nrow(dt) == 0 || ncol(dt) == 0) next
+      
+      if (!("Algorithm" %in% names(dt))) dt[, Algorithm := method_name]
+      dt[, Mode := mode]
+      dt[, Source_File := pf]
+      
+      all_rows[[length(all_rows) + 1L]] <- dt
+    }
   }
   
-  if (length(all_rows) == 0) stop("No readable performance TSVs found for mode=", mode)
+  if (!length(all_rows)) stop("No readable performance TSVs found for mode=", mode)
   
   out <- data.table::rbindlist(all_rows, use.names = TRUE, fill = TRUE)
   
@@ -294,8 +315,7 @@ read_mode_perf <- function(mode = c("feature", "sample"),
   out <- standardise_subset_cols(out, mode = mode)
   out <- standardise_time_memory(out)
   
-  out <- aggregate_by_subset(out)
-  out
+  aggregate_by_subset(out)
 }
 
 # -----------------------------
@@ -316,7 +336,7 @@ add_end_labels <- function(p, dt, x_col, y_col, label_col = "Algorithm") {
     aes(x = .data[[x_col]], y = .data[[y_col]], label = .data[[label_col]]),
     direction = "y",
     hjust = 0,
-    nudge_x = 0.8,
+    nudge_x = 10.0,
     segment.size = 0.2,
     min.segment.length = 0,
     size = 3,
@@ -356,15 +376,24 @@ plot_metric_lines <- function(dt,
   
   if (x_axis == "percent") {
     p <- p +
-      geom_vline(xintercept = seq(0, 100, 10), linetype = "dotted", linewidth = 0.2, alpha = 0.7) +
-      scale_x_continuous(limits = c(-5, 110), breaks = seq(0, 100, 10))
+      geom_vline(xintercept = seq(10, 90, 10), linetype = "dotted", linewidth = 0.2, alpha = 0.7) +
+      scale_x_continuous(limits = c(0, 110), breaks = seq(0, 100, 10), expand = c(0,0))
   }
   
+  title_check = title %in% c("Agreement with ground-truth clustering under feature perturbations",
+                                   "Agreement with ground-truth clustering under sample perturbations")
   p <- p +
     geom_line(linewidth = 0.55, alpha = 0.9) +
     geom_point(size = 1.1) +
-    scale_color_manual(values = category_colors_map, drop = FALSE) +
-    labs(
+    scale_color_manual(values = category_colors_map, drop = FALSE)
+  
+  p <- p + if (isTRUE(title_check)) {
+    scale_y_continuous(limits = c(-0.15, 1.1), breaks = seq(-0.1, 1, 0.1))
+  } else {
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 5))
+  }
+  
+  p <- p + labs(
       title = title %||% "",
       x = x_lab,
       y = ylab %||% metric
@@ -683,7 +712,10 @@ find_cluster_files_in_out <- function(out_dir) {
   )
 }
 
-find_out_dirs <- function(method_dir) {
+# -----------------------------
+# File discovery: out/ dirs for PERFORMANCE
+# -----------------------------
+find_out_dirs_stability <- function(method_dir) {
   if (!dir.exists(method_dir)) return(character(0))
   method_dir <- normalizePath(method_dir, winslash = "/", mustWork = FALSE)
   
@@ -767,7 +799,7 @@ infer_outdir_percents_from_perf <- function(out_dir) {
 }
 
 collect_cluster_files_for_percent <- function(method_dir, target_pct = 90, tol = 0.5) {
-  out_dirs <- find_out_dirs(method_dir)
+  out_dirs <- find_out_dirs_stability(method_dir)
   if (length(out_dirs) == 0) return(character(0))
   
   hits <- character(0)
@@ -979,7 +1011,7 @@ compute_sample_stability_90pct <- function(root = "Results/Performance_benchmark
   p <- ggplot2::ggplot(pairs, ggplot2::aes(x = Algorithm, y = ARI, fill = Category)) +
     ggplot2::geom_violin(trim = TRUE, alpha = 0.9, linewidth = 0.2) +
     ggplot2::geom_boxplot(width = 0.18, outlier.size = 0.4, linewidth = 0.25, alpha = 0.9) +
-    ggplot2::scale_y_continuous(limits = c(-0.1, 1.1)) +
+    ggplot2::scale_y_continuous(limits = c(-0.1, 1.05), breaks = seq(-0.1, 1, 0.1)) +
     ggplot2::labs(
       title    = sprintf("Replicate stability at %d%% sample perturbation", pct),
       # subtitle = sprintf("Pairwise ARI across replicate clusterings; min overlap = %d", min_common_sample),
