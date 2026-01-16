@@ -25,8 +25,8 @@ The following packages are **not included** in `renv.lock` and must be installed
 | Package | Reason | Required for |
 |---------|--------|--------------|
 | `peakRAM` | HPC-only dependency | Benchmark memory profiling |
-| `Rmosek` | Requires MOSEK license | wMKL algorithm |
-| `wMKL` | Custom Bioconductor install | wMKL algorithm |
+| `Rmosek` | Requires MOSEK license | wMKL, KLIC |
+| `wMKL` | Custom Bioconductor install with `C++` code edit| wMKL algorithm |
 | `devtools` | Development tool | Package installation from GitHub |
 
 </details>
