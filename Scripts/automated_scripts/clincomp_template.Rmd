@@ -43,3 +43,4 @@ kbl <- kbl %>%
 
 # Print the final table
 kbl
+```

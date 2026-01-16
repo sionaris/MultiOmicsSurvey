@@ -1,0 +1,343 @@
+package,recommended_version,all_versions
+ANF,1.26.0,1.26.0
+AnnotationDbi,1.66.0,1.66.0
+Biobase,2.64.0,2.64.0
+BiocGenerics,0.50.0,0.50.0
+BiocParallel,1.38.0,1.38.0
+BiocSingular,1.20.0,1.20.0
+Biostrings,2.72.0,2.72.0
+CIMLR,1.0.0,1.0.0
+CMScaller,2.0.1,2.0.1
+Cairo,1.6-5,1.6-5
+ClassDiscovery,3.4.5,3.4.5
+ClusterR,1.3.3,1.3.3
+ComplexHeatmap,2.18.0,2.18.0
+ConsensusClusterPlus,1.68.0,1.68.0
+DBI,1.2.3,1.2.3
+DESeq2,1.44.0,1.44.0
+DNAcopy,1.78.0,1.78.0
+DOSE,3.30.2,3.30.2
+DT,0.33,0.33
+DelayedArray,0.30.1,0.30.1
+DescTools,0.99.55,0.99.55
+ExPosition,2.11.0,2.11.0
+Exact,3.3,3.3
+FNN,1.1.4,1.1.4
+FactoMineR,2.11,2.11
+Formula,1.2-5,1.2-5
+GO.db,3.19.1,3.19.1
+GOSemSim,2.30.0,2.30.0
+GSEABase,1.66.0,1.66.0
+GSVA,1.52.2,1.52.2
+GenomeInfoDb,1.40.0,1.40.0
+GenomeInfoDbData,1.2.12,1.2.12
+GenomicRanges,1.56.0,1.56.0
+GetoptLong,1.0.5,1.0.5
+GlobalOptions,0.1.2,0.1.2
+HDF5Array,1.32.0,1.32.0
+HDO.db,0.99.1,0.99.1
+HiClimR,2.2.1,2.2.1
+IRanges,2.38.0,2.38.0
+IntNMF,1.2.0,1.2.0
+InterSIM,2.2.0,2.2.0
+KEGGREST,1.44.1,1.44.1
+KMsurv,0.1-5,0.1-5
+KernSmooth,2.23-24,"2.23-22, 2.23-24"
+M3C,1.26.0,1.26.0
+MASS,7.3-61,"7.3-60.2, 7.3-61"
+MOFA2,1.14.0,1.14.0
+MOVICS,0.99.17,0.99.17
+Matrix,1.7-1,"1.7-0, 1.7-1"
+MatrixGenerics,1.16.0,1.16.0
+NEMO,0.1.0,0.1.0
+NLP,0.3-0,0.3-0
+NMF,0.27,0.27
+PINSPlus,2.0.7,2.0.7
+R.methodsS3,1.8.2,1.8.2
+R.oo,1.26.0,1.26.0
+R.utils,2.12.3,2.12.3
+R6,2.6.1,"2.5.1, 2.6.1"
+RColorBrewer,1.1-3,1.1-3
+RSQLite,2.3.6,2.3.6
+RSpectra,0.16-2,0.16-2
+Rcpp,1.1.0,"1.0.12, 1.0.14, 1.1.0"
+RcppParallel,5.1.7,5.1.7
+RcppZiggurat,0.1.6,0.1.6
+Rdpack,2.6.4,2.6.4
+Rfast,2.1.0,2.1.0
+Rhdf5lib,1.26.0,1.26.0
+Rtsne,0.17,0.17
+S4Arrays,1.4.0,1.4.0
+S4Vectors,0.42.0,0.42.0
+SNFtool,2.3.1,"2.2, 2.3.1"
+ScaledMatrix,1.12.0,1.12.0
+SingleCellExperiment,1.26.0,1.26.0
+SparseArray,1.4.3,1.4.3
+SpatialExperiment,1.14.0,1.14.0
+Spectrum,1.1,1.1
+SummarizedExperiment,1.34.0,1.34.0
+TH.data,1.1-2,1.1-2
+UCSC.utils,1.0.0,1.0.0
+XML,3.99-0.16.1,3.99-0.16.1
+XVector,0.44.0,0.44.0
+abSNF,1.0.0,1.0.0
+abind,1.4-8,"1.4-5, 1.4-8"
+alluvial,0.1-2,0.1-2
+annotate,1.82.0,1.82.0
+ape,5.8,5.8
+aplot,0.2.3,0.2.3
+aricode,1.0.3,1.0.3
+askpass,1.2.0,1.2.0
+backports,1.5.0,"1.4.1, 1.5.0"
+basilisk,1.16.0,1.16.0
+basilisk.utils,1.16.0,1.16.0
+bdsmatrix,1.3-7,1.3-7
+beachmat,2.20.0,2.20.0
+bit,4.0.5,4.0.5
+bit64,4.0.5,4.0.5
+bitops,1.0-7,1.0-7
+blob,1.2.4,1.2.4
+boot,1.3-31,"1.3-30, 1.3-31"
+broom,1.0.8,"1.0.6, 1.0.8"
+bslib,0.8.0,0.8.0
+caTools,1.18.2,1.18.2
+cachem,1.1.0,1.1.0
+car,3.1-3,"3.1-2, 3.1-3"
+carData,3.0-5,3.0-5
+cellranger,1.1.0,1.1.0
+circlize,0.4.16,0.4.16
+clValid,0.7,0.7
+class,7.3-22,7.3-22
+cli,3.6.3,"3.6.2, 3.6.3"
+clinfun,1.1.5,1.1.5
+clue,0.3-65,0.3-65
+cluster,2.1.6,2.1.6
+clusterProfiler,4.12.3,4.12.3
+clusterRepro,0.9,0.9
+coca,1.1.0,1.1.0
+coda,0.19-4.1,0.19-4.1
+codetools,0.2-20,0.2-20
+coin,1.4-3,1.4-3
+colorspace,2.1-1,"2.1-0, 2.1-1"
+compiler,4.4.2,"4.4.0, 4.4.2"
+corpcor,1.6.10,1.6.10
+corrplot,0.95,0.95
+cowplot,1.1.3,1.1.3
+coxme,2.2-20,2.2-20
+crayon,1.5.3,1.5.3
+crosstalk,1.2.1,1.2.1
+data.table,1.15.4,1.15.4
+dbplyr,2.5.0,2.5.0
+digest,0.6.35,0.6.35
+diptest,0.77-1,0.77-1
+dir.expiry,1.12.0,1.12.0
+doParallel,1.0.17,1.0.17
+doRNG,1.8.6,1.8.6
+doSNOW,1.0.20,1.0.20
+docxtractr,0.6.5,0.6.5
+dplyr,1.1.4,1.1.4
+e1071,1.7-14,1.7-14
+edgeR,4.2.0,4.2.0
+emmeans,1.10.4,1.10.4
+enrichplot,1.24.2,1.24.2
+entropy,1.3.1,1.3.1
+estimability,1.5.1,1.5.1
+evaluate,0.24.0,0.24.0
+expm,1.0-0,1.0-0
+factoextra,1.0.7,1.0.7
+fansi,1.0.6,1.0.6
+farver,2.1.2,2.1.2
+fastcluster,1.2.6,1.2.6
+fastmap,1.2.0,1.2.0
+fastmatch,1.1-4,1.1-4
+fgsea,1.30.0,1.30.0
+filelock,1.0.3,1.0.3
+flashClust,1.01-2,1.01-2
+flexclust,1.4-2,1.4-2
+forcats,1.0.0,1.0.0
+foreach,1.5.2,1.5.2
+fs,1.6.4,1.6.4
+geepack,1.3.10,1.3.10
+genefilter,1.86.0,1.86.0
+generics,0.1.3,0.1.3
+ggalluvial,0.12.5,0.12.5
+ggforce,0.4.2,0.4.2
+ggfun,0.1.5,0.1.5
+ggnewscale,0.5.0,0.5.0
+ggplot2,3.5.2,"3.5.1, 3.5.2"
+ggplotify,0.1.2,0.1.2
+ggpp,0.5.8-1,0.5.8-1
+ggpubr,0.6.0.999,"0.6.0, 0.6.0.999"
+ggraph,2.2.1,2.2.1
+ggrepel,0.9.6,"0.9.5, 0.9.6"
+ggsignif,0.6.4,0.6.4
+ggtree,3.12.0,3.12.0
+gld,2.6.6,2.6.6
+glue,1.8.0,"1.7.0, 1.8.0"
+gmp,0.7-4,0.7-4
+gplots,3.1.3.1,3.1.3.1
+graph,1.82.0,1.82.0
+graphite,1.50.0,1.50.0
+graphlayouts,1.1.1,1.1.1
+gridBase,0.4-7,0.4-7
+gridExtra,2.3,2.3
+gridGraphics,0.5-1,0.5-1
+gson,0.1.0,0.1.0
+gtable,0.3.6,"0.3.5, 0.3.6"
+gtools,3.9.5,3.9.5
+haven,2.5.4,2.5.4
+heatmap.plus,1.3,1.3
+here,1.0.1,1.0.1
+hms,1.1.3,1.1.3
+htmltools,0.5.8.1,0.5.8.1
+htmlwidgets,1.6.4,1.6.4
+httr,1.4.7,1.4.7
+httr2,1.0.3,1.0.3
+iClusterPlus,1.40.0,1.40.0
+igraph,2.0.3,2.0.3
+impute,1.78.0,1.78.0
+inflection,1.3.6,1.3.6
+irlba,2.3.5.1,2.3.5.1
+iterators,1.0.14,1.0.14
+jquerylib,0.1.4,0.1.4
+jsonlite,1.8.8,1.8.8
+jstable,1.3.0,1.3.0
+kableExtra,1.4.0,1.4.0
+kernlab,0.9-33,0.9-33
+klic,1.0.4,1.0.4
+km.ci,0.5-6,0.5-6
+knitr,1.48,1.48
+labeling,0.4.3,0.4.3
+labelled,2.13.0,2.13.0
+lattice,0.22-6,0.22-6
+lazyeval,0.2.2,0.2.2
+leaps,3.2,3.2
+libcoin,1.0-10,1.0-10
+lifecycle,1.0.4,1.0.4
+limma,3.60.0,3.60.0
+lme4,1.1-37,"1.1-35.3, 1.1-37"
+lmom,3.0,3.0
+lmtest,0.9-40,0.9-40
+locfit,1.5-9.9,1.5-9.9
+maftools,2.20.0,2.20.0
+magick,2.8.3,2.8.3
+magrittr,2.0.3,2.0.3
+matrixStats,1.3.0,1.3.0
+matrixcalc,1.0-6,1.0-6
+mclust,6.1.1,6.1.1
+memoise,2.0.1,2.0.1
+mgcv,1.9-1,1.9-1
+minqa,1.2.8,"1.2.6, 1.2.8"
+mitools,2.4,2.4
+modeltools,0.2-23,0.2-23
+mogsa,1.38.0,1.38.0
+multcomp,1.4-26,1.4-26
+multcompView,0.1-10,0.1-10
+munsell,0.5.1,0.5.1
+mvtnorm,1.2-6,1.2-6
+ncdf4,1.23,1.23
+nlme,3.1-166,"3.1-164, 3.1-166"
+nloptr,2.2.1,"2.0.3, 2.2.1"
+nortest,1.0-4,1.0-4
+officer,0.6.6,0.6.6
+oompaBase,3.2.9,3.2.9
+oompaData,3.1.4,3.1.4
+openssl,2.2.0,2.2.0
+openxlsx,4.2.8.1,"4.2.5.2, 4.2.8.1"
+pamr,1.56.2,1.56.2
+parallel,4.4.2,4.4.2
+patchwork,1.2.0,1.2.0
+pathfindR,2.4.1,2.4.1
+pathfindR.data,2.1.0,2.1.0
+permute,0.9-7,0.9-7
+pheatmap,1.0.12,1.0.12
+pillar,1.9.0,"1.9.0, 1.10.2"
+pkgconfig,2.0.3,2.0.3
+pkgload,1.4.0,1.4.0
+plotly,4.10.4,4.10.4
+plyr,1.8.9,1.8.9
+png,0.1-8,0.1-8
+polyclip,1.10-6,1.10-6
+polynom,1.4-1,1.4-1
+preprocessCore,1.66.0,1.66.0
+prettyGraphs,2.2.0,2.2.0
+proxy,0.4-27,0.4-27
+purrr,1.0.4,"1.0.2, 1.0.4"
+qvalue,2.36.0,2.36.0
+ragg,1.3.2,1.3.2
+rappdirs,0.3.3,0.3.3
+rbibutils,2.3,2.3
+rcartocolor,2.1.1,2.1.1
+rcompanion,2.4.36,2.4.36
+readxl,1.4.3,1.4.3
+reformulas,0.4.1,0.4.1
+registry,0.5-1,0.5-1
+reshape2,1.4.4,1.4.4
+reticulate,1.38.0,1.38.0
+rhdf5,2.48.0,2.48.0
+rhdf5filters,1.16.0,1.16.0
+ridge,3.3,3.3
+rjson,0.2.21,0.2.21
+rlang,1.1.4,"1.1.3, 1.1.4"
+rmarkdown,2.28,2.28
+rngtools,1.5.2,1.5.2
+rootSolve,1.8.2.4,1.8.2.4
+rprojroot,2.0.4,2.0.4
+rstatix,0.7.2,0.7.2
+rsthemes,0.5.0,"0.5.0, 0.4.0"
+rstudioapi,0.16.0,0.16.0
+rsvd,1.0.5,1.0.5
+sandwich,3.1-0,3.1-0
+sass,0.4.9,0.4.9
+scales,1.4.0,"1.3.0, 1.4.0"
+scatterpie,0.2.3,0.2.3
+scatterplot3d,0.3-44,0.3-44
+shadowtext,0.1.4,0.1.4
+shape,1.4.6.1,1.4.6.1
+slam,0.1-52,0.1-52
+snow,0.4-4,0.4-4
+sparseMatrixStats,1.16.0,1.16.0
+splines,4.4.2,"4.4.0, 4.4.2"
+statmod,1.5.0,1.5.0
+stats4,4.4.2,"4.4.0, 4.4.2"
+stringi,1.8.7,"1.8.4, 1.8.7"
+stringr,1.5.1,1.5.1
+survMisc,0.5.6,0.5.6
+survey,4.4-2,4.4-2
+survival,3.7-0,"3.5-8, 3.7-0"
+survminer,0.4.9,0.4.9
+sva,3.52.0,3.52.0
+svd,0.5.5,0.5.5
+svglite,2.1.3,2.1.3
+systemfonts,1.1.0,1.1.0
+tableone,0.13.2,0.13.2
+textshaping,0.3.7,0.3.7
+tibble,3.2.1,3.2.1
+tidygraph,1.3.1,1.3.1
+tidyr,1.3.1,1.3.1
+tidyselect,1.2.1,1.2.1
+tidytree,0.4.6,0.4.6
+tinytex,0.53,0.53
+tm,0.7-14,0.7-14
+tools,4.4.2,"4.4.0, 4.4.2"
+treeio,1.28.0,1.28.0
+tweenr,2.0.3,2.0.3
+umap,0.2.10.0,0.2.10.0
+utf8,1.2.4,1.2.4
+uuid,1.2-0,1.2-0
+uwot,0.2.2,0.2.2
+vctrs,0.6.5,0.6.5
+vegan,2.6-6,2.6-6
+viridis,0.6.5,0.6.5
+viridisLite,0.4.2,0.4.2
+wMKL,1.0.0,1.0.0
+withr,3.0.2,"3.0.1, 3.0.2"
+wordcloud,2.6,2.6
+xfun,0.44,0.44
+xml2,1.3.6,1.3.6
+xtable,1.8-4,1.8-4
+yaml,2.3.8,2.3.8
+yulab.utils,0.1.6,0.1.6
+zip,2.3.3,"2.3.1, 2.3.3"
+zlibbioc,1.50.0,1.50.0
+zoo,1.8-12,1.8-12

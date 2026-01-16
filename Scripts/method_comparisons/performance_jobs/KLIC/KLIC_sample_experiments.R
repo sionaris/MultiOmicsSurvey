@@ -361,8 +361,11 @@ perf_file <- file.path(out_root, sprintf("%s_sample_perturbations_performance.ts
 data.table::fwrite(perf_dt, perf_file, sep = "\t", quote = FALSE, na = "NA")
 
 meta_root <- Sys.getenv("BENCH_META_DIR", "")
-si_path <- if (nzchar(meta_root)) file.path(meta_root, sprintf("%s_session_info.txt", algorithm))
-else file.path(out_root, sprintf("%s_session_info.txt", algorithm))
+si_path <- if (nzchar(meta_root)) {
+  file.path(meta_root, sprintf("%s_session_info.txt", algorithm))
+} else {
+  file.path(out_root, sprintf("%s_session_info.txt", algorithm))
+}
 writeLines(capture.output(sessionInfo()), si_path)
 
 message("Wrote: ", perf_file)

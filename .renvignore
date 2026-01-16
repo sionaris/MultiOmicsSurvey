@@ -1,0 +1,53 @@
+# =============================================================================
+# .renvignore - Exclude directories from renv dependency discovery
+# =============================================================================
+
+# Python directories (not R dependencies)
+Python/**
+.venv/**
+
+# Large output directories
+Results/**/pdf2png/**
+Results/**/png2pdf/**
+Results/**/Supplement/**
+
+# HPC output (data files, not scripts)
+Resources/HPC output/**
+
+# Poster assets
+Poster/**
+
+# Archives and data bundles
+*.zip
+*.tar.gz
+*.RData
+*.rds
+
+# Session info logs (text files, not R code)
+sessionInfo/**
+
+# Documentation Rmd files (markdown documentation, not dependency sources)
+docs/R/benchmark_function_documentation.Rmd
+docs/R/function_documentation.Rmd
+
+# Template Rmd files (parameterized templates, not direct dependency sources)
+Scripts/automated_scripts/*_template.Rmd
+Scripts/automated_scripts/*_report.Rmd
+
+# Side quests / experimental
+Side Quests/**
+
+# Surv intermediate outputs
+Surv/**
+
+# GDC downloaded data
+GDCdata/**
+
+# renv internals
+renv/library/**
+renv/staging/**
+renv/cellar/**
+
+# IDE / temp files
+.Rproj.user/**
+.Rhistory
