@@ -213,26 +213,35 @@ category_colors <- c(
   "Bayesian" = carto_pal("Bold", n = 12)[11]
 )
 
+agreement_colors <- c(
+  "Clustering" = carto_pal("RedOr", n = 7)[6],
+  "Pathway"    = carto_pal("BluYl", n = 7)[6]
+)
+
 p <- ggplot(ARI_long, aes(y = algorithm)) +
   ## category tile (unchanged)
   geom_tile(aes(x = annot_x, fill = Category),
             width = 0.018, height = 0.8,
             colour = "grey50", linewidth = 0.2) +
-  scale_fill_manual(values = category_colors, name = "Category") +
+  scale_fill_manual(values = category_colors, name = "Category",
+                    guide  = ggplot2::guide_legend(order = 1)) +
+  
+  ## start a new fill scale for the bars
   new_scale_fill() +
   
-  ## cluster-ARI bars  (palette = RedOr, shifted downwards)
+  ## cluster-ARI bars (fixed colour)
   geom_col(data = subset(ARI_long, Metric == "Clusters"),
-           aes(x = ARI, fill = ARI),
+           aes(x = ARI, fill = "Clustering"),
            width = 0.35, position = position_nudge(y = -0.18)) +
-  scale_fill_carto_c(palette = "RedOr", name = "ARI (Clusters)") +
-  new_scale_fill() +
   
-  ## pathway-ARI bars  (palette = BluYl, shifted upwards)
+  ## pathway-ARI bars (fixed colour)
   geom_col(data = subset(ARI_long, Metric == "Pathways"),
-           aes(x = ARI, fill = ARI),
+           aes(x = ARI, fill = "Pathway"),
            width = 0.35, position = position_nudge(y =  0.18)) +
-  scale_fill_carto_c(palette = "BluYl", name = "ARI (Pathways)") +
+  
+  ## discrete legend for agreement level
+  scale_fill_manual(values = agreement_colors, name = "Agreement level",
+                    guide  = ggplot2::guide_legend(order = 2)) +
   
   coord_cartesian(xlim = c(-0.07, 1)) +
   scale_x_continuous(breaks = seq(0, 1, 0.1)) +

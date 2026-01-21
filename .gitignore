@@ -10,6 +10,7 @@
 /GDCdata/
 /Surv/
 Scripts/method_comparisons/performance_jobs/MOFA
+Scripts/method_comparisons/figure_resizing.R
 /Full_BRCA_clin/
 /Resources/TCGA/*.rds
 /Resources/TCGA/*.RData
@@ -53,6 +54,7 @@ Scripts/method_comparisons/performance_jobs/MOFA
 /Results/single_algorithm/MOFA/MOFA_slow_console_log
 /Results/single_algorithm/MFA/scree_object.rds
 /Results/Survival_evaluations/env_objects.rds
+/Results/Comparisons/Paper_resizing
 /Poster/
 rngversion_replacement.bat
 clust_col.rds
