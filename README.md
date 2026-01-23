@@ -2,7 +2,7 @@
 
 A comprehensive survey of computational methods for multi-omic integration in cancer research.
 
-> **18 algorithms** benchmarked across **5 data modalities** on TCGA breast cancer, validated on transNEO cohort.
+> **Unsupervised multi-omic integration algorithms** benchmarked across **5 data modalities** on TCGA breast cancer, validated on TCAG holdout set and the transNEO cohort.
 
 ---
 
@@ -12,11 +12,8 @@ A comprehensive survey of computational methods for multi-omic integration in ca
 # Clone and restore environment
 git clone https://github.com/sionaris/MultiOmicsSurvey.git
 renv::restore()
-
-# Download TCGA data
-source("Scripts/Download_TCGA_data.R")
 ```
-
+Study data can be found in the paper supplement and [Zenodo](https://zenodo.org/records/18339577)
 <details>
 <summary><b>⚠️ renv notes</b> — Packages not in lockfile</summary>
 
@@ -40,7 +37,7 @@ The following packages are **not included** in `renv.lock` and must be installed
 
 1. `automated_scripts/` — Helper functions (sourced by other scripts)
 2. `Download_TCGA_data.R` — Downloads and preprocesses TCGA-BRCA
-3. `transNEO_pseudocount_determination.R` — RNA-seq normalization
+3. `transNEO_pseudocount_determination.R` — RNA-seq normalisation for transNEO
 4. `MOVICS/` — Baseline MOVICS analysis
 5. `single_algorithm/` — Individual method runs (+HPC scripts)
 6. `method_comparisons/` — Cross-method comparisons & benchmarks
@@ -53,17 +50,17 @@ The following packages are **not included** in `renv.lock` and must be installed
 <summary><b>📁 Python</b> — Python-based methods</summary>
 
 - `MOFA/` — Multi-Omics Factor Analysis
-- `MONET/` — Multi-Omic Network Embedding
-- `MSNE/` — Multi-view SNE
+- `MONET/` — Multi Omic clustering by Non-Exhaustive Types
+- `MSNE/` — Multiple Similarity Network Embedding
 
 </details>
 
 <details>
 <summary><b>📁 Resources</b> — Supporting data</summary>
 
-- `HPC output/` — Results from cluster computing runs
+- `HPC output/` — Results from cluster computing runs (individual runs)
 - `Pathways/` — Gene sets for enrichment analysis
-- `TCGA/` — Clinical and survival data
+- `TCGA/` — Clinical data for TCGA
 - `transNEO/` — Validation cohort ([paper](https://www.nature.com/articles/s41586-021-04278-5))
 - `Performance/` — Benchmark input data
 
@@ -74,10 +71,9 @@ The following packages are **not included** in `renv.lock` and must be installed
 
 - `single_algorithm/` — Individual method outputs
 - `Comparisons/` — Cross-method comparison plots
-- `Performance_benchmarks/` — Scaling experiments (feature/sample perturbations)
+- `Performance_benchmarks/` — Benchmark experiments (robustness, stability, scalability)
 - `Consensus/` — Consensus clustering results
 - `Survival_evaluations/` — Survival analysis outputs
-- `master_dataset.csv` — Aggregated results table
 
 </details>
 
@@ -86,6 +82,7 @@ The following packages are **not included** in `renv.lock` and must be installed
 
 - `R/function_documentation.pdf` — Core function reference
 - `R/benchmark_function_documentation.pdf` — Benchmark analysis functions
+- `Python/function_documentation.pdf` — Custom Python functions for MONET and MSNE
 
 </details>
 
@@ -97,7 +94,7 @@ The following packages are **not included** in `renv.lock` and must be installed
 |----------|-----------|
 | Similarity Network | ab-SNF, ANF, MDICC, MSNE, NEMO, RWR-F, RWR-NF, SNF, Spectrum |
 | Multiple Kernel Learning | CIMLR, KLIC, wMKL |
-| Matrix Factorization | MOFA, LRAcluster, MFA |
+| Matrix Factorisation | MOFA, LRAcluster, MFA |
 | Graph-based | MONET |
 | Bayesian | iClusterBayes |
 | Consensus | COCA |
