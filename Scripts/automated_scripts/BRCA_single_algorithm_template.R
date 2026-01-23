@@ -16,9 +16,8 @@ rm(brca_cnv, brca_exp, brca_met, brca_mirna); gc()
 home = getwd()
 algorithm = ""
 citation = ""
-data_source = "" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
-data_types = "" # e.g. RNAseq, RNAseq-CNV-miRNA
-evaluation_source = "" # e.g. PARTNER, transNEO-PARTNER 
+data_source = "" # e.g. TCGA, TCGA-transNEOdata_types = "" # e.g. RNAseq, RNAseq-CNV-miRNA
+evaluation_source = "" # e.g. TCGA transNEO-PARTNER 
 title = paste0("Results from ", algorithm)
 subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types, " | <b>Evaluation</b>: ", evaluation_source)
 in_a_nutshell = ""

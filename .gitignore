@@ -6,6 +6,7 @@
 *_report.Rmd
 *.html
 *.hdf5
+*.bak
 .Ruserdata
 /GDCdata/
 /Surv/

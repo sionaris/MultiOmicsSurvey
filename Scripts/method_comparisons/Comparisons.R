@@ -13,9 +13,8 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 
 # Preamble
 home = getwd()
-data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
-data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
-evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER 
+data_source = "TCGA" # e.g. TCGA, TCGA-transNEOdata_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
+evaluation_source = "transNEO" # e.g. TCGA transNEO-PARTNER 
 
 # Import clusterings
 R_algorithms = c("ab-SNF", "ANF", "CIMLR", "COCA", "iClusterBayes", "KLIC",

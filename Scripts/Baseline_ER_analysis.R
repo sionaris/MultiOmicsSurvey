@@ -17,9 +17,8 @@ source("Scripts/automated_scripts/modified_MOVICS_functions.R")
 # Preamble
 home = getwd()
 algorithm = "ER"
-data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
-data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
-evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER 
+data_source = "TCGA" # e.g. TCGA, TCGA-transNEOdata_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
+evaluation_source = "transNEO" # e.g. TCGA transNEO-PARTNER 
 
 # Create algorithm directory if it doesn't exist
 if (!dir.exists(paste0(home, "/Results/ER_baseline/"))) {

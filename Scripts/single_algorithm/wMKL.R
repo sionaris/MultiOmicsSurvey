@@ -77,9 +77,8 @@ home = getwd()
 algorithm = "wMKL"
 alg_feature_pref = "rows" # Where does the algorithm expect the features to be
 citation = fetch_citation(algorithm = algorithm)
-data_source = "TCGA" # e.g. TCGA, TCGA-transNEO, transNEO-PARTNER
-data_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
-evaluation_source = "transNEO" # e.g. PARTNER, transNEO-PARTNER 
+data_source = "TCGA" # e.g. TCGA, TCGA-transNEOdata_types = "RNAseq-CNV-Methylation-miRNA-SNPs" # e.g. RNAseq, RNAseq-CNV-miRNA
+evaluation_source = "transNEO" # e.g. TCGA transNEO-PARTNER 
 title = paste0("Results from ", algorithm)
 subtitle = paste0("<b>Train</b>: ", data_source, " ", data_types, 
                   " | <b>Evaluation</b>: ", evaluation_source)
