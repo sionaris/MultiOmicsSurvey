@@ -526,13 +526,15 @@ for (dim in 1:optn.dim) {
                                                  palette = "jco")
   featplots_10000[[paste0("Dim", dim)]] = featplots_10000[[paste0("Dim", dim)]] +
     theme_classic() +
-    theme(plot.title = element_text(size = 5*2, face = "bold"),
-          axis.title.x = element_text(size = 4*2, face = "bold"),
-          axis.title.y = element_text(size = 4*2, face = "bold"),
+    theme(plot.title = element_text(size = 5*2.7, face = "bold"),
+          axis.title.x = element_text(size = 4*4, face = "bold"),
+          axis.title.y = element_text(size = 4*4, face = "bold"),
           axis.ticks = element_line(linewidth = 0.15*2),
-          axis.text.x = element_text(size = 1, angle = 45),
-          axis.text.y = element_text(size = 4*2),
-          axis.line = element_line(linewidth = 0.2*2))
+          # axis.text.x = element_text(size = 1, angle = 45),
+          axis.text.x = element_blank(),
+          axis.text.y = element_text(size = 4*4),
+          axis.line = element_line(linewidth = 0.2*2)) +
+    labs(x = "Feature")
 }
 
 FIG_featplot_top10000 = ggarrange(plotlist = featplots_10000,
@@ -544,7 +546,7 @@ ggsave(plot = FIG_featplot_top10000,
        filename = paste0("MFA_contrib_featplots_", optn.dim, "_dims_top10000.png"),
        path = paste0(home, "/Results/single_algorithm/", algorithm, "/Supplement"),
        dpi = 700, height = 10400, 
-       width = 13400, units = "px", device = "png"
+       width = 10400, units = "px", device = "png"
 )
 
 # top 100
@@ -554,13 +556,15 @@ for (dim in 1:optn.dim) {
                                                      palette = "jco")
   featplots_100[[paste0("Dim", dim)]] = featplots_100[[paste0("Dim", dim)]] +
     theme_classic() +
-    theme(plot.title = element_text(size = 5*2, face = "bold"),
-          axis.title.x = element_text(size = 4*2, face = "bold"),
-          axis.title.y = element_text(size = 4*2, face = "bold"),
+    theme(plot.title = element_text(size = 5*2.7, face = "bold"),
+          axis.title.x = element_text(size = 4*4, face = "bold"),
+          axis.title.y = element_text(size = 4*4, face = "bold"),
           axis.ticks = element_line(linewidth = 0.15*2),
-          axis.text.x = element_text(size = 1, angle = 45),
-          axis.text.y = element_text(size = 4*2),
-          axis.line = element_line(linewidth = 0.2*2))
+          # axis.text.x = element_text(size = 1, angle = 45),
+          axis.text.x = element_blank(),
+          axis.text.y = element_text(size = 4*4),
+          axis.line = element_line(linewidth = 0.2*2)) +
+    labs(x = "Feature")
 }
 
 FIG_featplot_top100 = ggarrange(plotlist = featplots_100,
