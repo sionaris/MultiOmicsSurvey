@@ -2,7 +2,7 @@
 
 A comprehensive survey of computational methods for multi-omic integration in cancer research.
 
-> **Unsupervised multi-omic integration algorithms** benchmarked across **5 data modalities** on TCGA breast cancer, validated on TCAG holdout set and the transNEO cohort.
+> **Unsupervised multi-omic integration algorithms** benchmarked across **5 data modalities** on TCGA breast cancer, validated on TCGA holdout set and the transNEO cohort.
 
 ---
 
